@@ -1,0 +1,98 @@
+[
+  {
+    "_id": "6759b00f1234567890abcde1",
+    "codigo": "CNJ001",
+    "nombre": "Conejo Alpha",
+    "raza": "Nueva Zelanda Blanco",
+    "sexo": "hembra",
+    "fechaNacimiento": "2023-10-15T00:00:00.000Z",
+    "peso": 3.2,
+    "proposito": "reproducción",
+    "estado": "activo",
+    "salud": "sano",
+    "jaula": {
+      "_id": "6759b00f1234567890abcde5",
+      "numero": "001"
+    },
+    "padre": null,
+    "madre": null,
+    "observaciones": "Excelente reproductora, primer parto exitoso",
+    "createdAt": "2023-10-15T00:00:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
+  },
+  {
+    "_id": "6759b00f1234567890abcde2",
+    "codigo": "CNJ002",
+    "nombre": "Conejo Beta",
+    "raza": "Californiano",
+    "sexo": "macho",
+    "fechaNacimiento": "2023-09-20T00:00:00.000Z",
+    "peso": 4.1,
+    "proposito": "reproducción",
+    "estado": "activo",
+    "salud": "sano",
+    "jaula": {
+      "_id": "6759b00f1234567890abcde6",
+      "numero": "002"
+    },
+    "padre": null,
+    "madre": null,
+    "observaciones": "Semental de alta calidad genética",
+    "createdAt": "2023-09-20T00:00:00.000Z",
+    "updatedAt": "2024-01-10T14:20:00.000Z"
+  },
+  {
+    "_id": "6759b00f1234567890abcde3",
+    "codigo": "CNJ003",
+    "nombre": "Conejo Gamma",
+    "raza": "Nueva Zelanda Blanco",
+    "sexo": "hembra",
+    "fechaNacimiento": "2023-12-01T00:00:00.000Z",
+    "peso": 2.8,
+    "proposito": "engorde",
+    "estado": "activo",
+    "salud": "sano",
+    "jaula": {
+      "_id": "6759b00f1234567890abcde7",
+      "numero": "003"
+    },
+    "padre": {
+      "_id": "6759b00f1234567890abcde2",
+      "codigo": "CNJ002"
+    },
+    "madre": {
+      "_id": "6759b00f1234567890abcde1",
+      "codigo": "CNJ001"
+    },
+    "observaciones": "Crecimiento acelerado, excelente para engorde",
+    "createdAt": "2023-12-01T00:00:00.000Z",
+    "updatedAt": "2024-01-12T09:45:00.000Z"
+  },
+  {
+    "_id": "6759b00f1234567890abcde4",
+    "codigo": "CNJ004",
+    "nombre": "Conejo Delta",
+    "raza": "Californiano",
+    "sexo": "macho",
+    "fechaNacimiento": "2023-11-10T00:00:00.000Z",
+    "peso": 3.5,
+    "proposito": "engorde",
+    "estado": "activo",
+    "salud": "sano",
+    "jaula": {
+      "_id": "6759b00f1234567890abcde7",
+      "numero": "003"
+    },
+    "padre": {
+      "_id": "6759b00f1234567890abcde2",
+      "codigo": "CNJ002"
+    },
+    "madre": {
+      "_id": "6759b00f1234567890abcde1",
+      "codigo": "CNJ001"
+    },
+    "observaciones": "Hermano de CNJ003, mismo desarrollo",
+    "createdAt": "2023-11-10T00:00:00.000Z",
+    "updatedAt": "2024-01-08T16:30:00.000Z"
+  }
+]

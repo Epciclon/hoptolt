@@ -1,0 +1,412 @@
+/* FeedingReport.css */
+.feeding-report-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #e0f7fa 0%, #b2dfdb 100%);
+    padding: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.report-header {
+    background: #fff;
+    padding: 30px 40px;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px #1abc9c22;
+    text-align: center;
+    margin-bottom: 30px;
+    width: calc(100% - 40px);
+    max-width: 1000px;
+    box-sizing: border-box;
+}
+
+.report-header h2 {
+    color: #1abc9c;
+    margin: 0 0 10px 0;
+    font-size: 2.2rem;
+    font-weight: 700;
+}
+
+.report-header p {
+    color: #34495e;
+    margin: 0;
+    font-size: 1.1rem;
+    opacity: 0.8;
+}
+
+.form-section {
+    background: #fff;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px #1abc9c22;
+    width: calc(100% - 40px);
+    max-width: 1000px;
+    margin-bottom: 30px;
+    box-sizing: border-box;
+}
+
+.form-group {
+    margin-bottom: 25px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #34495e;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.form-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 1rem;
+    background: #f9fafb;
+    transition: all 0.3s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #1abc9c;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(26, 188, 156, 0.1);
+}
+
+.checkbox-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    padding: 20px;
+    background: #f0fdf9;
+    border-radius: 12px;
+    border: 2px solid #e6fffa;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 12px 15px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    background: #fff;
+    border: 1px solid #e0e7ff;
+}
+
+.checkbox-label:hover {
+    background: #f0fdf9;
+    border-color: #1abc9c;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(26, 188, 156, 0.15);
+}
+
+.checkbox-input {
+    margin-right: 12px;
+    width: 18px;
+    height: 18px;
+    accent-color: #1abc9c;
+    cursor: pointer;
+}
+
+.checkbox-text {
+    color: #34495e;
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.button-group {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-success,
+.btn-warning {
+    padding: 14px 28px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-primary {
+    background: linear-gradient(90deg, #1abc9c 0%, #16a085 100%);
+    color: #fff;
+    box-shadow: 0 3px 12px #1abc9c33;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(90deg, #16a085 0%, #1abc9c 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px #1abc9c44;
+}
+
+.btn-primary:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-secondary {
+    background: linear-gradient(90deg, #95a5a6 0%, #7f8c8d 100%);
+    color: #fff;
+    box-shadow: 0 3px 12px #95a5a633;
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(90deg, #7f8c8d 0%, #95a5a6 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px #95a5a644;
+}
+
+.btn-success {
+    background: linear-gradient(90deg, #27ae60 0%, #2ecc71 100%);
+    color: #fff;
+    box-shadow: 0 3px 12px #27ae6033;
+}
+
+.btn-success:hover {
+    background: linear-gradient(90deg, #2ecc71 0%, #27ae60 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px #27ae6044;
+}
+
+.btn-warning {
+    background: linear-gradient(90deg, #f39c12 0%, #e67e22 100%);
+    color: #fff;
+    box-shadow: 0 3px 12px #f39c1233;
+}
+
+.btn-warning:hover {
+    background: linear-gradient(90deg, #e67e22 0%, #f39c12 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px #f39c1244;
+}
+
+.error-message {
+    background: #fdf2f2;
+    color: #e74c3c;
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+    border: 1px solid #fecaca;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.success-message {
+    background: #f0fdf9;
+    color: #16a085;
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+    border: 1px solid #bbf7d0;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.preview-section {
+    background: #fff;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px #1abc9c22;
+    width: calc(100% - 40px);
+    max-width: 1200px;
+    box-sizing: border-box;
+}
+
+.preview-header {
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.preview-header h3 {
+    color: #1abc9c;
+    margin: 0 0 20px 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.preview-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    background: #f0fdf9;
+    padding: 25px;
+    border-radius: 12px;
+    border: 2px solid #e6fffa;
+    margin-bottom: 30px;
+}
+
+.preview-info p {
+    margin: 0;
+    color: #34495e;
+    font-size: 1rem;
+    padding: 8px 0;
+}
+
+.preview-info strong {
+    color: #1abc9c;
+    font-weight: 700;
+}
+
+.table-container {
+    overflow-x: auto;
+    margin: 30px 0;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    background: #fff;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.data-table thead {
+    background: linear-gradient(135deg, #1abc9c 0%, #16a085 100%);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.data-table th {
+    padding: 16px 12px;
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-align: left;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
+.data-table th:first-child {
+    border-top-left-radius: 12px;
+}
+
+.data-table th:last-child {
+    border-top-right-radius: 12px;
+}
+
+.data-table tbody tr {
+    transition: all 0.2s ease;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.data-table tbody tr:hover {
+    background-color: #f0fdf9;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(26, 188, 156, 0.1);
+}
+
+.data-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.data-table td {
+    padding: 14px 12px;
+    color: #34495e;
+    font-size: 0.9rem;
+    vertical-align: middle;
+}
+
+.data-table .center {
+    text-align: center;
+    font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .feeding-report-container {
+        padding: 15px;
+    }
+    
+    .report-header,
+    .form-section,
+    .preview-section {
+        padding: 25px 20px;
+    }
+    
+    .report-header h2 {
+        font-size: 1.8rem;
+    }
+    
+    .checkbox-group {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .button-group {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .btn-primary,
+    .btn-secondary,
+    .btn-success,
+    .btn-warning {
+        min-width: 100%;
+    }
+    
+    .preview-info {
+        grid-template-columns: 1fr;
+    }
+    
+    .table-container {
+        overflow-x: scroll;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .data-table {
+        min-width: 700px;
+    }
+    
+    .data-table th,
+    .data-table td {
+        padding: 10px 8px;
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .report-header h2 {
+        font-size: 1.5rem;
+    }
+    
+    .report-header p {
+        font-size: 1rem;
+    }
+    
+    .checkbox-label {
+        padding: 10px 12px;
+    }
+    
+    .btn-primary,
+    .btn-secondary,
+    .btn-success,
+    .btn-warning {
+        padding: 12px 20px;
+        font-size: 0.9rem;
+    }
+}

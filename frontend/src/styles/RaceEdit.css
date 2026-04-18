@@ -1,0 +1,217 @@
+/* Contenedor principal */
+.rabbit-edit-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 80vh;
+  background: linear-gradient(135deg, #e0f7fa 0%, #b2dfdb 100%);
+  padding-top: 40px;
+}
+
+/* Tarjeta de edición */
+.rabbit-edit-card {
+  background: #fff;
+  padding: 36px 32px 28px;
+  border-radius: 14px;
+  box-shadow: 0 4px 24px rgba(26, 188, 156, 0.13);
+  width: 100%;
+  max-width: 900px;
+}
+
+.rabbit-edit-card h2 {
+  text-align: center;
+  color: #1abc9c;
+  margin-bottom: 22px;
+}
+
+/* Mensajes de estado */
+.error-msg {
+  color: #e74c3c;
+  text-align: center;
+  margin-top: 18px;
+  font-weight: bold;
+}
+
+.success-msg {
+  color: #16a085;
+  text-align: center;
+  margin-top: 18px;
+  font-weight: bold;
+}
+
+/* Grupo de filtro */
+.filter-group {
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filter-group label {
+  font-weight: 500;
+  color: #34495e;
+}
+
+.filter-group input {
+  flex: 1;
+  padding: 7px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
+  font-size: 1rem;
+  background: #f9fafb;
+  transition: border 0.2s;
+}
+
+.filter-group input:focus {
+  border-color: #1abc9c;
+  outline: none;
+}
+
+/* Tabla de razas */
+.table-responsive {
+  overflow-x: auto;
+  margin-bottom: 24px;
+}
+
+.rabbit-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #f9fafb;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(26, 188, 156, 0.07);
+}
+
+.rabbit-table th,
+.rabbit-table td {
+  padding: 10px 12px;
+  text-align: center;
+}
+
+.rabbit-table th {
+  background: #1abc9c;
+  color: #fff;
+  font-weight: 600;
+}
+
+.rabbit-table tr:nth-child(even) {
+  background: #e0f7fa;
+}
+
+.rabbit-table tr:hover {
+  background: rgba(178, 223, 219, 0.33);
+}
+
+/* Botón de editar en la tabla */
+.edit-btn {
+  background: #1abc9c;
+  color: #fff;
+  border: none;
+  padding: 7px 18px;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.edit-btn:hover {
+  background: #16a085;
+}
+
+/* Formulario de edición */
+.edit-form {
+  margin-top: 30px;
+  background: #f4f6fa;
+  padding: 24px 18px;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(26, 188, 156, 0.07);
+}
+
+.edit-form h3 {
+  text-align: center;
+  color: #263445;
+  margin-bottom: 18px;
+}
+
+.edit-form .form-group {
+  margin-bottom: 16px;
+}
+
+.edit-form label {
+  display: block;
+  margin-bottom: 6px;
+  color: #34495e;
+  font-weight: 500;
+}
+
+.edit-form input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
+  font-size: 1rem;
+  background: #fff;
+  transition: border 0.2s;
+}
+
+.edit-form input:focus {
+  border-color: #1abc9c;
+  outline: none;
+}
+
+/* Botones del formulario */
+.edit-form-btns {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.edit-form-btns button {
+  flex: 1;
+  padding: 12px 0;
+  border-radius: 6px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s;
+}
+
+.submit-btn {
+  background: linear-gradient(90deg, #1abc9c 60%, #16a085 100%);
+  color: #fff;
+}
+
+.submit-btn:hover {
+  background: linear-gradient(90deg, #16a085 60%, #1abc9c 100%);
+}
+
+.cancel-btn {
+  background: #e74c3c;
+  color: #fff;
+}
+
+.cancel-btn:hover {
+  background: #c0392b;
+}
+
+/* Modal para editar raza */
+.modal-edit-race {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(44, 62, 80, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.modal-edit-race-content {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px #1abc9c44;
+    padding: 40px 32px 28px 32px;
+    min-width: 340px;
+    max-width: 95vw;
+    animation: popin 0.2s;
+}

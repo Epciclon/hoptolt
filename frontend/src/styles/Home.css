@@ -1,0 +1,34 @@
+.home-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #e0f7fa 0%, #b2dfdb 100%);
+}
+
+.home-card {
+    background: #fff;
+    padding: 40px 32px;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px #1abc9c22;
+    text-align: center;
+    max-width: 420px;
+}
+
+.home-card h1 {
+    font-size: 3rem;
+    margin-bottom: 10px;
+    color: #1abc9c;
+}
+
+.home-card h2 {
+    font-size: 1.5rem;
+    margin-bottom: 18px;
+    color: #263445;
+}
+
+.home-card p {
+    font-size: 1.1rem;
+    color: #34495e;
+    line-height: 1.6;
+}

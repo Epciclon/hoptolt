@@ -1,0 +1,38 @@
+[
+  {
+    "_id": "6759b00f1234567890abcde8",
+    "numero": "004",
+    "tipo": "engorde",
+    "capacidad": 6,
+    "ubicacion": "Galpón B - Sección 2",
+    "material": "Malla reforzada",
+    "dimensiones": "120x80x50 cm",
+    "estado": "disponible",
+    "ocupacionActual": 0,
+    "espaciosDisponibles": 6
+  },
+  {
+    "_id": "6759b00f1234567890abcdea",
+    "numero": "006",
+    "tipo": "reproducción",
+    "capacidad": 1,
+    "ubicacion": "Galpón A - Sección 4",
+    "material": "Malla galvanizada",
+    "dimensiones": "60x40x35 cm",
+    "estado": "disponible",
+    "ocupacionActual": 0,
+    "espaciosDisponibles": 1
+  },
+  {
+    "_id": "6759b00f1234567890abcdeb",
+    "numero": "007",
+    "tipo": "engorde",
+    "capacidad": 6,
+    "ubicacion": "Galpón B - Sección 3",
+    "material": "Malla reforzada",
+    "dimensiones": "120x80x50 cm",
+    "estado": "disponible",
+    "ocupacionActual": 0,
+    "espaciosDisponibles": 6
+  }
+]

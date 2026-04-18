@@ -1,0 +1,122 @@
+[
+  {
+    "_id": "6759b00f1234567890abcde5",
+    "numero": "001",
+    "tipo": "reproducción",
+    "capacidad": 1,
+    "ubicacion": "Galpón A - Sección 1",
+    "material": "Malla galvanizada",
+    "dimensiones": "60x40x35 cm",
+    "estado": "ocupada",
+    "ocupacionActual": 1,
+    "conejos": [
+      {
+        "_id": "6759b00f1234567890abcde1",
+        "codigo": "CNJ001",
+        "nombre": "Conejo Alpha"
+      }
+    ],
+    "mantenimiento": {
+      "enMantenimiento": false,
+      "ultimaLimpieza": "2024-01-10T08:00:00.000Z",
+      "proximaLimpieza": "2024-01-17T08:00:00.000Z"
+    },
+    "createdAt": "2023-10-01T00:00:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
+  },
+  {
+    "_id": "6759b00f1234567890abcde6",
+    "numero": "002",
+    "tipo": "reproducción",
+    "capacidad": 1,
+    "ubicacion": "Galpón A - Sección 2",
+    "material": "Malla galvanizada",
+    "dimensiones": "60x40x35 cm",
+    "estado": "ocupada",
+    "ocupacionActual": 1,
+    "conejos": [
+      {
+        "_id": "6759b00f1234567890abcde2",
+        "codigo": "CNJ002",
+        "nombre": "Conejo Beta"
+      }
+    ],
+    "mantenimiento": {
+      "enMantenimiento": false,
+      "ultimaLimpieza": "2024-01-11T08:00:00.000Z",
+      "proximaLimpieza": "2024-01-18T08:00:00.000Z"
+    },
+    "createdAt": "2023-10-01T00:00:00.000Z",
+    "updatedAt": "2024-01-10T14:20:00.000Z"
+  },
+  {
+    "_id": "6759b00f1234567890abcde7",
+    "numero": "003",
+    "tipo": "engorde",
+    "capacidad": 6,
+    "ubicacion": "Galpón B - Sección 1",
+    "material": "Malla reforzada",
+    "dimensiones": "120x80x50 cm",
+    "estado": "ocupada",
+    "ocupacionActual": 2,
+    "conejos": [
+      {
+        "_id": "6759b00f1234567890abcde3",
+        "codigo": "CNJ003",
+        "nombre": "Conejo Gamma"
+      },
+      {
+        "_id": "6759b00f1234567890abcde4",
+        "codigo": "CNJ004",
+        "nombre": "Conejo Delta"
+      }
+    ],
+    "mantenimiento": {
+      "enMantenimiento": false,
+      "ultimaLimpieza": "2024-01-12T08:00:00.000Z",
+      "proximaLimpieza": "2024-01-19T08:00:00.000Z"
+    },
+    "createdAt": "2023-10-01T00:00:00.000Z",
+    "updatedAt": "2024-01-12T09:45:00.000Z"
+  },
+  {
+    "_id": "6759b00f1234567890abcde8",
+    "numero": "004",
+    "tipo": "engorde",
+    "capacidad": 6,
+    "ubicacion": "Galpón B - Sección 2",
+    "material": "Malla reforzada",
+    "dimensiones": "120x80x50 cm",
+    "estado": "disponible",
+    "ocupacionActual": 0,
+    "conejos": [],
+    "mantenimiento": {
+      "enMantenimiento": false,
+      "ultimaLimpieza": "2024-01-13T08:00:00.000Z",
+      "proximaLimpieza": "2024-01-20T08:00:00.000Z"
+    },
+    "createdAt": "2023-10-01T00:00:00.000Z",
+    "updatedAt": "2024-01-13T08:00:00.000Z"
+  },
+  {
+    "_id": "6759b00f1234567890abcde9",
+    "numero": "005",
+    "tipo": "reproducción",
+    "capacidad": 1,
+    "ubicacion": "Galpón A - Sección 3",
+    "material": "Malla galvanizada",
+    "dimensiones": "60x40x35 cm",
+    "estado": "mantenimiento",
+    "ocupacionActual": 0,
+    "conejos": [],
+    "mantenimiento": {
+      "enMantenimiento": true,
+      "motivoMantenimiento": "Limpieza profunda y desinfección",
+      "fechaInicioMantenimiento": "2024-01-14T08:00:00.000Z",
+      "fechaFinEstimada": "2024-01-16T08:00:00.000Z",
+      "ultimaLimpieza": "2024-01-08T08:00:00.000Z"
+    },
+    "createdAt": "2023-10-01T00:00:00.000Z",
+    "updatedAt": "2024-01-14T08:00:00.000Z"
+  }
+]
