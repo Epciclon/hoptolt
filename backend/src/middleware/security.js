@@ -8,15 +8,7 @@ const loginLimiter = rateLimit({
     message: {
         success: false,
         message: 'Demasiados intentos de login. Intente nuevamente en 15 minutos.'
-    },
-    standardHeaders: true,
-    legacyHeaders: false,
-    // Personalizar el identificador para usar IP + User-Agent
-    keyGenerator: (req) => {
-        return req.ip + req.get('User-Agent');
-    },
-    // Reiniciar contador después de login exitoso
-    resetOnSuccess: true
+    }
 });
 
 // Rate limiting general para la API
@@ -26,9 +18,7 @@ const apiLimiter = rateLimit({
     message: {
         success: false,
         message: 'Demasiadas solicitudes desde esta IP. Intente nuevamente más tarde.'
-    },
-    standardHeaders: true,
-    legacyHeaders: false
+    }
 });
 
 // Rate limiting estricto para endpoints sensibles
@@ -38,9 +28,7 @@ const strictLimiter = rateLimit({
     message: {
         success: false,
         message: 'Límite de solicitudes excedido para esta operación sensible.'
-    },
-    standardHeaders: true,
-    legacyHeaders: false
+    }
 });
 
 // Configuración de Helmet para headers de seguridad
