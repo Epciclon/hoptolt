@@ -2,8 +2,8 @@ const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 
 const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    max: 2000, // Incrementado de 100 a 2000 para permitir navegación normal y desarrollo fluido sin bloqueos
     message: {
         success: false,
         message: 'Demasiadas solicitudes desde esta IP. Intente nuevamente más tarde.'
