@@ -1,0 +1,59 @@
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
+
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: {
+        success: false,
+        message: 'Demasiadas solicitudes desde esta IP. Intente nuevamente más tarde.'
+    }
+});
+
+const helmetConfig = helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            scriptSrc: ["'self'"],
+            imgSrc: ["'self'", "data:", "https:"],
+            connectSrc: ["'self'"],
+            fontSrc: ["'self'"],
+            objectSrc: ["'none'"],
+            mediaSrc: ["'self'"],
+            frameSrc: ["'none'"],
+        },
+    },
+    crossOriginEmbedderPolicy: false
+});
+
+const inputSanitizer = (req, res, next) => {
+    const sanitizeString = (str) => {
+        if (typeof str !== 'string') return str;
+        return str
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+            .replace(/javascript:/gi, '')
+            .replace(/on\w+\s*=/gi, '')
+            .trim();
+    };
+
+    if (req.body) {
+        for (const key in req.body) {
+            if (typeof req.body[key] === 'string') {
+                req.body[key] = sanitizeString(req.body[key]);
+            }
+        }
+    }
+
+    if (req.query) {
+        for (const key in req.query) {
+            if (typeof req.query[key] === 'string') {
+                req.query[key] = sanitizeString(req.query[key]);
+            }
+        }
+    }
+
+    next();
+};
+
+module.exports = { apiLimiter, helmetConfig, inputSanitizer };

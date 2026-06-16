@@ -1,0 +1,33 @@
+const catchAsync = require('../../common/middlewares/catchAsync');
+const genealogyService = require('./genealogy.service');
+
+exports.registerGenealogy = catchAsync(async (req, res) => {
+    const galponId = req.galponId;
+    const genealogy = await genealogyService.registerGenealogy(req.body, galponId);
+    res.status(201).json({ success: true, message: 'Relación genealógica registrada exitosamente.', genealogy });
+});
+
+exports.getGenealogy = catchAsync(async (req, res) => {
+    const genealogy = await genealogyService.getGenealogy(req.params.rabbitId);
+    res.status(200).json({ success: true, genealogy });
+});
+
+exports.getAllGenealogies = catchAsync(async (req, res) => {
+    const genealogies = await genealogyService.getAllGenealogies(req.galponId);
+    res.status(200).json({ success: true, genealogies });
+});
+
+exports.editGenealogy = catchAsync(async (req, res) => {
+    const genealogy = await genealogyService.editGenealogy(req.params.rabbitId, req.body);
+    res.status(200).json({ success: true, message: 'Relación genealógica actualizada exitosamente.', genealogy });
+});
+
+exports.deleteGenealogy = catchAsync(async (req, res) => {
+    await genealogyService.deleteGenealogy(req.params.rabbitId);
+    res.status(200).json({ success: true, message: 'Relación genealógica eliminada exitosamente.' });
+});
+
+exports.getGenealogyTree = catchAsync(async (req, res) => {
+    const tree = await genealogyService.getGenealogyTree(req.params.rabbitId, req.query.levels || 3);
+    res.status(200).json({ success: true, tree });
+});

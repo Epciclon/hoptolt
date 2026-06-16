@@ -1,0 +1,28 @@
+const catchAsync = require('../../common/middlewares/catchAsync');
+const vaccinationService = require('./vaccination.service');
+const galponRepository = require('../galpon/galpon.repository');
+
+exports.registerVaccination = catchAsync(async (req, res) => {
+    const galponId = req.galponId;
+    const vaccinations = await vaccinationService.registerVaccination(req.body, galponId);
+    res.status(201).json({ success: true, message: 'Vacunación registrada exitosamente.', vaccinations });
+});
+
+exports.getVaccinations = catchAsync(async (req, res) => {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const result = await vaccinationService.getVaccinations(req.galponId, req.user.id, page, limit);
+    res.status(200).json({
+        success: true,
+        vaccinations: result.data,
+        pagination: result.pagination
+    });
+});
+
+exports.getGalponVaccines = catchAsync(async (req, res) => {
+    const galpon = await galponRepository.findById(req.galponId);
+    if (!galpon) {
+        return res.status(404).json({ success: false, message: 'Galpón no encontrado.' });
+    }
+    res.status(200).json({ success: true, vaccines: galpon.vaccines || [] });
+});

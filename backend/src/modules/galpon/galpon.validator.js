@@ -1,0 +1,127 @@
+const PROVINCES = [
+    'Azuay', 'Bolívar', 'Cañar', 'Carchi', 'Chimborazo', 'Cotopaxi', 'El Oro',
+    'Esmeraldas', 'Galápagos', 'Guayas', 'Imbabura', 'Loja', 'Los Ríos',
+    'Manabí', 'Morona Santiago', 'Napo', 'Orellana', 'Pastaza', 'Pichincha',
+    'Santa Elena', 'Santo Domingo de los Tsáchilas', 'Sucumbíos', 'Tungurahua',
+    'Zamora Chinchipe', 'Otros'
+];
+
+const validateCreateGalpon = (req, res, next) => {
+    const errors = [];
+    const { name, province, location, totalCapacity, foodTypes, vaccines, dewormingPeriod } = req.body;
+
+    if (!name || name.trim() === '') {
+        errors.push('El nombre del galpón es obligatorio.');
+    } else {
+        const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+        if (!nameRegex.test(name.trim())) {
+            errors.push('El nombre del galpón solo puede contener letras y espacios.');
+        } else if (name.trim().length > 50) {
+            errors.push('El nombre del galpón tiene un límite máximo de 50 caracteres.');
+        }
+    }
+
+    if (!province || !PROVINCES.includes(province)) {
+        errors.push('La provincia debe ser una opción válida de la lista predefinida.');
+    }
+
+    if (!location || location.trim() === '') {
+        errors.push('La ubicación es obligatoria.');
+    } else if (location.trim().length > 100) {
+        errors.push('La ubicación tiene un límite máximo de 100 caracteres.');
+    }
+
+    if (totalCapacity === undefined || totalCapacity === null || totalCapacity === '') {
+        errors.push('La capacidad total es obligatoria.');
+    } else if (!Number.isInteger(Number(totalCapacity)) || Number(totalCapacity) <= 0) {
+        errors.push('La capacidad total debe ser un número entero positivo.');
+    }
+
+    if (!Array.isArray(foodTypes) || foodTypes.length === 0) {
+        errors.push('Debe seleccionar al menos un tipo de alimento.');
+    }
+
+    if (!Array.isArray(vaccines) || vaccines.length === 0) {
+        errors.push('Debe seleccionar al menos una vacuna.');
+    } else {
+        for (const vaccine of vaccines) {
+            if (!vaccine.name || vaccine.name.trim() === '') {
+                errors.push('Cada vacuna debe tener un nombre.');
+            }
+            if (!vaccine.period || !Number.isInteger(Number(vaccine.period)) || Number(vaccine.period) <= 0) {
+                errors.push('Cada vacuna debe tener un período válido (número entero positivo).');
+            }
+        }
+    }
+
+    if (dewormingPeriod === undefined || dewormingPeriod === null || dewormingPeriod === '') {
+        errors.push('El período de desparasitación es obligatorio.');
+    } else if (!Number.isInteger(Number(dewormingPeriod)) || Number(dewormingPeriod) <= 0) {
+        errors.push('El período de desparasitación debe ser un número entero positivo.');
+    }
+
+    if (errors.length > 0) return res.status(400).json({ success: false, errors });
+    next();
+};
+
+const validateEditGalpon = (req, res, next) => {
+    const errors = [];
+    const { name, province, location, totalCapacity, foodTypes, vaccines, dewormingPeriod } = req.body;
+
+    if (name !== undefined && name !== null && name !== '') {
+        const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+        if (!nameRegex.test(name.trim())) {
+            errors.push('El nombre del galpón solo puede contener letras y espacios.');
+        } else if (name.trim().length > 50) {
+            errors.push('El nombre del galpón tiene un límite máximo de 50 caracteres.');
+        }
+    }
+
+    if (province && !PROVINCES.includes(province)) {
+        errors.push('La provincia debe ser una opción válida de la lista predefinida.');
+    }
+
+    if (location !== undefined && location !== null && location !== '') {
+        if (location.trim().length > 100) {
+            errors.push('La ubicación tiene un límite máximo de 100 caracteres.');
+        }
+    }
+
+    if (totalCapacity !== undefined && totalCapacity !== null && totalCapacity !== '') {
+        if (!Number.isInteger(Number(totalCapacity)) || Number(totalCapacity) <= 0) {
+            errors.push('La capacidad total debe ser un número entero positivo.');
+        }
+    }
+
+    if (foodTypes !== undefined && Array.isArray(foodTypes)) {
+        if (foodTypes.length === 0) {
+            errors.push('Debe seleccionar al menos un tipo de alimento.');
+        }
+    }
+
+    if (vaccines !== undefined && Array.isArray(vaccines)) {
+        if (vaccines.length === 0) {
+            errors.push('Debe seleccionar al menos una vacuna.');
+        } else {
+            for (const vaccine of vaccines) {
+                if (!vaccine.name || vaccine.name.trim() === '') {
+                    errors.push('Cada vacuna debe tener un nombre.');
+                }
+                if (!vaccine.period || !Number.isInteger(Number(vaccine.period)) || Number(vaccine.period) <= 0) {
+                    errors.push('Cada vacuna debe tener un período válido (número entero positivo).');
+                }
+            }
+        }
+    }
+
+    if (dewormingPeriod !== undefined && dewormingPeriod !== null && dewormingPeriod !== '') {
+        if (!Number.isInteger(Number(dewormingPeriod)) || Number(dewormingPeriod) <= 0) {
+            errors.push('El período de desparasitación debe ser un número entero positivo.');
+        }
+    }
+
+    if (errors.length > 0) return res.status(400).json({ success: false, errors });
+    next();
+};
+
+module.exports = { validateCreateGalpon, validateEditGalpon };

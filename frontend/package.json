@@ -1,60 +1,43 @@
 {
-  "name": "rabbit-management-system-frontend",
-  "version": "1.0.0",
+  "name": "rabbit-management-frontend",
+  "version": "0.1.0",
   "private": true,
-  "dependencies": {
-    "@hookform/resolvers": "^5.2.0",
-    "axios": "^0.21.1",
-    "js-cookie": "^3.0.5",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2",
-    "react-hook-form": "^7.61.1",
-    "react-router-dom": "^5.3.0",
-    "react-scripts": "^5.0.1",
-    "yup": "^1.6.1"
-  },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
+    "dev": "next dev --turbo",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
     "cy:open": "cypress open",
-    "cy:run": "cypress run",
-    "cy:run:chrome": "cypress run --browser chrome",
-    "cy:run:firefox": "cypress run --browser firefox",
-    "cy:run:edge": "cypress run --browser edge",
-    "cy:run:smoke": "cypress run --env grep=@smoke",
-    "cy:run:auth": "cypress run --env grep=@auth",
-    "cy:run:critical": "cypress run --env grep=@critical",
-    "cy:run:headless": "cypress run --headless",
-    "test:e2e": "start-server-and-test start http://localhost:3000 cy:run",
-    "test:e2e:smoke": "start-server-and-test start http://localhost:3000 cy:run:smoke",
-    "test:e2e:chrome": "start-server-and-test start http://localhost:3000 cy:run:chrome",
-    "test:coverage": "cypress run --env coverage=true"
+    "cy:run": "cypress run"
   },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
+  "dependencies": {
+    "@hookform/resolvers": "^3.4.2",
+    "@opentelemetry/api": "^1.9.1",
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.106.2",
+    "axios": "^1.7.2",
+    "clsx": "^2.1.1",
+    "js-cookie": "^3.0.5",
+    "lucide-react": "^0.390.0",
+    "next": "14.2.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.51.5",
+    "tailwind-merge": "^2.3.0",
+    "zod": "^3.23.8"
   },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
-  },
-  "proxy": "http://localhost:5000",
   "devDependencies": {
     "@cypress/grep": "^4.1.0",
+    "@types/js-cookie": "^3.0.6",
+    "@types/node": "^20.14.2",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.19",
     "cypress": "^14.5.3",
-    "cypress-real-events": "^1.14.0",
-    "start-server-and-test": "^2.0.12"
+    "eslint": "^8.57.0",
+    "eslint-config-next": "14.2.3",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.4",
+    "typescript": "^5.4.5"
   }
 }

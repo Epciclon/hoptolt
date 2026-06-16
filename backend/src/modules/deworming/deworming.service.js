@@ -1,0 +1,94 @@
+const dewormingRepository = require('./deworming.repository');
+const { Rabbit, Assignment, Galpon, FarmMember } = require('../../domain/models');
+const AppError = require('../../errors/AppError');
+const { getPaginationParams, createPaginatedResponse } = require('../../common/helpers/pagination.helper');
+
+class DewormingService {
+    async registerDeworming(data, galponId) {
+        const { rabbitIds } = data;
+
+        const galpon = await Galpon.findByPk(galponId);
+        if (!galpon) throw new AppError('Galpón no encontrado.', 404);
+
+        const dewormingPeriod = galpon.dewormingPeriod || 30;
+
+        const dewormingErrors = [];
+
+        // Primero validar todos los conejos antes de registrar
+        for (const rabbitId of rabbitIds) {
+            const rabbit = await Rabbit.findByPk(rabbitId);
+            if (!rabbit) {
+                dewormingErrors.push(`El conejo con ID ${rabbitId} no existe.`);
+                continue;
+            }
+            if (rabbit.galponId !== galponId) {
+                dewormingErrors.push(`El conejo ${rabbit.code}${rabbit.name ? ` — ${rabbit.name}` : ''} no pertenece al galpón activo.`);
+                continue;
+            }
+
+            const assignment = await Assignment.findOne({
+                where: { rabbitId, status: 'asignado' }
+            });
+            if (!assignment) {
+                dewormingErrors.push(`El conejo ${rabbit.code}${rabbit.name ? ` — ${rabbit.name}` : ''} no está asignado a una jaula.`);
+                continue;
+            }
+
+            const lastDeworming = await dewormingRepository.findLastDewormingByRabbit(rabbitId);
+            if (lastDeworming) {
+                const lastDate = new Date(lastDeworming.dewormingDate);
+                const currentDate = new Date();
+                const daysSinceLast = Math.floor((currentDate - lastDate) / (1000 * 60 * 60 * 24));
+                
+                if (daysSinceLast < dewormingPeriod) {
+                    const daysRemaining = dewormingPeriod - daysSinceLast;
+                    dewormingErrors.push(
+                        `El conejo ${rabbit.code}${rabbit.name ? ` — ${rabbit.name}` : ''} no puede recibir desparasitación aún. ` +
+                        `Última aplicación: ${lastDate.toLocaleDateString('es-EC')}. ` +
+                        `Faltan ${daysRemaining} días para cumplir el período de desparasitación.`
+                    );
+                }
+            }
+        }
+
+        // Si hay errores, no registrar nada
+        if (dewormingErrors.length > 0) {
+            throw new AppError(dewormingErrors.join('\n'), 400);
+        }
+
+        // Si todos pasan la validación, registrar todos
+        const createdDewormings = [];
+        for (const rabbitId of rabbitIds) {
+            const deworming = await dewormingRepository.create({
+                rabbitId,
+                dewormingDate: new Date(),
+                galponId
+            });
+            createdDewormings.push(deworming);
+        }
+
+        return createdDewormings;
+    }
+
+    async getDewormings(galponId, profileId, page = 1, limit = 10) {
+        if (!galponId) return createPaginatedResponse([], page, limit, 0);
+
+        // Verificar que el usuario tiene acceso al galpón
+        const membership = await FarmMember.findOne({
+            where: { profileId, galponId, status: 'active' }
+        });
+        if (!membership) throw new AppError('No tienes acceso a este galpón.', 403);
+
+        const { limit: limitValue, offset, page: pageValue } = getPaginationParams(page, limit);
+        const dewormings = await dewormingRepository.findByGalponId(galponId, { limit: limitValue, offset });
+        const total = await dewormingRepository.countByGalponId(galponId);
+
+        return createPaginatedResponse(dewormings, pageValue, limitValue, total);
+    }
+
+    async getDewormingsByRabbit(rabbitId) {
+        return dewormingRepository.findByRabbitId(rabbitId);
+    }
+}
+
+module.exports = new DewormingService();

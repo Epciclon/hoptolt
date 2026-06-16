@@ -1,55 +1,35 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const cors = require('cors');
 
-// Importar rutas
-const cageRoutes = require('./routes/cageRoutes');
-const raceRoutes = require('./routes/raceRoutes');
-const rabbitRoutes = require('./routes/rabbitRoutes');
-const assignRabbitRoutes = require('./routes/assignRabbitRoutes');
-const matingRoutes = require('./routes/matingRoutes');
-const feedingRoutes = require('./routes/feedingRoutes');
-const vaccinationRoutes = require('./routes/vaccinationRoutes');
-const dewormingRoutes = require('./routes/dewormingRoutes');
-const growthRoutes = require('./routes/growthRoutes');
-const reportRoutes = require('./routes/reportRoutes');
-const authRoutes = require('./routes/authRoutes');
-
-// Importar middleware de seguridad
-const { authenticateToken } = require('./middleware/auth');
-const { 
-    apiLimiter, 
-    helmetConfig, 
-    securityLogger, 
-    inputSanitizer 
-} = require('./middleware/security');
-
 dotenv.config();
+
+const sequelize = require('./infrastructure/database/connection');
+require('./domain/models');
+const apiRoutes = require('./modules');
+const swaggerConfig = require('./infrastructure/docs/swagger');
+const { apiLimiter, helmetConfig, inputSanitizer } = require('./common/middlewares/security.middleware');
+const errorMiddleware = require('./common/middlewares/error.middleware');
+const createProfileSyncTrigger = require('./infrastructure/database/createProfileTrigger');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Validar variables de entorno críticas
-if (!process.env.JWT_SECRET) {
-    console.error('❌ JWT_SECRET no está definido en las variables de entorno');
+if (!process.env.DATABASE_URL) {
+    console.error('❌ DATABASE_URL no está definido en las variables de entorno');
     process.exit(1);
 }
 
-if (!process.env.MONGODB_URI) {
-    console.error('❌ MONGODB_URI no está definido en las variables de entorno');
-    process.exit(1);
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+    console.warn('⚠️  SUPABASE_URL o SUPABASE_ANON_KEY no están configurados. Las rutas protegidas no funcionarán correctamente.');
+    console.warn('   Configúralos en backend/.env → Supabase Dashboard → Project Settings → API');
 }
 
-// Configurar confianza en proxies (para obtener IP real)
 app.set('trust proxy', 1);
 
-// Middleware de seguridad
 app.use(helmetConfig);
-app.use(securityLogger);
 app.use(inputSanitizer);
 
-// Configuración de CORS mejorada
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     credentials: true,
@@ -58,115 +38,50 @@ app.use(cors({
     exposedHeaders: ['X-Total-Count', 'X-Page-Count']
 }));
 
-// Middleware básico
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Rate limiting para API
 app.use('/api', apiLimiter);
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-})
-.then(() => {
-    console.log('✅ MongoDB conectado exitosamente');
-})
-.catch(err => {
-    console.error('❌ Error de conexión a MongoDB:', err);
-    process.exit(1);
-});
+sequelize.authenticate()
+    .then(async () => {
+        console.log('✅ Supabase PostgreSQL conectado exitosamente');
+        
+        // Sincronización automática para aplicar cambios de modelos a la base de datos
+        await sequelize.sync({ alter: true });
+        
+        // Solo configuramos el trigger de sincronización de perfiles de Supabase Auth
+        await createProfileSyncTrigger();
+    })
+    .catch(err => {
+        console.error('❌ Error al inicializar la base de datos:', err);
+        process.exit(1);
+    });
 
-// Rutas de autenticación (públicas y protegidas)
-app.use('/api/auth', authRoutes);
+app.use('/api', apiRoutes);
 
-// Middleware de autenticación para rutas de la API (aplicar después de auth routes)
-// Comentado temporalmente para mantener compatibilidad con frontend existente
-// app.use('/api', authenticateToken);
-
-// Routes principales (sin autenticación por ahora para mantener compatibilidad)
-app.use('/api', cageRoutes);
-app.use('/api', raceRoutes);
-app.use('/api', rabbitRoutes);
-app.use('/api', assignRabbitRoutes);
-app.use('/api', matingRoutes);
-app.use('/api', feedingRoutes);
-app.use('/api', vaccinationRoutes);
-app.use('/api', dewormingRoutes);
-app.use('/api', growthRoutes);
-app.use('/api/reports', reportRoutes);
-
-// Ruta de health check
 app.get('/api/health', (req, res) => {
     res.json({
         success: true,
         message: 'Servidor funcionando correctamente',
         timestamp: new Date().toISOString(),
-        uptime: process.uptime()
+        uptime: process.uptime(),
+        database: 'Supabase Cloud'
     });
 });
 
-// Middleware de manejo de errores global
-app.use((err, req, res, next) => {
-    console.error('Error no capturado:', err);
-    
-    // Error de validación de MongoDB
-    if (err.name === 'ValidationError') {
-        const errors = Object.values(err.errors).map(e => e.message);
-        return res.status(400).json({
-            success: false,
-            message: 'Error de validación',
-            errors
-        });
-    }
-    
-    // Error de duplicado de MongoDB
-    if (err.code === 11000) {
-        const field = Object.keys(err.keyPattern)[0];
-        return res.status(400).json({
-            success: false,
-            message: `Ya existe un registro con este ${field}`
-        });
-    }
-    
-    // Error de JWT
-    if (err.name === 'JsonWebTokenError') {
-        return res.status(401).json({
-            success: false,
-            message: 'Token inválido'
-        });
-    }
-    
-    // Error de token expirado
-    if (err.name === 'TokenExpiredError') {
-        return res.status(401).json({
-            success: false,
-            message: 'Token expirado'
-        });
-    }
-    
-    // Error genérico
-    res.status(500).json({
-        success: false,
-        message: 'Error interno del servidor'
-    });
-});
+swaggerConfig(app);
 
-// Middleware para rutas no encontradas
 app.use('*', (req, res) => {
-    res.status(404).json({
-        success: false,
-        message: 'Ruta no encontrada'
-    });
+    res.status(404).json({ success: false, message: 'Ruta no encontrada' });
 });
 
-// Exportar app para Vercel
-module.exports = app;
+app.use(errorMiddleware);
 
-// Start the server solo localmente
+module.exports = { app, sequelize };
+
 if (require.main === module) {
     app.listen(PORT, () => {
-        console.log(`Server is running on http://localhost:${PORT}`);
+        console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+        console.log(`🌐 Base de datos: Supabase Cloud`);
     });
 }
