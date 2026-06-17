@@ -19,6 +19,7 @@ export function ReproductionCatalog({ onSuccess }: ReproductionCatalogProps) {
   const [deleting, setDeleting] = useState(false);
   const [editingReproduction, setEditingReproduction] = useState<Reproduction | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
   const formatDateTime = (dateString: string) => {
     if (!dateString) return '';
@@ -68,74 +69,87 @@ export function ReproductionCatalog({ onSuccess }: ReproductionCatalogProps) {
         <p className="text-sm text-slate-500">No hay montas registradas.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {reproductions.map((reproduction) => (
-            <div
-              key={reproduction.id}
-              className="border rounded-lg overflow-hidden bg-white"
-            >
-              <div className="p-3 border-b border-slate-200 bg-slate-50">
-                <h4 className="font-semibold text-slate-800">
-                  Jaula #{reproduction.cageNumber || 'N/A'} — {capitalizeType(reproduction.cageType || 'Reproducción')}
-                </h4>
-              </div>
-              <div className="p-3 space-y-2">
-                <div>
-                  <p className="text-sm font-medium text-slate-800">
-                    {reproduction.femaleCode}{reproduction.femaleName ? ` — ${reproduction.femaleName}` : ''}
-                  </p>
+          {reproductions.map((reproduction) => {
+            const isExpanded = expandedId === reproduction.id;
+            return (
+              <div
+                key={reproduction.id}
+                onClick={() => setExpandedId(isExpanded ? null : reproduction.id)}
+                className={`border rounded-lg overflow-hidden transition-all duration-150 cursor-pointer ${
+                  isExpanded ? 'border-primary-500 bg-primary-50 ring-1 ring-primary-500 shadow-sm' : 'bg-white border-slate-200 hover:bg-slate-50/50'
+                }`}
+              >
+                <div className={`p-3 border-b ${
+                  isExpanded ? 'border-primary-300 bg-primary-100' : 'border-slate-200 bg-slate-50'
+                }`}>
+                  <h4 className="font-semibold text-slate-800 text-sm">
+                    Jaula #{reproduction.cageNumber || 'N/A'} — {capitalizeType(reproduction.cageType || 'Reproducción')}
+                  </h4>
                 </div>
-                {reproduction.maleCode && (
-                  <div className="pt-2 border-t border-slate-100">
-                    <p className="text-xs font-semibold text-slate-600">
-                      Última pareja:
-                    </p>
-                    <p className="text-xs text-slate-600 mt-1">
-                      {reproduction.maleCode}{reproduction.maleName ? ` — ${reproduction.maleName}` : ''}
+                <div className="p-3 space-y-2">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">
+                      {reproduction.femaleCode}{reproduction.femaleName ? ` — ${reproduction.femaleName}` : ''}
                     </p>
                   </div>
-                )}
-                <div className="pt-2 border-t border-slate-100">
-                  <p className="text-xs font-semibold text-slate-600">
-                    Fecha de monta:
-                  </p>
-                  <p className="text-xs text-slate-600 mt-1">
-                    {formatDateTime(reproduction.mountDate)}
-                  </p>
-                </div>
-                <div className="pt-2 border-t border-slate-100">
-                  <p className="text-xs font-semibold text-slate-600">
-                    Fecha estimada de parto:
-                  </p>
-                  <p className="text-xs text-slate-600 mt-1">
-                    {formatDateTime(reproduction.estimatedBirthDate)}
-                  </p>
-                </div>
-                <div className="flex gap-2 pt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    icon={<Pencil size={14} />}
-                    onClick={() => {
-                      setEditingReproduction(reproduction);
-                      setShowEditModal(true);
-                    }}
-                  >
-                    Editar
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="danger"
-                    size="sm"
-                    icon={<Trash2 size={14} />}
-                    onClick={() => setToDelete(reproduction)}
-                  >
-                    Eliminar
-                  </Button>
+                  {isExpanded && reproduction.maleCode && (
+                    <div className="pt-2 border-t border-slate-100 animate-fade-in">
+                      <p className="text-xs font-semibold text-slate-600">
+                        Última pareja:
+                      </p>
+                      <p className="text-xs text-slate-600 mt-1">
+                        {reproduction.maleCode}{reproduction.maleName ? ` — ${reproduction.maleName}` : ''}
+                      </p>
+                    </div>
+                  )}
+                  <div className="pt-2 border-t border-slate-100">
+                    <p className="text-xs font-semibold text-slate-600">
+                      Fecha de monta:
+                    </p>
+                    <p className="text-xs text-slate-600 mt-1">
+                      {formatDateTime(reproduction.mountDate)}
+                    </p>
+                  </div>
+                  <div className="pt-2 border-t border-slate-100">
+                    <p className="text-xs font-semibold text-slate-600">
+                      Fecha estimada de parto:
+                    </p>
+                    <p className="text-xs text-slate-600 mt-1">
+                      {formatDateTime(reproduction.estimatedBirthDate)}
+                    </p>
+                  </div>
+                  {isExpanded && (
+                    <div 
+                      className="flex gap-2 pt-3 border-t border-slate-100 mt-2 animate-fade-in"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        icon={<Pencil size={14} />}
+                        onClick={() => {
+                          setEditingReproduction(reproduction);
+                          setShowEditModal(true);
+                        }}
+                      >
+                        Editar
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="danger"
+                        size="sm"
+                        icon={<Trash2 size={14} />}
+                        onClick={() => setToDelete(reproduction)}
+                      >
+                        Eliminar
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

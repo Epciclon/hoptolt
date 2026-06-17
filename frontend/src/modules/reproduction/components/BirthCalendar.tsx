@@ -227,8 +227,8 @@ export function BirthCalendar() {
                 {selectedEntries.map(entry => {
                   const isHighlighted = reproductionIdParam && String(entry.id) === reproductionIdParam;
                   return (
-                    <div 
-                      key={entry.id} 
+                    <div
+                      key={entry.id}
                       className={`border rounded-lg p-3 hover:shadow-sm transition-all
                         ${isHighlighted ? 'border-primary-500 bg-primary-50/30 ring-1 ring-primary-500 shadow-sm' : 'border-slate-200 bg-white'}
                       `}

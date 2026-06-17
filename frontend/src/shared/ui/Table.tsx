@@ -34,7 +34,7 @@ export function Table<T>({
 }: TableProps<T>) {
   return (
     <div className={cn('w-full overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-card', className)}>
-      <table className="w-full border-collapse text-sm">
+      <table className="w-full min-w-[600px] border-collapse text-sm">
         <thead>
           <tr className="bg-sidebar text-white">
             {columns.map((col) => (

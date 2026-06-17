@@ -7,7 +7,7 @@ import {
   Home, Box, Dna, Rabbit, Network, ArrowLeftRight,
   Utensils, Syringe, Pill, TrendingUp, Sparkles, Skull,
   Heart, Users, FileText, BookOpen, Building2, ChevronDown,
-  LogOut, User,
+  LogOut, User, Menu, X, ChevronLeft,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
@@ -30,16 +30,16 @@ const navigation: NavItem[] = [
     name: 'Gestionar Crianza',
     icon: Rabbit,
     children: [
-      { name: 'Jaulas',              href: '/dashboard/cages' },
-      { name: 'Razas',               href: '/dashboard/races' },
-      { name: 'Conejos',             href: '/dashboard/rabbits' },
-      { name: 'Árbol Genealógico',   href: '/dashboard/genealogy' },
-      { name: 'Asignar Jaula',       href: '/dashboard/assignments' },
-      { name: 'Alimentación',        href: '/dashboard/feeding' },
-      { name: 'Vacunación',          href: '/dashboard/vaccination' },
-      { name: 'Desparasitación',     href: '/dashboard/deworming' },
-      { name: 'Limpieza',            href: '/dashboard/cleaning' },
-      { name: 'Mortalidad',          href: '/dashboard/mortality' },
+      { name: 'Jaulas', href: '/dashboard/cages' },
+      { name: 'Razas', href: '/dashboard/races' },
+      { name: 'Conejos', href: '/dashboard/rabbits' },
+      { name: 'Árbol Genealógico', href: '/dashboard/genealogy' },
+      { name: 'Asignar Jaula', href: '/dashboard/assignments' },
+      { name: 'Alimentación', href: '/dashboard/feeding' },
+      { name: 'Vacunación', href: '/dashboard/vaccination' },
+      { name: 'Desparasitación', href: '/dashboard/deworming' },
+      { name: 'Limpieza', href: '/dashboard/cleaning' },
+      { name: 'Mortalidad', href: '/dashboard/mortality' },
       { name: 'Reproducción y Parto', href: '/dashboard/reproduction' },
     ],
   },
@@ -54,13 +54,13 @@ const navigation: NavItem[] = [
     name: 'Reportes',
     icon: FileText,
     children: [
-      { name: 'Reporte Alimentación',     href: '/dashboard/reports/feeding' },
-      { name: 'Reporte Vacunación',       href: '/dashboard/reports/vaccination' },
-      { name: 'Reporte Desparasitación',  href: '/dashboard/reports/deworming' },
+      { name: 'Reporte Alimentación', href: '/dashboard/reports/feeding' },
+      { name: 'Reporte Vacunación', href: '/dashboard/reports/vaccination' },
+      { name: 'Reporte Desparasitación', href: '/dashboard/reports/deworming' },
     ],
   },
   { name: 'Guía de Saberes', href: '/dashboard/knowledge', icon: BookOpen },
-  { name: 'Galpones',         href: '/dashboard/galpones',  icon: Building2 },
+  { name: 'Galpones', href: '/dashboard/galpones', icon: Building2 },
 ];
 
 const childIcons: Record<string, React.ElementType> = {
@@ -88,7 +88,12 @@ const menuToPermissionMap: Record<string, string> = {
   'Equipo de Trabajo': 'farmMembers',
 };
 
-export function Sidebar() {
+interface SidebarProps {
+  collapsed: boolean;
+  onToggle: () => void;
+}
+
+export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const [openGroups, setOpenGroups] = useState<string[]>(['Gestionar Crianza']);
   const { hasPermission, role, loading } = usePermissions();
@@ -110,7 +115,7 @@ export function Sidebar() {
     return items.filter(item => {
       // Si es owner, mostrar todo
       if (role === 'owner') return true;
-      
+
       // Items que siempre se muestran
       if (item.name === 'Inicio' || item.name === 'Galpones' || item.name === 'Guía de Saberes') {
         return true;
@@ -124,7 +129,7 @@ export function Sidebar() {
           if (!permissionModule) return true;
           return hasPermission(permissionModule);
         });
-        
+
         // Si al menos un hijo tiene permiso, mostrar el padre
         return filteredChildren.length > 0;
       }
@@ -152,12 +157,24 @@ export function Sidebar() {
   const filteredNavigation = loading ? navigation : filterNavigation(navigation);
 
   return (
-    <aside className="fixed left-0 top-0 h-full w-60 bg-sidebar flex flex-col z-40 overflow-hidden">
-      <div className="px-5 py-5 border-b border-white/10">
-        <h1 className="text-primary-400 font-bold text-base tracking-widest uppercase">
-          Hoptolt
-        </h1>
-        <p className="text-slate-400 text-sm mt-0.5">Sistema de gestión de crianza</p>
+    <aside className={cn(
+      "fixed left-0 top-0 h-full w-60 bg-sidebar flex flex-col z-40 overflow-hidden transition-all duration-300",
+      collapsed ? "-translate-x-full" : "translate-x-0"
+    )}>
+      <div className="px-5 py-5 border-b border-white/10 flex items-center justify-between">
+        <div>
+          <h1 className="text-primary-400 font-bold text-base tracking-widest uppercase">
+            Hoptolt
+          </h1>
+          <p className="text-slate-400 text-xs mt-0.5">Sistema de gestión de crianza</p>
+        </div>
+        <button
+          onClick={onToggle}
+          className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors flex items-center justify-center"
+          title="Ocultar menú"
+        >
+          <Menu size={20} />
+        </button>
       </div>
 
       <nav className="flex-1 overflow-y-auto py-4 px-3">
