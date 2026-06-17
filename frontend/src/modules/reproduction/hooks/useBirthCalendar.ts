@@ -1,54 +1,50 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { reproductionService } from '../services/reproduction.service';
 import type { Reproduction } from '../types/reproduction.types';
 
 export function useBirthCalendar() {
-  const [calendar, setCalendar] = useState<Record<string, Reproduction[]>>({});
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [activeParams, setActiveParams] = useState<{ year: number; month: number } | null>(null);
+
+  // Query: Fetch Calendar
+  const {
+    data: calendar = {} as Record<string, any[]>,
+    isLoading: loading,
+    error: queryError,
+  } = useQuery({
+    queryKey: ['birthCalendar', activeParams?.year, activeParams?.month],
+    queryFn: () => {
+      if (activeParams) {
+        return reproductionService.getCalendar(activeParams.year, activeParams.month);
+      }
+      return Promise.resolve({});
+    },
+    enabled: !!activeParams,
+  });
 
   const fetchCalendar = useCallback(async (year: number, month: number) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await reproductionService.getCalendar(year, month);
-      setCalendar(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar calendario de partos');
-    } finally {
-      setLoading(false);
-    }
+    setActiveParams({ year, month });
   }, []);
 
   const fetchByDay = useCallback(async (year: number, month: number, day: number) => {
     try {
-      setLoading(true);
-      setError(null);
-      const data = await reproductionService.getByDay(year, month, day);
-      return data;
+      return await reproductionService.getByDay(year, month, day);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar partos del día');
       return [];
-    } finally {
-      setLoading(false);
     }
   }, []);
 
   const fetchById = useCallback(async (id: number) => {
     try {
-      setLoading(true);
-      setError(null);
-      const data = await reproductionService.getById(id);
-      return data;
+      return await reproductionService.getById(id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar detalles de parto');
       return null;
-    } finally {
-      setLoading(false);
     }
   }, []);
+
+  const error = queryError ? (queryError as Error).message : null;
 
   return { calendar, loading, error, fetchCalendar, fetchByDay, fetchById };
 }

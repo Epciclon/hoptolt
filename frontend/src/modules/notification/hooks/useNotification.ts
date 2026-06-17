@@ -1,97 +1,96 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notificationService } from '../services/notification.service';
 import type { Notification, CreateNotificationDTO } from '../types/notification.types';
+import { createClient } from '@/utils/supabase/client';
+import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 
-export function useNotifications() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export function useNotifications(options?: { limit?: number; offset?: number; unreadOnly?: boolean }) {
+  const queryClient = useQueryClient();
+  const { user } = useAuthContext();
+  const supabase = createClient();
 
-  const fetchNotifications = useCallback(async (options?: { limit?: number; offset?: number; unreadOnly?: boolean }) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await notificationService.getAll(options);
-      setNotifications(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar notificaciones.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // Query: Fetch Notifications
+  const {
+    data: notifications = [],
+    isLoading: loading,
+    error: queryError,
+    refetch: fetchNotifications,
+  } = useQuery({
+    queryKey: ['notifications', options],
+    queryFn: () => notificationService.getAll(options),
+    enabled: !!user,
+  });
 
-  const fetchUnreadCount = useCallback(async () => {
-    try {
-      const result = await notificationService.getUnreadCount();
-      setUnreadCount(result.count);
-    } catch (err) {
-      console.error('Error al cargar contador de no leídas:', err);
-    }
-  }, []);
+  // Query: Unread Count
+  const { data: unreadCountData } = useQuery({
+    queryKey: ['notifications', 'unreadCount'],
+    queryFn: () => notificationService.getUnreadCount(),
+    enabled: !!user,
+  });
+  
+  const unreadCount = unreadCountData?.count || 0;
 
-  const markAsRead = useCallback(async (id: number) => {
-    try {
-      await notificationService.markAsRead(id);
-      setNotifications(prev =>
-        prev.map(n => (n.id === id ? { ...n, read: true } : n))
-      );
-      setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al marcar notificación como leída.');
-    }
-  }, []);
-
-  const markAllAsRead = useCallback(async () => {
-    try {
-      await notificationService.markAllAsRead();
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-      setUnreadCount(0);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al marcar todas como leídas.');
-    }
-  }, []);
-
-  const deleteNotification = useCallback(async (id: number) => {
-    try {
-      await notificationService.delete(id);
-      setNotifications(prev => prev.filter(n => n.id !== id));
-      const deleted = notifications.find(n => n.id === id);
-      if (deleted && !deleted.read) {
-        setUnreadCount(prev => Math.max(0, prev - 1));
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al eliminar notificación.');
-    }
-  }, [notifications]);
-
-  const addNotification = useCallback(async (data: CreateNotificationDTO) => {
-    try {
-      const newNotification = await notificationService.create(data);
-      setNotifications(prev => [newNotification, ...prev]);
-      setUnreadCount(prev => prev + 1);
-    } catch (err) {
-      console.error('Error al crear notificación:', err);
-    }
-  }, []);
-
-  // Cargar notificaciones y contador al montar
+  // Realtime Subscription
   useEffect(() => {
-    fetchNotifications({ limit: 20 });
-    fetchUnreadCount();
-  }, [fetchNotifications, fetchUnreadCount]);
+    if (!user) return;
+
+    const channel = supabase.channel('realtime_notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+          filter: `userId=eq.${user.id}`,
+        },
+        () => {
+          // Invalidate queries so React Query fetches the new data automatically
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, queryClient, supabase]);
+
+  // Mutation: Mark as Read
+  const markAsReadMutation = useMutation({
+    mutationFn: (id: number) => notificationService.markAsRead(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+  });
+
+  // Mutation: Mark all as Read
+  const markAllAsReadMutation = useMutation({
+    mutationFn: () => notificationService.markAllAsRead(),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+  });
+
+  // Mutation: Delete
+  const deleteNotificationMutation = useMutation({
+    mutationFn: (id: number) => notificationService.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+  });
+
+  // Mutation: Add
+  const addNotificationMutation = useMutation({
+    mutationFn: (data: CreateNotificationDTO) => notificationService.create(data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+  });
 
   return {
     notifications,
     unreadCount,
     loading,
-    error,
+    error: queryError ? (queryError as Error).message : null,
     fetchNotifications,
-    markAsRead,
-    markAllAsRead,
-    deleteNotification,
-    addNotification
+    markAsRead: markAsReadMutation.mutateAsync,
+    markAllAsRead: markAllAsReadMutation.mutateAsync,
+    deleteNotification: deleteNotificationMutation.mutateAsync,
+    addNotification: addNotificationMutation.mutateAsync,
   };
 }

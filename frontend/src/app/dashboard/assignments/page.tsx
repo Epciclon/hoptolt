@@ -13,7 +13,11 @@ export default function AssignmentsPage() {
 
   const openModal = () => setModal(true);
   const closeModal = () => setModal(false);
-  const handleSuccess = () => { closeModal(); setRefreshKey((k) => k + 1); };
+
+  const handleSuccess = () => {
+    setRefreshKey(prev => prev + 1);
+    closeModal();
+  };
 
   return (
     <GalponGuard>
@@ -25,7 +29,10 @@ export default function AssignmentsPage() {
             <Button icon={<Plus size={16} />} onClick={openModal}>Asignar Conejo</Button>
           }
         />
-        <AssignmentTable key={refreshKey} />
+        
+        <div className="p-6">
+          <AssignmentTable key={refreshKey} />
+        </div>
 
         <Dialog
           open={modal}

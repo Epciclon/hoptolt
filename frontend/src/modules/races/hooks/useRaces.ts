@@ -1,36 +1,44 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { raceService } from '../services/race.service';
 import type { Race } from '../types/race.types';
 
 export function useRaces() {
-  const [races, setRaces] = useState<Race[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const queryClient = useQueryClient();
 
-  const loadRaces = useCallback(async () => {
+  // Query: Fetch Races
+  const {
+    data: races = [],
+    isLoading: loading,
+    error: queryError,
+    refetch: loadRaces,
+  } = useQuery({
+    queryKey: ['races'],
+    queryFn: () => raceService.getAll(),
+  });
+
+  // Mutation: Delete Race
+  const deleteRaceMutation = useMutation({
+    mutationFn: (id: number) => raceService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['races'] });
+    },
+  });
+
+  const deleteRace = async (id: number): Promise<{ success: boolean; error?: string }> => {
     try {
-      setLoading(true);
-      const data = await raceService.getAll();
-      setRaces(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar razas');
-    } finally {
-      setLoading(false);
+      await deleteRaceMutation.mutateAsync(id);
+      return { success: true };
+    } catch (err: any) {
+      console.error(err);
+      return { success: false, error: err.response?.data?.message || err.message || 'Error al eliminar la raza' };
     }
-  }, []);
+  };
 
-  useEffect(() => {
-    loadRaces();
-  }, [loadRaces]);
-
-  const deleteRace = useCallback(async (id: number) => {
-    try {
-      await raceService.delete(id);
-      setRaces(races.filter(r => r.id !== id));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al eliminar raza');
-    }
-  }, [races]);
-
-  return { races, loading, error, loadRaces, deleteRace };
+  return {
+    races,
+    loading,
+    error: queryError ? (queryError as Error).message : '',
+    loadRaces,
+    deleteRace,
+  };
 }

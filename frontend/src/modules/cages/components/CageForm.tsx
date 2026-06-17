@@ -7,7 +7,9 @@ import { useState, useEffect } from 'react';
 import { Input, Select, Button, Alert } from '@/shared/ui';
 import { cageService } from '../services/cage.service';
 import { useActiveGalpon } from '@/modules/galpones/hooks/useActiveGalpon';
+import { useToast } from '@/shared/contexts/ToastContext';
 import type { Cage } from '../types/cage.types';
+import { useQueryClient } from '@tanstack/react-query';
 
 const schema = z.object({
   number: z.coerce.number().int().min(1).max(999),
@@ -32,9 +34,10 @@ interface CageFormProps {
 }
 
 export function CageForm({ defaultValues, cageId, mode, onSuccess, onCancel }: CageFormProps) {
-  const [serverError, setServerError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
+
   const { activeGalpon } = useActiveGalpon();
+  const { showToast } = useToast();
+  const queryClient = useQueryClient();
 
   const { register, handleSubmit, formState: { errors, isSubmitting }, watch, setValue } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -55,35 +58,32 @@ export function CageForm({ defaultValues, cageId, mode, onSuccess, onCancel }: C
   }, [selectedType, setValue]);
 
   const onSubmit = async (values: FormValues) => {
-    setServerError('');
-    setSuccessMsg('');
+
     try {
       if (mode === 'create') {
         if (!activeGalpon) {
-          setServerError('Debes seleccionar un galpón activo antes de crear una jaula.');
+          showToast('Debes seleccionar un galpón activo antes de crear una jaula.', 'error');
           return;
         }
         await cageService.create({ ...values, galponId: activeGalpon.id });
-        setSuccessMsg('Jaula registrada exitosamente.');
+        showToast('Jaula registrada exitosamente.', 'success');
       } else {
         if (!activeGalpon) {
-          setServerError('Debes seleccionar un galpón activo antes de editar una jaula.');
+          showToast('Debes seleccionar un galpón activo antes de editar una jaula.', 'error');
           return;
         }
         await cageService.update(cageId!, { type: values.type, capacity: values.capacity, galponId: activeGalpon.id });
-        setSuccessMsg('Jaula actualizada exitosamente.');
+        showToast('Jaula actualizada exitosamente.', 'success');
       }
-      setTimeout(() => onSuccess?.(), 1000);
+      queryClient.invalidateQueries({ queryKey: ['cages'] });
+      onSuccess?.();
     } catch (err) {
-      setServerError(err instanceof Error ? err.message : 'Error inesperado.');
+      showToast(err instanceof Error ? err.message : 'Error inesperado.', 'error');
     }
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      {serverError && <Alert variant="error" message={serverError} onClose={() => setServerError('')} />}
-      {successMsg && <Alert variant="success" message={successMsg} />}
-
       {mode === 'edit' ? (
         <div>
           <label className="block text-sm font-medium text-slate-600 mb-1">Número de Jaula</label>

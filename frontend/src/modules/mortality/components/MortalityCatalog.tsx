@@ -67,8 +67,7 @@ export function MortalityCatalog({ onSuccess }: MortalityCatalogProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-slate-800">Conejos vivos con jaula asignada</h3>
+      <div className="flex justify-end">
         {assignedRabbits.length > 0 && (
           <Button type="button" variant="outline" size="sm" onClick={selectAllRabbits}>
             {selectedRabbitIds.length === assignedRabbits.length ? 'Deseleccionar todos' : 'Seleccionar todos'}

@@ -5,11 +5,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState, useEffect } from 'react';
 import { Button, Alert, Input, Dialog } from '@/shared/ui';
+import { useToast } from '@/shared/contexts/ToastContext';
 import { genealogyService } from '../services/genealogy.service';
 import { rabbitService } from '@/modules/rabbits/services/rabbit.service';
 import type { Rabbit } from '@/modules/rabbits/types/rabbit.types';
 import type { Genealogy, UpdateGenealogyDto } from '../types/genealogy.types';
 import { X } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 
 const schema = z.object({
   rabbitId: z.number().min(1, 'El conejo es obligatorio'),
@@ -29,12 +31,13 @@ interface GenealogyFormProps {
 }
 
 export function GenealogyForm({ onSuccess, onCancel, editData }: GenealogyFormProps) {
-  const [serverError, setServerError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
+
+  const { showToast } = useToast();
   const [rabbits, setRabbits] = useState<Rabbit[]>([]);
   const [potentialFathers, setPotentialFathers] = useState<Rabbit[]>([]);
   const [potentialMothers, setPotentialMothers] = useState<Rabbit[]>([]);
   const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   // Search states
   const [rabbitSearch, setRabbitSearch] = useState('');
@@ -100,15 +103,14 @@ export function GenealogyForm({ onSuccess, onCancel, editData }: GenealogyFormPr
       setPotentialFathers(fathers);
       setPotentialMothers(mothers);
     } catch (err) {
-      setServerError(err instanceof Error ? err.message : 'Error al cargar conejos');
+      showToast(err instanceof Error ? err.message : 'Error al cargar conejos', 'error');
     } finally {
       setLoading(false);
     }
   };
 
   const onSubmit = async (values: FormValues) => {
-    setServerError('');
-    setSuccessMsg('');
+
     try {
       if (editData) {
         const payload: UpdateGenealogyDto = {
@@ -139,17 +141,16 @@ export function GenealogyForm({ onSuccess, onCancel, editData }: GenealogyFormPr
           setShowWarningModal(true);
           return;
         }
-        setSuccessMsg('Relación genealógica actualizada exitosamente.');
-        setTimeout(() => {
-          onSuccess?.();
-          reset();
-          setSelectedRabbit(null);
-          setSelectedFather(null);
-          setSelectedMother(null);
-          setRabbitSearch('');
-          setFatherSearch('');
-          setMotherSearch('');
-        }, 1000);
+        showToast('Relación genealógica actualizada exitosamente.', 'success');
+        queryClient.invalidateQueries({ queryKey: ['genealogies'] });
+        onSuccess?.();
+        reset();
+        setSelectedRabbit(null);
+        setSelectedFather(null);
+        setSelectedMother(null);
+        setRabbitSearch('');
+        setFatherSearch('');
+        setMotherSearch('');
       } else {
         const result = await genealogyService.register({
           rabbitId: values.rabbitId,
@@ -179,40 +180,38 @@ export function GenealogyForm({ onSuccess, onCancel, editData }: GenealogyFormPr
           setShowWarningModal(true);
           return;
         }
-        setSuccessMsg('Relación genealógica registrada exitosamente.');
-        setTimeout(() => {
-          onSuccess?.();
-          reset();
-          setSelectedRabbit(null);
-          setSelectedFather(null);
-          setSelectedMother(null);
-          setRabbitSearch('');
-          setFatherSearch('');
-          setMotherSearch('');
-        }, 1000);
+        showToast('Relación genealógica registrada exitosamente.', 'success');
+        queryClient.invalidateQueries({ queryKey: ['genealogies'] });
+        onSuccess?.();
+        reset();
+        setSelectedRabbit(null);
+        setSelectedFather(null);
+        setSelectedMother(null);
+        setRabbitSearch('');
+        setFatherSearch('');
+        setMotherSearch('');
       }
     } catch (err) {
-      setServerError(err instanceof Error ? err.message : 'Error inesperado.');
+      showToast(err instanceof Error ? err.message : 'Error inesperado.', 'error');
     }
   };
 
   const handleConfirmWarning = () => {
     setShowWarningModal(false);
-    setSuccessMsg(editData ? 'Relación genealógica actualizada exitosamente.' : 'Relación genealógica registrada exitosamente.');
-    setTimeout(() => {
-      onSuccess?.();
-      reset();
-      setSelectedRabbit(null);
-      setSelectedFather(null);
-      setSelectedMother(null);
-      setRabbitSearch('');
-      setFatherSearch('');
-      setMotherSearch('');
-      setWarningMessage('');
-      setWarningDetails([]);
-      setConsequenceExplanation('');
-      setPendingSubmit(null);
-    }, 1000);
+    showToast(editData ? 'Relación genealógica actualizada exitosamente.' : 'Relación genealógica registrada exitosamente.', 'success');
+    queryClient.invalidateQueries({ queryKey: ['genealogies'] });
+    onSuccess?.();
+    reset();
+    setSelectedRabbit(null);
+    setSelectedFather(null);
+    setSelectedMother(null);
+    setRabbitSearch('');
+    setFatherSearch('');
+    setMotherSearch('');
+    setWarningMessage('');
+    setWarningDetails([]);
+    setConsequenceExplanation('');
+    setPendingSubmit(null);
   };
 
   const handleCancelWarning = () => {
@@ -278,8 +277,6 @@ export function GenealogyForm({ onSuccess, onCancel, editData }: GenealogyFormPr
   return (
     <>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-        {serverError && <Alert variant="error" message={serverError} onClose={() => setServerError('')} />}
-        {successMsg && <Alert variant="success" message={successMsg} />}
 
         <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-800">
           <strong>Nota:</strong> No es necesario agregar ambos progenitores. Puedes registrar solo el padre, solo la madre, o ambos.

@@ -11,7 +11,10 @@ const Race = sequelize.define('Race', {
         type: DataTypes.STRING,
         allowNull: false,
         validate: {
-            len: [2, 100],
+            len: {
+                args: [2, 100],
+                msg: 'El nombre de la raza debe tener entre 2 y 100 caracteres'
+            },
             notEmpty: { msg: 'El nombre de la raza es obligatorio' }
         }
     },
@@ -19,7 +22,10 @@ const Race = sequelize.define('Race', {
         type: DataTypes.TEXT,
         allowNull: false,
         validate: {
-            len: [5, 150],
+            len: {
+                args: [5, 150],
+                msg: 'La descripción de la raza debe tener entre 5 y 150 caracteres'
+            },
             notEmpty: { msg: 'La descripción de la raza es obligatoria' }
         }
     },

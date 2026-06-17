@@ -41,8 +41,9 @@ export default function UsersPage() {
 
   useEffect(() => {
     if (activeGalpon && isOwner) {
-      fetchWorkers(activeGalpon.id);
-      fetchByGalpon(activeGalpon.id);
+      // React Query handles fetching automatically via useQuery when activeGalpon changes.
+      // We don't need to manually pass the ID to a refetch function anymore.
+      // If we wanted to force refetch, we would call fetchWorkers() without arguments.
     }
   }, [activeGalpon?.id, isOwner]);
 
@@ -83,7 +84,7 @@ export default function UsersPage() {
     const success = await updateWorker(workerToEdit.id, data);
     if (success) {
       showToast('Trabajador actualizado exitosamente', 'success');
-      fetchWorkers(activeGalpon!.id);
+      fetchWorkers();
     }
   };
 
@@ -243,7 +244,7 @@ export default function UsersPage() {
         open={!!workerToView}
         onClose={() => setWorkerToView(null)}
         worker={workerToView}
-        fetchWorkerById={farmMemberService.getWorkerById}
+        fetchWorkerById={farmMemberService.getWorkerById as any}
         onEdit={(worker) => {
           setWorkerToView(null);
           setWorkerToEdit(worker as any);

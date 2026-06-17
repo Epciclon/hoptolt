@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
-import { Table, Button, Alert, ConfirmDialog, Badge } from '@/shared/ui';
+import { Table, Button, ConfirmDialog, Badge } from '@/shared/ui';
 import type { Column } from '@/shared/ui/Table';
 import { useRabbits } from '../hooks/useRabbits';
+import { useToast } from '@/shared/contexts/ToastContext';
 import type { Rabbit } from '../types/rabbit.types';
 
 interface RabbitTableProps {
@@ -13,15 +14,21 @@ interface RabbitTableProps {
 
 export function RabbitTable({ onEdit }: RabbitTableProps) {
   const { rabbits, loading, error, deleteRabbit } = useRabbits();
+  const { showToast } = useToast();
   const [toDelete, setToDelete] = useState<Rabbit | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const handleConfirmDelete = async () => {
     if (!toDelete || !toDelete.id) return;
     setDeleting(true);
-    await deleteRabbit(toDelete.id);
+    const { success, error: deleteError } = await deleteRabbit(toDelete.id);
     setDeleting(false);
     setToDelete(null);
+    if (success) {
+      showToast(`Conejo "${toDelete.code}" eliminado correctamente.`, 'success');
+    } else {
+      showToast(deleteError || 'Error al eliminar el conejo.', 'error');
+    }
   };
 
   const columns: Column<Rabbit>[] = [
@@ -73,7 +80,6 @@ export function RabbitTable({ onEdit }: RabbitTableProps) {
 
   return (
     <>
-      {error && <Alert variant="error" message={error} className="mb-4" />}
       <Table<Rabbit>
         columns={columns}
         data={rabbits}

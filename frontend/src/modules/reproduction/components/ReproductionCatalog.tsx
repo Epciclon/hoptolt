@@ -2,10 +2,11 @@
 
 import { useReproduction } from '../hooks/useReproduction';
 import type { Reproduction } from '../types/reproduction.types';
-import { Button, Alert, ConfirmDialog, Dialog } from '@/shared/ui';
+import { Button, ConfirmDialog, Dialog } from '@/shared/ui';
 import { useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
 import { ReproductionForm } from './ReproductionForm';
+import { useToast } from '@/shared/contexts/ToastContext';
 
 interface ReproductionCatalogProps {
   onSuccess?: () => void;
@@ -13,7 +14,7 @@ interface ReproductionCatalogProps {
 
 export function ReproductionCatalog({ onSuccess }: ReproductionCatalogProps) {
   const { reproductions, loading, deleteReproduction, fetchReproductions } = useReproduction();
-  const [error, setError] = useState('');
+  const { showToast } = useToast();
   const [toDelete, setToDelete] = useState<Reproduction | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [editingReproduction, setEditingReproduction] = useState<Reproduction | null>(null);
@@ -50,9 +51,10 @@ export function ReproductionCatalog({ onSuccess }: ReproductionCatalogProps) {
     
     if (success) {
       setToDelete(null);
+      showToast('Monta eliminada correctamente.', 'success');
       onSuccess?.();
     } else {
-      setError('Error al eliminar la monta.');
+      showToast('Error al eliminar la monta.', 'error');
     }
   };
 
@@ -62,10 +64,6 @@ export function ReproductionCatalog({ onSuccess }: ReproductionCatalogProps) {
 
   return (
     <>
-      {error && (
-        <Alert variant="error" message={error} onClose={() => setError('')} className="mb-4" />
-      )}
-
       {reproductions.length === 0 ? (
         <p className="text-sm text-slate-500">No hay montas registradas.</p>
       ) : (

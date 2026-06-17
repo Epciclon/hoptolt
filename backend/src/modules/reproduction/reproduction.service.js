@@ -42,7 +42,11 @@ class ReproductionService {
 
         const activeMount = await reproductionRepository.findActiveMountByFemaleId(femaleId);
         if (activeMount) {
-            throw new AppError(`La coneja ${female.code}${female.name ? ` — ${female.name}` : ''} ya tiene una monta activa con fecha estimada de parto: ${activeMount.estimatedBirthDate.toLocaleDateString('es-EC')}.`, 400);
+            const ed = activeMount.estimatedBirthDate;
+            const formattedDate = typeof ed === 'string' && ed.includes('-') 
+                ? ed.split('-').reverse().join('/') 
+                : new Date(ed).toLocaleDateString('es-EC');
+            throw new AppError(`La coneja ${female.code}${female.name ? ` — ${female.name}` : ''} ya tiene una monta activa con fecha estimada de parto: ${formattedDate}.`, 400);
         }
 
         const mountDateObj = new Date(mountDate);

@@ -5,7 +5,7 @@ import { useAuth } from '@/modules/auth/hooks/useAuth';
 import { authService } from '@/modules/auth/services/auth.service';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { Card, Button, Input } from '@/shared/ui';
-import { User, Lock, Trash2, Eye, EyeOff } from 'lucide-react';
+import { User, Lock, Trash2, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function ProfilePage() {

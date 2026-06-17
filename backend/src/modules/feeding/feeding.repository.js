@@ -21,6 +21,7 @@ class FeedingRepository {
     async findByGalponId(galponId, options = {}) {
         return Feeding.findAll({
             where: { galponId },
+            order: [['feedingDate', 'DESC']],
             ...options
         });
     }

@@ -1,63 +1,60 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dewormingService } from '../services/deworming.service';
 import { assignmentService } from '@/modules/assignments/services/assignment.service';
 import type { Deworming } from '../types/deworming.types';
 import type { AssignedRabbit } from '@/modules/assignments/types/assignment.types';
 
 export function useDeworming() {
-  const [dewormings, setDewormings] = useState<Deworming[]>([]);
-  const [assignedRabbits, setAssignedRabbits] = useState<AssignedRabbit[]>([]);
-  const [dewormingPeriod, setDewormingPeriod] = useState<number>(30);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchDewormings = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await dewormingService.getAll();
-      setDewormings(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar desparasitaciones');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // Query: Fetch Dewormings
+  const {
+    data: dewormings = [],
+    isLoading: loadingDewormings,
+    error: errorDewormings,
+    refetch: fetchDewormings,
+  } = useQuery({
+    queryKey: ['dewormings'],
+    queryFn: () => dewormingService.getAll(),
+  });
 
-  const fetchAssignedRabbits = useCallback(async () => {
-    try {
-      const data = await assignmentService.getAssignedRabbits();
-      setAssignedRabbits(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar conejos asignados');
-    }
-  }, []);
+  // Query: Fetch Assigned Rabbits
+  const {
+    data: assignedRabbits = [],
+    isLoading: loadingRabbits,
+    error: errorRabbits,
+  } = useQuery({
+    queryKey: ['assignedRabbits'],
+    queryFn: () => assignmentService.getAssignedRabbits(),
+  });
 
-  const fetchDewormingPeriod = useCallback(async () => {
-    try {
-      const data = await dewormingService.getGalponDewormingPeriod();
-      setDewormingPeriod(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar período de desparasitación');
-    }
-  }, []);
+  // Query: Fetch Deworming Period
+  const {
+    data: dewormingPeriodData,
+    isLoading: loadingPeriod,
+  } = useQuery({
+    queryKey: ['dewormingPeriod'],
+    queryFn: () => dewormingService.getGalponDewormingPeriod(),
+  });
 
-  const createDeworming = useCallback(async (payload: { rabbitIds: number[] }) => {
-    try {
-      setError(null);
-      await dewormingService.create(payload);
-      await fetchDewormings();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al registrar desparasitación');
-      throw err;
-    }
-  }, [fetchDewormings]);
+  const dewormingPeriod = dewormingPeriodData ?? 30;
 
-  useEffect(() => {
-    Promise.all([fetchDewormings(), fetchAssignedRabbits(), fetchDewormingPeriod()]);
-  }, [fetchDewormings, fetchAssignedRabbits, fetchDewormingPeriod]);
+  const loading = loadingDewormings || loadingRabbits || loadingPeriod;
+  const error = errorDewormings ? (errorDewormings as Error).message : (errorRabbits ? (errorRabbits as Error).message : null);
+
+  // Mutation: Create Deworming
+  const createDewormingMutation = useMutation({
+    mutationFn: (payload: { rabbitIds: number[] }) => dewormingService.create(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dewormings'] });
+    },
+  });
+
+  const createDeworming = async (payload: { rabbitIds: number[] }) => {
+    return createDewormingMutation.mutateAsync(payload);
+  };
 
   return { 
     dewormings, 

@@ -11,12 +11,10 @@ import type { Rabbit } from '@/modules/rabbits/types/rabbit.types';
 export default function RabbitsPage() {
   const [modal, setModal] = useState<'create' | 'edit' | null>(null);
   const [editTarget, setEditTarget] = useState<Rabbit | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
 
   const openCreate = () => { setEditTarget(null); setModal('create'); };
   const openEdit = (rabbit: Rabbit) => { setEditTarget(rabbit); setModal('edit'); };
   const closeModal = () => { setModal(null); setEditTarget(null); };
-  const handleSuccess = () => { closeModal(); setRefreshKey((k) => k + 1); };
 
   return (
     <GalponGuard>
@@ -28,7 +26,7 @@ export default function RabbitsPage() {
             <Button icon={<Plus size={16} />} onClick={openCreate}>Nuevo Conejo</Button>
           }
         />
-        <RabbitTable key={refreshKey} onEdit={openEdit} />
+        <RabbitTable onEdit={openEdit} />
 
         <Dialog
           open={modal !== null}
@@ -41,7 +39,7 @@ export default function RabbitsPage() {
               mode={modal}
               defaultValues={editTarget ?? undefined}
               rabbitId={editTarget?.id}
-              onSuccess={handleSuccess}
+              onSuccess={closeModal}
               onCancel={closeModal}
             />
           )}

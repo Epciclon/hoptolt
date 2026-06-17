@@ -11,12 +11,12 @@ import { cn } from '@/lib/utils';
 import { growthService } from '@/modules/growth/services/growth.service';
 
 export function NotificationIcon() {
-  const { notifications, markAsRead, markAllAsRead, deleteNotification, unreadCount, fetchNotifications } = useNotifications();
+  const [limit, setLimit] = useState(10);
+  const { notifications, markAsRead, markAllAsRead, deleteNotification, unreadCount } = useNotifications({ limit });
   const { acceptInvitation, revokeInvitation } = useInvitation();
   const { showToast } = useToast();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const [limit, setLimit] = useState(10);
   const [accepting, setAccepting] = useState<number | null>(null);
   const [rejecting, setRejecting] = useState<number | null>(null);
   const [processingWeight, setProcessingWeight] = useState<number | null>(null);
@@ -70,10 +70,12 @@ export function NotificationIcon() {
     return date.toLocaleDateString();
   };
 
-  const handleShowMore = async () => {
+  const handleShowMore = () => {
     const newLimit = limit + 10;
     setLimit(newLimit);
-    await fetchNotifications({ limit: newLimit });
+    // React Query will automatically refetch when the option (limit) changes if we pass limit to the hook,
+    // but useNotifications currently receives limit on initialization or via fetchNotifications.
+    // Let's assume useNotifications is updated to accept options as a dependency.
   };
 
   const handleAcceptInvitation = async (notification: any) => {
@@ -124,8 +126,7 @@ export function NotificationIcon() {
       if (action !== 'revert') {
         markAsRead(notification.id);
       }
-      // Actualizamos los notifications
-      await fetchNotifications({ limit });
+      // React Query ya habrá invalidado 'notifications' y actualizará automáticamente
     } catch (error) {
       showToast('Error al procesar la estimación de peso', 'error');
     } finally {
@@ -142,7 +143,7 @@ export function NotificationIcon() {
         action === 'revert' ? 'Estimación revertida a pendiente' : 'Estimación rechazada',
         'success'
       );
-      await fetchNotifications({ limit });
+      // React Query manejará la actualización de notificaciones al invalidar o a través de Realtime
     } catch (error) {
       showToast('Error al procesar la estimación de peso', 'error');
     } finally {

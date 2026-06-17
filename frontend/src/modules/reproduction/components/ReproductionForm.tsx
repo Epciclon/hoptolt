@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState, useRef, useEffect } from 'react';
 import { Input, Button, Alert } from '@/shared/ui';
+import { useToast } from '@/shared/contexts/ToastContext';
 import { useReproduction } from '../hooks/useReproduction';
 import type { Reproduction } from '../types/reproduction.types';
 
@@ -23,8 +24,8 @@ interface ReproductionFormProps {
 }
 
 export function ReproductionForm({ onSuccess, onCancel, editingReproduction }: ReproductionFormProps) {
-  const [serverError, setServerError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
+
+  const { showToast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedFemale, setSelectedFemale] = useState<{ id: number; label: string } | null>(null);
@@ -137,28 +138,25 @@ export function ReproductionForm({ onSuccess, onCancel, editingReproduction }: R
   }, []);
 
   const onSubmit = async (values: FormValues) => {
-    setServerError('');
-    setSuccessMsg('');
+
     try {
       if (isEditing && editingReproduction) {
         await updateReproduction(editingReproduction.id, values);
-        setSuccessMsg('Monta actualizada exitosamente.');
+        showToast('Monta actualizada exitosamente.', 'success');
       } else {
         await createReproduction(values);
-        setSuccessMsg('Monta registrada exitosamente.');
+        showToast('Monta registrada exitosamente.', 'success');
       }
       setSearchTerm('');
       setSelectedFemale(null);
-      setTimeout(() => onSuccess?.(), 1000);
+      onSuccess?.();
     } catch (err) {
-      setServerError(err instanceof Error ? err.message : 'Error inesperado.');
+      showToast(err instanceof Error ? err.message : 'Error inesperado.', 'error');
     }
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      {serverError && <Alert variant="error" message={serverError} onClose={() => setServerError('')} />}
-      {successMsg && <Alert variant="success" message={successMsg} />}
 
       <div className="flex flex-col gap-1.5" ref={dropdownRef}>
         <label className="text-sm font-medium text-slate-700">

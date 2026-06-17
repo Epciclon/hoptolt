@@ -6,10 +6,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Input, Select, Button, Alert } from '@/shared/ui';
 import { Sparkles } from 'lucide-react';
+import { useToast } from '@/shared/contexts/ToastContext';
 import { rabbitService } from '../services/rabbit.service';
 import { raceService } from '@/modules/races/services/race.service';
 import type { Rabbit } from '../types/rabbit.types';
 import type { Race } from '@/modules/races/types/race.types';
+import { useQueryClient } from '@tanstack/react-query';
 
 const schema = z.object({
   race: z.string().min(1, 'Selecciona una raza.'),
@@ -35,9 +37,10 @@ const RABBIT_NAMES_MALE = ['Conejito', 'Peludo', 'Saltarín', 'Orejas', 'Bigotes
 const RABBIT_NAMES_FEMALE = ['Conejita', 'Peluda', 'Saltarina', 'Orejotas', 'Bigotuda', 'Rápida', 'Aventurera', 'Traviesa', 'Valiente', 'Exploradora'];
 
 export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel }: RabbitFormProps) {
-  const [success, setSuccess] = useState('');
-  const [apiError, setApiError] = useState('');
+
   const [races, setRaces] = useState<Race[]>([]);
+  const { showToast } = useToast();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     raceService.getAll().then(setRaces).catch(() => {});
@@ -56,8 +59,7 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel 
   const selectedPurpose = watch('purpose');
 
   const onSubmit = async (values: FormValues) => {
-    setApiError('');
-    setSuccess('');
+
     try {
       if (mode === 'create') {
         const payload = {
@@ -69,7 +71,7 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel 
           purpose: values.purpose,
         };
         await rabbitService.create(payload);
-        setSuccess('Conejo registrado exitosamente.');
+        showToast('Conejo registrado exitosamente.', 'success');
         reset();
       } else {
         await rabbitService.update(rabbitId!, {
@@ -79,11 +81,12 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel 
           weight: values.weight,
           purpose: values.purpose,
         });
-        setSuccess('Conejo actualizado exitosamente.');
+        showToast('Conejo actualizado exitosamente.', 'success');
       }
-      setTimeout(() => onSuccess?.(), 1000);
+      queryClient.invalidateQueries({ queryKey: ['rabbits'] });
+      onSuccess?.();
     } catch (err) {
-      setApiError(err instanceof Error ? err.message : 'Error al guardar el conejo.');
+      showToast(err instanceof Error ? err.message : 'Error al guardar el conejo.', 'error');
     }
   };
 
@@ -104,10 +107,7 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel 
   ];
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
-      {success && <Alert variant="success" message={success} onClose={() => setSuccess('')} />}
-      {apiError && <Alert variant="error" message={apiError} onClose={() => setApiError('')} />}
-
+    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
       {mode === 'edit' ? (
         <div className="grid grid-cols-2 gap-4">
           <div>

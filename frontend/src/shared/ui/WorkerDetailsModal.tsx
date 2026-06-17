@@ -49,7 +49,6 @@ export interface WorkerDetailsData {
   profile?: WorkerProfile;
   permissions?: WorkerPermission[];
   assignedCages?: WorkerCage[];
-  [key: string]: unknown;
 }
 
 export interface WorkerDetailsModalProps {

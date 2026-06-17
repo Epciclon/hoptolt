@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/client';
 import { authService } from '../services/auth.service';
 import type { Profile } from '../types/auth.types';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface AuthContextValue {
   user: Profile | null;
@@ -21,6 +22,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const supabase = createClient();
+
+  const queryClient = useQueryClient();
 
   const fetchUser = useCallback(async () => {
     setLoading(true);
@@ -45,6 +48,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
+      // Limpiar todo el caché de React Query para que no queden datos de la sesión anterior
+      queryClient.clear();
       // Cerrar sesión en Supabase
       await supabase.auth.signOut();
     } catch (error) {
@@ -57,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         window.location.replace('/login');
       }
     }
-  }, [supabase]);
+  }, [supabase, queryClient]);
 
   useEffect(() => {
     fetchUser();

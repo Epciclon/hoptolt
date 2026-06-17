@@ -11,12 +11,10 @@ import type { Cage } from '@/modules/cages/types/cage.types';
 export default function CagesPage() {
   const [modal, setModal] = useState<'create' | 'edit' | null>(null);
   const [editTarget, setEditTarget] = useState<Cage | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
 
   const openCreate = () => { setEditTarget(null); setModal('create'); };
   const openEdit = (cage: Cage) => { setEditTarget(cage); setModal('edit'); };
   const closeModal = () => { setModal(null); setEditTarget(null); };
-  const handleSuccess = () => { closeModal(); setRefreshKey((k) => k + 1); };
 
   return (
     <GalponGuard>
@@ -28,7 +26,7 @@ export default function CagesPage() {
             <Button icon={<Plus size={16} />} onClick={openCreate}>Nueva Jaula</Button>
           }
         />
-        <CageTable key={refreshKey} onEdit={openEdit} />
+        <CageTable onEdit={openEdit} />
 
         <Dialog
           open={modal !== null}
@@ -41,7 +39,7 @@ export default function CagesPage() {
               mode={modal}
               defaultValues={editTarget ?? undefined}
               cageId={editTarget?.id}
-              onSuccess={handleSuccess}
+              onSuccess={closeModal}
               onCancel={closeModal}
             />
           )}

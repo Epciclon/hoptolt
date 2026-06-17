@@ -12,7 +12,10 @@ const Galpon = sequelize.define('Galpon', {
         allowNull: false,
         validate: {
             notEmpty: true,
-            len: [1, 50]
+            len: {
+                args: [1, 50],
+                msg: 'El nombre del galpón debe tener entre 1 y 50 caracteres'
+            }
         }
     },
     profileId: {
@@ -35,7 +38,10 @@ const Galpon = sequelize.define('Galpon', {
         allowNull: false,
         validate: {
             notEmpty: true,
-            len: [1, 100]
+            len: {
+                args: [1, 100],
+                msg: 'La ubicación debe tener entre 1 y 100 caracteres'
+            }
         }
     },
     totalCapacity: {

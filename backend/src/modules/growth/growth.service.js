@@ -163,6 +163,50 @@ class GrowthService {
                                 rabbits: weightEstimations
                             }
                         });
+                    } else {
+                        // If notification exists, check if we need to add new rabbits to it
+                        const existingNotif = weightNotifs[0];
+                        let existingData = existingNotif.data;
+                        if (typeof existingData === 'string') {
+                            existingData = JSON.parse(existingData);
+                        }
+                        
+                        if (existingData.type === 'weight_estimations') {
+                            const existingRabbits = existingData.rabbits || [];
+                            const newRabbits = weightEstimations.filter(w => !existingRabbits.some(er => er.rabbitId === w.rabbitId));
+                            
+                            if (newRabbits.length > 0) {
+                                const updatedRabbits = [...existingRabbits, ...newRabbits];
+                                const pendingRabbits = updatedRabbits.filter(r => r.status === 'pending');
+                                
+                                let newMessage = '';
+                                if (pendingRabbits.length > 0) {
+                                    newMessage = `El sistema ha calculado un peso estimado diferente para los siguientes conejos: ${pendingRabbits.map(w => `${w.rabbitCode} (${w.rabbitName})`).join(', ')}. ¿Deseas actualizarlos?`;
+                                    
+                                    const acceptedRabbits = updatedRabbits.filter(r => r.status === 'accepted');
+                                    const rejectedRabbits = updatedRabbits.filter(r => r.status === 'rejected');
+                                    
+                                    const processedParts = [];
+                                    if (acceptedRabbits.length > 0) {
+                                        processedParts.push(`actualizado: ${acceptedRabbits.map(r => r.rabbitCode).join(', ')}`);
+                                    }
+                                    if (rejectedRabbits.length > 0) {
+                                        processedParts.push(`rechazado: ${rejectedRabbits.map(r => r.rabbitCode).join(', ')}`);
+                                    }
+                                    if (processedParts.length > 0) {
+                                        newMessage += ` (Ya procesados — ${processedParts.join('; ')}).`;
+                                    }
+                                } else {
+                                    newMessage = existingNotif.message;
+                                }
+
+                                existingNotif.message = newMessage;
+                                existingNotif.read = pendingRabbits.length === 0;
+                                existingNotif.data = { ...existingData, rabbits: updatedRabbits };
+                                existingNotif.changed('data', true);
+                                await existingNotif.save();
+                            }
+                        }
                     }
                 }
 

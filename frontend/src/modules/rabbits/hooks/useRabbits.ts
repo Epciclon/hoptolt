@@ -1,38 +1,45 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { rabbitService } from '../services/rabbit.service';
 import type { Rabbit } from '../types/rabbit.types';
 
 export function useRabbits() {
-  const [rabbits, setRabbits] = useState<Rabbit[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchRabbits = useCallback(async () => {
+  // Query: Fetch Rabbits
+  const {
+    data: rabbits = [],
+    isLoading: loading,
+    error: queryError,
+    refetch: fetchRabbits,
+  } = useQuery({
+    queryKey: ['rabbits'],
+    queryFn: () => rabbitService.getAll(),
+  });
+
+  // Mutation: Delete Rabbit
+  const deleteRabbitMutation = useMutation({
+    mutationFn: (id: number) => rabbitService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rabbits'] });
+    },
+  });
+
+  const deleteRabbit = async (id: number): Promise<{ success: boolean; error?: string }> => {
     try {
-      setLoading(true);
-      setError(null);
-      setRabbits(await rabbitService.getAll());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar los conejos.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { fetchRabbits(); }, [fetchRabbits]);
-
-  const deleteRabbit = async (id: number): Promise<boolean> => {
-    try {
-      await rabbitService.delete(id);
-      setRabbits((prev) => prev.filter((r) => r.id !== id));
-      return true;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al eliminar el conejo.');
-      return false;
+      await deleteRabbitMutation.mutateAsync(id);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Error al eliminar el conejo' };
     }
   };
 
-  return { rabbits, loading, error, fetchRabbits, deleteRabbit };
+  return {
+    rabbits,
+    loading,
+    error: queryError ? (queryError as Error).message : null,
+    fetchRabbits,
+    deleteRabbit,
+  };
 }

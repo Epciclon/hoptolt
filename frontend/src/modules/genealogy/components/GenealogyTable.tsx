@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
-import { Table, Button, Alert, ConfirmDialog } from '@/shared/ui';
+import { Table, Button, ConfirmDialog } from '@/shared/ui';
 import type { Column } from '@/shared/ui/Table';
 import { useGenealogy } from '../hooks/useGenealogy';
+import { useToast } from '@/shared/contexts/ToastContext';
 import type { Genealogy } from '../types/genealogy.types';
 
 interface GenealogyTableProps {
@@ -13,15 +14,21 @@ interface GenealogyTableProps {
 
 export function GenealogyTable({ onEdit }: GenealogyTableProps) {
   const { genealogies, loading, error, deleteGenealogy } = useGenealogy();
+  const { showToast } = useToast();
   const [toDelete, setToDelete] = useState<Genealogy | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const handleConfirmDelete = async () => {
     if (!toDelete || !toDelete.rabbitId) return;
     setDeleting(true);
-    await deleteGenealogy(toDelete.rabbitId);
+    const { success, error: deleteError } = await deleteGenealogy(toDelete.rabbitId);
     setDeleting(false);
     setToDelete(null);
+    if (success) {
+      showToast(`Relación genealógica eliminada correctamente.`, 'success');
+    } else {
+      showToast(deleteError || 'Error al eliminar la relación genealógica.', 'error');
+    }
   };
 
   const columns: Column<Genealogy>[] = [
@@ -70,7 +77,6 @@ export function GenealogyTable({ onEdit }: GenealogyTableProps) {
 
   return (
     <>
-      {error && <Alert variant="error" message={error} className="mb-4" />}
       <Table<Genealogy>
         columns={columns}
         data={genealogies}

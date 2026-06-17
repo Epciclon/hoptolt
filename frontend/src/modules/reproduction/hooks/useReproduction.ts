@@ -1,80 +1,85 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { reproductionService } from '../services/reproduction.service';
 import type { Reproduction, ReproductionFemale, ReproductionMale } from '../types/reproduction.types';
 
 export function useReproduction() {
-  const [reproductions, setReproductions] = useState<Reproduction[]>([]);
-  const [reproductionFemales, setReproductionFemales] = useState<ReproductionFemale[]>([]);
-  const [reproductionMales, setReproductionMales] = useState<ReproductionMale[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchReproductions = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await reproductionService.getAll();
-      setReproductions(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar reproducciones');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // Query: Fetch Reproductions
+  const {
+    data: reproductions = [],
+    isLoading: loadingReproductions,
+    error: errorReproductions,
+    refetch: fetchReproductions,
+  } = useQuery({
+    queryKey: ['reproductions'],
+    queryFn: () => reproductionService.getAll(),
+  });
 
-  const fetchReproductionFemales = useCallback(async () => {
-    try {
-      const data = await reproductionService.getReproductionFemales();
-      setReproductionFemales(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar conejas de reproducción');
-    }
-  }, []);
+  // Query: Fetch Females
+  const {
+    data: reproductionFemales = [],
+    isLoading: loadingFemales,
+  } = useQuery({
+    queryKey: ['reproductionFemales'],
+    queryFn: () => reproductionService.getReproductionFemales(),
+  });
 
-  const fetchReproductionMales = useCallback(async () => {
-    try {
-      const data = await reproductionService.getReproductionMales();
-      setReproductionMales(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar machos de reproducción');
-    }
-  }, []);
+  // Query: Fetch Males
+  const {
+    data: reproductionMales = [],
+    isLoading: loadingMales,
+  } = useQuery({
+    queryKey: ['reproductionMales'],
+    queryFn: () => reproductionService.getReproductionMales(),
+  });
 
-  useEffect(() => {
-    Promise.all([fetchReproductions(), fetchReproductionFemales(), fetchReproductionMales()]);
-  }, [fetchReproductions, fetchReproductionFemales, fetchReproductionMales]);
+  const loading = loadingReproductions || loadingFemales || loadingMales;
+  const error = errorReproductions ? (errorReproductions as Error).message : null;
 
-  const createReproduction = useCallback(async (payload: { femaleId: number; mountDate: string }) => {
-    try {
-      setError(null);
-      await reproductionService.create(payload);
-      await fetchReproductions();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al registrar monta');
-      throw err;
-    }
-  }, [fetchReproductions]);
+  // Mutation: Create
+  const createReproductionMutation = useMutation({
+    mutationFn: (payload: { femaleId: number; mountDate: string }) => reproductionService.create(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reproductions'] });
+      queryClient.invalidateQueries({ queryKey: ['birthCalendar'] });
+    },
+  });
 
-  const updateReproduction = useCallback(async (id: number, payload: { maleId?: number; mountDate: string }) => {
-    try {
-      setError(null);
-      await reproductionService.update(id, payload);
-      await fetchReproductions();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al actualizar monta');
-      throw err;
-    }
-  }, [fetchReproductions]);
+  // Mutation: Update
+  const updateReproductionMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: { maleId?: number; mountDate: string } }) =>
+      reproductionService.update(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reproductions'] });
+      queryClient.invalidateQueries({ queryKey: ['birthCalendar'] });
+    },
+  });
+
+  // Mutation: Delete
+  const deleteReproductionMutation = useMutation({
+    mutationFn: (id: number) => reproductionService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reproductions'] });
+      queryClient.invalidateQueries({ queryKey: ['birthCalendar'] });
+    },
+  });
+
+  const createReproduction = async (payload: { femaleId: number; mountDate: string }) => {
+    return createReproductionMutation.mutateAsync(payload);
+  };
+
+  const updateReproduction = async (id: number, payload: { maleId?: number; mountDate: string }) => {
+    return updateReproductionMutation.mutateAsync({ id, payload });
+  };
 
   const deleteReproduction = async (id: number): Promise<boolean> => {
     try {
-      await reproductionService.delete(id);
-      setReproductions(prev => prev.filter(r => r.id !== id));
+      await deleteReproductionMutation.mutateAsync(id);
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al eliminar reproducción');
       return false;
     }
   };
@@ -88,6 +93,6 @@ export function useReproduction() {
     fetchReproductions,
     createReproduction,
     updateReproduction,
-    deleteReproduction
+    deleteReproduction,
   };
 }

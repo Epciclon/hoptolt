@@ -20,7 +20,10 @@ const Profile = sequelize.define('Profile', {
         unique: true,
         validate: {
             notEmpty: true,
-            len: [4, 50],
+            len: {
+                args: [4, 50],
+                msg: 'El nombre de usuario debe tener entre 4 y 50 caracteres'
+            },
             is: /^[a-zA-Z0-9_]+$/
         }
     },

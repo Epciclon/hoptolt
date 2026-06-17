@@ -46,7 +46,7 @@ sequelize.authenticate()
     .then(async () => {
         console.log('✅ Supabase PostgreSQL conectado exitosamente');
 
-        // Sincronización automática desactivada
+        // Sincronización automática eliminada a petición del usuario
         // await sequelize.sync({ alter: true });
 
         // Solo configuramos el trigger de sincronización de perfiles de Supabase Auth

@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Input, Button, Alert, CageCatalog } from '@/shared/ui';
+import { Input, Button, CageCatalog } from '@/shared/ui';
 import type { CageItem } from '@/shared/ui';
 import { useFeeding } from '../hooks/useFeeding';
+import { useToast } from '@/shared/contexts/ToastContext';
 import type { AssignedRabbit } from '@/modules/assignments/types/assignment.types';
 
 interface FeedingCatalogProps {
@@ -14,8 +15,8 @@ const FOOD_TYPES_STORAGE_KEY = 'feeding_selected_food_types';
 
 export function FeedingCatalog({ onSuccess }: FeedingCatalogProps) {
   const { assignedRabbits, foodTypes, loading, createFeeding, feedings } = useFeeding();
-  const [serverError, setServerError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
+
+  const { showToast } = useToast();
   const [selectedCageNumbers, setSelectedCageNumbers] = useState<number[]>([]);
   const [selectedFoodTypes, setSelectedFoodTypes] = useState<string[]>(() => {
     if (typeof window !== 'undefined') {
@@ -134,11 +135,11 @@ export function FeedingCatalog({ onSuccess }: FeedingCatalogProps) {
 
   const handleRegister = () => {
     if (selectedCageNumbers.length === 0) {
-      setServerError('Selecciona al menos una jaula.');
+      showToast('Selecciona al menos una jaula.', 'error');
       return;
     }
     if (selectedFoodTypes.length === 0) {
-      setServerError('Selecciona al menos un tipo de alimento.');
+      showToast('Selecciona al menos un tipo de alimento.', 'error');
       return;
     }
 
@@ -153,8 +154,7 @@ export function FeedingCatalog({ onSuccess }: FeedingCatalogProps) {
   };
 
   const submitFeeding = async (justificationText?: string) => {
-    setServerError('');
-    setSuccessMsg('');
+
     
     const cageIds: number[] = [];
     for (const cageNumber of selectedCageNumbers) {
@@ -170,13 +170,13 @@ export function FeedingCatalog({ onSuccess }: FeedingCatalogProps) {
         foodTypes: selectedFoodTypes,
         justification: justificationText,
       });
-      setSuccessMsg('Alimentación registrada exitosamente.');
+      showToast('Alimentación registrada exitosamente.', 'success');
       setSelectedCageNumbers([]);
       setShowJustificationModal(false);
       setJustification('');
-      setTimeout(() => onSuccess?.(), 1000);
+      onSuccess?.();
     } catch (err) {
-      setServerError(err instanceof Error ? err.message : 'Error inesperado.');
+      showToast(err instanceof Error ? err.message : 'Error inesperado.', 'error');
     }
   };
 
@@ -208,8 +208,7 @@ export function FeedingCatalog({ onSuccess }: FeedingCatalogProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      {serverError && <Alert variant="error" message={serverError} onClose={() => setServerError('')} />}
-      {successMsg && <Alert variant="success" message={successMsg} />}
+      
 
       <div className="bg-white border border-slate-200 rounded-lg p-4 sticky top-0 z-10 shadow-sm">
         <label className="block text-sm font-medium text-slate-600 mb-2">Tipos de Alimento</label>
@@ -260,8 +259,7 @@ export function FeedingCatalog({ onSuccess }: FeedingCatalogProps) {
         )}
       </div>
 
-      <div className="flex items-center justify-between mb-2">
-        <label className="block text-sm font-medium text-slate-600">Jaulas con conejos asignados</label>
+      <div className="flex justify-end mb-2">
         <Button type="button" variant="outline" size="sm" onClick={selectAllCages}>
           Seleccionar todos
         </Button>

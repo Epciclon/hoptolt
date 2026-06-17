@@ -1,26 +1,25 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Alert } from '@/shared/ui';
+import { Button } from '@/shared/ui';
 import type { Column } from '@/shared/ui/Table';
 import { Table } from '@/shared/ui';
 import { useGalpones } from '../hooks/useGalpones';
 import { useActiveGalpon } from '../hooks/useActiveGalpon';
+import { useToast } from '@/shared/contexts/ToastContext';
 import type { Galpon } from '../types/galpon.types';
 
 export function SelectActiveGalpon() {
   const { galpones, loading, error } = useGalpones();
   const { activeGalpon, setActive } = useActiveGalpon();
+  const { showToast } = useToast();
   const [selecting, setSelecting] = useState(false);
-  const [successMsg, setSuccessMsg] = useState('');
 
   const handleSelectGalpon = async (galpon: Galpon) => {
     setSelecting(true);
-    setSuccessMsg('');
     const success = await setActive(galpon.id);
     if (success) {
-      setSuccessMsg(`Galpón "${galpon.name}" seleccionado como activo.`);
-      setTimeout(() => setSuccessMsg(''), 3000);
+      showToast(`Galpón "${galpon.name}" seleccionado como activo.`, 'success');
     }
     setSelecting(false);
   };
@@ -62,9 +61,6 @@ export function SelectActiveGalpon() {
 
   return (
     <div className="space-y-4">
-      {error && <Alert variant="error" message={error} />}
-      {successMsg && <Alert variant="success" message={successMsg} />}
-      
       {activeGalpon && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-sm text-blue-800">

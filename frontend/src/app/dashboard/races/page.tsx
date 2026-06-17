@@ -9,11 +9,9 @@ import { RaceForm } from '@/modules/races/components/RaceForm';
 
 export default function RacesPage() {
   const [modal, setModal] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
 
   const openModal = () => setModal(true);
   const closeModal = () => setModal(false);
-  const handleSuccess = () => { closeModal(); setRefreshKey((k) => k + 1); };
 
   return (
     <GalponGuard requireGalpon={false}>
@@ -25,7 +23,7 @@ export default function RacesPage() {
           <Button icon={<Plus size={16} />} onClick={openModal}>Nueva Raza</Button>
         }
       />
-      <RaceCatalog key={refreshKey} onSuccess={handleSuccess} />
+      <RaceCatalog />
 
       <Dialog
         open={modal}
@@ -36,7 +34,7 @@ export default function RacesPage() {
         {modal && (
           <RaceForm
             mode="create"
-            onSuccess={handleSuccess}
+            onSuccess={closeModal}
             onCancel={closeModal}
           />
         )}

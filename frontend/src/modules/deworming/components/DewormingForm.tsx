@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState } from 'react';
 import { Input, Button, Alert } from '@/shared/ui';
+import { useToast } from '@/shared/contexts/ToastContext';
 import { dewormingService } from '../services/deworming.service';
 
 const schema = z.object({
@@ -19,8 +20,8 @@ interface DewormingFormProps {
 }
 
 export function DewormingForm({ onSuccess, onCancel }: DewormingFormProps) {
-  const [serverError, setServerError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
+
+  const { showToast } = useToast();
   const [rabbitInput, setRabbitInput] = useState('');
   const [selectedRabbits, setSelectedRabbits] = useState<string[]>([]);
 
@@ -43,26 +44,23 @@ export function DewormingForm({ onSuccess, onCancel }: DewormingFormProps) {
   };
 
   const onSubmit = async () => {
-    setServerError('');
-    setSuccessMsg('');
+
     if (selectedRabbits.length === 0) {
-      setServerError('Selecciona al menos un conejo');
+      showToast('Selecciona al menos un conejo', 'error');
       return;
     }
     try {
       await dewormingService.create({ rabbitIds: selectedRabbits.map(Number) });
-      setSuccessMsg('Desparasitación registrada exitosamente.');
+      showToast('Desparasitación registrada exitosamente.', 'success');
       setSelectedRabbits([]);
-      setTimeout(() => onSuccess?.(), 1000);
+      onSuccess?.();
     } catch (err) {
-      setServerError(err instanceof Error ? err.message : 'Error inesperado.');
+      showToast(err instanceof Error ? err.message : 'Error inesperado.', 'error');
     }
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      {serverError && <Alert variant="error" message={serverError} onClose={() => setServerError('')} />}
-      {successMsg && <Alert variant="success" message={successMsg} />}
 
       <div>
         <label className="block text-sm font-medium text-slate-600 mb-2">Conejos</label>

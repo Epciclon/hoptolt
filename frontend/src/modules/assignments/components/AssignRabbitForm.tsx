@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button, Alert, Input } from '@/shared/ui';
+import { useToast } from '@/shared/contexts/ToastContext';
 import { assignmentService } from '../services/assignment.service';
 import { useAssignments } from '../hooks/useAssignments';
 import type { Cage } from '@/modules/cages/types/cage.types';
@@ -24,9 +25,10 @@ interface AssignRabbitFormProps {
 
 export function AssignRabbitForm({ onSuccess, onCancel }: AssignRabbitFormProps) {
   const { assignRabbits } = useAssignments();
+  const { showToast } = useToast();
   const [cages, setCages] = useState<Cage[]>([]);
   const [rabbits, setRabbits] = useState<Rabbit[]>([]);
-  const [apiError, setApiError] = useState('');
+
   const [warnings, setWarnings] = useState<string[]>([]);
   const [selectedRabbits, setSelectedRabbits] = useState<number[]>([]);
   const [selectedCage, setSelectedCage] = useState<Cage | null>(null);
@@ -35,7 +37,7 @@ export function AssignRabbitForm({ onSuccess, onCancel }: AssignRabbitFormProps)
   const [showRabbitDropdown, setShowRabbitDropdown] = useState(false);
   const [showCageDropdown, setShowCageDropdown] = useState(false);
   const [cageCapacities, setCageCapacities] = useState<Map<number, number>>(new Map());
-  
+
   const cageDropdownRef = useRef<HTMLDivElement>(null);
   const rabbitDropdownRef = useRef<HTMLDivElement>(null);
   const hasLoadedData = useRef(false);
@@ -43,7 +45,7 @@ export function AssignRabbitForm({ onSuccess, onCancel }: AssignRabbitFormProps)
   useEffect(() => {
     if (hasLoadedData.current) return;
     hasLoadedData.current = true;
-    
+
     Promise.all([assignmentService.getOperativeCages(), assignmentService.getAvailableRabbits(), assignmentService.getAll()])
       .then(([c, r, assignments]) => {
         setCages(c);
@@ -58,7 +60,7 @@ export function AssignRabbitForm({ onSuccess, onCancel }: AssignRabbitFormProps)
         });
         setCageCapacities(capacityMap);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const { handleSubmit, formState: { errors, isSubmitting }, setValue } = useForm<FormValues>({
@@ -67,14 +69,14 @@ export function AssignRabbitForm({ onSuccess, onCancel }: AssignRabbitFormProps)
   });
 
   const onSubmit = async (values: FormValues) => {
-    setApiError('');
+
     setWarnings([]);
     if (!values.cageId) {
-      setApiError('Debes seleccionar una jaula.');
+      showToast('Debes seleccionar una jaula.', 'error');
       return;
     }
     if (!values.rabbitIds || values.rabbitIds.length === 0) {
-      setApiError('Debes seleccionar al menos un conejo.');
+      showToast('Debes seleccionar al menos un conejo.', 'error');
       return;
     }
     try {
@@ -82,17 +84,18 @@ export function AssignRabbitForm({ onSuccess, onCancel }: AssignRabbitFormProps)
       if (result.warnings && result.warnings.length > 0) {
         setWarnings(result.warnings);
       }
+      showToast('Conejos asignados exitosamente.', 'success');
       onSuccess?.();
     } catch (err) {
-      setApiError(err instanceof Error ? err.message : 'Error al asignar los conejos.');
+      showToast(err instanceof Error ? err.message : 'Error al asignar los conejos.', 'error');
     }
   };
 
   const handleRabbitToggle = (id: number) => {
     if (!selectedCage) return;
-    
+
     const isAdding = !selectedRabbits.includes(id);
-    
+
     if (isAdding) {
       if (selectedRabbits.length >= selectedCage.capacity) {
         // Reemplazar el último seleccionado con el nuevo (capacidad llena)
@@ -157,14 +160,14 @@ export function AssignRabbitForm({ onSuccess, onCancel }: AssignRabbitFormProps)
     const currentCapacity = cageCapacities.get(c.id) || 0;
     const hasSpace = currentCapacity < c.capacity;
     const matchesSearch = c.number.toString().includes(cageSearch) ||
-                         c.type.toLowerCase().includes(cageSearch.toLowerCase());
+      c.type.toLowerCase().includes(cageSearch.toLowerCase());
     const notSelected = !selectedCage || c.id !== selectedCage.id;
     return hasSpace && matchesSearch && notSelected;
   });
 
   const filteredRabbits = rabbits.filter(r => {
     const matchesSearch = r.code.toLowerCase().includes(rabbitSearch.toLowerCase()) ||
-                         r.name?.toLowerCase().includes(rabbitSearch.toLowerCase());
+      r.name?.toLowerCase().includes(rabbitSearch.toLowerCase());
     const notSelected = !selectedRabbits.includes(r.id);
     return matchesSearch && notSelected;
   });
@@ -174,12 +177,12 @@ export function AssignRabbitForm({ onSuccess, onCancel }: AssignRabbitFormProps)
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
-      {apiError && <Alert variant="error" message={apiError} onClose={() => setApiError('')} />}
+
       {warnings.length > 0 && (
-        <Alert 
-          variant="warning" 
-          message={warnings.join(' ')} 
-          onClose={() => setWarnings([])} 
+        <Alert
+          variant="warning"
+          message={warnings.join(' ')}
+          onClose={() => setWarnings([])}
         />
       )}
 

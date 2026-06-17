@@ -1,6 +1,13 @@
 'use client';
 
 import { AuthProvider } from '@/modules/auth/contexts/AuthContext';
+import { QueryProvider } from '@/providers/QueryProvider';
+import { useRealtimeSync } from '@/hooks/useRealtimeSync';
+
+function RealtimeSyncHelper() {
+  useRealtimeSync();
+  return null;
+}
 
 /**
  * Wrapper de cliente que encapsula todos los providers que requieren
@@ -9,8 +16,11 @@ import { AuthProvider } from '@/modules/auth/contexts/AuthContext';
  */
 export default function ClientProviders({ children }: { children: React.ReactNode }) {
   return (
-    <AuthProvider>
-      {children}
-    </AuthProvider>
+    <QueryProvider>
+      <AuthProvider>
+        <RealtimeSyncHelper />
+        {children}
+      </AuthProvider>
+    </QueryProvider>
   );
 }

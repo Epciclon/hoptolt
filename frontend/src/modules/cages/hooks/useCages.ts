@@ -1,41 +1,45 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cageService } from '../services/cage.service';
 import type { Cage } from '../types/cage.types';
 
 export function useCages() {
-  const [cages, setCages] = useState<Cage[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchCages = useCallback(async () => {
+  // Query: Fetch Cages
+  const {
+    data: cages = [],
+    isLoading: loading,
+    error: queryError,
+    refetch: fetchCages,
+  } = useQuery({
+    queryKey: ['cages'],
+    queryFn: () => cageService.getAll(),
+  });
+
+  // Mutation: Delete Cage
+  const deleteCageMutation = useMutation({
+    mutationFn: (id: number) => cageService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cages'] });
+    },
+  });
+
+  const deleteCage = async (id: number): Promise<{ success: boolean; error?: string }> => {
     try {
-      setLoading(true);
-      setError(null);
-      const data = await cageService.getAll();
-      setCages(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar las jaulas.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchCages();
-  }, [fetchCages]);
-
-  const deleteCage = async (id: number): Promise<boolean> => {
-    try {
-      await cageService.delete(id);
-      setCages((prev) => prev.filter((c) => c.id !== id));
-      return true;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al eliminar la jaula.');
-      return false;
+      await deleteCageMutation.mutateAsync(id);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Error al eliminar la jaula' };
     }
   };
 
-  return { cages, loading, error, fetchCages, deleteCage };
+  return {
+    cages,
+    loading,
+    error: queryError ? (queryError as Error).message : null,
+    fetchCages,
+    deleteCage,
+  };
 }

@@ -1,63 +1,73 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { genealogyService } from '../services/genealogy.service';
 import type { Genealogy, GenealogyTree } from '../types/genealogy.types';
 
 export function useGenealogy() {
-  const [genealogies, setGenealogies] = useState<Genealogy[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchGenealogies = useCallback(async () => {
+  // Query: Fetch Genealogies
+  const {
+    data: genealogies = [],
+    isLoading: loading,
+    error: queryError,
+    refetch: fetchGenealogies,
+  } = useQuery({
+    queryKey: ['genealogies'],
+    queryFn: () => genealogyService.getAll(),
+  });
+
+  // Mutation: Delete Genealogy
+  const deleteGenealogyMutation = useMutation({
+    mutationFn: (rabbitId: number) => genealogyService.delete(rabbitId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['genealogies'] });
+    },
+  });
+
+  const deleteGenealogy = async (rabbitId: number): Promise<{ success: boolean; error?: string }> => {
     try {
-      setLoading(true);
-      setError(null);
-      const data = await genealogyService.getAll();
-      setGenealogies(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar genealogías');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchGenealogies();
-  }, [fetchGenealogies]);
-
-  const deleteGenealogy = async (rabbitId: number): Promise<boolean> => {
-    try {
-      await genealogyService.delete(rabbitId);
-      setGenealogies(prev => prev.filter(g => g.rabbitId !== rabbitId));
-      return true;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al eliminar genealogía');
-      return false;
+      await deleteGenealogyMutation.mutateAsync(rabbitId);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Error al eliminar la genealogía' };
     }
   };
 
   const getTree = async (rabbitId: number, levels?: number): Promise<GenealogyTree | null> => {
     try {
-      setError(null);
       return await genealogyService.getTree(rabbitId, levels);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar árbol genealógico');
       return null;
     }
   };
 
+  // Mutation: Edit Genealogy
+  const editGenealogyMutation = useMutation({
+    mutationFn: ({ rabbitId, data }: { rabbitId: number; data: { fatherId?: number; motherId?: number } }) =>
+      genealogyService.edit(rabbitId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['genealogies'] });
+    },
+  });
+
   const editGenealogy = async (rabbitId: number, data: { fatherId?: number; motherId?: number }): Promise<boolean> => {
     try {
-      setError(null);
-      await genealogyService.edit(rabbitId, data);
-      await fetchGenealogies();
+      await editGenealogyMutation.mutateAsync({ rabbitId, data });
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al editar genealogía');
       return false;
     }
   };
 
-  return { genealogies, loading, error, fetchGenealogies, deleteGenealogy, getTree, editGenealogy };
+  return {
+    genealogies,
+    loading,
+    error: queryError ? (queryError as Error).message : null,
+    fetchGenealogies,
+    deleteGenealogy,
+    getTree,
+    editGenealogy,
+  };
 }

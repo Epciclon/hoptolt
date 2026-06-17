@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
-import { Table, Button, Alert, ConfirmDialog } from '@/shared/ui';
+import { Table, Button, ConfirmDialog } from '@/shared/ui';
 import type { Column } from '@/shared/ui/Table';
 import { useRaces } from '../hooks/useRaces';
+import { useToast } from '@/shared/contexts/ToastContext';
 import type { Race } from '../types/race.types';
 
 interface RaceTableProps {
@@ -13,15 +14,21 @@ interface RaceTableProps {
 
 export function RaceTable({ onEdit }: RaceTableProps) {
   const { races, loading, error, deleteRace } = useRaces();
+  const { showToast } = useToast();
   const [toDelete, setToDelete] = useState<Race | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const handleConfirmDelete = async () => {
     if (!toDelete || !toDelete.id) return;
     setDeleting(true);
-    await deleteRace(toDelete.id);
+    const { success, error: deleteError } = await deleteRace(toDelete.id);
     setDeleting(false);
     setToDelete(null);
+    if (success) {
+      showToast(`Raza "${toDelete.name}" eliminada correctamente.`, 'success');
+    } else {
+      showToast(deleteError || 'Error al eliminar la raza.', 'error');
+    }
   };
 
   const columns: Column<Race>[] = [
@@ -58,7 +65,6 @@ export function RaceTable({ onEdit }: RaceTableProps) {
 
   return (
     <>
-      {error && <Alert variant="error" message={error} className="mb-4" />}
       <Table<Race>
         columns={columns}
         data={races}

@@ -5,9 +5,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState } from 'react';
 import { Input, Button, Alert } from '@/shared/ui';
+import { useToast } from '@/shared/contexts/ToastContext';
 import { galponService } from '../services/galpon.service';
 import type { Galpon } from '../types/galpon.types';
 import { X } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 
 const PROVINCES = [
   'Azuay', 'Bolívar', 'Cañar', 'Carchi', 'Chimborazo', 'Cotopaxi', 'El Oro',
@@ -50,12 +52,13 @@ interface GalponFormProps {
 }
 
 export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel }: GalponFormProps) {
-  const [serverError, setServerError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
+
+  const { showToast } = useToast();
   const [selectedFoods, setSelectedFoods] = useState<string[]>(defaultValues?.foodTypes || []);
   const [selectedVaccines, setSelectedVaccines] = useState<{ name: string; period: number }[]>(defaultValues?.vaccines || []);
   const [foodSearch, setFoodSearch] = useState('');
   const [vaccineSearch, setVaccineSearch] = useState('');
+  const queryClient = useQueryClient();
   const [provincesearch, setProvinceSearch] = useState('');
   const [showFoodDropdown, setShowFoodDropdown] = useState(false);
   const [showVaccineDropdown, setShowVaccineDropdown] = useState(false);
@@ -165,26 +168,24 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
   const selectedProvince = defaultValues?.province || '';
 
   const onSubmit = async (values: FormValues) => {
-    setServerError('');
-    setSuccessMsg('');
+
     try {
       if (mode === 'create') {
         await galponService.create(values);
-        setSuccessMsg('Galpón registrado exitosamente.');
+        showToast('Galpón registrado exitosamente.', 'success');
       } else {
         await galponService.update(galponId!, values);
-        setSuccessMsg('Galpón actualizado exitosamente.');
+        showToast('Galpón actualizado exitosamente.', 'success');
       }
-      setTimeout(() => onSuccess?.(), 1000);
+      queryClient.invalidateQueries({ queryKey: ['galpones'] });
+      onSuccess?.();
     } catch (err) {
-      setServerError(err instanceof Error ? err.message : 'Error inesperado.');
+      showToast(err instanceof Error ? err.message : 'Error inesperado.', 'error');
     }
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      {serverError && <Alert variant="error" message={serverError} onClose={() => setServerError('')} />}
-      {successMsg && <Alert variant="success" message={successMsg} />}
 
       <Input
         label="Nombre del Galpón"

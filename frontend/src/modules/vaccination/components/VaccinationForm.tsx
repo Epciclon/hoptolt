@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState } from 'react';
 import { Input, Button, Alert } from '@/shared/ui';
+import { useToast } from '@/shared/contexts/ToastContext';
 import { vaccinationService } from '../services/vaccination.service';
 
 const VACCINES = ['Mixomatosis', 'VHD', 'Neumonía', 'Coccidiosis'];
@@ -22,8 +23,8 @@ interface VaccinationFormProps {
 }
 
 export function VaccinationForm({ onSuccess, onCancel }: VaccinationFormProps) {
-  const [serverError, setServerError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
+
+  const { showToast } = useToast();
   const [rabbitInput, setRabbitInput] = useState('');
   const [selectedRabbits, setSelectedRabbits] = useState<string[]>([]);
 
@@ -47,25 +48,22 @@ export function VaccinationForm({ onSuccess, onCancel }: VaccinationFormProps) {
   };
 
   const onSubmit = async (values: FormValues) => {
-    setServerError('');
-    setSuccessMsg('');
+
     try {
       await vaccinationService.create({
         ...values,
         rabbitIds: selectedRabbits.map(Number),
       });
-      setSuccessMsg('Vacunación registrada exitosamente.');
+      showToast('Vacunación registrada exitosamente.', 'success');
       setSelectedRabbits([]);
-      setTimeout(() => onSuccess?.(), 1000);
+      onSuccess?.();
     } catch (err) {
-      setServerError(err instanceof Error ? err.message : 'Error inesperado.');
+      showToast(err instanceof Error ? err.message : 'Error inesperado.', 'error');
     }
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      {serverError && <Alert variant="error" message={serverError} onClose={() => setServerError('')} />}
-      {successMsg && <Alert variant="success" message={successMsg} />}
 
       <div>
         <label className="block text-sm font-medium text-slate-600 mb-2">Conejos</label>

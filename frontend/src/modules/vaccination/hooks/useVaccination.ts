@@ -1,63 +1,61 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { vaccinationService } from '../services/vaccination.service';
 import { assignmentService } from '@/modules/assignments/services/assignment.service';
 import type { Vaccination, GalponVaccine } from '../types/vaccination.types';
 import type { AssignedRabbit } from '@/modules/assignments/types/assignment.types';
 
 export function useVaccination() {
-  const [vaccinations, setVaccinations] = useState<Vaccination[]>([]);
-  const [assignedRabbits, setAssignedRabbits] = useState<AssignedRabbit[]>([]);
-  const [galponVaccines, setGalponVaccines] = useState<GalponVaccine[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchVaccinations = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await vaccinationService.getAll();
-      setVaccinations(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar vacunaciones');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // Query: Fetch Vaccinations
+  const {
+    data: vaccinations = [],
+    isLoading: loadingVaccinations,
+    error: errorVaccinations,
+    refetch: fetchVaccinations,
+  } = useQuery({
+    queryKey: ['vaccinations'],
+    queryFn: () => vaccinationService.getAll(),
+  });
 
-  const fetchAssignedRabbits = useCallback(async () => {
-    try {
-      const data = await assignmentService.getAssignedRabbits();
-      setAssignedRabbits(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar conejos asignados');
-    }
-  }, []);
+  // Query: Fetch Assigned Rabbits
+  const {
+    data: assignedRabbits = [],
+    isLoading: loadingRabbits,
+    error: errorRabbits,
+  } = useQuery({
+    queryKey: ['assignedRabbits'],
+    queryFn: () => assignmentService.getAssignedRabbits(),
+  });
 
-  const fetchGalponVaccines = useCallback(async () => {
-    try {
-      const data = await vaccinationService.getGalponVaccines();
-      setGalponVaccines(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar vacunas del galpón');
-    }
-  }, []);
+  // Query: Fetch Galpon Vaccines
+  const {
+    data: galponVaccines = [],
+    isLoading: loadingVaccines,
+    error: errorVaccines,
+  } = useQuery({
+    queryKey: ['galponVaccines'],
+    queryFn: () => vaccinationService.getGalponVaccines(),
+  });
 
-  const createVaccination = useCallback(async (payload: { rabbitIds: number[]; vaccines: string[] }) => {
-    try {
-      setError(null);
-      await vaccinationService.create(payload);
-      await fetchVaccinations();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al registrar vacunación');
-      throw err;
-    }
-  }, [fetchVaccinations]);
+  const loading = loadingVaccinations || loadingRabbits || loadingVaccines;
+  const error = errorVaccinations ? (errorVaccinations as Error).message : 
+                (errorRabbits ? (errorRabbits as Error).message : 
+                (errorVaccines ? (errorVaccines as Error).message : null));
 
-  useEffect(() => {
-    Promise.all([fetchVaccinations(), fetchAssignedRabbits(), fetchGalponVaccines()]);
-  }, [fetchVaccinations, fetchAssignedRabbits, fetchGalponVaccines]);
+  // Mutation: Create Vaccination
+  const createVaccinationMutation = useMutation({
+    mutationFn: (payload: { rabbitIds: number[]; vaccines: string[] }) => vaccinationService.create(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vaccinations'] });
+    },
+  });
+
+  const createVaccination = async (payload: { rabbitIds: number[]; vaccines: string[] }) => {
+    return createVaccinationMutation.mutateAsync(payload);
+  };
 
   return { 
     vaccinations, 

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button, Alert, CageCatalog } from '@/shared/ui';
 import type { CageItem } from '@/shared/ui';
 import { useCleaning } from '../hooks/useCleaning';
+import { useToast } from '@/shared/contexts/ToastContext';
 
 interface CleaningCatalogProps {
   onSuccess?: () => void;
@@ -11,8 +12,8 @@ interface CleaningCatalogProps {
 
 export function CleaningCatalog({ onSuccess }: CleaningCatalogProps) {
   const { assignedRabbits, cleanings, loading, createCleaning, error } = useCleaning();
-  const [serverError, setServerError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
+
+  const { showToast } = useToast();
   const [selectedCageNumbers, setSelectedCageNumbers] = useState<number[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
@@ -73,12 +74,11 @@ export function CleaningCatalog({ onSuccess }: CleaningCatalogProps) {
 
   const handleRegister = async () => {
     if (selectedCageNumbers.length === 0) {
-      setServerError('Selecciona al menos una jaula.');
+      showToast('Selecciona al menos una jaula.', 'error');
       return;
     }
 
-    setServerError('');
-    setSuccessMsg('');
+
     setSubmitting(true);
 
     const cageIds: number[] = [];
@@ -93,14 +93,11 @@ export function CleaningCatalog({ onSuccess }: CleaningCatalogProps) {
       await createCleaning({
         cageIds
       });
-      setSuccessMsg('Limpieza registrada exitosamente.');
+      showToast('Limpieza registrada exitosamente.', 'success');
       setSelectedCageNumbers([]);
-      setTimeout(() => {
-        setSuccessMsg('');
-        onSuccess?.();
-      }, 2000);
+      onSuccess?.();
     } catch (err) {
-      setServerError(err instanceof Error ? err.message : 'Error inesperado.');
+      showToast(err instanceof Error ? err.message : 'Error inesperado.', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -110,15 +107,13 @@ export function CleaningCatalog({ onSuccess }: CleaningCatalogProps) {
     return <p className="text-center text-slate-500 py-8">Cargando datos de limpieza...</p>;
   }
 
-  const globalError = error || serverError;
+
 
   return (
     <div className="flex flex-col gap-4">
-      {globalError && <Alert variant="error" message={globalError} onClose={() => setServerError('')} />}
-      {successMsg && <Alert variant="success" message={successMsg} />}
+      {error && <Alert variant="error" message={error} />}
 
-      <div className="flex items-center justify-between">
-        <label className="block text-sm font-medium text-slate-600">Jaulas con conejos asignados</label>
+      <div className="flex justify-end">
         <Button type="button" variant="outline" size="sm" onClick={selectAllCages}>
           {selectedCageNumbers.length === cageGroups.length ? 'Deseleccionar todas' : 'Seleccionar todas'}
         </Button>

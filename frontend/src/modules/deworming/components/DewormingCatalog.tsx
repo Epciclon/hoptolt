@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Alert } from '@/shared/ui';
+import { Button } from '@/shared/ui';
+import { useToast } from '@/shared/contexts/ToastContext';
 import { useDeworming } from '../hooks/useDeworming';
 import type { AssignedRabbit } from '@/modules/assignments/types/assignment.types';
 
@@ -11,8 +12,8 @@ interface DewormingCatalogProps {
 
 export function DewormingCatalog({ onSuccess }: DewormingCatalogProps) {
   const { assignedRabbits, dewormingPeriod, loading, createDeworming, dewormings } = useDeworming();
-  const [serverError, setServerError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
+
+  const { showToast } = useToast();
   const [selectedRabbitIds, setSelectedRabbitIds] = useState<number[]>([]);
 
   const formatDateTime = (dateString: string) => {
@@ -51,7 +52,7 @@ export function DewormingCatalog({ onSuccess }: DewormingCatalogProps) {
 
   const handleRegister = () => {
     if (selectedRabbitIds.length === 0) {
-      setServerError('Selecciona al menos un conejo.');
+      showToast('Selecciona al menos un conejo.', 'error');
       return;
     }
 
@@ -59,16 +60,15 @@ export function DewormingCatalog({ onSuccess }: DewormingCatalogProps) {
   };
 
   const submitDeworming = async () => {
-    setServerError('');
-    setSuccessMsg('');
+
 
     try {
       await createDeworming({
         rabbitIds: selectedRabbitIds,
       });
-      setSuccessMsg('Desparasitación registrada exitosamente.');
+      showToast('Desparasitación registrada exitosamente.', 'success');
       setSelectedRabbitIds([]);
-      setTimeout(() => onSuccess?.(), 1000);
+      onSuccess?.();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error inesperado.';
       // Contar cuántos conejos tienen problemas (líneas que empiezan con "El conejo")
@@ -76,9 +76,9 @@ export function DewormingCatalog({ onSuccess }: DewormingCatalogProps) {
       const hasValidRabbits = errorLines.length < selectedRabbitIds.length;
       
       if (hasValidRabbits) {
-        setServerError(`${errorMessage}\n\nPor favor, deselecciona los conejos con problemas mencionados arriba para registrar los demás.`);
+        showToast(`${errorMessage}\n\nPor favor, deselecciona los conejos con problemas mencionados arriba para registrar los demás.`, 'error');
       } else {
-        setServerError(errorMessage);
+        showToast(errorMessage, 'error');
       }
     }
   };
@@ -106,10 +106,7 @@ export function DewormingCatalog({ onSuccess }: DewormingCatalogProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      {serverError && (
-        <Alert variant="error" message={serverError} onClose={() => setServerError('')} />
-      )}
-      {successMsg && <Alert variant="success" message={successMsg} onClose={() => setSuccessMsg('')} />}
+
 
       <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
         <p className="text-sm text-blue-800">
@@ -117,8 +114,7 @@ export function DewormingCatalog({ onSuccess }: DewormingCatalogProps) {
         </p>
       </div>
 
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-slate-800">Conejos con jaula asignada</h3>
+      <div className="flex justify-end">
         <Button type="button" variant="outline" size="sm" onClick={selectAllRabbits}>
           Seleccionar todos
         </Button>

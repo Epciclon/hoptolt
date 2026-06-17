@@ -10,6 +10,7 @@ import { ToastProvider } from '@/shared/contexts/ToastContext';
 import { ToastContainer } from '@/shared/ui/ToastContainer';
 import { usePathname } from 'next/navigation';
 import { PermissionGuard } from '@/shared/guards/PermissionGuard';
+import { RealtimeSyncProvider } from '@/shared/contexts/RealtimeSyncProvider';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuthContext();
@@ -57,18 +58,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <ToastProvider>
-      <div className="flex min-h-screen bg-page">
-        <Sidebar />
-        <div className="flex-1 flex flex-col ml-60">
-          <Header />
-          <main className="flex-1 p-6">
-            <PermissionGuard>
-              {children}
-            </PermissionGuard>
-          </main>
+      <RealtimeSyncProvider>
+        <div className="flex min-h-screen bg-page">
+          <Sidebar />
+          <div className="flex-1 flex flex-col ml-60">
+            <Header />
+            <main className="flex-1 p-6">
+              <PermissionGuard>
+                {children}
+              </PermissionGuard>
+            </main>
+          </div>
+          <ToastContainer />
         </div>
-        <ToastContainer />
-      </div>
+      </RealtimeSyncProvider>
     </ToastProvider>
   );
 }

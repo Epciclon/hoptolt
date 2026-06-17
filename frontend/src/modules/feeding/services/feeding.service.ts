@@ -3,7 +3,7 @@ import type { Feeding, CreateFeedingDto } from '../types/feeding.types';
 
 export const feedingService = {
   async getAll(): Promise<Feeding[]> {
-    const { data } = await api.get<{ success: boolean; feedings: Feeding[] }>('/feedings');
+    const { data } = await api.get<{ success: boolean; feedings: Feeding[] }>('/feedings?limit=1000');
     return data.feedings;
   },
 

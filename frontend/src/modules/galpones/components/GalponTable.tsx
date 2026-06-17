@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
-import { Table, Button, Alert, ConfirmDialog } from '@/shared/ui';
+import { Table, Button, ConfirmDialog } from '@/shared/ui';
 import type { Column } from '@/shared/ui/Table';
 import { useGalpones } from '../hooks/useGalpones';
 import { useActiveGalpon } from '../hooks/useActiveGalpon';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
+import { useToast } from '@/shared/contexts/ToastContext';
 import type { Galpon } from '../types/galpon.types';
 import { galponService } from '../services/galpon.service';
 
@@ -19,6 +20,7 @@ export function GalponTable({ onEdit, onSelectActive }: GalponTableProps) {
   const { galpones, loading, error, refetch } = useGalpones();
   const { activeGalpon, setActive } = useActiveGalpon();
   const { user } = useAuthContext();
+  const { showToast } = useToast();
   const [toDelete, setToDelete] = useState<Galpon | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [selecting, setSelecting] = useState(false);
@@ -29,9 +31,10 @@ export function GalponTable({ onEdit, onSelectActive }: GalponTableProps) {
     try {
       await galponService.delete(toDelete.id);
       setToDelete(null);
+      showToast(`Galpón "${toDelete.name}" eliminado correctamente.`, 'success');
       refetch();
     } catch (err) {
-      console.error('Error al eliminar:', err);
+      showToast(err instanceof Error ? err.message : 'Error al eliminar el galpón.', 'error');
     } finally {
       setDeleting(false);
     }
@@ -41,6 +44,7 @@ export function GalponTable({ onEdit, onSelectActive }: GalponTableProps) {
     setSelecting(true);
     const success = await setActive(galpon.id);
     if (success) {
+      showToast(`Galpón "${galpon.name}" seleccionado como activo.`, 'success');
       onSelectActive?.(galpon);
     }
     setSelecting(false);
@@ -89,7 +93,6 @@ export function GalponTable({ onEdit, onSelectActive }: GalponTableProps) {
 
   return (
     <>
-      {error && <Alert variant="error" message={error} className="mb-4" />}
       <Table<Galpon>
         columns={columns}
         data={galpones}

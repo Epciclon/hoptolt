@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, AlertTriangle, Baby, Calendar as CalendarIcon } from 'lucide-react';
-import { Button, Alert, Dialog } from '@/shared/ui';
-import api from '@/lib/api';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
+import { Alert } from '@/shared/ui';
 import { useSearchParams } from 'next/navigation';
 import { useBirthCalendar } from '../hooks/useBirthCalendar';
 import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
@@ -113,12 +112,7 @@ export function BirthCalendar() {
     return day === now.getDate() && month === now.getMonth() + 1 && year === now.getFullYear();
   };
 
-  const selectedEntries = selectedDate ? (calendar[selectedDate] || []) : [];
-
-  const handleEntryClick = async (entry: CalendarEntry) => {
-    setSelectedEntry(entry);
-    setShowDetailsModal(true);
-  };
+  const selectedEntries = selectedDate ? ((calendar as CalendarData)[selectedDate] || []) : [];
 
   return (
     <div className="space-y-4">
@@ -170,7 +164,7 @@ export function BirthCalendar() {
                   if (day === null) return <div key={`e-${idx}`} className="aspect-square" />;
 
                   const dateKey = `${year}-${pad(month)}-${pad(day)}`;
-                  const entries = calendar[dateKey] || [];
+                  const entries = (calendar as CalendarData)[dateKey] || [];
                   const hasEvents = entries.length > 0;
                   const isSelected = selectedDate === dateKey;
 

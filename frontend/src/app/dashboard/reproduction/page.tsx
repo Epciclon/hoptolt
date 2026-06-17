@@ -9,11 +9,9 @@ import { ReproductionCatalog } from '@/modules/reproduction/components/Reproduct
 
 function ReproductionPageContent() {
   const [modal, setModal] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
 
   const openModal = () => setModal(true);
   const closeModal = () => setModal(false);
-  const handleSuccess = () => { closeModal(); setRefreshKey((k) => k + 1); };
 
   return (
     <GalponGuard>
@@ -26,7 +24,7 @@ function ReproductionPageContent() {
           }
         />
 
-        <ReproductionCatalog key={refreshKey} onSuccess={handleSuccess} />
+        <ReproductionCatalog />
 
         <Dialog
           open={modal}
@@ -35,7 +33,7 @@ function ReproductionPageContent() {
           size="xl"
         >
           {modal && (
-            <ReproductionForm onSuccess={handleSuccess} onCancel={closeModal} />
+            <ReproductionForm onSuccess={closeModal} onCancel={closeModal} />
           )}
         </Dialog>
       </Card>

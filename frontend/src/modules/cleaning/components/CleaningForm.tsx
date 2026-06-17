@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Input, Button, Alert, CageCatalog } from '@/shared/ui';
 import type { CageItem } from '@/shared/ui';
 import { useCleaning } from '../hooks/useCleaning';
+import { useToast } from '@/shared/contexts/ToastContext';
 import { useAuth } from '@/modules/auth/hooks/useAuth';
 
 interface CleaningFormProps {
@@ -14,8 +15,8 @@ interface CleaningFormProps {
 export function CleaningForm({ onSuccess, onCancel }: CleaningFormProps) {
   const { user } = useAuth();
   const { assignedRabbits, cleanings, loading, createCleaning } = useCleaning();
-  const [serverError, setServerError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
+
+  const { showToast } = useToast();
   const [selectedCageNumbers, setSelectedCageNumbers] = useState<number[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
@@ -56,7 +57,7 @@ export function CleaningForm({ onSuccess, onCancel }: CleaningFormProps) {
     return acc;
   }, {} as Record<number, CageItem>);
 
-  const cageGroups: CageItem[] = Object.values(groupedByCage).sort((a, b) => a.cageNumber - b.uuid || a.cageNumber - b.cageNumber);
+  const cageGroups: CageItem[] = Object.values(groupedByCage).sort((a, b) => a.cageNumber - b.cageNumber);
 
   const toggleCage = (cageNumber: number) => {
     setSelectedCageNumbers(prev => 
@@ -77,12 +78,11 @@ export function CleaningForm({ onSuccess, onCancel }: CleaningFormProps) {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedCageNumbers.length === 0) {
-      setServerError('Selecciona al menos una jaula.');
+      showToast('Selecciona al menos una jaula.', 'error');
       return;
     }
 
-    setServerError('');
-    setSuccessMsg('');
+
     setSubmitting(true);
 
     const cageIds: number[] = [];
@@ -97,11 +97,11 @@ export function CleaningForm({ onSuccess, onCancel }: CleaningFormProps) {
       await createCleaning({
         cageIds
       });
-      setSuccessMsg('Limpieza registrada exitosamente.');
+      showToast('Limpieza registrada exitosamente.', 'success');
       setSelectedCageNumbers([]);
-      setTimeout(() => onSuccess?.(), 1000);
+      onSuccess?.();
     } catch (err) {
-      setServerError(err instanceof Error ? err.message : 'Error inesperado.');
+      showToast(err instanceof Error ? err.message : 'Error inesperado.', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -113,8 +113,6 @@ export function CleaningForm({ onSuccess, onCancel }: CleaningFormProps) {
 
   return (
     <form onSubmit={handleRegister} className="flex flex-col gap-4">
-      {serverError && <Alert variant="error" message={serverError} onClose={() => setServerError('')} />}
-      {successMsg && <Alert variant="success" message={successMsg} />}
 
       <div className="flex items-center justify-between mb-2">
         <label className="block text-sm font-medium text-slate-600">Jaulas con conejos asignados</label>

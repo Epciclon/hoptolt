@@ -2,11 +2,12 @@
 
 import { useRaces } from '../hooks/useRaces';
 import type { Race } from '../types/race.types';
-import { Button, Alert, ConfirmDialog, Dialog } from '@/shared/ui';
+import { Button, ConfirmDialog, Dialog } from '@/shared/ui';
 import { ImagePlaceholder } from '@/shared/ui/ImagePlaceholder';
 import { useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
 import { RaceForm } from './RaceForm';
+import { useToast } from '@/shared/contexts/ToastContext';
 import Image from 'next/image';
 
 interface RaceCatalogProps {
@@ -15,6 +16,7 @@ interface RaceCatalogProps {
 
 export function RaceCatalog({ onSuccess }: RaceCatalogProps) {
   const { races, loading, error, loadRaces, deleteRace } = useRaces();
+  const { showToast } = useToast();
   const [selectedRaceId, setSelectedRaceId] = useState<number | null>(null);
   const [toDelete, setToDelete] = useState<Race | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -28,14 +30,15 @@ export function RaceCatalog({ onSuccess }: RaceCatalogProps) {
   const handleConfirmDelete = async () => {
     if (!toDelete || !toDelete.id) return;
     setDeleting(true);
-    try {
-      await deleteRace(toDelete.id);
+    const { success, error: deleteError } = await deleteRace(toDelete.id);
+    setDeleting(false);
+    
+    if (success) {
       setToDelete(null);
+      showToast(`Raza "${toDelete.name}" eliminada correctamente.`, 'success');
       onSuccess?.();
-    } catch (err) {
-      // Error ya manejado en el hook
-    } finally {
-      setDeleting(false);
+    } else {
+      showToast(deleteError || 'Error al eliminar la raza.', 'error');
     }
   };
 
@@ -45,10 +48,6 @@ export function RaceCatalog({ onSuccess }: RaceCatalogProps) {
 
   return (
     <>
-      {error && (
-        <Alert variant="error" message={error} onClose={() => {}} className="mb-4" />
-      )}
-
       {races.length === 0 ? (
         <p className="text-sm text-slate-500">No hay razas registradas.</p>
       ) : (

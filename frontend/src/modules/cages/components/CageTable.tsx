@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
-import { Table, Badge, Button, ConfirmDialog, Alert } from '@/shared/ui';
+import { Table, Badge, Button, ConfirmDialog } from '@/shared/ui';
 import type { Column } from '@/shared/ui';
 import { useCages } from '../hooks/useCages';
+import { useToast } from '@/shared/contexts/ToastContext';
 import type { Cage } from '../types/cage.types';
 
 interface CageTableProps {
@@ -13,17 +14,21 @@ interface CageTableProps {
 
 export function CageTable({ onEdit }: CageTableProps) {
   const { cages, loading, error, deleteCage } = useCages();
+  const { showToast } = useToast();
   const [deleteTarget, setDeleteTarget] = useState<Cage | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [successMsg, setSuccessMsg] = useState('');
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
     setDeleteLoading(true);
-    const ok = await deleteCage(deleteTarget.id);
+    const { success, error: deleteError } = await deleteCage(deleteTarget.id);
     setDeleteLoading(false);
     setDeleteTarget(null);
-    if (ok) setSuccessMsg(`Jaula #${deleteTarget.number} eliminada correctamente.`);
+    if (success) {
+      showToast(`Jaula #${deleteTarget.number} eliminada correctamente.`, 'success');
+    } else {
+      showToast(deleteError || 'No se pudo eliminar la jaula.', 'error');
+    }
   };
 
   const columns: Column<Cage>[] = [
@@ -66,11 +71,6 @@ export function CageTable({ onEdit }: CageTableProps) {
 
   return (
     <>
-      {successMsg && (
-        <Alert variant="success" message={successMsg} onClose={() => setSuccessMsg('')} className="mb-4" />
-      )}
-      {error && <Alert variant="error" message={error} className="mb-4" />}
-
       <Table
         columns={columns}
         data={cages}

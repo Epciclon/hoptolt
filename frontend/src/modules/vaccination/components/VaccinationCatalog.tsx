@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Input, Button, Alert } from '@/shared/ui';
+import { Input, Button } from '@/shared/ui';
+import { useToast } from '@/shared/contexts/ToastContext';
 import { useVaccination } from '../hooks/useVaccination';
 import type { AssignedRabbit } from '@/modules/assignments/types/assignment.types';
 
@@ -13,8 +14,7 @@ const VACCINES_STORAGE_KEY = 'vaccination_selected_vaccines';
 
 export function VaccinationCatalog({ onSuccess }: VaccinationCatalogProps) {
   const { assignedRabbits, galponVaccines, loading, createVaccination, vaccinations } = useVaccination();
-  const [serverError, setServerError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
+  const { showToast } = useToast();
   const [selectedRabbitIds, setSelectedRabbitIds] = useState<number[]>([]);
   const [selectedVaccines, setSelectedVaccines] = useState<string[]>(() => {
     if (typeof window !== 'undefined') {
@@ -84,11 +84,11 @@ export function VaccinationCatalog({ onSuccess }: VaccinationCatalogProps) {
 
   const handleRegister = () => {
     if (selectedRabbitIds.length === 0) {
-      setServerError('Selecciona al menos un conejo.');
+      showToast('Selecciona al menos un conejo.', 'error');
       return;
     }
     if (selectedVaccines.length === 0) {
-      setServerError('Selecciona al menos una vacuna.');
+      showToast('Selecciona al menos una vacuna.', 'error');
       return;
     }
 
@@ -96,17 +96,16 @@ export function VaccinationCatalog({ onSuccess }: VaccinationCatalogProps) {
   };
 
   const submitVaccination = async () => {
-    setServerError('');
-    setSuccessMsg('');
+
 
     try {
       await createVaccination({
         rabbitIds: selectedRabbitIds,
         vaccines: selectedVaccines,
       });
-      setSuccessMsg('Vacunación registrada exitosamente.');
+      showToast('Vacunación registrada exitosamente.', 'success');
       setSelectedRabbitIds([]);
-      setTimeout(() => onSuccess?.(), 1000);
+      onSuccess?.();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error inesperado.';
       // Contar cuántos conejos tienen problemas (líneas que empiezan con "El conejo")
@@ -114,9 +113,9 @@ export function VaccinationCatalog({ onSuccess }: VaccinationCatalogProps) {
       const hasValidRabbits = errorLines.length < selectedRabbitIds.length;
       
       if (hasValidRabbits) {
-        setServerError(`${errorMessage}\n\nPor favor, deselecciona los conejos con problemas mencionados arriba para registrar los demás.`);
+        showToast(`${errorMessage}\n\nPor favor, deselecciona los conejos con problemas mencionados arriba para registrar los demás.`, 'error');
       } else {
-        setServerError(errorMessage);
+        showToast(errorMessage, 'error');
       }
     }
   };
@@ -160,10 +159,7 @@ export function VaccinationCatalog({ onSuccess }: VaccinationCatalogProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      {serverError && (
-        <Alert variant="error" message={serverError} onClose={() => setServerError('')} />
-      )}
-      {successMsg && <Alert variant="success" message={successMsg} onClose={() => setSuccessMsg('')} />}
+
 
       <div>
         <label className="block text-sm font-medium mb-2">Vacunas</label>
@@ -214,8 +210,7 @@ export function VaccinationCatalog({ onSuccess }: VaccinationCatalogProps) {
         )}
       </div>
 
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-slate-800">Conejos con jaula asignada</h3>
+      <div className="flex justify-end">
         <Button type="button" variant="outline" size="sm" onClick={selectAllRabbits}>
           Seleccionar todos
         </Button>

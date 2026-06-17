@@ -6,10 +6,12 @@ import { z } from 'zod';
 import { Input, Button, Alert } from '@/shared/ui';
 import { ImagePlaceholder } from '@/shared/ui/ImagePlaceholder';
 import { raceService } from '../services/race.service';
+import { useToast } from '@/shared/contexts/ToastContext';
 import type { Race } from '../types/race.types';
 import { useState, useRef, useEffect } from 'react';
 import { useSupabase } from '../../../hooks/useSupabase';
 import Image from 'next/image';
+import { useQueryClient } from '@tanstack/react-query';
 
 const schema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres.').max(100),
@@ -28,13 +30,14 @@ interface RaceFormProps {
 }
 
 export function RaceForm({ mode, defaultValues, raceId, onSuccess, onCancel }: RaceFormProps) {
-  const [success, setSuccess] = useState('');
-  const [apiError, setApiError] = useState('');
+
+  const { showToast } = useToast();
   const [imageUrl, setImageUrl] = useState<string | undefined>();
   const [originalImageUrl, setOriginalImageUrl] = useState<string | undefined>();
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadRaceImage } = useSupabase();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (mode === 'edit' && defaultValues) {
@@ -59,20 +62,19 @@ export function RaceForm({ mode, defaultValues, raceId, onSuccess, onCancel }: R
       const url = await uploadRaceImage(file);
       setImageUrl(url);
     } catch (err) {
-      setApiError(err instanceof Error ? err.message : 'Error al subir la imagen.');
+      showToast(err instanceof Error ? err.message : 'Error al subir la imagen.', 'error');
     } finally {
       setUploading(false);
     }
   };
 
   const onSubmit = async (values: FormValues) => {
-    setApiError('');
-    setSuccess('');
+
     try {
       const dataToSend = { ...values, imageUrl };
       if (mode === 'create') {
         await raceService.create(dataToSend);
-        setSuccess('Raza registrada exitosamente.');
+        showToast('Raza registrada exitosamente.', 'success');
         reset();
         setImageUrl(undefined);
       } else {
@@ -82,19 +84,17 @@ export function RaceForm({ mode, defaultValues, raceId, onSuccess, onCancel }: R
           updateData.imageUrl = imageUrl || null;
         }
         await raceService.update(raceId!, updateData);
-        setSuccess('Raza actualizada exitosamente.');
+        showToast('Raza actualizada exitosamente.', 'success');
       }
-      setTimeout(() => onSuccess?.(), 1000);
+      queryClient.invalidateQueries({ queryKey: ['races'] });
+      onSuccess?.();
     } catch (err) {
-      setApiError(err instanceof Error ? err.message : 'Error al guardar la raza.');
+      showToast(err instanceof Error ? err.message : 'Error al guardar la raza.', 'error');
     }
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
-      {success && <Alert variant="success" message={success} onClose={() => setSuccess('')} />}
-      {apiError && <Alert variant="error" message={apiError} onClose={() => setApiError('')} />}
-
       {mode === 'edit' ? (
         <div>
           <label className="block text-sm font-medium text-slate-600 mb-1">Nombre de la raza</label>

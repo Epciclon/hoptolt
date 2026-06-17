@@ -12,13 +12,11 @@ import type { Genealogy } from '@/modules/genealogy/types/genealogy.types';
 export default function GenealogyPage() {
   const [modal, setModal] = useState<'register' | 'edit' | 'view' | null>(null);
   const [editData, setEditData] = useState<Genealogy | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
 
   const openRegister = () => setModal('register');
   const openEdit = (genealogy: Genealogy) => { setEditData(genealogy); setModal('edit'); };
   const openView = () => setModal('view');
   const closeModal = () => { setModal(null); setEditData(null); };
-  const handleSuccess = () => { closeModal(); setRefreshKey((k) => k + 1); };
 
   return (
     <GalponGuard>
@@ -33,7 +31,7 @@ export default function GenealogyPage() {
           </div>
         }
       />
-      <GenealogyTable key={refreshKey} onEdit={openEdit} />
+      <GenealogyTable onEdit={openEdit} />
 
       <Dialog
         open={modal === 'register'}
@@ -42,7 +40,7 @@ export default function GenealogyPage() {
         size="xl"
       >
         {modal === 'register' && (
-          <GenealogyForm onSuccess={handleSuccess} onCancel={closeModal} />
+          <GenealogyForm onSuccess={closeModal} onCancel={closeModal} />
         )}
       </Dialog>
 
@@ -53,7 +51,7 @@ export default function GenealogyPage() {
         size="xl"
       >
         {modal === 'edit' && (
-          <GenealogyForm editData={editData || undefined} onSuccess={handleSuccess} onCancel={closeModal} />
+          <GenealogyForm editData={editData || undefined} onSuccess={closeModal} onCancel={closeModal} />
         )}
       </Dialog>
 

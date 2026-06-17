@@ -1,41 +1,45 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { galponService } from '../services/galpon.service';
 import type { Galpon } from '../types/galpon.types';
 
 export function useGalpon() {
-  const [galpones, setGalpones] = useState<Galpon[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchGalpones = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await galponService.getAll();
-      setGalpones(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar galpones');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // Query: Fetch Galpones
+  const {
+    data: galpones = [],
+    isLoading: loading,
+    error: queryError,
+    refetch: fetchGalpones,
+  } = useQuery({
+    queryKey: ['galpones'],
+    queryFn: () => galponService.getAll(),
+  });
 
-  useEffect(() => {
-    fetchGalpones();
-  }, [fetchGalpones]);
+  // Mutation: Delete Galpon
+  const deleteGalponMutation = useMutation({
+    mutationFn: (id: number) => galponService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['galpones'] });
+    },
+  });
 
   const deleteGalpon = async (id: number): Promise<boolean> => {
     try {
-      await galponService.delete(id);
-      setGalpones(prev => prev.filter(g => g.id !== id));
+      await deleteGalponMutation.mutateAsync(id);
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al eliminar galpón');
       return false;
     }
   };
 
-  return { galpones, loading, error, fetchGalpones, deleteGalpon };
+  return {
+    galpones,
+    loading,
+    error: queryError ? (queryError as Error).message : null,
+    fetchGalpones,
+    deleteGalpon,
+  };
 }

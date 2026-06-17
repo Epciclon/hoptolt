@@ -1,49 +1,58 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { assignmentService } from '../services/assignment.service';
 import type { Assignment } from '../types/assignment.types';
 
 export function useAssignments() {
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchAssignments = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      setAssignments(await assignmentService.getAll());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar las asignaciones.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // Query: Fetch Assignments
+  const {
+    data: assignments = [],
+    isLoading: loading,
+    error: queryError,
+    refetch: fetchAssignments,
+  } = useQuery({
+    queryKey: ['assignments'],
+    queryFn: () => assignmentService.getAll(),
+  });
 
-  useEffect(() => { fetchAssignments(); }, [fetchAssignments]);
+  const unassignRabbitMutation = useMutation({
+    mutationFn: (id: number) => assignmentService.deleteById(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['assignments'] });
+      queryClient.invalidateQueries({ queryKey: ['assignedRabbits'] });
+    },
+  });
 
   const unassignRabbit = async (id: number): Promise<boolean> => {
     try {
-      await assignmentService.deleteById(id);
-      setAssignments((prev) => prev.filter((a) => a.id !== id));
+      await unassignRabbitMutation.mutateAsync(id);
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al desasignar el conejo.');
       return false;
     }
   };
 
+  const assignRabbitsMutation = useMutation({
+    mutationFn: (payload: { cageId: number; rabbitIds: number[] }) => assignmentService.assign(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['assignments'] });
+      queryClient.invalidateQueries({ queryKey: ['assignedRabbits'] });
+    },
+  });
+
   const assignRabbits = async (payload: { cageId: number; rabbitIds: number[] }): Promise<{ assignments: Assignment[]; warnings: string[] }> => {
-    try {
-      const result = await assignmentService.assign(payload);
-      await fetchAssignments();
-      return result;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al asignar los conejos.');
-      throw err;
-    }
+    return assignRabbitsMutation.mutateAsync(payload);
   };
 
-  return { assignments, loading, error, fetchAssignments, unassignRabbit, assignRabbits };
+  return {
+    assignments,
+    loading,
+    error: queryError ? (queryError as Error).message : null,
+    fetchAssignments,
+    unassignRabbit,
+    assignRabbits,
+  };
 }

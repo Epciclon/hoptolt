@@ -1,48 +1,63 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { farmMemberService } from '../services/farmMember.service';
 import type { FarmMember } from '../types/farmMember.types';
+import { useActiveGalpon } from '@/modules/galpones/hooks/useActiveGalpon';
 
 export function useFarmMember() {
-  const [workers, setWorkers] = useState<FarmMember[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const { activeGalpon } = useActiveGalpon();
 
-  const fetchWorkers = useCallback(async (galponId: number) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await farmMemberService.getWorkersByGalpon(galponId);
-      setWorkers(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar trabajadores.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const {
+    data: workers = [],
+    isLoading: loading,
+    error: queryError,
+    refetch: fetchWorkers,
+  } = useQuery({
+    queryKey: ['workers', activeGalpon?.id],
+    queryFn: () => farmMemberService.getWorkersByGalpon(activeGalpon!.id),
+    enabled: !!activeGalpon,
+  });
+
+  const removeWorkerMutation = useMutation({
+    mutationFn: (id: number) => farmMemberService.removeWorker(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workers'] });
+    },
+  });
 
   const removeWorker = async (id: number) => {
     try {
-      await farmMemberService.removeWorker(id);
-      setWorkers(prev => prev.filter(w => w.id !== id));
+      await removeWorkerMutation.mutateAsync(id);
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al eliminar trabajador.');
       return false;
     }
   };
+
+  const updateWorkerMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) => farmMemberService.updateWorker(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workers'] });
+    },
+  });
 
   const updateWorker = async (id: number, data: any) => {
     try {
-      await farmMemberService.updateWorker(id, data);
-      setWorkers(prev => prev.map(w => w.id === id ? { ...w, ...data } : w));
+      await updateWorkerMutation.mutateAsync({ id, data });
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al actualizar trabajador.');
       return false;
     }
   };
 
-  return { workers, loading, error, fetchWorkers, removeWorker, updateWorker };
+  return {
+    workers,
+    loading,
+    error: queryError ? (queryError as Error).message : null,
+    fetchWorkers,
+    removeWorker,
+    updateWorker,
+  };
 }

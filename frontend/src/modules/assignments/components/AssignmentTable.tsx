@@ -2,12 +2,14 @@
 
 import { useState, useMemo } from 'react';
 import { LogOut } from 'lucide-react';
-import { Button, Alert, ConfirmDialog, CardGroup } from '@/shared/ui';
+import { Button, Alert, ConfirmDialog } from '@/shared/ui';
+import { useToast } from '@/shared/contexts/ToastContext';
 import { useAssignments } from '../hooks/useAssignments';
 import type { Assignment } from '../types/assignment.types';
 
 export function AssignmentTable() {
   const { assignments, loading, error, unassignRabbit } = useAssignments();
+  const { showToast } = useToast();
   const [toUnassign, setToUnassign] = useState<{ cageId: number; rabbitIds: number[] } | null>(null);
   const [processing, setProcessing] = useState(false);
   const [selectedRabbitsByCage, setSelectedRabbitsByCage] = useState<Record<number, number[]>>({});
@@ -25,6 +27,7 @@ export function AssignmentTable() {
     setProcessing(false);
     setToUnassign(null);
     setSelectedRabbitsByCage(prev => ({ ...prev, [toUnassign.cageId]: [] }));
+    showToast('Conejos desasignados exitosamente.', 'success');
   };
 
   const handleRabbitSelect = (cageId: number, rabbitId: number) => {
@@ -106,12 +109,26 @@ export function AssignmentTable() {
       {error && <Alert variant="error" message={error} className="mb-4" />}
       {loading ? (
         <p className="text-center text-slate-500 py-8">Cargando asignaciones...</p>
+      ) : Object.keys(groupedByCage).length === 0 ? (
+        <p className="text-sm text-slate-500">No hay conejos con jaula asignada en el galpón activo.</p>
       ) : (
-        <CardGroup
-          title="Asignaciones de Conejos"
-          subtitle="Gestiona qué conejo está en cada jaula"
-          items={cardItems}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {cardItems.map((item) => (
+            <div
+              key={item.id}
+              className="border border-slate-200 rounded-lg p-4 hover:border-slate-300 transition-colors bg-white"
+            >
+              <div className="flex flex-col gap-2">
+                <div className="flex-1">
+                  <h3 className="font-medium text-slate-800">{item.title}</h3>
+                </div>
+                <div className="flex justify-end mt-2">
+                  {item.actions}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
       <ConfirmDialog
         open={!!toUnassign}
