@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Input, Button, CageCatalog } from '@/shared/ui';
+import { Input, Button, CageCatalog, LoadingMessage, Dialog } from '@/shared/ui';
 import type { CageItem } from '@/shared/ui';
 import { useFeeding } from '../hooks/useFeeding';
+import { useAuth } from '@/modules/auth/hooks/useAuth';
 import { useToast } from '@/shared/contexts/ToastContext';
 import type { AssignedRabbit } from '@/modules/assignments/types/assignment.types';
 
@@ -15,6 +16,7 @@ const FOOD_TYPES_STORAGE_KEY = 'feeding_selected_food_types';
 
 export function FeedingCatalog({ onSuccess }: FeedingCatalogProps) {
   const { assignedRabbits, foodTypes, loading, createFeeding, feedings } = useFeeding();
+  const { user } = useAuth();
 
   const { showToast } = useToast();
   const [selectedCageNumbers, setSelectedCageNumbers] = useState<number[]>([]);
@@ -29,6 +31,7 @@ export function FeedingCatalog({ onSuccess }: FeedingCatalogProps) {
   const [showFoodDropdown, setShowFoodDropdown] = useState(false);
   const [showJustificationModal, setShowJustificationModal] = useState(false);
   const [justification, setJustification] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [cagesWithIssue, setCagesWithIssue] = useState<Array<{ cageNumber: number; cageType: string; feedingsToday: number }>>([]);
   
   const foodDropdownRef = useRef<HTMLDivElement>(null);
@@ -50,13 +53,37 @@ export function FeedingCatalog({ onSuccess }: FeedingCatalogProps) {
     return `${formattedDate} ${formattedTime}`;
   };
 
-  const getCageFeedingsToday = (cageId: number) => {
-    const now = new Date();
-    const ecuadorToday = new Date(now.toLocaleString('en-US', { timeZone: 'America/Guayaquil' })).toDateString();
+  // Formatters para Ecuador
+  const ecuadorDateFormatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Guayaquil',
+    year: 'numeric', month: '2-digit', day: '2-digit'
+  });
+  
+  const ecuadorHourFormatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Guayaquil',
+    hour: 'numeric',
+    hour12: false
+  });
+
+  const getEcuadorDateString = (date: Date) => {
+    const parts = ecuadorDateFormatter.formatToParts(date);
+    const y = parts.find(p => p.type === 'year')?.value;
+    const m = parts.find(p => p.type === 'month')?.value;
+    const d = parts.find(p => p.type === 'day')?.value;
+    return `${y}-${m}-${d}`;
+  };
+
+  const currentEcuadorShift = (() => {
+    const hour = parseInt(ecuadorHourFormatter.format(new Date()), 10);
+    return hour < 12 ? 'mañana' : 'tarde';
+  })();
+  const currentEcuadorDateStr = getEcuadorDateString(new Date());
+
+  const getCageFeedingsThisShift = (cageId: number) => {
     return feedings.filter(f => {
       const feedingDate = new Date(f.feedingDate);
-      const ecuadorFeedingDate = new Date(feedingDate.toLocaleString('en-US', { timeZone: 'America/Guayaquil' })).toDateString();
-      return f.cageId === cageId && ecuadorFeedingDate === ecuadorToday;
+      const ecuadorFeedingDate = getEcuadorDateString(feedingDate);
+      return f.cageId === cageId && ecuadorFeedingDate === currentEcuadorDateStr && f.shift === currentEcuadorShift && f.profileId === user?.id;
     }).length;
   };
 
@@ -120,8 +147,8 @@ export function FeedingCatalog({ onSuccess }: FeedingCatalogProps) {
     for (const cageNumber of selectedCageNumbers) {
       const cage = cageGroups.find(g => g.cageNumber === cageNumber);
       if (cage) {
-        const feedingsToday = getCageFeedingsToday(cage.cageId);
-        if (feedingsToday >= 2) {
+        const feedingsToday = getCageFeedingsThisShift(cage.cageId);
+        if (feedingsToday >= 1) {
           cagesWithIssue.push({
             cageNumber: cage.cageNumber,
             cageType: cage.cageType,
@@ -164,11 +191,13 @@ export function FeedingCatalog({ onSuccess }: FeedingCatalogProps) {
       }
     }
 
+    setIsSubmitting(true);
     try {
       await createFeeding({
         cageIds,
         foodTypes: selectedFoodTypes,
         justification: justificationText,
+        shift: currentEcuadorShift
       });
       showToast('Alimentación registrada exitosamente.', 'success');
       setSelectedCageNumbers([]);
@@ -177,6 +206,8 @@ export function FeedingCatalog({ onSuccess }: FeedingCatalogProps) {
       onSuccess?.();
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Error inesperado.', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -203,16 +234,68 @@ export function FeedingCatalog({ onSuccess }: FeedingCatalogProps) {
   );
 
   if (loading) {
-    return <p className="text-center text-slate-500 py-8">Cargando datos...</p>;
+    return <LoadingMessage message="Cargando alimentación..." />;
   }
 
-  return (
-    <div className="flex flex-col gap-4">
-      
+  // Estadísticas del día
+  const feedingsToday = feedings.filter(f => {
+    const fd = new Date(f.feedingDate);
+    return getEcuadorDateString(fd) === currentEcuadorDateStr;
+  });
 
-      <div className="bg-white border border-slate-200 rounded-lg p-4 sticky top-0 z-10 shadow-sm">
-        <label className="block text-sm font-medium text-slate-600 mb-2">Tipos de Alimento</label>
-        <div className="relative" ref={foodDropdownRef}>
+  const uniqueCagesMorning = new Set(feedingsToday.filter(f => f.shift === 'mañana').map(f => f.cageId)).size;
+  const uniqueCagesAfternoon = new Set(feedingsToday.filter(f => f.shift === 'tarde').map(f => f.cageId)).size;
+  const totalCages = cageGroups.length;
+
+  const morningPercentage = totalCages > 0 ? (uniqueCagesMorning / totalCages) * 100 : 0;
+  const afternoonPercentage = totalCages > 0 ? (uniqueCagesAfternoon / totalCages) * 100 : 0;
+
+  return (
+    <div className="flex flex-col gap-6 animate-in fade-in duration-300">
+      
+      {/* Sección de Estadísticas (Barra de progreso) */}
+      <div className="bg-white border border-slate-200 rounded-lg p-5">
+        <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+          📊 Progreso de Alimentación Hoy
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <div className="flex justify-between text-xs mb-1">
+              <span className="text-slate-600 font-medium">Turno Mañana</span>
+              <span className="text-emerald-600 font-semibold">{uniqueCagesMorning} / {totalCages} Jaulas</span>
+            </div>
+            <div className="w-full bg-slate-100 rounded-full h-2">
+              <div 
+                className="bg-emerald-500 h-2 rounded-full transition-all duration-500" 
+                style={{ width: `${Math.min(morningPercentage, 100)}%` }} 
+              />
+            </div>
+          </div>
+          <div>
+            <div className="flex justify-between text-xs mb-1">
+              <span className="text-slate-600 font-medium">Turno Tarde</span>
+              <span className="text-orange-600 font-semibold">{uniqueCagesAfternoon} / {totalCages} Jaulas</span>
+            </div>
+            <div className="w-full bg-slate-100 rounded-full h-2">
+              <div 
+                className="bg-orange-500 h-2 rounded-full transition-all duration-500" 
+                style={{ width: `${Math.min(afternoonPercentage, 100)}%` }} 
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-lg p-4 sticky top-0 z-10 shadow-sm flex flex-col gap-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <span className="text-sm font-medium text-slate-600">Turno Actual:</span>
+          <span className={`px-3 py-1 rounded-full text-xs font-bold ${currentEcuadorShift === 'mañana' ? 'bg-emerald-100 text-emerald-800' : 'bg-orange-100 text-orange-800'}`}>
+            {currentEcuadorShift === 'mañana' ? 'Mañana' : 'Tarde'}
+          </span>
+        </div>
+
+        <div className="w-full relative" ref={foodDropdownRef}>
+          <label className="block text-sm font-medium text-slate-600 mb-2">Tipos de Alimento</label>
           <Input
             placeholder="Busca y selecciona tipos de alimento"
             value={foodSearch}
@@ -274,7 +357,7 @@ export function FeedingCatalog({ onSuccess }: FeedingCatalogProps) {
           onToggleCage={toggleCage}
           renderCageContent={(cage) => {
             const cageLastFeeding = getCageLastFeeding(cage.cageId);
-            const cageFeedingsToday = getCageFeedingsToday(cage.cageId);
+            const cageFeedingsThisShift = getCageFeedingsThisShift(cage.cageId);
             return (
               <>
                 {cageLastFeeding ? (
@@ -292,8 +375,8 @@ export function FeedingCatalog({ onSuccess }: FeedingCatalogProps) {
                 ) : (
                   <p className="text-xs text-slate-400">Sin registros previos</p>
                 )}
-                <p className="text-xs text-slate-500 mt-1">
-                  {cageFeedingsToday} registro{cageFeedingsToday !== 1 ? 's' : ''} hoy
+                <p className="text-xs text-slate-500 mt-1 font-medium text-emerald-600">
+                  {cageFeedingsThisShift} registro{cageFeedingsThisShift !== 1 ? 's' : ''} tuyos en este turno
                 </p>
               </>
             );
@@ -301,69 +384,70 @@ export function FeedingCatalog({ onSuccess }: FeedingCatalogProps) {
         />
       )}
 
-      <div className="flex gap-3 pt-4 sticky bottom-0 bg-white py-4 border-t border-slate-200">
+      <div className="flex justify-end gap-3 pt-4 sticky bottom-0 bg-white py-4 border-t border-slate-200">
         <Button 
           onClick={handleRegister}
-          disabled={selectedCageNumbers.length === 0 || selectedFoodTypes.length === 0}
+          disabled={selectedCageNumbers.length === 0 || selectedFoodTypes.length === 0 || isSubmitting}
+          loading={isSubmitting}
         >
           Registrar Alimentación ({selectedCageNumbers.length} jaula{selectedCageNumbers.length !== 1 ? 's' : ''})
         </Button>
       </div>
 
-      {showJustificationModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-slate-800 mb-2">Justificación Requerida</h3>
-            
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-md mb-4">
-              <h4 className="text-sm font-semibold text-blue-900 mb-2">📋 Política de Alimentación</h4>
-              <p className="text-sm text-blue-800">
-                Dividir la ración diaria en dos tomas (una por la mañana y otra al atardecer) permite controlar el desperdicio y asegurar que los animales coman fresco. Por esta razón, el sistema permite hasta 2 registros de alimentación por día sin justificación.
-              </p>
-            </div>
-            
-            <div className="mb-4">
-              <p className="text-sm font-medium text-slate-700 mb-2">Jaulas con más de 2 registros hoy:</p>
-              <ul className="text-sm text-slate-600 space-y-1">
-                {cagesWithIssue.map(cage => (
-                  <li key={cage.cageNumber} className="flex items-center gap-2">
-                    <span className="font-medium">Jaula #{cage.cageNumber} — {cage.cageType.charAt(0).toUpperCase() + cage.cageType.slice(1)}</span>
-                    <span className="text-red-600">({cage.feedingsToday} registros)</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            
-            <p className="text-sm text-slate-600 mb-4">
-              Por favor, explica el motivo de la alimentación adicional.
-            </p>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-600 mb-2">Justificación</label>
-              <textarea
-                value={justification}
-                onChange={(e) => setJustification(e.target.value)}
-                placeholder="Explica el motivo de la alimentación adicional..."
-                className="w-full border border-slate-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                rows={3}
-              />
-            </div>
-            <div className="flex gap-2 justify-end">
-              <Button 
-                variant="secondary" 
-                onClick={handleCancelJustification}
-              >
-                Cancelar
-              </Button>
-              <Button 
-                onClick={() => submitFeeding(justification || 'Alimentación normal')}
-                disabled={!justification.trim()}
-              >
-                Registrar
-              </Button>
-            </div>
-          </div>
+      <Dialog
+        open={showJustificationModal}
+        onClose={handleCancelJustification}
+        title="Justificación Requerida"
+        description=""
+        size="sm"
+      >
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-md mb-4 mt-2">
+          <h4 className="text-sm font-semibold text-blue-900 mb-2">📋 Política de Alimentación</h4>
+          <p className="text-sm text-blue-800">
+            El sistema permite un (1) registro de alimentación sin justificación por turno y por usuario. Estás intentando registrar un segundo alimento en el turno de la <strong>{currentEcuadorShift}</strong>, por lo que es requerido ingresar un motivo.
+          </p>
         </div>
-      )}
+        
+        <div className="mb-4">
+          <p className="text-sm font-medium text-slate-700 mb-2">Jaulas con observaciones en este turno:</p>
+          <ul className="text-sm text-slate-600 space-y-1">
+            {cagesWithIssue.map(cage => (
+              <li key={cage.cageNumber} className="flex items-center gap-2">
+                <span className="font-medium">Jaula #{cage.cageNumber} — {cage.cageType.charAt(0).toUpperCase() + cage.cageType.slice(1)}</span>
+                <span className="text-red-600">({cage.feedingsToday} registros)</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        
+        <p className="text-sm text-slate-600 mb-4">
+          Por favor, explica el motivo de la alimentación adicional.
+        </p>
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-slate-600 mb-2">Justificación</label>
+          <textarea
+            value={justification}
+            onChange={(e) => setJustification(e.target.value)}
+            placeholder="Explica el motivo de la alimentación adicional..."
+            className="w-full border border-slate-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            rows={3}
+          />
+        </div>
+        <div className="flex gap-2 justify-end">
+          <Button 
+            variant="secondary" 
+            onClick={handleCancelJustification}
+          >
+            Cancelar
+          </Button>
+          <Button 
+            onClick={() => submitFeeding(justification || 'Alimentación normal')}
+            disabled={!justification.trim()}
+          >
+            Registrar
+          </Button>
+        </div>
+      </Dialog>
     </div>
   );
 }

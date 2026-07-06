@@ -7,7 +7,8 @@ const toRabbitDTO = (rabbit) => ({
     birthDate: rabbit.birthDate,
     age: rabbit.age,
     weight: parseFloat(rabbit.weight),
-    purpose: rabbit.purpose
+    purpose: rabbit.purpose,
+    imageUrl: rabbit.imageUrl
 });
 
 module.exports = { toRabbitDTO };

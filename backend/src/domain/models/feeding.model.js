@@ -27,6 +27,11 @@ const Feeding = sequelize.define('Feeding', {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW
     },
+    shift: {
+        type: DataTypes.ENUM('mañana', 'tarde'),
+        allowNull: false,
+        defaultValue: 'mañana'
+    },
     galponId: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -42,6 +47,10 @@ const Feeding = sequelize.define('Feeding', {
             model: 'profiles',
             key: 'id'
         }
+    },
+    rabbitsSnapshot: {
+        type: DataTypes.JSON,
+        allowNull: true
     },
     createdAt: {
         type: DataTypes.DATE,

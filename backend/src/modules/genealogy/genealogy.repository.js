@@ -3,8 +3,8 @@ const { Op } = require('sequelize');
 
 class GenealogyRepository {
     async findByRabbitId(rabbitId) {
-        return Genealogy.findOne({ 
-            where: { rabbitId }, 
+        return Genealogy.findOne({
+            where: { rabbitId },
             include: [
                 { model: Rabbit, as: 'rabbit' },
                 { model: Rabbit, as: 'father' },
@@ -14,8 +14,8 @@ class GenealogyRepository {
     }
 
     async findByGalponId(galponId) {
-        return Genealogy.findAll({ 
-            where: { galponId }, 
+        return Genealogy.findAll({
+            where: { galponId },
             include: [
                 { model: Rabbit, as: 'rabbit' },
                 { model: Rabbit, as: 'father' },
@@ -25,7 +25,7 @@ class GenealogyRepository {
     }
 
     async findAll() {
-        return Genealogy.findAll({ 
+        return Genealogy.findAll({
             include: [
                 { model: Rabbit, as: 'rabbit' },
                 { model: Rabbit, as: 'father' },

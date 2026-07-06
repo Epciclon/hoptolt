@@ -44,6 +44,10 @@ const Cleaning = sequelize.define('Cleaning', {
             key: 'id'
         }
     },
+    rabbitsSnapshot: {
+        type: DataTypes.JSON,
+        allowNull: true
+    },
     createdAt: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW

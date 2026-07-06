@@ -1,10 +1,29 @@
 import api from '@/lib/api';
 import type { Rabbit, CreateRabbitDto, UpdateRabbitDto } from '../types/rabbit.types';
 
+export interface GetRabbitsParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  race?: string;
+  sex?: string;
+  purpose?: string;
+}
+
+export interface RabbitsResponse {
+  rabbits: Rabbit[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
 export const rabbitService = {
-  async getAll(): Promise<Rabbit[]> {
-    const { data } = await api.get<{ success: boolean; rabbits: Rabbit[] }>('/rabbits');
-    return data.rabbits;
+  async getAll(params?: GetRabbitsParams): Promise<RabbitsResponse> {
+    const { data } = await api.get<{ success: boolean; rabbits: Rabbit[]; pagination: any }>('/rabbits', { params });
+    return { rabbits: data.rabbits, pagination: data.pagination };
   },
 
   async getById(id: number): Promise<Rabbit> {
@@ -41,5 +60,10 @@ export const rabbitService = {
     const rabbit = data.rabbits.find(r => r.code === code);
     if (!rabbit) throw new Error('Conejo no encontrado');
     return rabbit;
+  },
+
+  async suggestName(sex: string): Promise<string> {
+    const { data } = await api.get<{ success: boolean; name: string }>('/rabbits/suggest-name', { params: { sex } });
+    return data.name;
   },
 };

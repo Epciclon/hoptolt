@@ -56,13 +56,14 @@ export function useDeworming() {
     return createDewormingMutation.mutateAsync(payload);
   };
 
-  return { 
-    dewormings, 
-    assignedRabbits, 
-    dewormingPeriod, 
-    loading, 
-    error, 
+  return {
+    dewormings,
+    assignedRabbits,
+    dewormingPeriod,
+    loading,
+    error,
+    createDeworming,
+    isCreating: createDewormingMutation.isPending,
     fetchDewormings,
-    createDeworming 
   };
 }

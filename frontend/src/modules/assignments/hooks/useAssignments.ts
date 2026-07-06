@@ -18,11 +18,31 @@ export function useAssignments() {
     queryFn: () => assignmentService.getAll(),
   });
 
+  const {
+    data: operativeCages = [],
+    isLoading: loadingCages,
+  } = useQuery({
+    queryKey: ['operativeCages'],
+    queryFn: () => assignmentService.getOperativeCages(),
+  });
+
+  const {
+    data: availableRabbits = [],
+    isLoading: loadingRabbits,
+  } = useQuery({
+    queryKey: ['availableRabbits'],
+    queryFn: () => assignmentService.getAvailableRabbits(),
+  });
+
   const unassignRabbitMutation = useMutation({
     mutationFn: (id: number) => assignmentService.deleteById(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['assignments'] });
       queryClient.invalidateQueries({ queryKey: ['assignedRabbits'] });
+      queryClient.invalidateQueries({ queryKey: ['operativeCages'] });
+      queryClient.invalidateQueries({ queryKey: ['availableRabbits'] });
+      queryClient.invalidateQueries({ queryKey: ['reproductionMales'] });
+      queryClient.invalidateQueries({ queryKey: ['reproductionFemales'] });
     },
   });
 
@@ -40,6 +60,10 @@ export function useAssignments() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['assignments'] });
       queryClient.invalidateQueries({ queryKey: ['assignedRabbits'] });
+      queryClient.invalidateQueries({ queryKey: ['operativeCages'] });
+      queryClient.invalidateQueries({ queryKey: ['availableRabbits'] });
+      queryClient.invalidateQueries({ queryKey: ['reproductionMales'] });
+      queryClient.invalidateQueries({ queryKey: ['reproductionFemales'] });
     },
   });
 
@@ -49,10 +73,12 @@ export function useAssignments() {
 
   return {
     assignments,
-    loading,
+    operativeCages,
+    availableRabbits,
+    loading: loading || loadingCages || loadingRabbits,
     error: queryError ? (queryError as Error).message : null,
     fetchAssignments,
-    unassignRabbit,
     assignRabbits,
+    unassignRabbit,
   };
 }

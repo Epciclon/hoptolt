@@ -4,7 +4,7 @@ const AppError = require('../../errors/AppError');
 const { getPaginationParams, createPaginatedResponse } = require('../../common/helpers/pagination.helper');
 
 class DewormingService {
-    async registerDeworming(data, galponId) {
+    async registerDeworming(data, galponId, profileId) {
         const { rabbitIds } = data;
 
         const galpon = await Galpon.findByPk(galponId);
@@ -62,7 +62,8 @@ class DewormingService {
             const deworming = await dewormingRepository.create({
                 rabbitId,
                 dewormingDate: new Date(),
-                galponId
+                galponId,
+                profileId
             });
             createdDewormings.push(deworming);
         }
@@ -70,7 +71,7 @@ class DewormingService {
         return createdDewormings;
     }
 
-    async getDewormings(galponId, profileId, page = 1, limit = 10) {
+    async getDewormings(galponId, profileId, page = 1, limit = 10, filters = {}) {
         if (!galponId) return createPaginatedResponse([], page, limit, 0);
 
         // Verificar que el usuario tiene acceso al galpón
@@ -80,10 +81,13 @@ class DewormingService {
         if (!membership) throw new AppError('No tienes acceso a este galpón.', 403);
 
         const { limit: limitValue, offset, page: pageValue } = getPaginationParams(page, limit);
-        const dewormings = await dewormingRepository.findByGalponId(galponId, { limit: limitValue, offset });
-        const total = await dewormingRepository.countByGalponId(galponId);
+        
+        const queryOptions = filters.all ? {} : { limit: limitValue, offset };
+        
+        const dewormings = await dewormingRepository.findByGalponId(galponId, queryOptions, filters);
+        const total = await dewormingRepository.countByGalponId(galponId, filters);
 
-        return createPaginatedResponse(dewormings, pageValue, limitValue, total);
+        return createPaginatedResponse(dewormings, filters.all ? 1 : pageValue, filters.all ? dewormings.length : limitValue, total);
     }
 
     async getDewormingsByRabbit(rabbitId) {

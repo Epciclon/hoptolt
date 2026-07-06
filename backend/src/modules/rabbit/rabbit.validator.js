@@ -1,6 +1,6 @@
 const validateCreateRabbit = (req, res, next) => {
     const errors = [];
-    const { name, race, sex, birthDate, weight, purpose } = req.body;
+    const { name, race, sex, birthDate, weight, purpose, imageUrl } = req.body;
 
     if (!name || name.trim() === '') {
         errors.push('El nombre del conejo es obligatorio.');
@@ -45,8 +45,16 @@ const validateCreateRabbit = (req, res, next) => {
         }
     }
 
-    if (!purpose || !['Reproducción', 'Engorde'].includes(purpose)) {
+    if (purpose && !['Reproducción', 'Engorde'].includes(purpose)) {
         errors.push('El propósito debe ser "Reproducción" o "Engorde".');
+    }
+
+    if (imageUrl) {
+        try {
+            new URL(imageUrl);
+        } catch {
+            errors.push('La imagen proporcionada no es una URL válida.');
+        }
     }
 
     if (errors.length > 0) return res.status(400).json({ success: false, errors });
@@ -55,7 +63,7 @@ const validateCreateRabbit = (req, res, next) => {
 
 const validateEditRabbit = (req, res, next) => {
     const errors = [];
-    const { name, race, sex, birthDate, weight, purpose } = req.body;
+    const { name, race, sex, birthDate, weight, purpose, imageUrl } = req.body;
 
     if (name !== undefined && name !== null && name !== '') {
         const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
@@ -92,6 +100,14 @@ const validateEditRabbit = (req, res, next) => {
 
     if (purpose && !['Reproducción', 'Engorde'].includes(purpose)) {
         errors.push('El propósito debe ser "Reproducción" o "Engorde".');
+    }
+
+    if (imageUrl) {
+        try {
+            new URL(imageUrl);
+        } catch {
+            errors.push('La imagen proporcionada no es una URL válida.');
+        }
     }
 
     if (errors.length > 0) return res.status(400).json({ success: false, errors });

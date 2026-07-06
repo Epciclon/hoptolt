@@ -17,6 +17,14 @@ class FarmMemberService {
     }
 
     /**
+     * Lista TODOS los miembros activos de un galpón (incluyendo al propietario).
+     * Útil para reportes y auditoría.
+     */
+    async getAllMembersByGalpon(galponId) {
+        return farmMemberRepository.findByGalponId(galponId);
+    }
+
+    /**
      * Retorna todos los galpones donde participa el usuario (como owner o worker).
      */
     async getMembershipsForUser(profileId) {
@@ -101,8 +109,8 @@ class FarmMemberService {
         
         // Obtener información para notificaciones
         const galpon = await galponRepository.findById(member.galponId);
-        const workerProfile = await profileRepository.findById(member.profileId);
-        const ownerProfile = await profileRepository.findById(requestingProfileId);
+        const workerProfile = await Profile.findByPk(member.profileId);
+        const ownerProfile = await Profile.findByPk(requestingProfileId);
 
         await farmMemberRepository.deactivate(member);
 

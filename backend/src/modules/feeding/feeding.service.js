@@ -11,13 +11,24 @@ class FeedingService {
         return galpon.foodTypes || [];
     }
 
-    async registerFeeding(data, galponId) {
-        const { cageIds, foodTypes, justification } = data;
+    async registerFeeding(data, galponId, profileId) {
+        const { cageIds, foodTypes, justification, shift } = data;
 
-        // Obtener fecha y hora actual en zona horaria de Ecuador (GMT-5)
+        // Obtener la hora actual en zona horaria de Ecuador (GMT-5)
         const now = new Date();
-        const ecuadorTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
+        const formatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'America/Guayaquil',
+            hour: 'numeric',
+            hour12: false
+        });
+        const currentHourEcuador = parseInt(formatter.format(now), 10);
         
+        // Si no mandan turno explícito, deducirlo de la hora de Ecuador
+        let finalShift = shift;
+        if (!finalShift) {
+            finalShift = currentHourEcuador < 12 ? 'mañana' : 'tarde';
+        }
+
         const createdFeedings = [];
 
         for (const cageId of cageIds) {
@@ -26,26 +37,33 @@ class FeedingService {
             if (cage.galponId !== galponId) throw new AppError(`La jaula con ID ${cageId} no pertenece al galpón activo.`, 400);
 
             // Obtener conejos asignados a esta jaula
+            const { Rabbit } = require('../../domain/models');
             const assignments = await Assignment.findAll({
-                where: { cageId, status: 'asignado' }
+                where: { cageId, status: 'asignado' },
+                include: [{ model: Rabbit, as: 'rabbit', attributes: ['id', 'code', 'name', 'race', 'imageUrl'] }]
             });
 
             if (assignments.length === 0) {
                 throw new AppError(`La jaula con ID ${cageId} no tiene conejos asignados.`, 400);
             }
 
-            const feedingsToday = await feedingRepository.findByCageIdAndDate(cageId, ecuadorTime);
+            const rabbitsSnapshot = assignments.map(a => a.rabbit).filter(Boolean);
+
+            const feedingsByThisUserThisShift = await feedingRepository.countByUniqueAttributes(cageId, now, finalShift, profileId);
             
-            if (feedingsToday.length >= 2 && !justification) {
-                throw new AppError(`La jaula con ID ${cageId} ya tiene 2 registros de alimentación hoy. Se requiere justificación para un tercero.`, 400);
+            if (feedingsByThisUserThisShift >= 1 && !justification) {
+                throw new AppError(`Ya tienes un registro de alimentación en el turno de la ${finalShift} para la jaula ${cage.number}. Se requiere justificación.`, 400);
             }
 
             const feeding = await feedingRepository.create({
                 cageId,
                 foodTypes,
                 justification: justification || null,
-                feedingDate: ecuadorTime,
-                galponId
+                feedingDate: now,
+                shift: finalShift,
+                galponId,
+                profileId,
+                rabbitsSnapshot
             });
 
             createdFeedings.push(feeding);
@@ -54,7 +72,7 @@ class FeedingService {
         return createdFeedings;
     }
 
-    async getFeedings(galponId, profileId, page = 1, limit = 10) {
+    async getFeedings(galponId, profileId, page = 1, limit = 10, filters = {}) {
         if (!galponId) return createPaginatedResponse([], page, limit, 0);
 
         // Verificar que el usuario tiene acceso al galpón
@@ -64,10 +82,13 @@ class FeedingService {
         if (!membership) throw new AppError('No tienes acceso a este galpón.', 403);
 
         const { limit: limitValue, offset, page: pageValue } = getPaginationParams(page, limit);
-        const feedings = await feedingRepository.findByGalponId(galponId, { limit: limitValue, offset });
-        const total = await feedingRepository.countByGalponId(galponId);
+        
+        const queryOptions = filters.all ? {} : { limit: limitValue, offset };
+        
+        const feedings = await feedingRepository.findByGalponId(galponId, queryOptions, filters);
+        const total = await feedingRepository.countByGalponId(galponId, filters);
 
-        return createPaginatedResponse(feedings, pageValue, limitValue, total);
+        return createPaginatedResponse(feedings, filters.all ? 1 : pageValue, filters.all ? feedings.length : limitValue, total);
     }
 }
 

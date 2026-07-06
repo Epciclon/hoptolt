@@ -10,6 +10,13 @@ exports.getWorkersByGalpon = catchAsync(async (req, res) => {
     res.status(200).json({ success: true, workers: workers.map(toFarmMemberDTO) });
 });
 
+exports.getAllMembersByGalpon = catchAsync(async (req, res) => {
+    const members = await farmMemberService.getAllMembersByGalpon(
+        Number(req.params.galponId)
+    );
+    res.status(200).json({ success: true, members: members.map(toFarmMemberDTO) });
+});
+
 exports.getMembershipsForMe = catchAsync(async (req, res) => {
     const memberships = await farmMemberService.getMembershipsForUser(req.user.id);
     res.status(200).json({ success: true, memberships: memberships.map(toFarmMemberDTO) });

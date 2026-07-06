@@ -13,6 +13,9 @@ router.get('/farm-members/me', farmMemberController.getMembershipsForMe);
 // Trabajadores de un galpón específico (solo propietario)
 router.get('/galpones/:galponId/workers', farmMemberController.getWorkersByGalpon);
 
+// Todos los miembros de un galpón (propietario + trabajadores)
+router.get('/galpones/:galponId/members', farmMemberController.getAllMembersByGalpon);
+
 // Obtener trabajador por ID con permisos y jaulas (solo propietario)
 router.get('/farm-members/:id', farmMemberController.getWorkerById);
 

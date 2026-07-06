@@ -8,6 +8,7 @@ export interface Rabbit {
   birthDate?: string;
   weight: number;
   purpose: 'Reproducción' | 'Engorde';
+  imageUrl?: string;
 }
 
 export interface CreateRabbitDto {
@@ -17,6 +18,7 @@ export interface CreateRabbitDto {
   birthDate: string;
   weight: number;
   purpose: 'Reproducción' | 'Engorde';
+  imageUrl?: string;
 }
 
 export interface UpdateRabbitDto {
@@ -25,4 +27,5 @@ export interface UpdateRabbitDto {
   birthDate?: string;
   weight: number;
   purpose: 'Reproducción' | 'Engorde';
+  imageUrl?: string;
 }

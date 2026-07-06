@@ -152,12 +152,39 @@ class InvitationService {
         if (!invitation) throw new AppError('Invitación no encontrada.', 404);
         if (invitation.status !== 'pending') throw new AppError('Solo se pueden revocar invitaciones pendientes.', 400);
 
+        // Permitir si el usuario es el propietario del galpón
         const membership = await farmMemberRepository.findMembership(requestingProfileId, invitation.galponId);
-        if (!membership || membership.role !== 'owner') {
+        const isOwner = membership && membership.role === 'owner';
+
+        // O si el usuario es la persona invitada (cuyo email coincide con la invitación)
+        const { Profile } = require('../../domain/models');
+        const requesterProfile = await Profile.findByPk(requestingProfileId);
+        const isInvitedUser = requesterProfile && requesterProfile.email.toLowerCase() === invitation.email.toLowerCase();
+
+        if (!isOwner && !isInvitedUser) {
             throw new AppError('No tienes permisos para revocar esta invitación.', 403);
         }
 
         await invitationRepository.updateStatus(invitation, 'revoked');
+
+        // Si fue el usuario invitado quien rechazó la invitación, notificar al propietario
+        if (isInvitedUser) {
+            const galpon = await invitationRepository.getGalponWithOwner(invitation.galponId);
+            if (galpon && galpon.profileId) {
+                const workerName = requesterProfile.username || requesterProfile.email;
+                await notificationService.createNotification(galpon.profileId, {
+                    type: 'info',
+                    title: 'Invitación rechazada',
+                    message: `${workerName} ha rechazado tu invitación para unirse al galpón "${galpon.name}".`,
+                    data: {
+                        galponId: galpon.id,
+                        galponName: galpon.name,
+                        workerEmail: invitation.email,
+                        workerName
+                    }
+                });
+            }
+        }
     }
 }
 

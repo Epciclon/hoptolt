@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { growthService } from '../services/growth.service';
 import type { Growth } from '../types/growth.types';
+import { LoadingMessage } from '@/shared/ui';
 
 export function GrowthTable() {
   const { data: growths = [], isLoading: loading, error: queryError } = useQuery({
@@ -12,7 +13,7 @@ export function GrowthTable() {
 
   const error = queryError ? (queryError as Error).message : '';
 
-  if (loading) return <div className="text-center py-8">Cargando crecimientos...</div>;
+  if (loading) return <LoadingMessage message="Cargando crecimientos..." />;
   if (error) return <div className="text-red-600 py-8">{error}</div>;
   if (growths.length === 0) return <div className="text-center py-8 text-slate-500">No hay registros de crecimiento</div>;
 

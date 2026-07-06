@@ -93,12 +93,12 @@ export function DewormingForm({ onSuccess, onCancel }: DewormingFormProps) {
         {errors.rabbitCodes && <p className="text-sm text-red-600 mt-1">{errors.rabbitCodes.message}</p>}
       </div>
 
-      <div className="flex gap-3 pt-2">
+      <div className="flex justify-end gap-3 pt-2">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+          Cancelar
+        </Button>
         <Button type="submit" loading={isSubmitting}>
           Registrar Desparasitación
-        </Button>
-        <Button type="button" variant="secondary" onClick={onCancel}>
-          Cancelar
         </Button>
       </div>
     </form>

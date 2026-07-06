@@ -4,7 +4,9 @@ const toCageDTO = (cage) => ({
     type: cage.type,
     capacity: cage.capacity,
     status: cage.status,
-    galponId: cage.galponId
+    galponId: cage.galponId,
+    assignedCount: cage.assignedCount,
+    occupancyStatus: cage.occupancyStatus
 });
 
 module.exports = { toCageDTO };

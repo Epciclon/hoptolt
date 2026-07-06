@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Button, Alert, Input } from '@/shared/ui';
+import { Button, Alert, Input, LoadingMessage } from '@/shared/ui';
 import { genealogyService } from '../services/genealogy.service';
 import { rabbitService } from '@/modules/rabbits/services/rabbit.service';
 import type { GenealogyTree } from '../types/genealogy.types';
@@ -29,7 +29,7 @@ export function GenealogyTreeView({ onCancel }: GenealogyTreeViewProps) {
     try {
       setLoadingRabbits(true);
       const data = await rabbitService.getAll();
-      setRabbits(data);
+      setRabbits(data.rabbits);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar conejos');
     } finally {
@@ -41,7 +41,7 @@ export function GenealogyTreeView({ onCancel }: GenealogyTreeViewProps) {
     setSelectedRabbit(rabbit);
     setSearch(`${rabbit.code} - ${rabbit.name}`);
     setShowDropdown(false);
-    
+
     // Cargar árbol automáticamente
     setError('');
     setLoading(true);
@@ -64,7 +64,7 @@ export function GenealogyTreeView({ onCancel }: GenealogyTreeViewProps) {
     for (let level = 0; level < maxLevels; level++) {
       const currentGen = generations[level];
       if (!currentGen) break;
-      
+
       const nextGen: (GenealogyTree | null)[] = [];
 
       currentGen.forEach(n => {
@@ -86,9 +86,9 @@ export function GenealogyTreeView({ onCancel }: GenealogyTreeViewProps) {
   };
 
   const renderGeneration = (generation: (GenealogyTree | null)[], level: number, nextGeneration?: (GenealogyTree | null)[]): JSX.Element => {
-    const bgColor = level === 0 ? 'bg-blue-100 border-blue-300' : 
-                    level === 1 ? 'bg-green-50 border-green-200' : 
-                    'bg-yellow-50 border-yellow-200';
+    const bgColor = level === 0 ? 'bg-blue-100 border-blue-300' :
+      level === 1 ? 'bg-green-50 border-green-200' :
+        'bg-yellow-50 border-yellow-200';
 
     const padding = level === 0 ? 'p-3' : level === 1 ? 'p-2' : 'p-1.5';
     const fontSize = level === 0 ? 'text-sm' : level === 1 ? 'text-xs' : 'text-[10px]';
@@ -108,35 +108,50 @@ export function GenealogyTreeView({ onCancel }: GenealogyTreeViewProps) {
             return (
               <div key={node.id} className="flex flex-col items-center">
                 <div className={`${padding} border-2 rounded-lg ${fontSize} ${bgColor} ${minW} text-center shadow-sm`}>
+                  <div className="flex justify-center mb-2">
+                    {node.imageUrl ? (
+                      <img src={node.imageUrl} alt={node.name} className="w-10 h-10 rounded-full object-cover border border-slate-300 shadow-sm" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-300 flex items-center justify-center text-[8px] text-slate-400 text-center leading-tight px-0.5 shadow-sm">
+                        Sin foto
+                      </div>
+                    )}
+                  </div>
                   <div className="font-semibold">{node.code}</div>
                   <div className="text-slate-600 truncate">{node.name}</div>
-                  {level === 0 && <div className="text-xs text-slate-500 mt-1">Conejo seleccionado</div>}
+                  {(node.age !== undefined || (node as any).weight !== undefined) && (
+                    <div className="flex justify-center gap-2 mt-1 text-[9px] text-slate-500">
+                      {node.age !== undefined && <span>Edad: {node.age} {node.age === 1 ? 'mes' : 'meses'}</span>}
+                      {(node as any).weight !== undefined && <span>Peso: {(node as any).weight} kg</span>}
+                    </div>
+                  )}
+                  {level === 0 && <div className="text-[10px] font-medium text-slate-500 mt-1">Conejo seleccionado</div>}
                 </div>
                 {label && <div className="text-xs text-slate-500 font-medium mt-1">{label}</div>}
               </div>
             );
           })}
         </div>
-        
+
         {nextGeneration && nextGeneration.some(n => n !== null) && (
           <svg className="w-full h-16" style={{ minHeight: '64px' }}>
             {generation.map((node, index) => {
               if (!node) return null;
-              
+
               const childIndex1 = index * 2;
               const childIndex2 = index * 2 + 1;
               const child1 = nextGeneration[childIndex1];
               const child2 = nextGeneration[childIndex2];
-              
+
               if (!child1 && !child2) return null;
-              
+
               const nodeX = (index + 0.5) * (100 / generation.length);
               const child1X = child1 ? (childIndex1 + 0.5) * (100 / nextGeneration.length) : null;
               const child2X = child2 ? (childIndex2 + 0.5) * (100 / nextGeneration.length) : null;
-              
+
               const parentCount = (child1 ? 1 : 0) + (child2 ? 1 : 0);
               const lines = [];
-              
+
               if (parentCount === 2) {
                 lines.push(
                   <line
@@ -232,7 +247,7 @@ export function GenealogyTreeView({ onCancel }: GenealogyTreeViewProps) {
                   );
                 }
               }
-              
+
               return lines;
             })}
           </svg>
@@ -246,7 +261,7 @@ export function GenealogyTreeView({ onCancel }: GenealogyTreeViewProps) {
     r.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  if (loadingRabbits) return <div className="text-center py-8">Cargando conejos...</div>;
+  if (loadingRabbits) return <LoadingMessage message="Cargando conejos..." />;
 
   return (
     <div className="flex flex-col gap-4">

@@ -81,13 +81,13 @@ export function useFeeding() {
 
   // Mutation: Create Feeding
   const createFeedingMutation = useMutation({
-    mutationFn: (payload: { cageIds: number[]; foodTypes: string[]; justification?: string }) => feedingService.create(payload),
+    mutationFn: (payload: { cageIds: number[]; foodTypes: string[]; justification?: string; shift?: 'mañana' | 'tarde' }) => feedingService.create(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['feedings'] });
     },
   });
 
-  const createFeeding = async (payload: { cageIds: number[]; foodTypes: string[]; justification?: string }) => {
+  const createFeeding = async (payload: { cageIds: number[]; foodTypes: string[]; justification?: string; shift?: 'mañana' | 'tarde' }) => {
     return createFeedingMutation.mutateAsync(payload);
   };
 

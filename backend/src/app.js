@@ -10,7 +10,7 @@ const apiRoutes = require('./modules');
 const swaggerConfig = require('./infrastructure/docs/swagger');
 const { apiLimiter, helmetConfig, inputSanitizer } = require('./common/middlewares/security.middleware');
 const errorMiddleware = require('./common/middlewares/error.middleware');
-const createProfileSyncTrigger = require('./infrastructure/database/createProfileTrigger');
+const startReproductionCron = require('./infrastructure/crons/reproduction.cron');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -46,11 +46,12 @@ sequelize.authenticate()
     .then(async () => {
         console.log('✅ Supabase PostgreSQL conectado exitosamente');
 
-        // Sincronización automática eliminada a petición del usuario
-        // await sequelize.sync({ alter: true });
+        // Sincronizar específicamente las tablas modificadas (comentado temporalmente para agilizar inicio)
+        // const { Feeding } = require('./domain/models');
+        // await Feeding.sync({ alter: true });
 
-        // Solo configuramos el trigger de sincronización de perfiles de Supabase Auth
-        await createProfileSyncTrigger();
+        // Iniciar cron jobs
+        startReproductionCron();
     })
     .catch(err => {
         console.error('❌ Error al inicializar la base de datos:', err);

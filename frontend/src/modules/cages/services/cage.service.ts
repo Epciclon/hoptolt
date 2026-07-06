@@ -1,10 +1,28 @@
 import api from '@/lib/api';
 import type { Cage, CreateCageDto, UpdateCageDto } from '../types/cage.types';
 
+export interface GetCagesParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  type?: string;
+  status?: string;
+}
+
+export interface CagesResponse {
+  cages: Cage[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
 export const cageService = {
-  async getAll(): Promise<Cage[]> {
-    const { data } = await api.get<{ success: boolean; cages: Cage[] }>('/cages');
-    return data.cages;
+  async getAll(params?: GetCagesParams): Promise<CagesResponse> {
+    const { data } = await api.get<{ success: boolean; cages: Cage[]; pagination: any }>('/cages', { params });
+    return { cages: data.cages, pagination: data.pagination };
   },
 
   async getById(id: number): Promise<Cage> {
@@ -13,7 +31,7 @@ export const cageService = {
   },
 
   async getByNumber(number: number): Promise<Cage> {
-    const cages = await this.getAll();
+    const { cages } = await this.getAll({ search: number.toString() });
     const cage = cages.find(c => c.number === number);
     if (!cage) throw new Error(`Jaula #${number} no encontrada`);
     return cage;

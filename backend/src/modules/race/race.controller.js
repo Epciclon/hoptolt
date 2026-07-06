@@ -13,8 +13,20 @@ exports.getRaceById = catchAsync(async (req, res) => {
 });
 
 exports.getAllRaces = catchAsync(async (req, res) => {
-    const races = await raceService.getAllRaces(req.user.id);
-    res.status(200).json({ success: true, races: races.map(r => toRaceDTO(r, false)) });
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const filters = { search: req.query.search };
+    
+    // Si hay un galpón activo (trabajador o dueño en vista de galpón), usamos el profileId del dueño.
+    // De lo contrario, usamos el profileId del usuario actual.
+    const ownerProfileId = req.galpon ? req.galpon.profileId : req.user.id;
+    
+    const result = await raceService.getAllRaces(ownerProfileId, filters, page, limit);
+    res.status(200).json({ 
+        success: true, 
+        races: result.data.map(r => toRaceDTO(r, false)),
+        pagination: result.pagination
+    });
 });
 
 exports.editRace = catchAsync(async (req, res) => {

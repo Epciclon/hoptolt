@@ -1,21 +1,29 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { rabbitService } from '../services/rabbit.service';
+import { rabbitService, type GetRabbitsParams } from '../services/rabbit.service';
 import type { Rabbit } from '../types/rabbit.types';
 
-export function useRabbits() {
+export function useRabbits(initialParams?: GetRabbitsParams) {
   const queryClient = useQueryClient();
+
+  const [page, setPage] = useState(initialParams?.page || 1);
+  const [limit, setLimit] = useState(initialParams?.limit || 12);
+  const [search, setSearch] = useState(initialParams?.search || '');
+  const [race, setRace] = useState(initialParams?.race || '');
+  const [sex, setSex] = useState(initialParams?.sex || '');
+  const [purpose, setPurpose] = useState(initialParams?.purpose || '');
 
   // Query: Fetch Rabbits
   const {
-    data: rabbits = [],
+    data,
     isLoading: loading,
     error: queryError,
     refetch: fetchRabbits,
   } = useQuery({
-    queryKey: ['rabbits'],
-    queryFn: () => rabbitService.getAll(),
+    queryKey: ['rabbits', { page, limit, search, race, sex, purpose }],
+    queryFn: () => rabbitService.getAll({ page, limit, search, race, sex, purpose }),
   });
 
   // Mutation: Delete Rabbit
@@ -36,10 +44,18 @@ export function useRabbits() {
   };
 
   return {
-    rabbits,
+    rabbits: data?.rabbits || [],
+    pagination: data?.pagination || { total: 0, page: 1, limit: 10, totalPages: 1 },
     loading,
     error: queryError ? (queryError as Error).message : null,
     fetchRabbits,
     deleteRabbit,
+    setPage,
+    setLimit,
+    setSearch,
+    setRace,
+    setSex,
+    setPurpose,
+    filters: { page, limit, search, race, sex, purpose }
   };
 }

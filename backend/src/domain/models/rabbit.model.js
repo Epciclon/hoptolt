@@ -22,6 +22,10 @@ const Rabbit = sequelize.define('Rabbit', {
         allowNull: true,
         validate: { notEmpty: { msg: 'El nombre es obligatorio' } }
     },
+    imageUrl: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
     sex: {
         type: DataTypes.ENUM('macho', 'hembra'),
         allowNull: false

@@ -7,8 +7,12 @@ const toAssignmentDTO = (assignment) => ({
     assignedAt: assignment.assignedAt,
     rabbitCode: assignment.rabbit?.code,
     rabbitName: assignment.rabbit?.name,
+    rabbitAge: assignment.rabbit?.age,
+    rabbitWeight: assignment.rabbit?.weight,
+    rabbitRace: assignment.rabbit?.race,
     cageNumber: assignment.cage?.number,
-    cageType: assignment.cage?.type
+    cageType: assignment.cage?.type,
+    photoUrl: assignment.rabbit?.imageUrl
 });
 
 module.exports = { toAssignmentDTO };

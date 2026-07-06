@@ -1,25 +1,40 @@
 'use client';
 
 import { useReproduction } from '../hooks/useReproduction';
+import { FilterBar } from '@/shared/ui/FilterBar';
 import type { Reproduction } from '../types/reproduction.types';
-import { Button, ConfirmDialog, Dialog } from '@/shared/ui';
+import { Button, ConfirmDialog, Dialog, Select, RabbitSelectableCard, CageGroupCard } from '@/shared/ui';
 import { useState } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, Calendar } from 'lucide-react';
 import { ReproductionForm } from './ReproductionForm';
 import { useToast } from '@/shared/contexts/ToastContext';
+import { Input } from '@/shared/ui/Input';
+import { mortalityService } from '@/modules/mortality/services/mortality.service';
 
 interface ReproductionCatalogProps {
+  reproductions: Reproduction[];
   onSuccess?: () => void;
 }
 
-export function ReproductionCatalog({ onSuccess }: ReproductionCatalogProps) {
-  const { reproductions, loading, deleteReproduction, fetchReproductions } = useReproduction();
+export function ReproductionCatalog({ reproductions, onSuccess }: ReproductionCatalogProps) {
+  const { cancelReproduction, registerBirth } = useReproduction();
   const { showToast } = useToast();
-  const [toDelete, setToDelete] = useState<Reproduction | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  const [toCancel, setToCancel] = useState<Reproduction | null>(null);
+  const [canceling, setCanceling] = useState(false);
+  const [cancelReason, setCancelReason] = useState<string>('');
+  const [cancelReasonOther, setCancelReasonOther] = useState<string>('');
+  
+  const [toRegisterBirth, setToRegisterBirth] = useState<Reproduction | null>(null);
+  const [actualBirthDate, setActualBirthDate] = useState<string>('');
+  const [registeringBirth, setRegisteringBirth] = useState(false);
+  const [bornKits, setBornKits] = useState<number | ''>('');
+
   const [editingReproduction, setEditingReproduction] = useState<Reproduction | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterRace, setFilterRace] = useState('');
 
   const formatDateTime = (dateString: string) => {
     if (!dateString) return '';
@@ -40,129 +55,395 @@ export function ReproductionCatalog({ onSuccess }: ReproductionCatalogProps) {
     return dateString;
   };
 
-  const capitalizeType = (type: string) => {
-    return type.charAt(0).toUpperCase() + type.slice(1);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!toDelete || !toDelete.id) return;
-    setDeleting(true);
-    const success = await deleteReproduction(toDelete.id);
-    setDeleting(false);
+  const handleConfirmCancel = async () => {
+    if (!toCancel || !toCancel.id || !cancelReason) return;
     
-    if (success) {
-      setToDelete(null);
-      showToast('Monta eliminada correctamente.', 'success');
+    let action: 'delete' | 'fail' = 'delete';
+    let finalReason = cancelReason;
+
+    if (cancelReason === 'muerte' || cancelReason === 'otro') {
+        action = 'fail';
+        if (cancelReason === 'otro') {
+            if (!cancelReasonOther.trim()) {
+                showToast('Debe especificar la razón.', 'error');
+                return;
+            }
+            finalReason = cancelReasonOther;
+        }
+    }
+
+    setCanceling(true);
+    try {
+      if (cancelReason === 'muerte') {
+        // Registrar mortalidad de la coneja (esto libera la jaula y hace softdelete)
+        await mortalityService.create({
+            rabbitId: toCancel.femaleId,
+            cause: 'otra',
+            observations: 'Muerte durante la gestación',
+            deathDate: new Date().toISOString()
+        });
+      }
+
+      await cancelReproduction(toCancel.id, action, finalReason);
+      
+      setToCancel(null);
+      setCancelReason('');
+      setCancelReasonOther('');
+      showToast(action === 'delete' ? 'Monta eliminada correctamente.' : 'Cancelación registrada en el historial.', 'success');
       onSuccess?.();
-    } else {
-      showToast('Error al eliminar la monta.', 'error');
+    } catch (error: any) {
+      showToast(error.response?.data?.message || 'Error al cancelar la monta.', 'error');
+    } finally {
+      setCanceling(false);
     }
   };
 
-  if (loading) {
-    return <p className="text-center text-slate-500 py-8">Cargando datos de reproducción...</p>;
-  }
+  const handleRegisterBirth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!toRegisterBirth || !actualBirthDate) return;
+    
+    setRegisteringBirth(true);
+    try {
+      await registerBirth(toRegisterBirth.id, { actualBirthDate });
+      setToRegisterBirth(null);
+      setActualBirthDate('');
+      showToast('Parto registrado exitosamente. La coneja pasó a Fase 3.', 'success');
+      onSuccess?.();
+    } catch (error: any) {
+      showToast(error.response?.data?.message || 'Error al registrar el parto.', 'error');
+    } finally {
+      setRegisteringBirth(false);
+    }
+  };
+
+  const isBirthDateReached = (dateString: string) => {
+      const parts = dateString.split('-');
+      if (parts.length !== 3) return false;
+      const birthDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      
+      const ecuadorDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
+      ecuadorDate.setHours(0, 0, 0, 0);
+      birthDate.setHours(0, 0, 0, 0);
+      
+      return ecuadorDate >= birthDate;
+  };
+
+  const getDaysInGestation = (estimatedBirthDate: string) => {
+    const parts = estimatedBirthDate.split('-');
+    if (parts.length !== 3) return { days: 0, daysLeft: 0 };
+    const birthDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
+    today.setHours(0, 0, 0, 0);
+    birthDate.setHours(0, 0, 0, 0);
+    const daysLeft = Math.ceil((birthDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const days = 31 - daysLeft; // 31 = avg gestation days
+    return { days: Math.max(0, days), daysLeft: Math.max(0, daysLeft) };
+  };
+
+  const gestaciones = reproductions.filter(r => {
+      if (r.status !== 'gestacion') return false;
+      
+      const matchesSearch = 
+        r.femaleName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        r.femaleCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        r.cageNumber?.toString().includes(searchTerm);
+        
+      const matchesRace = filterRace ? r.femaleRace === filterRace : true;
+      
+      return matchesSearch && matchesRace;
+  });
+
+  const uniqueRaces = Array.from(new Set(reproductions.filter(r => r.status === 'gestacion' && r.femaleRace).map(r => r.femaleRace)));
 
   return (
-    <>
-      {reproductions.length === 0 ? (
-        <p className="text-sm text-slate-500">No hay montas registradas.</p>
+    <div className="space-y-4">
+      <div className="flex flex-col gap-1 items-start">
+        <p className="text-base font-medium text-slate-700">En esta fase se encuentran las conejas con fechas estimadas que aún no han realizado su parto, calculado a 1 mes desde la fecha de monta. El sistema estima la fecha, pero tienes la opción de registrar el parto antes si este ocurre de forma anticipada, lo cual moverá automáticamente a la coneja a la fase 3 de lactancia.</p>
+      </div>
+      <FilterBar
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Buscar por nombre, código o jaula..."
+        filters={[
+          {
+            key: 'race',
+            placeholder: 'Todas las razas',
+            options: uniqueRaces.map((race) => ({
+              value: race as string,
+              label: String(race).charAt(0).toUpperCase() + String(race).slice(1)
+            })),
+            value: filterRace,
+            onChange: setFilterRace
+          }
+        ]}
+      />
+
+      {gestaciones.length === 0 ? (
+        <p className="text-sm text-slate-500 bg-slate-50 p-4 rounded-lg border border-slate-100">
+          No hay conejas en etapa de gestación que coincidan con los filtros.
+        </p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {reproductions.map((reproduction) => {
-            const isExpanded = expandedId === reproduction.id;
-            return (
-              <div
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 items-start">
+          {Object.values(gestaciones.reduce((acc, reproduction) => {
+            const cageNumber = reproduction.cageNumber || 0;
+            if (!acc[cageNumber]) {
+              acc[cageNumber] = { cageNumber, cageType: reproduction.cageType || 'reproducción', reproductions: [] };
+            }
+            acc[cageNumber].reproductions.push(reproduction);
+            return acc;
+          }, {} as Record<number, { cageNumber: number; cageType: string; reproductions: typeof gestaciones }>)).sort((a,b) => a.cageNumber - b.cageNumber).map(group => (
+            <CageGroupCard 
+              key={group.cageNumber} 
+              cageNumber={group.cageNumber} 
+              cageType={group.cageType}
+              headerBadge={
+                <span className="px-2 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-medium rounded-full">
+                  Gestación
+                </span>
+              }
+            >
+              <div className="flex flex-col gap-3">
+                {group.reproductions.map(reproduction => {
+                  const isExpanded = expandedId === reproduction.id;
+                  const canGiveBirth = isBirthDateReached(reproduction.estimatedBirthDate);
+                  const { daysLeft } = getDaysInGestation(reproduction.estimatedBirthDate);
+                  const nearBirth = daysLeft >= 0 && daysLeft <= 3;
+
+                  return (
+              <RabbitSelectableCard
                 key={reproduction.id}
+                rabbit={{
+                  id: reproduction.femaleId,
+                  code: reproduction.femaleCode,
+                  name: reproduction.femaleName,
+                  race: reproduction.femaleRace,
+                  imageUrl: reproduction.imageUrl,
+                  cageNumber: reproduction.cageNumber,
+                  age: reproduction.femaleAge,
+                  weight: reproduction.femaleWeight
+                }}
+                isSelected={isExpanded}
                 onClick={() => setExpandedId(isExpanded ? null : reproduction.id)}
-                className={`border rounded-lg overflow-hidden transition-all duration-150 cursor-pointer ${
-                  isExpanded ? 'border-primary-500 bg-primary-50 ring-1 ring-primary-500 shadow-sm' : 'bg-white border-slate-200 hover:bg-slate-50/50'
-                }`}
               >
-                <div className={`p-3 border-b ${
-                  isExpanded ? 'border-primary-300 bg-primary-100' : 'border-slate-200 bg-slate-50'
-                }`}>
-                  <h4 className="font-semibold text-slate-800 text-sm">
-                    Jaula #{reproduction.cageNumber || 'N/A'} — {capitalizeType(reproduction.cageType || 'Reproducción')}
-                  </h4>
-                </div>
-                <div className="p-3 space-y-2">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800">
-                      {reproduction.femaleCode}{reproduction.femaleName ? ` — ${reproduction.femaleName}` : ''}
-                    </p>
-                  </div>
-                  {isExpanded && reproduction.maleCode && (
-                    <div className="pt-2 border-t border-slate-100 animate-fade-in">
-                      <p className="text-xs font-semibold text-slate-600">
-                        Última pareja:
-                      </p>
-                      <p className="text-xs text-slate-600 mt-1">
-                        {reproduction.maleCode}{reproduction.maleName ? ` — ${reproduction.maleName}` : ''}
-                      </p>
+
+                <div className="space-y-2 mt-2 text-xs">
+                  {reproduction.maleCode && (
+                    <div className="bg-slate-50/50 border border-slate-100 p-2 rounded">
+                      <p className="text-slate-500 mb-2">Última pareja</p>
+                      <div className="flex items-center gap-2">
+                        {reproduction.maleImageUrl ? (
+                          <img
+                            src={reproduction.maleImageUrl}
+                            alt={reproduction.maleCode ?? ''}
+                            className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0 shadow-sm"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 shrink-0 flex items-center justify-center text-slate-400 text-[8px] text-center leading-tight px-0.5">
+                            Sin foto
+                          </div>
+                        )}
+                        <div>
+                          {reproduction.maleName ? (
+                            <>
+                              <h4 className="font-bold text-sm text-slate-800 leading-tight">{reproduction.maleName}</h4>
+                              <p className="text-xs text-slate-500">{reproduction.maleCode}</p>
+                            </>
+                          ) : (
+                            <h4 className="font-bold text-sm text-slate-800 leading-tight">{reproduction.maleCode}</h4>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   )}
-                  <div className="pt-2 border-t border-slate-100">
-                    <p className="text-xs font-semibold text-slate-600">
-                      Fecha de monta:
-                    </p>
-                    <p className="text-xs text-slate-600 mt-1">
-                      {formatDateTime(reproduction.mountDate)}
-                    </p>
+                  <div className="bg-slate-50/50 border border-slate-100 p-2 rounded flex justify-between items-center">
+                    <p className="text-slate-500 mb-1">Fecha de monta</p>
+                    <p className="font-medium text-slate-700">{formatDateTime(reproduction.mountDate)}</p>
                   </div>
-                  <div className="pt-2 border-t border-slate-100">
-                    <p className="text-xs font-semibold text-slate-600">
-                      Fecha estimada de parto:
-                    </p>
-                    <p className="text-xs text-slate-600 mt-1">
+                  <div 
+                    className={`bg-slate-50/50 border border-slate-100 p-2 rounded flex justify-between items-center ${
+                      isExpanded 
+                        ? 'cursor-pointer hover:bg-primary-50 hover:border-primary-200 transition-colors group' 
+                        : ''
+                    }`}
+                    onClick={(e) => {
+                      if (!isExpanded) return;
+                      e.stopPropagation();
+                      setEditingReproduction(reproduction);
+                      setShowEditModal(true);
+                    }}
+                    title={isExpanded ? "Clic para editar fechas" : ""}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <p className={`text-slate-500 ${isExpanded ? 'group-hover:text-primary-600' : ''}`}>
+                        Fecha estimada de parto
+                      </p>
+                      {isExpanded && <Calendar size={14} className="opacity-40 group-hover:opacity-100 text-primary-500 transition-opacity" />}
+                    </div>
+                    <p className={`font-medium ${canGiveBirth ? 'text-amber-600' : 'text-slate-700'} ${isExpanded ? 'group-hover:text-primary-700' : ''}`}>
                       {formatDateTime(reproduction.estimatedBirthDate)}
                     </p>
                   </div>
-                  {isExpanded && (
-                    <div 
-                      className="flex gap-2 pt-3 border-t border-slate-100 mt-2 animate-fade-in"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        icon={<Pencil size={14} />}
-                        onClick={() => {
-                          setEditingReproduction(reproduction);
-                          setShowEditModal(true);
-                        }}
-                      >
-                        Editar
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="danger"
-                        size="sm"
-                        icon={<Trash2 size={14} />}
-                        onClick={() => setToDelete(reproduction)}
-                      >
-                        Eliminar
-                      </Button>
+                  <div className={`p-2 rounded flex justify-between items-center border ${
+                    nearBirth
+                      ? 'bg-orange-50 border-orange-200'
+                      : 'bg-slate-50/50 border-slate-100'
+                  }`}>
+                    <p className={`${nearBirth ? 'text-orange-600' : 'text-slate-500'}`}>Días de gestación</p>
+                    <div className="text-right">
+                      <p className={`font-bold text-sm ${nearBirth ? 'text-orange-600' : 'text-slate-700'}`}>
+                        {31 - Math.max(0, daysLeft)} / 31
+                      </p>
+                      {nearBirth && daysLeft > 0 && (
+                        <p className="text-[10px] text-orange-500 font-medium">Parto en {daysLeft} día{daysLeft !== 1 ? 's' : ''}</p>
+                      )}
+                      {daysLeft === 0 && <p className="text-[10px] text-orange-600 font-semibold">Hoy es el día estimado</p>}
                     </div>
-                  )}
+                  </div>
                 </div>
+
+                {isExpanded && (
+                  <div 
+                    className="mt-4 flex flex-col gap-2 animate-in fade-in slide-in-from-top-1 duration-150"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Button
+                      type="button"
+                      variant="primary"
+                      className="w-full"
+                      onClick={() => {
+                        setToRegisterBirth(reproduction);
+                        const ecuadorDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
+                        const y = ecuadorDate.getFullYear();
+                        const m = String(ecuadorDate.getMonth() + 1).padStart(2, '0');
+                        const d = String(ecuadorDate.getDate()).padStart(2, '0');
+                        setActualBirthDate(`${y}-${m}-${d}`);
+                      }}
+                    >
+                      Registrar Parto
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="danger"
+                      icon={<Trash2 size={16} />}
+                      className="w-full justify-center gap-2"
+                      onClick={() => setToCancel(reproduction)}
+                    >
+                      Eliminar
+                    </Button>
+                  </div>
+                )}
+              </RabbitSelectableCard>
+                  );
+                })}
               </div>
-            );
-          })}
+            </CageGroupCard>
+          ))}
         </div>
       )}
 
-      <ConfirmDialog
-        open={!!toDelete}
-        onClose={() => setToDelete(null)}
-        onConfirm={handleConfirmDelete}
-        loading={deleting}
-        title={`Eliminar monta de ${toDelete?.femaleCode}${toDelete?.femaleName ? ` — ${toDelete.femaleName}` : ''}`}
-        description="Esta acción eliminará permanentemente el registro de monta del sistema."
-        confirmLabel="Sí, eliminar"
-        variant="danger"
-      />
+      {/* Modal de Cancelación/Eliminación */}
+      <Dialog
+        open={!!toCancel}
+        onClose={() => {
+          setToCancel(null);
+          setCancelReason('');
+          setCancelReasonOther('');
+        }}
+        title={`Cancelar Gestación: ${toCancel?.femaleCode}${toCancel?.femaleName ? ` — ${toCancel.femaleName}` : ''}`}
+      >
+        <div className="p-4">
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4">
+            <p className="text-sm text-slate-700">
+              Selecciona la razón por la cual estás cancelando esta gestación.
+            </p>
+          </div>
+          
+          <div className="mb-6 space-y-4">
+            <Select
+              label="Razón de cancelación"
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              options={[
+                { value: 'no_preniada', label: 'No quedó preñada' },
+                { value: 'error', label: 'Error de registro' },
+                { value: 'aborto', label: 'Aborto' },
+                { value: 'muerte', label: 'Muerte de la madre' },
+                { value: 'otro', label: 'Otro' },
+              ]}
+              placeholder="Seleccione una razón..."
+            />
+
+            {cancelReason === 'otro' && (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Especifique el problema</label>
+                <input
+                  type="text"
+                  required
+                  value={cancelReasonOther}
+                  onChange={(e) => setCancelReasonOther(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="Ej. Complicaciones de salud"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => { setToCancel(null); setCancelReason(''); setCancelReasonOther(''); }}>
+              Cerrar
+            </Button>
+            <Button 
+              variant="danger" 
+              onClick={handleConfirmCancel}
+              disabled={!cancelReason || (cancelReason === 'otro' && !cancelReasonOther.trim()) || canceling}
+              loading={canceling}
+            >
+              Confirmar Cancelación
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
+      {/* Modal de Registro de Parto */}
+      <Dialog
+        open={!!toRegisterBirth}
+        onClose={() => {
+          setToRegisterBirth(null);
+          setActualBirthDate('');
+        }}
+        title={`Registrar Parto: ${toRegisterBirth?.femaleCode}${toRegisterBirth?.femaleName ? ` — ${toRegisterBirth.femaleName}` : ''}`}
+      >
+        <form onSubmit={handleRegisterBirth} className="p-4">
+          <p className="text-sm text-slate-600 mb-4">
+            Ingresa la fecha real del parto. La coneja pasará a la fase de lactancia (1 mes).
+          </p>
+          
+          <div className="mb-6">
+            <Input
+              label="Fecha de Parto"
+              type="date"
+              required
+              value={actualBirthDate}
+              onChange={(e) => setActualBirthDate(e.target.value)}
+              max={new Date().toISOString().split('T')[0]} // Max today
+            />
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={() => { setToRegisterBirth(null); setActualBirthDate(''); }}>
+              Cancelar
+            </Button>
+            <Button 
+              type="submit" 
+              variant="primary" 
+              disabled={!actualBirthDate || registeringBirth}
+              loading={registeringBirth}
+            >
+              Guardar y Pasar a Fase 3
+            </Button>
+          </div>
+        </form>
+      </Dialog>
 
       <Dialog
         open={showEditModal}
@@ -179,7 +460,6 @@ export function ReproductionCatalog({ onSuccess }: ReproductionCatalogProps) {
             onSuccess={() => {
               setShowEditModal(false);
               setEditingReproduction(null);
-              fetchReproductions();
               onSuccess?.();
             }}
             onCancel={() => {
@@ -189,6 +469,6 @@ export function ReproductionCatalog({ onSuccess }: ReproductionCatalogProps) {
           />
         )}
       </Dialog>
-    </>
+    </div>
   );
 }

@@ -3,15 +3,15 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useState, useEffect } from 'react';
-import { Button, Alert, Input, Dialog } from '@/shared/ui';
+import { useState, useEffect, useRef } from 'react';
+import { Button, Input, Dialog, LoadingMessage, RabbitSelectableCard } from '@/shared/ui';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { genealogyService } from '../services/genealogy.service';
 import { rabbitService } from '@/modules/rabbits/services/rabbit.service';
 import type { Rabbit } from '@/modules/rabbits/types/rabbit.types';
 import type { Genealogy, UpdateGenealogyDto } from '../types/genealogy.types';
-import { X } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
+import { X, Network, AlertTriangle } from 'lucide-react';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 
 const schema = z.object({
   rabbitId: z.number().min(1, 'El conejo es obligatorio'),
@@ -27,17 +27,43 @@ type FormValues = z.infer<typeof schema>;
 interface GenealogyFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
-  editData?: Genealogy;
+  rabbitId?: number;
 }
 
-export function GenealogyForm({ onSuccess, onCancel, editData }: GenealogyFormProps) {
+export function GenealogyForm({ onSuccess, onCancel, rabbitId }: GenealogyFormProps) {
 
   const { showToast } = useToast();
-  const [rabbits, setRabbits] = useState<Rabbit[]>([]);
-  const [potentialFathers, setPotentialFathers] = useState<Rabbit[]>([]);
-  const [potentialMothers, setPotentialMothers] = useState<Rabbit[]>([]);
-  const [loading, setLoading] = useState(true);
   const queryClient = useQueryClient();
+
+  const { data: allRabbitsData, isLoading: loadingRabbits } = useQuery({
+    queryKey: ['rabbits', 'all'],
+    queryFn: () => rabbitService.getAll({ limit: 1000 }).then(res => res.rabbits),
+    staleTime: 5 * 60 * 1000,
+  });
+  
+  const { data: fathersData, isLoading: loadingFathers } = useQuery({
+    queryKey: ['rabbits', 'potentialFathers'],
+    queryFn: () => rabbitService.getPotentialFathers(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: mothersData, isLoading: loadingMothers } = useQuery({
+    queryKey: ['rabbits', 'potentialMothers'],
+    queryFn: () => rabbitService.getPotentialMothers(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: existingGenealogy, isLoading: loadingGenealogy } = useQuery({
+    queryKey: ['genealogy', rabbitId],
+    queryFn: () => rabbitId ? genealogyService.getByRabbitId(rabbitId).catch(() => null) : null,
+    enabled: !!rabbitId,
+  });
+
+  const rabbits = allRabbitsData || [];
+  const potentialFathers = fathersData || [];
+  const potentialMothers = mothersData || [];
+  const loading = loadingRabbits || loadingFathers || loadingMothers || loadingGenealogy;
+  const editData = existingGenealogy;
 
   // Search states
   const [rabbitSearch, setRabbitSearch] = useState('');
@@ -52,6 +78,26 @@ export function GenealogyForm({ onSuccess, onCancel, editData }: GenealogyFormPr
   const [selectedFather, setSelectedFather] = useState<Rabbit | null>(null);
   const [selectedMother, setSelectedMother] = useState<Rabbit | null>(null);
 
+  const rabbitDropdownRef = useRef<HTMLDivElement>(null);
+  const fatherDropdownRef = useRef<HTMLDivElement>(null);
+  const motherDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (rabbitDropdownRef.current && !rabbitDropdownRef.current.contains(event.target as Node)) {
+        setShowRabbitDropdown(false);
+      }
+      if (fatherDropdownRef.current && !fatherDropdownRef.current.contains(event.target as Node)) {
+        setShowFatherDropdown(false);
+      }
+      if (motherDropdownRef.current && !motherDropdownRef.current.contains(event.target as Node)) {
+        setShowMotherDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // Warning modal
   const [showWarningModal, setShowWarningModal] = useState(false);
   const [warningMessage, setWarningMessage] = useState('');
@@ -64,50 +110,31 @@ export function GenealogyForm({ onSuccess, onCancel, editData }: GenealogyFormPr
   });
 
   useEffect(() => {
-    loadData();
-  }, []);
-
-  useEffect(() => {
-    if (editData) {
-      const rabbit = rabbits.find(r => r.id === editData.rabbitId);
-      const father = potentialFathers.find(r => r.id === editData.fatherId);
-      const mother = potentialMothers.find(r => r.id === editData.motherId);
-      
+    if (!loading && rabbitId) {
+      const rabbit = rabbits.find((r: Rabbit) => r.id === rabbitId);
       if (rabbit) {
         setSelectedRabbit(rabbit);
-        setRabbitSearch(`${rabbit.code} - ${rabbit.name}`);
         setValue('rabbitId', rabbit.id);
       }
-      if (father) {
-        setSelectedFather(father);
-        setFatherSearch(`${father.code} - ${father.name}`);
-        setValue('fatherId', father.id);
-      }
-      if (mother) {
-        setSelectedMother(mother);
-        setMotherSearch(`${mother.code} - ${mother.name}`);
-        setValue('motherId', mother.id);
+      
+      if (existingGenealogy) {
+        if (existingGenealogy.fatherId) {
+          const father = potentialFathers.find((r: Rabbit) => r.id === existingGenealogy.fatherId);
+          if (father) {
+            setSelectedFather(father);
+            setValue('fatherId', father.id);
+          }
+        }
+        if (existingGenealogy.motherId) {
+          const mother = potentialMothers.find((r: Rabbit) => r.id === existingGenealogy.motherId);
+          if (mother) {
+            setSelectedMother(mother);
+            setValue('motherId', mother.id);
+          }
+        }
       }
     }
-  }, [editData, rabbits, potentialFathers, potentialMothers, setValue]);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [allRabbits, fathers, mothers] = await Promise.all([
-        rabbitService.getAll(),
-        rabbitService.getPotentialFathers(),
-        rabbitService.getPotentialMothers(),
-      ]);
-      setRabbits(allRabbits);
-      setPotentialFathers(fathers);
-      setPotentialMothers(mothers);
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Error al cargar conejos', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [loading, rabbitId, rabbits, potentialFathers, potentialMothers, existingGenealogy, setValue]);
 
   const onSubmit = async (values: FormValues) => {
 
@@ -272,124 +299,121 @@ export function GenealogyForm({ onSuccess, onCancel, editData }: GenealogyFormPr
     r.id !== selectedRabbit?.id
   );
 
-  if (loading) return <div className="text-center py-8">Cargando conejos...</div>;
+  if (loading) return <LoadingMessage message="Cargando conejos..." />;
 
   return (
     <>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
 
-        <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-800">
-          <strong>Nota:</strong> No es necesario agregar ambos progenitores. Puedes registrar solo el padre, solo la madre, o ambos.
-        </div>
+        <p className="text-sm font-medium text-slate-700">
+          No es necesario agregar ambos progenitores. Puedes registrar solo el padre, solo la madre, o ambos.
+        </p>
 
         <div>
           <label className="block text-sm font-medium text-slate-600 mb-2">Conejo *</label>
-          <div className="relative">
-            <Input
-              placeholder="Buscar por código o nombre..."
-              value={rabbitSearch}
-              onChange={(e) => { setRabbitSearch(e.target.value); setShowRabbitDropdown(true); }}
-              onFocus={() => setShowRabbitDropdown(true)}
-              disabled={!!editData}
+          {selectedRabbit ? (
+            <RabbitSelectableCard 
+              rabbit={selectedRabbit} 
+              onClick={!rabbitId && !editData ? () => { setSelectedRabbit(null); setValue('rabbitId', 0 as any); setRabbitSearch(''); } : undefined} 
+              extras={!rabbitId && !editData ? <span className="text-red-500 flex items-center gap-1 justify-center"><X size={14}/> Cambiar</span> : undefined} 
             />
-            {showRabbitDropdown && filteredRabbits.length > 0 && !editData && (
-              <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-md mt-1 max-h-48 overflow-y-auto z-10">
-                {filteredRabbits.map(r => (
-                  <button
-                    key={r.id}
-                    type="button"
-                    onClick={() => handleRabbitSelect(r)}
-                    className="w-full text-left px-3 py-2 hover:bg-slate-100 text-sm"
-                  >
-                    {r.code} - {r.name} ({r.age} meses, {r.race})
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          ) : (
+            <div className="relative" ref={rabbitDropdownRef}>
+              <Input
+                placeholder="Buscar por código o nombre..."
+                value={rabbitSearch}
+                onChange={(e) => { setRabbitSearch(e.target.value); setShowRabbitDropdown(true); }}
+                onFocus={() => setShowRabbitDropdown(true)}
+                disabled={!!rabbitId || !!editData}
+              />
+              {showRabbitDropdown && filteredRabbits.length > 0 && !rabbitId && !editData && (
+                <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-md mt-1 max-h-64 overflow-y-auto z-50 shadow-lg p-2 flex flex-col gap-2">
+                  {filteredRabbits.map(r => (
+                    <RabbitSelectableCard
+                      key={r.id}
+                      rabbit={r}
+                      onClick={() => handleRabbitSelect(r)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           {errors.rabbitId && <p className="text-sm text-red-600 mt-1">{errors.rabbitId.message}</p>}
         </div>
 
         <div>
           <label className="block text-sm font-medium text-slate-600 mb-2">Padre</label>
-          <div className="relative">
-            <Input
-              placeholder="Buscar por código o nombre..."
-              value={fatherSearch}
-              onChange={(e) => { setFatherSearch(e.target.value); setShowFatherDropdown(true); }}
-              onFocus={() => setShowFatherDropdown(true)}
+          {selectedFather ? (
+            <RabbitSelectableCard 
+              rabbit={selectedFather} 
+              onClick={handleClearFather} 
+              extras={<span className="text-red-500 flex items-center gap-1 justify-center"><X size={14}/> Quitar padre</span>} 
             />
-            {editData && selectedFather && (
-              <button
-                type="button"
-                onClick={handleClearFather}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                <X size={16} />
-              </button>
-            )}
-            {showFatherDropdown && filteredFathers.length > 0 && (
-              <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-md mt-1 max-h-48 overflow-y-auto z-10">
-                {filteredFathers.map(r => (
-                  <button
-                    key={r.id}
-                    type="button"
-                    onClick={() => handleFatherSelect(r)}
-                    className="w-full text-left px-3 py-2 hover:bg-slate-100 text-sm"
-                  >
-                    {r.code} - {r.name} ({r.age} meses, {r.race})
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          ) : (
+            <div className="relative" ref={fatherDropdownRef}>
+              <Input
+                placeholder="Buscar por código o nombre..."
+                value={fatherSearch}
+                onChange={(e) => { setFatherSearch(e.target.value); setShowFatherDropdown(true); }}
+                onFocus={() => setShowFatherDropdown(true)}
+              />
+              {showFatherDropdown && filteredFathers.length > 0 && (
+                <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-md mt-1 max-h-64 overflow-y-auto z-50 shadow-lg p-2 flex flex-col gap-2">
+                  {filteredFathers.map(r => (
+                    <RabbitSelectableCard
+                      key={r.id}
+                      rabbit={r}
+                      onClick={() => handleFatherSelect(r)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           {errors.fatherId && <p className="text-sm text-red-600 mt-1">{errors.fatherId.message}</p>}
         </div>
 
         <div>
           <label className="block text-sm font-medium text-slate-600 mb-2">Madre</label>
-          <div className="relative">
-            <Input
-              placeholder="Buscar por código o nombre..."
-              value={motherSearch}
-              onChange={(e) => { setMotherSearch(e.target.value); setShowMotherDropdown(true); }}
-              onFocus={() => setShowMotherDropdown(true)}
+          {selectedMother ? (
+            <RabbitSelectableCard 
+              rabbit={selectedMother} 
+              onClick={handleClearMother} 
+              extras={<span className="text-red-500 flex items-center gap-1 justify-center"><X size={14}/> Quitar madre</span>} 
             />
-            {editData && selectedMother && (
-              <button
-                type="button"
-                onClick={handleClearMother}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                <X size={16} />
-              </button>
-            )}
-            {showMotherDropdown && filteredMothers.length > 0 && (
-              <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-md mt-1 max-h-48 overflow-y-auto z-10">
-                {filteredMothers.map(r => (
-                  <button
-                    key={r.id}
-                    type="button"
-                    onClick={() => handleMotherSelect(r)}
-                    className="w-full text-left px-3 py-2 hover:bg-slate-100 text-sm"
-                  >
-                    {r.code} - {r.name} ({r.age} meses, {r.race})
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          ) : (
+            <div className="relative" ref={motherDropdownRef}>
+              <Input
+                placeholder="Buscar por código o nombre..."
+                value={motherSearch}
+                onChange={(e) => { setMotherSearch(e.target.value); setShowMotherDropdown(true); }}
+                onFocus={() => setShowMotherDropdown(true)}
+              />
+              {showMotherDropdown && filteredMothers.length > 0 && (
+                <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-md mt-1 max-h-64 overflow-y-auto z-50 shadow-lg p-2 flex flex-col gap-2">
+                  {filteredMothers.map(r => (
+                    <RabbitSelectableCard
+                      key={r.id}
+                      rabbit={r}
+                      onClick={() => handleMotherSelect(r)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           {errors.motherId && <p className="text-sm text-red-600 mt-1">{errors.motherId.message}</p>}
         </div>
 
-        <div className="flex gap-3 pt-2">
-          <Button type="submit" loading={isSubmitting}>
-            {editData ? 'Actualizar Relación' : 'Registrar Relación'}
-          </Button>
-          <Button type="button" variant="secondary" onClick={onCancel}>
-            Cancelar
-          </Button>
-        </div>
+        <div className="flex justify-end gap-3 pt-2">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+          Cancelar
+        </Button>
+        <Button type="submit" loading={isSubmitting}>
+          Guardar Cambios
+        </Button>
+      </div>
       </form>
 
       <Dialog

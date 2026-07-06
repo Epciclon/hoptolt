@@ -4,14 +4,18 @@ const { Galpon } = require('../../domain/models');
 
 exports.registerDeworming = catchAsync(async (req, res) => {
     const galponId = req.galponId;
-    const dewormings = await dewormingService.registerDeworming(req.body, galponId);
+    const dewormings = await dewormingService.registerDeworming(req.body, galponId, req.user.id);
     res.status(201).json({ success: true, message: 'Desparasitación registrada exitosamente.', dewormings });
 });
 
 exports.getDewormings = catchAsync(async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
-    const result = await dewormingService.getDewormings(req.galponId, req.user.id, page, limit);
+    const { startDate, endDate, races, profileId, all } = req.query;
+    
+    const filters = { startDate, endDate, races, profileId, all: all === 'true' };
+    
+    const result = await dewormingService.getDewormings(req.galponId, req.user.id, page, limit, filters);
     res.status(200).json({
         success: true,
         dewormings: result.data,

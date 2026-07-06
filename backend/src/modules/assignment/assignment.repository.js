@@ -30,7 +30,7 @@ class AssignmentRepository {
     }
 
     async findByGalponId(galponId) {
-        return Assignment.findAll({ 
+        return Assignment.findAll({
             where: { galponId, status: 'asignado' },
             include: [
                 { model: require('../../domain/models').Rabbit, as: 'rabbit' },

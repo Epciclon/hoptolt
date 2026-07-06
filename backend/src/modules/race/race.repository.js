@@ -13,8 +13,17 @@ class RaceRepository {
         return Race.findOne({ where: { name, profileId } });
     }
 
-    async findByProfile(profileId) {
-        return Race.findAll({ where: { profileId } });
+    async findByProfile(profileId, options = {}) {
+        const { where = {}, ...rest } = options;
+        return Race.findAll({
+            where: { profileId, ...where },
+            ...rest
+        });
+    }
+
+    async countByProfile(profileId, options = {}) {
+        const { where = {} } = options;
+        return Race.count({ where: { profileId, ...where } });
     }
 
     async findByNameAndGalpon(name, galponId) {

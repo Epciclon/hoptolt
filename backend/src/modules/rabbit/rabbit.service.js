@@ -3,12 +3,55 @@ const raceRepository = require('../race/race.repository');
 const { Assignment, FarmMember } = require('../../domain/models');
 const AppError = require('../../errors/AppError');
 const { getPaginationParams, createPaginatedResponse } = require('../../common/helpers/pagination.helper');
+const { generateRandomName } = require('../../common/helpers/names.helper');
+const { Op } = require('sequelize');
 
 class RabbitService {
-    generateCode(raceName) {
-        const initial = raceName.charAt(0).toUpperCase();
-        const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-        return `${initial}${randomNum}`;
+    async generateCode(raceName, galponId) {
+        // Find if this race already has a rabbit in this galpon
+        const existingRabbits = await rabbitRepository.findByGalpon(galponId, {
+            where: { race: raceName.trim() },
+            limit: 1
+        });
+        
+        let prefix = '';
+        if (existingRabbits && existingRabbits.length > 0) {
+            // Reutilizar el prefijo de la misma raza
+            prefix = existingRabbits[0].code.replace(/[0-9]+$/, '').toUpperCase();
+        } else {
+            // Generar nuevo prefijo verificando colisiones en el galpón
+            const allRabbits = await rabbitRepository.findByGalpon(galponId, { attributes: ['code'] });
+            const takenPrefixes = new Set(allRabbits.map(r => r.code.replace(/[0-9]+$/, '').toUpperCase()));
+            
+            const words = raceName.trim().split(/\s+/);
+            if (words.length > 1) {
+                let initialPrefix = words.map(w => w.charAt(0)).join('').toUpperCase();
+                let extraLen = 1;
+                prefix = initialPrefix;
+                while (takenPrefixes.has(prefix) && extraLen < words[0].length) {
+                    prefix = (words[0].substring(0, extraLen + 1) + words.slice(1).map(w => w.charAt(0)).join('')).toUpperCase();
+                    extraLen++;
+                }
+            } else {
+                let extraLen = 1;
+                prefix = raceName.trim().substring(0, extraLen).toUpperCase();
+                while (takenPrefixes.has(prefix) && extraLen < raceName.trim().length) {
+                    extraLen++;
+                    prefix = raceName.trim().substring(0, extraLen).toUpperCase();
+                }
+            }
+        }
+
+        // Generar código numérico garantizando unicidad en el galpón
+        let code = '';
+        let codeExists = true;
+        while (codeExists) {
+            const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+            code = `${prefix}${randomNum}`;
+            const exists = await rabbitRepository.findByGalpon(galponId, { where: { code } });
+            codeExists = exists.length > 0;
+        }
+        return code;
     }
 
     calculateAge(birthDate) {
@@ -22,7 +65,7 @@ class RabbitService {
     }
 
     async registerRabbit(data, galponId, profileId) {
-        const { name, race, sex, birthDate, weight, purpose } = data;
+        const { name, race, sex, birthDate, weight, purpose, imageUrl } = data;
 
         // Verificar que el usuario tiene acceso al galpón
         await this._assertGalponAccess(galponId, profileId);
@@ -30,12 +73,7 @@ class RabbitService {
         const raceExists = await raceRepository.findByName(race.trim());
         if (!raceExists) throw new AppError('La raza especificada no existe.', 400);
 
-        let code = this.generateCode(race);
-        let codeExists = await rabbitRepository.findByCode(code);
-        while (codeExists) {
-            code = this.generateCode(race);
-            codeExists = await rabbitRepository.findByCode(code);
-        }
+        let code = await this.generateCode(race, galponId);
 
         const age = this.calculateAge(birthDate);
 
@@ -48,6 +86,7 @@ class RabbitService {
             age,
             weight,
             purpose,
+            imageUrl: imageUrl || null,
             galponId,
             profileId
         });
@@ -63,15 +102,37 @@ class RabbitService {
         return rabbit;
     }
 
-    async getAllRabbits(galponId, profileId, page = 1, limit = 10) {
+    async getAllRabbits(galponId, profileId, filters = {}, page = 1, limit = 12) {
         if (!galponId) return createPaginatedResponse([], page, limit, 0);
 
         // Verificar que el usuario tiene acceso al galpón
         await this._assertGalponAccess(galponId, profileId);
 
         const { limit: limitValue, offset, page: pageValue } = getPaginationParams(page, limit);
-        const rabbits = await rabbitRepository.findByGalpon(galponId, { limit: limitValue, offset });
-        const total = await rabbitRepository.countByGalpon(galponId);
+        const { Op } = require('sequelize');
+        
+        const where = {};
+        
+        if (filters.search) {
+            where[Op.or] = [
+                { name: { [Op.iLike]: `%${filters.search}%` } },
+                { code: { [Op.iLike]: `%${filters.search}%` } }
+            ];
+        }
+        
+        if (filters.race) where.race = filters.race;
+        if (filters.sex) where.sex = filters.sex;
+        if (filters.purpose) where.purpose = filters.purpose;
+
+        const options = {
+            limit: limitValue,
+            offset,
+            where,
+            order: [['createdAt', 'DESC']]
+        };
+
+        const rabbits = await rabbitRepository.findByGalpon(galponId, options);
+        const total = await rabbitRepository.countByGalpon(galponId, { where });
 
         return createPaginatedResponse(rabbits, pageValue, limitValue, total);
     }
@@ -107,7 +168,7 @@ class RabbitService {
         // Verificar que el usuario tiene acceso al galpón
         await this._assertGalponAccess(rabbit.galponId, profileId);
 
-        const assignmentCount = await Assignment.count({ where: { rabbitCode: rabbit.code, status: 'asignado' } });
+        const assignmentCount = await Assignment.count({ where: { rabbitId: rabbit.id, status: 'asignado' } });
         if (assignmentCount > 0) {
             throw new AppError('No se puede eliminar un conejo asignado a una jaula. Debe desasignarse primero.', 400);
         }
@@ -117,6 +178,13 @@ class RabbitService {
 
     async getAvailableRaces() {
         return raceRepository.findAll();
+    }
+
+    suggestName(sex) {
+        if (!['macho', 'hembra'].includes(sex)) {
+            sex = 'macho'; // fallback por defecto
+        }
+        return generateRandomName(sex);
     }
 
     async getPotentialFathers(galponId, profileId) {

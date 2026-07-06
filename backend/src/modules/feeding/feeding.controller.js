@@ -9,14 +9,19 @@ exports.getFoodTypes = catchAsync(async (req, res) => {
 
 exports.registerFeeding = catchAsync(async (req, res) => {
     const galponId = req.galponId;
-    const feedings = await feedingService.registerFeeding(req.body, galponId);
+    const profileId = req.user.id;
+    const feedings = await feedingService.registerFeeding(req.body, galponId, profileId);
     res.status(201).json({ success: true, message: 'Alimentación registrada exitosamente.', feedings: feedings.map(toFeedingDTO) });
 });
 
 exports.getFeedings = catchAsync(async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
-    const result = await feedingService.getFeedings(req.galponId, req.user.id, page, limit);
+    const { startDate, endDate, races, profileId, cageType, all } = req.query;
+    
+    const filters = { startDate, endDate, races, profileId, cageType, all: all === 'true' };
+    
+    const result = await feedingService.getFeedings(req.galponId, req.user.id, page, limit, filters);
     res.status(200).json({
         success: true,
         feedings: result.data.map(toFeedingDTO),

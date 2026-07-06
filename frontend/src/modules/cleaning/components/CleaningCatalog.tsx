@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Alert, CageCatalog } from '@/shared/ui';
+import { Button, Alert, CageCatalog, LoadingMessage } from '@/shared/ui';
 import type { CageItem } from '@/shared/ui';
 import { useCleaning } from '../hooks/useCleaning';
 import { useToast } from '@/shared/contexts/ToastContext';
@@ -20,15 +20,15 @@ export function CleaningCatalog({ onSuccess }: CleaningCatalogProps) {
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
     const ecuadorDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
-    const formattedDate = ecuadorDate.toLocaleDateString('es-EC', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: 'numeric' 
+    const formattedDate = ecuadorDate.toLocaleDateString('es-EC', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
     });
-    const formattedTime = ecuadorDate.toLocaleTimeString('es-EC', { 
-      hour: '2-digit', 
+    const formattedTime = ecuadorDate.toLocaleTimeString('es-EC', {
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: true 
+      hour12: true
     });
     return `${formattedDate} ${formattedTime}`;
   };
@@ -57,8 +57,8 @@ export function CleaningCatalog({ onSuccess }: CleaningCatalogProps) {
   const cageGroups: CageItem[] = Object.values(groupedByCage).sort((a, b) => a.cageNumber - b.cageNumber);
 
   const toggleCage = (cageNumber: number) => {
-    setSelectedCageNumbers(prev => 
-      prev.includes(cageNumber) 
+    setSelectedCageNumbers(prev =>
+      prev.includes(cageNumber)
         ? prev.filter(n => n !== cageNumber)
         : [...prev, cageNumber]
     );
@@ -104,7 +104,7 @@ export function CleaningCatalog({ onSuccess }: CleaningCatalogProps) {
   };
 
   if (loading) {
-    return <p className="text-center text-slate-500 py-8">Cargando datos de limpieza...</p>;
+    return <LoadingMessage message="Cargando limpiezas..." />;
   }
 
 
@@ -148,8 +148,8 @@ export function CleaningCatalog({ onSuccess }: CleaningCatalogProps) {
         />
       )}
 
-      <div className="flex gap-3 pt-4 sticky bottom-0 bg-white py-4 border-t border-slate-200">
-        <Button 
+      <div className="flex justify-end pt-4 mt-6 border-t border-slate-200">
+        <Button
           onClick={handleRegister}
           loading={submitting}
           disabled={selectedCageNumbers.length === 0}

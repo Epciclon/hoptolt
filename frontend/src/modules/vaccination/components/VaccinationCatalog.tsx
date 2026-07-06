@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Input, Button } from '@/shared/ui';
+import { Input, Button, CageGroupCard, RabbitSelectableCard, LoadingMessage } from '@/shared/ui';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { useVaccination } from '../hooks/useVaccination';
 import type { AssignedRabbit } from '@/modules/assignments/types/assignment.types';
@@ -13,7 +13,7 @@ interface VaccinationCatalogProps {
 const VACCINES_STORAGE_KEY = 'vaccination_selected_vaccines';
 
 export function VaccinationCatalog({ onSuccess }: VaccinationCatalogProps) {
-  const { assignedRabbits, galponVaccines, loading, createVaccination, vaccinations } = useVaccination();
+  const { assignedRabbits, galponVaccines, loading, createVaccination, vaccinations, isCreating } = useVaccination();
   const { showToast } = useToast();
   const [selectedRabbitIds, setSelectedRabbitIds] = useState<number[]>([]);
   const [selectedVaccines, setSelectedVaccines] = useState<string[]>(() => {
@@ -25,21 +25,21 @@ export function VaccinationCatalog({ onSuccess }: VaccinationCatalogProps) {
   });
   const [vaccineSearch, setVaccineSearch] = useState('');
   const [showVaccineDropdown, setShowVaccineDropdown] = useState(false);
-  
+
   const vaccineDropdownRef = useRef<HTMLDivElement>(null);
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
     const ecuadorDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
-    const formattedDate = ecuadorDate.toLocaleDateString('es-EC', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: 'numeric' 
+    const formattedDate = ecuadorDate.toLocaleDateString('es-EC', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
     });
-    const formattedTime = ecuadorDate.toLocaleTimeString('es-EC', { 
-      hour: '2-digit', 
+    const formattedTime = ecuadorDate.toLocaleTimeString('es-EC', {
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: true 
+      hour12: true
     });
     return `${formattedDate} ${formattedTime}`;
   };
@@ -51,8 +51,8 @@ export function VaccinationCatalog({ onSuccess }: VaccinationCatalogProps) {
   };
 
   const toggleRabbit = (rabbitId: number) => {
-    setSelectedRabbitIds(prev => 
-      prev.includes(rabbitId) 
+    setSelectedRabbitIds(prev =>
+      prev.includes(rabbitId)
         ? prev.filter(id => id !== rabbitId)
         : [...prev, rabbitId]
     );
@@ -111,7 +111,7 @@ export function VaccinationCatalog({ onSuccess }: VaccinationCatalogProps) {
       // Contar cuántos conejos tienen problemas (líneas que empiezan con "El conejo")
       const errorLines = errorMessage.split('\n').filter(line => line.trim().startsWith('El conejo'));
       const hasValidRabbits = errorLines.length < selectedRabbitIds.length;
-      
+
       if (hasValidRabbits) {
         showToast(`${errorMessage}\n\nPor favor, deselecciona los conejos con problemas mencionados arriba para registrar los demás.`, 'error');
       } else {
@@ -132,7 +132,7 @@ export function VaccinationCatalog({ onSuccess }: VaccinationCatalogProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const filteredVaccines = galponVaccines.filter(v => 
+  const filteredVaccines = galponVaccines.filter(v =>
     v.name.toLowerCase().includes(vaccineSearch.toLowerCase())
   );
 
@@ -154,7 +154,7 @@ export function VaccinationCatalog({ onSuccess }: VaccinationCatalogProps) {
   const cageGroups = Object.values(groupedByCage).sort((a, b) => a.cageNumber - b.cageNumber);
 
   if (loading) {
-    return <p className="text-center text-slate-500 py-8">Cargando datos de vacunación...</p>;
+    return <LoadingMessage message="Cargando vacunaciones..." />;
   }
 
   return (
@@ -219,69 +219,55 @@ export function VaccinationCatalog({ onSuccess }: VaccinationCatalogProps) {
       {cageGroups.length === 0 ? (
         <p className="text-sm text-slate-500">No hay conejos con jaula asignada en el galpón activo.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 items-start">
           {cageGroups.map(group => (
-            <div
+            <CageGroupCard
               key={group.cageNumber}
-              className="border rounded-lg overflow-hidden bg-white"
+              cageNumber={group.cageNumber}
+              cageType={group.cageType}
             >
-              <div className="p-3 border-b border-slate-200 bg-slate-50">
-                <h4 className="font-semibold text-slate-800">
-                  Jaula #{group.cageNumber} — {group.cageType.charAt(0).toUpperCase() + group.cageType.slice(1)}
-                </h4>
-              </div>
-              <div className="p-3 space-y-2">
-                {group.rabbits.map(rabbit => {
-                  const isSelected = selectedRabbitIds.includes(rabbit.id);
-                  const lastVaccination = getRabbitLastVaccination(rabbit.id);
-                  return (
-                    <div
-                      key={rabbit.id}
-                      onClick={() => toggleRabbit(rabbit.id)}
-                      className={`p-2 rounded border transition-colors cursor-pointer ${
-                        isSelected ? 'bg-primary-50 border-primary-300' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      <p className="text-sm font-medium text-slate-800">
-                        {rabbit.code}{rabbit.name ? ` — ${rabbit.name}` : ''}
-                      </p>
-                      {isSelected && (
-                        <>
-                          <p className="text-xs text-slate-500 mt-1">
-                            {rabbit.age} meses • {rabbit.weight}kg
+              {group.rabbits.map(rabbit => {
+                const isSelected = selectedRabbitIds.includes(rabbit.id);
+                const lastVaccination = getRabbitLastVaccination(rabbit.id);
+
+                return (
+                  <RabbitSelectableCard
+                    key={rabbit.id}
+                    rabbit={rabbit}
+                    isSelected={isSelected}
+                    onClick={() => toggleRabbit(rabbit.id)}
+                    extras={
+                      <>
+                        <p className="text-[10px] text-slate-500 mb-0.5">Última vacunación:</p>
+                        <p className="text-xs font-medium text-slate-700 truncate" title={lastVaccination ? lastVaccination.vaccines.join(', ') : 'Nunca'}>
+                          {lastVaccination ? lastVaccination.vaccines.join(', ') : 'Nunca'}
+                        </p>
+                        {lastVaccination && (
+                          <p className="text-[10px] text-slate-500 mt-0.5">
+                            {formatDateTime(lastVaccination.vaccinationDate)}
                           </p>
-                          {lastVaccination && (
-                            <div className="pt-2 border-t border-slate-100 mt-2">
-                              <p className="text-xs font-semibold text-slate-600">
-                                Última vacunación:
-                              </p>
-                              <p className="text-xs text-slate-600 mt-1">
-                                {lastVaccination.vaccines.join(', ')}
-                              </p>
-                              <p className="text-xs text-slate-500 mt-1">
-                                {formatDateTime(lastVaccination.vaccinationDate)}
-                              </p>
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+                        )}
+                      </>
+                    }
+                  />
+                );
+              })}
+            </CageGroupCard>
           ))}
         </div>
       )}
 
-      <div className="flex gap-3 pt-4 sticky bottom-0 bg-white py-4 border-t border-slate-200">
-        <Button 
-          onClick={handleRegister}
-          disabled={selectedRabbitIds.length === 0 || selectedVaccines.length === 0}
-        >
-          Registrar Vacunación ({selectedRabbitIds.length} conejo{selectedRabbitIds.length !== 1 ? 's' : ''})
-        </Button>
-      </div>
+      {selectedRabbitIds.length > 0 && (
+        <div className="flex justify-end pt-4 mt-6 border-t border-slate-200">
+          <Button
+            onClick={handleRegister}
+            disabled={selectedVaccines.length === 0}
+            loading={isCreating}
+          >
+            Registrar Vacunación ({selectedRabbitIds.length} conejo{selectedRabbitIds.length !== 1 ? 's' : ''})
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

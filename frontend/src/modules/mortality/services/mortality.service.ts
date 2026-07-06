@@ -2,8 +2,11 @@ import api from '@/lib/api';
 import type { Mortality, CreateMortalityDto } from '../types/mortality.types';
 
 export const mortalityService = {
-  async getAll(limit?: number): Promise<Mortality[]> {
-    const url = limit ? `/mortalities?limit=${limit}` : '/mortalities?limit=100';
+  async getAll(limit?: number, isKits?: boolean): Promise<Mortality[]> {
+    let url = limit ? `/mortalities?limit=${limit}` : '/mortalities?limit=100';
+    if (isKits !== undefined) {
+      url += `&isKits=${isKits}`;
+    }
     const { data } = await api.get<{ success: boolean; mortalities: Mortality[] }>(url);
     return data.mortalities;
   },

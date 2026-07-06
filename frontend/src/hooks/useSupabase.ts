@@ -19,9 +19,25 @@ export function useSupabase() {
     []
   )
 
+  const uploadRabbitImage = useCallback(
+    async (file: File): Promise<string> => {
+      return uploadImage(file, 'Conejos', '')
+    },
+    []
+  )
+
+  const deleteRabbitImage = useCallback(
+    async (filePath: string): Promise<void> => {
+      return deleteImage('Conejos', filePath)
+    },
+    []
+  )
+
   return {
     supabase,
     uploadRaceImage,
     deleteRaceImage,
+    uploadRabbitImage,
+    deleteRabbitImage,
   }
 }

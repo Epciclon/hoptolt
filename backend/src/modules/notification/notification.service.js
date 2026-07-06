@@ -137,6 +137,117 @@ class NotificationService {
         return promise;
     }
 
+    async checkAndCreateWeaningNotifications(profileId) {
+        if (ongoingChecks.has(`${profileId}_weaning`)) {
+            return ongoingChecks.get(`${profileId}_weaning`);
+        }
+
+        const promise = (async () => {
+            try {
+                const memberships = await FarmMember.findAll({ where: { profileId, status: 'active' } });
+                const ownedGalpones = await Galpon.findAll({ where: { profileId } });
+
+                const todayStr = new Date().toLocaleDateString('sv', { timeZone: 'America/Guayaquil' });
+                const d = new Date(todayStr + 'T00:00:00-05:00');
+                d.setDate(d.getDate() - 30);
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const dayStr = String(d.getDate()).padStart(2, '0');
+                const thirtyDaysAgoStr = `${y}-${m}-${dayStr}`;
+
+                const { WorkerCage, Assignment } = require('../../domain/models');
+                const conditions = [];
+
+                if (ownedGalpones.length > 0) {
+                    conditions.push({ galponId: { [Op.in]: ownedGalpones.map(g => g.id) } });
+                }
+
+                for (const m of memberships) {
+                    if (m.role === 'owner') {
+                        conditions.push({ galponId: m.galponId });
+                    } else if (m.role === 'worker') {
+                        const workerCages = await WorkerCage.findAll({ where: { farmMemberId: m.id } });
+                        const cageIds = workerCages.map(wc => wc.cageId);
+                        conditions.push({
+                            galponId: m.galponId,
+                            '$female.assignments.cageId$': { [Op.in]: cageIds }
+                        });
+                    }
+                }
+
+                if (conditions.length === 0) return;
+
+                const weaningReproductions = await Reproduction.findAll({
+                    where: {
+                        [Op.or]: conditions,
+                        status: 'lactancia',
+                        estimatedBirthDate: { [Op.lte]: thirtyDaysAgoStr }
+                    },
+                    include: [
+                        {
+                            model: Rabbit,
+                            as: 'female',
+                            attributes: ['code', 'name'],
+                            include: [
+                                {
+                                    model: Assignment,
+                                    as: 'assignments',
+                                    where: { status: 'asignado' },
+                                    required: true
+                                }
+                            ]
+                        }
+                    ]
+                });
+
+                if (weaningReproductions.length === 0) return;
+
+                const infoNotifications = await Notification.findAll({
+                    where: { profileId, type: 'info' }
+                });
+
+                const notifiedReproductionIds = new Set();
+                for (const w of infoNotifications) {
+                    if (w.data) {
+                        let dataObj = w.data;
+                        if (typeof dataObj === 'string') {
+                            try { dataObj = JSON.parse(dataObj); } catch (e) { continue; }
+                        }
+                        if (dataObj && dataObj.type === 'weaning_alert' && dataObj.reproductionId) {
+                            notifiedReproductionIds.add(Number(dataObj.reproductionId));
+                        }
+                    }
+                }
+
+                for (const r of weaningReproductions) {
+                    const repId = Number(r.id);
+                    if (!notifiedReproductionIds.has(repId)) {
+                        notifiedReproductionIds.add(repId);
+
+                        const rabbitName = r.female?.name ? ` (${r.female.name})` : '';
+                        await Notification.create({
+                            profileId,
+                            type: 'info',
+                            title: 'Destete Pendiente',
+                            message: `La coneja con código ${r.female?.code || 'N/A'}${rabbitName} ya cumplió el mes de lactancia. Por favor, finalice el proceso y registre las crías retenidas.`,
+                            data: {
+                                type: 'weaning_alert',
+                                reproductionId: repId
+                            }
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking/creating weaning notifications:', error);
+            } finally {
+                ongoingChecks.delete(`${profileId}_weaning`);
+            }
+        })();
+
+        ongoingChecks.set(`${profileId}_weaning`, promise);
+        return promise;
+    }
+
     async checkAndCreateCleaningNotifications(profileId) {
         if (ongoingChecks.has(`${profileId}_cleaning`)) {
             return ongoingChecks.get(`${profileId}_cleaning`);
@@ -270,9 +381,21 @@ class NotificationService {
         return promise;
     }
 
+    async createNotification(profileId, data) {
+        const notification = await notificationRepository.create({
+            profileId,
+            type: data.type,
+            title: data.title,
+            message: data.message,
+            data: data.data
+        });
+        return toNotificationDTO(notification);
+    }
+
     async getNotificationsByProfile(profileId, options = {}) {
         await this.checkAndCreateBirthNotifications(profileId);
         await this.checkAndCreateCleaningNotifications(profileId);
+        await this.checkAndCreateWeaningNotifications(profileId);
         await growthService.processDailyGrowth(profileId);
         const notifications = await notificationRepository.findByProfileId(profileId, options);
         return notifications.map(toNotificationDTO);
@@ -281,6 +404,7 @@ class NotificationService {
     async getUnreadCount(profileId) {
         await this.checkAndCreateBirthNotifications(profileId);
         await this.checkAndCreateCleaningNotifications(profileId);
+        await this.checkAndCreateWeaningNotifications(profileId);
         await growthService.processDailyGrowth(profileId);
         return await notificationRepository.countUnread(profileId);
     }

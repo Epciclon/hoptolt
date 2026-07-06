@@ -41,9 +41,9 @@ export function useVaccination() {
   });
 
   const loading = loadingVaccinations || loadingRabbits || loadingVaccines;
-  const error = errorVaccinations ? (errorVaccinations as Error).message : 
-                (errorRabbits ? (errorRabbits as Error).message : 
-                (errorVaccines ? (errorVaccines as Error).message : null));
+  const error = errorVaccinations ? (errorVaccinations as Error).message :
+    (errorRabbits ? (errorRabbits as Error).message :
+      (errorVaccines ? (errorVaccines as Error).message : null));
 
   // Mutation: Create Vaccination
   const createVaccinationMutation = useMutation({
@@ -57,13 +57,14 @@ export function useVaccination() {
     return createVaccinationMutation.mutateAsync(payload);
   };
 
-  return { 
-    vaccinations, 
-    assignedRabbits, 
-    galponVaccines, 
-    loading, 
-    error, 
+  return {
+    vaccinations,
+    assignedRabbits,
+    galponVaccines,
+    loading,
+    error,
+    createVaccination,
+    isCreating: createVaccinationMutation.isPending,
     fetchVaccinations,
-    createVaccination 
   };
 }

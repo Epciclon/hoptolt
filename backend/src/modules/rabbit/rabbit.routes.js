@@ -11,6 +11,7 @@ router.use('/rabbits', authenticate, tenantFilter); // Protect all routes in thi
 
 router.post('/rabbits', requirePermission('rabbits', 'canCreate'), galponContext, validateCreateRabbit, rabbitController.registerRabbit);
 router.get('/rabbits', requirePermission('rabbits', 'canRead'), galponContext, rabbitController.getAllRabbits);
+router.get('/rabbits/suggest-name', requirePermission('rabbits', 'canRead'), rabbitController.suggestName);
 router.get('/rabbits/potential-fathers', requirePermission('rabbits', 'canRead'), galponContext, rabbitController.getPotentialFathers);
 router.get('/rabbits/potential-mothers', requirePermission('rabbits', 'canRead'), galponContext, rabbitController.getPotentialMothers);
 router.get('/rabbits/races/:race', requirePermission('rabbits', 'canRead'), rabbitController.getRabbitsByRace);

@@ -15,7 +15,12 @@ exports.getCage = catchAsync(async (req, res) => {
 exports.getAllCages = catchAsync(async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
-    const result = await cageService.getAllCages(req.galponId, req.user.id, page, limit);
+    const filters = {
+        search: req.query.search,
+        type: req.query.type,
+        status: req.query.status
+    };
+    const result = await cageService.getAllCages(req.galponId, req.user.id, filters, page, limit);
     res.status(200).json({
         success: true,
         cages: result.data.map(toCageDTO),

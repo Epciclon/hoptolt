@@ -14,8 +14,14 @@ exports.getRabbit = catchAsync(async (req, res) => {
 
 exports.getAllRabbits = catchAsync(async (req, res) => {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const result = await rabbitService.getAllRabbits(req.galponId, req.user.id, page, limit);
+    const limit = parseInt(req.query.limit) || 12;
+    const filters = {
+        search: req.query.search,
+        race: req.query.race,
+        sex: req.query.sex,
+        purpose: req.query.purpose
+    };
+    const result = await rabbitService.getAllRabbits(req.galponId, req.user.id, filters, page, limit);
     res.status(200).json({
         success: true,
         rabbits: result.data.map(toRabbitDTO),
@@ -51,4 +57,9 @@ exports.getPotentialFathers = catchAsync(async (req, res) => {
 exports.getPotentialMothers = catchAsync(async (req, res) => {
     const mothers = await rabbitService.getPotentialMothers(req.galponId, req.user.id);
     res.status(200).json({ success: true, mothers: mothers.map(toRabbitDTO) });
+});
+
+exports.suggestName = catchAsync(async (req, res) => {
+    const name = rabbitService.suggestName(req.query.sex);
+    res.status(200).json({ success: true, name });
 });

@@ -31,17 +31,18 @@ Assignment.belongsTo(Rabbit, { foreignKey: 'rabbitId', targetKey: 'id', as: 'rab
 Cage.hasMany(Feeding, { foreignKey: 'cageId', sourceKey: 'id' });
 Feeding.belongsTo(Cage, { foreignKey: 'cageId', targetKey: 'id', as: 'cage' });
 
-Rabbit.hasMany(Vaccination, { foreignKey: 'rabbitId', sourceKey: 'id' });
-Vaccination.belongsTo(Rabbit, { foreignKey: 'rabbitId', targetKey: 'id' });
 
-Rabbit.hasMany(Deworming, { foreignKey: 'rabbitId', sourceKey: 'id' });
-Deworming.belongsTo(Rabbit, { foreignKey: 'rabbitId', targetKey: 'id' });
+Rabbit.hasMany(Growth, { foreignKey: 'rabbitId', sourceKey: 'id', as: 'growths' });
+Growth.belongsTo(Rabbit, { foreignKey: 'rabbitId', targetKey: 'id', as: 'rabbit' });
 
-Rabbit.hasMany(Growth, { foreignKey: 'rabbitId', sourceKey: 'id' });
-Growth.belongsTo(Rabbit, { foreignKey: 'rabbitId', targetKey: 'id' });
+Rabbit.hasMany(Mortality, { foreignKey: 'rabbitId', sourceKey: 'id', as: 'mortalities' });
+Mortality.belongsTo(Rabbit, { foreignKey: 'rabbitId', targetKey: 'id', as: 'rabbit' });
 
-Rabbit.hasMany(Mortality, { foreignKey: 'rabbitId', sourceKey: 'id' });
-Mortality.belongsTo(Rabbit, { foreignKey: 'rabbitId', targetKey: 'id' });
+Rabbit.hasMany(Vaccination, { foreignKey: 'rabbitId', sourceKey: 'id', as: 'vaccinations' });
+Vaccination.belongsTo(Rabbit, { foreignKey: 'rabbitId', targetKey: 'id', as: 'rabbit' });
+
+Rabbit.hasMany(Deworming, { foreignKey: 'rabbitId', sourceKey: 'id', as: 'dewormings' });
+Deworming.belongsTo(Rabbit, { foreignKey: 'rabbitId', targetKey: 'id', as: 'rabbit' });
 
 Rabbit.hasMany(Reproduction, { foreignKey: 'femaleId', sourceKey: 'id' });
 Reproduction.belongsTo(Rabbit, { foreignKey: 'femaleId', targetKey: 'id', as: 'female' });
@@ -49,12 +50,23 @@ Reproduction.belongsTo(Rabbit, { foreignKey: 'femaleId', targetKey: 'id', as: 'f
 Rabbit.hasMany(Reproduction, { foreignKey: 'maleId', sourceKey: 'id' });
 Reproduction.belongsTo(Rabbit, { foreignKey: 'maleId', targetKey: 'id', as: 'male' });
 
+Profile.hasMany(Reproduction, { foreignKey: 'profileId', as: 'reproductions' });
+Reproduction.belongsTo(Profile, { foreignKey: 'profileId', as: 'profile' });
+
 Cage.hasMany(Cleaning, { foreignKey: 'cageId', sourceKey: 'id' });
 Cleaning.belongsTo(Cage, { foreignKey: 'cageId', targetKey: 'id' });
 Profile.hasMany(Cleaning, { foreignKey: 'profileId', as: 'cleanings' });
 Cleaning.belongsTo(Profile, { foreignKey: 'profileId', as: 'profile' });
+Profile.hasMany(Feeding, { foreignKey: 'profileId', as: 'feedings' });
+Feeding.belongsTo(Profile, { foreignKey: 'profileId', as: 'profile' });
 Profile.hasMany(Mortality, { foreignKey: 'profileId', as: 'mortalities' });
 Mortality.belongsTo(Profile, { foreignKey: 'profileId', as: 'profile' });
+
+Profile.hasMany(Deworming, { foreignKey: 'profileId', as: 'dewormings' });
+Deworming.belongsTo(Profile, { foreignKey: 'profileId', as: 'profile' });
+
+Profile.hasMany(Vaccination, { foreignKey: 'profileId', as: 'vaccinations' });
+Vaccination.belongsTo(Profile, { foreignKey: 'profileId', as: 'profile' });
 
 Galpon.hasMany(Cage, { foreignKey: 'galponId' });
 Cage.belongsTo(Galpon, { foreignKey: 'galponId' });

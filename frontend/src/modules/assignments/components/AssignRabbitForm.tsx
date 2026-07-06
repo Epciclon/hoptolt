@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Button, Alert, Input } from '@/shared/ui';
+import { Button, Alert, Input, LoadingMessage } from '@/shared/ui';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { assignmentService } from '../services/assignment.service';
 import { useAssignments } from '../hooks/useAssignments';
@@ -24,10 +24,8 @@ interface AssignRabbitFormProps {
 }
 
 export function AssignRabbitForm({ onSuccess, onCancel }: AssignRabbitFormProps) {
-  const { assignRabbits } = useAssignments();
+  const { assignRabbits, operativeCages: cages, availableRabbits: rabbits, loading: loadingData } = useAssignments();
   const { showToast } = useToast();
-  const [cages, setCages] = useState<Cage[]>([]);
-  const [rabbits, setRabbits] = useState<Rabbit[]>([]);
 
   const [warnings, setWarnings] = useState<string[]>([]);
   const [selectedRabbits, setSelectedRabbits] = useState<number[]>([]);
@@ -36,32 +34,9 @@ export function AssignRabbitForm({ onSuccess, onCancel }: AssignRabbitFormProps)
   const [rabbitSearch, setRabbitSearch] = useState('');
   const [showRabbitDropdown, setShowRabbitDropdown] = useState(false);
   const [showCageDropdown, setShowCageDropdown] = useState(false);
-  const [cageCapacities, setCageCapacities] = useState<Map<number, number>>(new Map());
 
   const cageDropdownRef = useRef<HTMLDivElement>(null);
   const rabbitDropdownRef = useRef<HTMLDivElement>(null);
-  const hasLoadedData = useRef(false);
-
-  useEffect(() => {
-    if (hasLoadedData.current) return;
-    hasLoadedData.current = true;
-
-    Promise.all([assignmentService.getOperativeCages(), assignmentService.getAvailableRabbits(), assignmentService.getAll()])
-      .then(([c, r, assignments]) => {
-        setCages(c);
-        setRabbits(r);
-        // Calcular capacidad actual de cada jaula
-        const capacityMap = new Map<number, number>();
-        assignments.forEach(a => {
-          if (a.status === 'asignado') {
-            const current = capacityMap.get(a.cageId) || 0;
-            capacityMap.set(a.cageId, current + 1);
-          }
-        });
-        setCageCapacities(capacityMap);
-      })
-      .catch(() => { });
-  }, []);
 
   const { handleSubmit, formState: { errors, isSubmitting }, setValue } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -97,7 +72,10 @@ export function AssignRabbitForm({ onSuccess, onCancel }: AssignRabbitFormProps)
     const isAdding = !selectedRabbits.includes(id);
 
     if (isAdding) {
-      if (selectedRabbits.length >= selectedCage.capacity) {
+      const currentAssigned = selectedCage.assignedCount || 0;
+      const spaceLeft = selectedCage.capacity - currentAssigned;
+      
+      if (selectedRabbits.length >= spaceLeft) {
         // Reemplazar el último seleccionado con el nuevo (capacidad llena)
         const updated = [...selectedRabbits.slice(0, -1), id];
         setSelectedRabbits(updated);
@@ -157,7 +135,7 @@ export function AssignRabbitForm({ onSuccess, onCancel }: AssignRabbitFormProps)
   }, []);
 
   const filteredCages = cages.filter(c => {
-    const currentCapacity = cageCapacities.get(c.id) || 0;
+    const currentCapacity = c.assignedCount || 0;
     const hasSpace = currentCapacity < c.capacity;
     const matchesSearch = c.number.toString().includes(cageSearch) ||
       c.type.toLowerCase().includes(cageSearch.toLowerCase());
@@ -172,11 +150,16 @@ export function AssignRabbitForm({ onSuccess, onCancel }: AssignRabbitFormProps)
     return matchesSearch && notSelected;
   });
 
-  const remainingCapacity = selectedCage ? Math.max(0, selectedCage.capacity - selectedRabbits.length) : 0;
+  const currentAssigned = selectedCage ? (selectedCage.assignedCount || 0) : 0;
+  const remainingCapacity = selectedCage ? Math.max(0, selectedCage.capacity - currentAssigned - selectedRabbits.length) : 0;
   const canAddMore = remainingCapacity > 0 && selectedCage !== null;
 
+  if (loadingData) {
+    return <LoadingMessage message="Cargando jaulas y conejos disponibles..." />;
+  }
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
+    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5 min-h-[320px]">
 
       {warnings.length > 0 && (
         <Alert
@@ -188,7 +171,7 @@ export function AssignRabbitForm({ onSuccess, onCancel }: AssignRabbitFormProps)
 
       <div className="grid grid-cols-2 gap-6">
         <div>
-          <label className="block text-sm font-medium mb-2">Jaula de destino *</label>
+          <label className="block text-sm font-medium mb-2 text-slate-700">Jaula de destino <span className="text-red-500">*</span></label>
           <div className="relative" ref={cageDropdownRef}>
             <Input
               placeholder="Busca por número o tipo de jaula"
@@ -200,13 +183,14 @@ export function AssignRabbitForm({ onSuccess, onCancel }: AssignRabbitFormProps)
               onFocus={handleCageInputFocus}
             />
             {showCageDropdown && (
-              <div className="absolute z-10 w-full border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-white mt-1">
+              <div className="absolute z-50 w-full border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-white mt-1 shadow-xl">
                 {filteredCages.length === 0 ? (
                   <p className="text-gray-500 text-sm p-3">No hay jaulas disponibles</p>
                 ) : (
                   filteredCages.map(cage => {
-                    const currentCapacity = cageCapacities.get(cage.id) || 0;
+                    const currentCapacity = cage.assignedCount || 0;
                     const available = cage.capacity - currentCapacity;
+                    const labelState = cage.occupancyStatus === 'disponible' ? 'Disponible' : 'Uso parcial';
                     return (
                       <button
                         key={cage.id}
@@ -214,7 +198,7 @@ export function AssignRabbitForm({ onSuccess, onCancel }: AssignRabbitFormProps)
                         onClick={() => handleCageSelect(cage)}
                         className="w-full text-left px-3 py-2 hover:bg-gray-100 border-b last:border-b-0 text-sm"
                       >
-                        Jaula #{cage.number} — {cage.type.charAt(0).toUpperCase() + cage.type.slice(1)} (cap. {available})
+                        Jaula #{cage.number} — {cage.type.charAt(0).toUpperCase() + cage.type.slice(1)} ({labelState}, {available} disp.)
                       </button>
                     );
                   })
@@ -238,7 +222,7 @@ export function AssignRabbitForm({ onSuccess, onCancel }: AssignRabbitFormProps)
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">Conejos a asignar *</label>
+          <label className="block text-sm font-medium mb-2 text-slate-700">Conejos a asignar <span className="text-red-500">*</span></label>
           <div className="relative" ref={rabbitDropdownRef}>
             <Input
               placeholder="Busca por código o nombre"
@@ -251,7 +235,7 @@ export function AssignRabbitForm({ onSuccess, onCancel }: AssignRabbitFormProps)
               disabled={!selectedCage}
             />
             {showRabbitDropdown && (
-              <div className="absolute z-10 w-full border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-white mt-1">
+              <div className="absolute z-50 w-full border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-white mt-1 shadow-xl">
                 {filteredRabbits.length === 0 ? (
                   <p className="text-gray-500 text-sm p-3">No hay conejos disponibles</p>
                 ) : (
@@ -294,19 +278,19 @@ export function AssignRabbitForm({ onSuccess, onCancel }: AssignRabbitFormProps)
       </div>
 
       {selectedCage && (
-        <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-          <p className="text-sm text-blue-800">
-            Capacidad: {selectedCage.capacity} | Seleccionados: {selectedRabbits.length} | Disponible: {remainingCapacity}
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-md text-center">
+          <p className="text-sm text-blue-800 font-medium">
+            Capacidad total: {selectedCage.capacity} | Ya asignados: {currentAssigned}
           </p>
         </div>
       )}
 
-      <div className="flex gap-2 pt-4">
+      <div className="flex justify-end gap-2 pt-4">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+          Cancelar
+        </Button>
         <Button type="submit" loading={isSubmitting} disabled={selectedRabbits.length === 0 || !selectedCage}>
           Asignar {selectedRabbits.length > 0 ? `${selectedRabbits.length} conejo${selectedRabbits.length > 1 ? 's' : ''}` : 'Conejos'}
-        </Button>
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
         </Button>
       </div>
     </form>

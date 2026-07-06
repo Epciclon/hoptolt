@@ -137,7 +137,7 @@ class GenealogyService {
 
     async checkMotherMultiplePartners(motherId, currentFatherId, excludeRabbitId = null) {
         const allGenealogies = await genealogyRepository.findAll();
-        const mothersChildren = allGenealogies.filter(g => 
+        const mothersChildren = allGenealogies.filter(g =>
             g.motherId === motherId && g.rabbitId !== excludeRabbitId
         );
         const fatherIds = new Set();
@@ -149,7 +149,7 @@ class GenealogyService {
 
     async checkFatherMultiplePartners(fatherId, currentMotherId, excludeRabbitId = null) {
         const allGenealogies = await genealogyRepository.findAll();
-        const fathersChildren = allGenealogies.filter(g => 
+        const fathersChildren = allGenealogies.filter(g =>
             g.fatherId === fatherId && g.rabbitId !== excludeRabbitId
         );
         const motherIds = new Set();
@@ -269,12 +269,27 @@ class GenealogyService {
             if (!currentRabbit) return null;
 
             const genealogy = await genealogyRepository.findByRabbitId(id);
-            if (!genealogy) return { id, code: currentRabbit.code, name: currentRabbit.name, parents: null };
+            if (!genealogy) return {
+                id,
+                code: currentRabbit.code,
+                name: currentRabbit.name,
+                imageUrl: currentRabbit.imageUrl,
+                sex: currentRabbit.sex,
+                age: currentRabbit.age,
+                weight: currentRabbit.weight,
+                race: currentRabbit.race,
+                parents: null
+            };
 
             const tree = {
                 id,
                 code: currentRabbit.code,
                 name: currentRabbit.name,
+                imageUrl: currentRabbit.imageUrl,
+                sex: currentRabbit.sex,
+                age: currentRabbit.age,
+                weight: currentRabbit.weight,
+                race: currentRabbit.race,
                 parents: {}
             };
 

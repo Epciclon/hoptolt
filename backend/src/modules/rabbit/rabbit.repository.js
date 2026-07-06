@@ -15,14 +15,16 @@ class RabbitRepository {
     }
 
     async findByGalpon(galponId, options = {}) {
+        const { where = {}, ...rest } = options;
         return Rabbit.findAll({
-            where: { galponId },
-            ...options
+            where: { galponId, ...where },
+            ...rest
         });
     }
 
-    async countByGalpon(galponId) {
-        return Rabbit.count({ where: { galponId } });
+    async countByGalpon(galponId, options = {}) {
+        const { where = {} } = options;
+        return Rabbit.count({ where: { galponId, ...where } });
     }
 
     async findByRaceAndGalpon(race, galponId) {

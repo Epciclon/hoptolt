@@ -1,21 +1,26 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { reproductionService } from '../services/reproduction.service';
 import type { Reproduction, ReproductionFemale, ReproductionMale } from '../types/reproduction.types';
 
 export function useReproduction() {
   const queryClient = useQueryClient();
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(12);
+  const [status, setStatus] = useState<string | null>(null);
 
   // Query: Fetch Reproductions
   const {
-    data: reproductions = [],
+    data: reproductionsData,
     isLoading: loadingReproductions,
     error: errorReproductions,
     refetch: fetchReproductions,
   } = useQuery({
-    queryKey: ['reproductions'],
-    queryFn: () => reproductionService.getAll(),
+    queryKey: ['reproductions', page, limit, status],
+    queryFn: () => reproductionService.getAll(page, limit, status),
+    refetchInterval: 15000,
   });
 
   // Query: Fetch Females
@@ -45,6 +50,7 @@ export function useReproduction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reproductions'] });
       queryClient.invalidateQueries({ queryKey: ['birthCalendar'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
     },
   });
 
@@ -55,6 +61,7 @@ export function useReproduction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reproductions'] });
       queryClient.invalidateQueries({ queryKey: ['birthCalendar'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
     },
   });
 
@@ -64,6 +71,7 @@ export function useReproduction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reproductions'] });
       queryClient.invalidateQueries({ queryKey: ['birthCalendar'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
     },
   });
 
@@ -84,8 +92,39 @@ export function useReproduction() {
     }
   };
 
+  const registerBirthMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: { bornKits?: number; actualBirthDate?: string } }) => reproductionService.registerBirth(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reproductions'] });
+      queryClient.invalidateQueries({ queryKey: ['birthCalendar'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
+    },
+  });
+
+  const cancelReproductionMutation = useMutation({
+    mutationFn: ({ id, action, reason }: { id: number; action: 'delete' | 'fail'; reason?: string }) => reproductionService.cancelReproduction(id, action, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reproductions'] });
+      queryClient.invalidateQueries({ queryKey: ['birthCalendar'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
+    },
+  });
+
+  const finishLactationMutation = useMutation({
+    mutationFn: (id: number) => reproductionService.finishLactation(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reproductions'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
+    },
+  });
+
+  const registerBirth = async (id: number, payload: { bornKits?: number; actualBirthDate?: string }) => registerBirthMutation.mutateAsync({ id, payload });
+  const cancelReproduction = async (id: number, action: 'delete' | 'fail', reason?: string) => cancelReproductionMutation.mutateAsync({ id, action, reason });
+  const finishLactation = async (id: number) => finishLactationMutation.mutateAsync(id);
+
   return {
-    reproductions,
+    reproductions: reproductionsData?.reproductions || [],
+    pagination: reproductionsData?.pagination || { total: 0, page: 1, limit: 12, totalPages: 1 },
     reproductionFemales,
     reproductionMales,
     loading,
@@ -94,5 +133,11 @@ export function useReproduction() {
     createReproduction,
     updateReproduction,
     deleteReproduction,
+    registerBirth,
+    cancelReproduction,
+    finishLactation,
+    setPage,
+    setLimit,
+    setStatus,
   };
 }

@@ -6,36 +6,46 @@ const AppError = require('../../errors/AppError');
 class AssignmentService {
     validateCompatibility(cage, rabbits, existingRabbits = []) {
         const warnings = [];
-        
+        const allRabbits = [...existingRabbits, ...rabbits];
+
+        if (cage.type === 'reproducción') {
+            const hasEngorde = allRabbits.some(r => r.purpose === 'Engorde');
+            if (hasEngorde) {
+                throw new AppError('No se pueden asignar conejos de Engorde en jaulas de Reproducción. El propósito de la jaula y el conejo deben ser compatibles.', 400);
+            }
+        }
+
         if (cage.type === 'engorde') {
-            // Include existing rabbits in the cage for validation
-            const allRabbits = [...existingRabbits, ...rabbits];
-            
+            const hasReproduccion = allRabbits.some(r => r.purpose === 'Reproducción');
+            const hasEngorde = allRabbits.some(r => r.purpose === 'Engorde');
+            if (hasReproduccion && hasEngorde) {
+                throw new AppError('No se pueden mezclar conejos de Engorde y Reproducción (pie de cría) en la misma jaula de engorde. Todos deben tener el mismo propósito.', 400);
+            }
+
+            const hasMacho = allRabbits.some(r => r.sex === 'macho');
+            const hasHembra = allRabbits.some(r => r.sex === 'hembra');
+            if (hasMacho && hasHembra) {
+                throw new AppError('No se pueden mezclar sexos opuestos en jaulas de engorde. Esto evita cruces indeseados y partos prematuros que afectan la salud del animal.', 400);
+            }
+
             const ages = allRabbits.map(r => {
                 const birthDate = new Date(r.birthDate);
                 const today = new Date();
                 return (today - birthDate) / (1000 * 60 * 60 * 24 * 30.44);
             });
 
+            const hasOver3Months = ages.some(age => age > 3);
+            if (hasOver3Months) {
+                throw new AppError('No se permiten conejos mayores de 3 meses en jaulas de engorde grupales. A partir de esa edad alcanzan la madurez sexual y muestran comportamientos territoriales muy agresivos.', 400);
+            }
+
             const minAge = Math.min(...ages);
             const maxAge = Math.max(...ages);
             if (maxAge - minAge > 1) {
-                throw new AppError('Los conejos de engorde deben tener edades similares (máximo 1 mes de diferencia) para evitar peleas por territorialidad dentro de la jaula.', 400);
-            }
-
-            const hasOpposite = allRabbits.some(r => r.sex === 'macho') && allRabbits.some(r => r.sex === 'hembra');
-            const hasAgeOver4 = ages.some(age => age >= 4);
-            if (hasOpposite && hasAgeOver4) {
-                throw new AppError('No se pueden mezclar sexos opuestos en jaulas de engorde a partir de los 4 meses para evitar camadas no deseadas (los conejos pueden reproducirse a esta edad).', 400);
-            }
-
-            // Warning for rabbits over 4 months (territorial behavior)
-            const hasRabbitsOver4 = ages.some(age => age >= 4);
-            if (hasRabbitsOver4) {
-                warnings.push('Advertencia: Los conejos mayores de 4 meses pueden presentar comportamiento territorial y pelear por dominancia dentro de la jaula. Se recomienda supervisión y considerar separación si se observan conflictos.');
+                throw new AppError('Los conejos de engorde deben tener edades similares (máximo 1 mes de diferencia) para evitar peleas por territorialidad y dominancia.', 400);
             }
         }
-        
+
         return warnings;
     }
 
@@ -109,12 +119,12 @@ class AssignmentService {
 
     async getAssignedRabbits(galponId) {
         const assignments = await assignmentRepository.findByGalponId(galponId);
-        
+
         // Los datos ya vienen con includes (rabbit y cage), no necesitamos consultas adicionales
         return assignments.map(assignment => {
             const rabbit = assignment.rabbit;
             const cage = assignment.cage;
-            
+
             if (rabbit) {
                 return {
                     id: rabbit.id,
@@ -122,6 +132,8 @@ class AssignmentService {
                     name: rabbit.name,
                     age: rabbit.age,
                     weight: rabbit.weight,
+                    race: rabbit.race,
+                    imageUrl: rabbit.imageUrl,
                     cageNumber: cage?.number,
                     cageType: cage?.type,
                     cageId: cage?.id
@@ -141,7 +153,29 @@ class AssignmentService {
     async getOperativeCages(galponId) {
         const cageRepository = require('../cage/cage.repository');
         const cages = await cageRepository.findByStatus('operativa');
-        return cages.filter(c => c.galponId === galponId);
+        const galponCages = cages.filter(c => c.galponId === galponId);
+
+        const cagesWithStats = [];
+        const activeAssignments = await assignmentRepository.findByGalponId(galponId);
+        
+        const countsByCage = {};
+        for (const a of activeAssignments) {
+            countsByCage[a.cageId] = (countsByCage[a.cageId] || 0) + 1;
+        }
+
+        for (const cage of galponCages) {
+            const count = countsByCage[cage.id] || 0;
+            let occupancyStatus = 'disponible';
+            if (count >= cage.capacity) occupancyStatus = 'llena';
+            else if (count > 0) occupancyStatus = 'parcial';
+
+            cagesWithStats.push({
+                ...cage.get({ plain: true }),
+                assignedCount: count,
+                occupancyStatus
+            });
+        }
+        return cagesWithStats;
     }
 
     async unassignRabbit(id) {

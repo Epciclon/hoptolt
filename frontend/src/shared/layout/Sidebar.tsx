@@ -50,16 +50,7 @@ const navigation: NavItem[] = [
       { name: 'Equipo de Trabajo', href: '/dashboard/users' },
     ],
   },
-  {
-    name: 'Reportes',
-    icon: FileText,
-    children: [
-      { name: 'Reporte Alimentación', href: '/dashboard/reports/feeding' },
-      { name: 'Reporte Vacunación', href: '/dashboard/reports/vaccination' },
-      { name: 'Reporte Desparasitación', href: '/dashboard/reports/deworming' },
-    ],
-  },
-  { name: 'Guía de Saberes', href: '/dashboard/knowledge', icon: BookOpen },
+  { name: 'Reportes', href: '/dashboard/reportes', icon: FileText },
   { name: 'Galpones', href: '/dashboard/galpones', icon: Building2 },
 ];
 
@@ -69,7 +60,6 @@ const childIcons: Record<string, React.ElementType> = {
   Alimentación: Utensils, Vacunación: Syringe, Desparasitación: Pill,
   Limpieza: Sparkles, Mortalidad: Skull,
   'Reproducción y Parto': Heart, 'Gestionar Usuarios': User,
-  'Reporte Alimentación': FileText, 'Reporte Vacunación': FileText, 'Reporte Desparasitación': FileText,
 };
 
 // Mapeo de nombres de menú a nombres de módulos de permisos
@@ -117,7 +107,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       if (role === 'owner') return true;
 
       // Items que siempre se muestran
-      if (item.name === 'Inicio' || item.name === 'Galpones' || item.name === 'Guía de Saberes') {
+      if (item.name === 'Inicio' || item.name === 'Galpones') {
         return true;
       }
 

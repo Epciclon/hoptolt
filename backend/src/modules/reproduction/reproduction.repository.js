@@ -1,4 +1,4 @@
-const { Reproduction, Rabbit, Assignment, Cage } = require('../../domain/models');
+const { Reproduction, Rabbit, Assignment, Cage, Profile } = require('../../domain/models');
 const { Op } = require('sequelize');
 
 class ReproductionRepository {
@@ -19,43 +19,147 @@ class ReproductionRepository {
         });
     }
 
-    async findByGalponId(galponId, options = {}) {
-        return Reproduction.findAll({
-            where: { galponId },
+    async findByGalponId(galponId, options = {}, filters = {}) {
+        const whereClause = { galponId };
+        if (options.status) {
+            whereClause.status = options.status.includes(',') ? { [Op.in]: options.status.split(',') } : options.status;
+        }
+
+        if (filters.startDate && filters.endDate) {
+            whereClause.createdAt = {
+                [Op.between]: [new Date(filters.startDate), new Date(filters.endDate)]
+            };
+        } else if (filters.startDate) {
+            whereClause.createdAt = { [Op.gte]: new Date(filters.startDate) };
+        } else if (filters.endDate) {
+            whereClause.createdAt = { [Op.lte]: new Date(filters.endDate) };
+        }
+
+        if (filters.profileId) {
+            const profileIds = Array.isArray(filters.profileId) ? filters.profileId : filters.profileId.split(',');
+            whereClause.profileId = { [Op.in]: profileIds };
+        }
+
+        const rabbitWhere = {};
+        if (filters.races) {
+            const racesArray = Array.isArray(filters.races) ? filters.races : filters.races.split(',');
+            rabbitWhere.race = { [Op.in]: racesArray };
+        }
+
+        const includeFemale = {
+            model: Rabbit,
+            as: 'female',
+            attributes: ['id', 'code', 'name', 'race', 'imageUrl', 'age', 'weight'],
             include: [
                 {
-                    model: Rabbit,
-                    as: 'female',
-                    attributes: ['id', 'code', 'name'],
+                    model: Assignment,
+                    as: 'assignments',
+                    where: { status: 'asignado' },
+                    required: false,
                     include: [
                         {
-                            model: Assignment,
-                            as: 'assignments',
-                            where: { status: 'asignado' },
-                            required: true,
-                            include: [
-                                {
-                                    model: Cage,
-                                    as: 'cage',
-                                    attributes: ['id', 'number', 'type']
-                                }
-                            ]
+                            model: Cage,
+                            as: 'cage',
+                            attributes: ['id', 'number', 'type']
                         }
                     ]
-                },
+                }
+            ]
+        };
+
+        if (options.search) {
+            const search = `%${options.search}%`;
+            // Búsqueda por nombre o código de la hembra
+            includeFemale.where = {
+                ...rabbitWhere,
+                [Op.or]: [
+                    { name: { [Op.iLike]: search } },
+                    { code: { [Op.iLike]: search } }
+                ]
+            };
+        } else if (Object.keys(rabbitWhere).length > 0) {
+            includeFemale.where = rabbitWhere;
+            includeFemale.required = true;
+        }
+
+        return Reproduction.findAll({
+            where: whereClause,
+            include: [
+                includeFemale,
                 {
                     model: Rabbit,
                     as: 'male',
-                    attributes: ['id', 'code', 'name'],
+                    attributes: ['id', 'code', 'name', 'imageUrl', 'race'],
+                    required: false,
+                    paranoid: false
+                },
+                {
+                    model: Profile,
+                    as: 'profile',
+                    attributes: ['username', 'fullName', 'email'],
                     required: false
                 }
             ],
-            ...options
+            limit: options.limit,
+            offset: options.offset,
+            order: [['createdAt', 'DESC']]
         });
     }
 
-    async countByGalponId(galponId) {
-        return Reproduction.count({ where: { galponId } });
+    async countByGalponId(galponId, options = {}, filters = {}) {
+        const whereClause = { galponId };
+        if (options.status) {
+            whereClause.status = options.status.includes(',') ? { [Op.in]: options.status.split(',') } : options.status;
+        }
+        
+        if (filters.startDate && filters.endDate) {
+            whereClause.createdAt = {
+                [Op.between]: [new Date(filters.startDate), new Date(filters.endDate)]
+            };
+        } else if (filters.startDate) {
+            whereClause.createdAt = { [Op.gte]: new Date(filters.startDate) };
+        } else if (filters.endDate) {
+            whereClause.createdAt = { [Op.lte]: new Date(filters.endDate) };
+        }
+
+        if (filters.profileId) {
+            const profileIds = Array.isArray(filters.profileId) ? filters.profileId : filters.profileId.split(',');
+            whereClause.profileId = { [Op.in]: profileIds };
+        }
+
+        const countOptions = { where: whereClause };
+
+        const rabbitWhere = {};
+        if (filters.races) {
+            const racesArray = Array.isArray(filters.races) ? filters.races : filters.races.split(',');
+            rabbitWhere.race = { [Op.in]: racesArray };
+        }
+        
+        if (options.search) {
+            const search = `%${options.search}%`;
+            countOptions.include = [{
+                model: Rabbit,
+                as: 'female',
+                attributes: [],
+                where: {
+                    ...rabbitWhere,
+                    [Op.or]: [
+                        { name: { [Op.iLike]: search } },
+                        { code: { [Op.iLike]: search } }
+                    ]
+                }
+            }];
+        } else if (Object.keys(rabbitWhere).length > 0) {
+            countOptions.include = [{
+                model: Rabbit,
+                as: 'female',
+                attributes: [],
+                where: rabbitWhere,
+                required: true
+            }];
+        }
+        
+        return Reproduction.count(countOptions);
     }
 
     async findById(id) {
@@ -81,7 +185,7 @@ class ReproductionRepository {
             {
                 model: Rabbit,
                 as: 'female',
-                attributes: ['id', 'code', 'name'],
+                attributes: ['id', 'code', 'name', 'imageUrl'],
                 include: [
                     {
                         model: Assignment,
@@ -101,7 +205,7 @@ class ReproductionRepository {
             {
                 model: Rabbit,
                 as: 'male',
-                attributes: ['id', 'code', 'name'],
+                attributes: ['id', 'code', 'name', 'imageUrl'],
                 required: false
             }
         ];
@@ -133,7 +237,8 @@ class ReproductionRepository {
             {
                 model: Rabbit,
                 as: 'female',
-                attributes: ['id', 'code', 'name'],
+                attributes: ['id', 'code', 'name', 'imageUrl'],
+                paranoid: false,
                 include: [
                     {
                         model: Assignment,
@@ -153,8 +258,9 @@ class ReproductionRepository {
             {
                 model: Rabbit,
                 as: 'male',
-                attributes: ['id', 'code', 'name'],
-                required: false
+                attributes: ['id', 'code', 'name', 'imageUrl'],
+                required: false,
+                paranoid: false
             }
         ];
 
@@ -179,7 +285,7 @@ class ReproductionRepository {
                 {
                     model: Rabbit,
                     as: 'female',
-                    attributes: ['id', 'code', 'name', 'sex', 'birthDate', 'weight', 'purpose'],
+                    attributes: ['id', 'code', 'name', 'sex', 'birthDate', 'weight', 'purpose', 'imageUrl'],
                     include: [
                         {
                             model: Assignment,
@@ -199,8 +305,9 @@ class ReproductionRepository {
                 {
                     model: Rabbit,
                     as: 'male',
-                    attributes: ['id', 'code', 'name', 'sex', 'birthDate', 'weight', 'purpose'],
-                    required: false
+                    attributes: ['id', 'code', 'name', 'sex', 'birthDate', 'weight', 'purpose', 'imageUrl'],
+                    required: false,
+                    paranoid: false
                 }
             ]
         });

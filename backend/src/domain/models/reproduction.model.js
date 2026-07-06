@@ -24,7 +24,7 @@ const Reproduction = sequelize.define('Reproduction', {
         }
     },
     mountDate: {
-        type: DataTypes.DATEONLY,
+        type: DataTypes.DATE,
         allowNull: false,
         validate: {
             notEmpty: true
@@ -33,6 +33,25 @@ const Reproduction = sequelize.define('Reproduction', {
     estimatedBirthDate: {
         type: DataTypes.DATEONLY,
         allowNull: true
+    },
+
+    bornKits: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+    cancellationReason: {
+        type: DataTypes.STRING(255),
+        allowNull: true
+    },
+    status: {
+        type: DataTypes.ENUM('monta', 'gestacion', 'lactancia', 'completado', 'fallido'),
+        allowNull: false,
+        defaultValue: 'monta'
+    },
+    updatedBySystem: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
     },
     galponId: {
         type: DataTypes.INTEGER,

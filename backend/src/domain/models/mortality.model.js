@@ -22,6 +22,15 @@ const Mortality = sequelize.define('Mortality', {
             notEmpty: true
         }
     },
+    isKits: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+    },
+    numberOfKits: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
     observations: {
         type: DataTypes.TEXT,
         allowNull: true

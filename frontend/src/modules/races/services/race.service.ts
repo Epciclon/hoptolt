@@ -1,10 +1,26 @@
 import api from '@/lib/api';
 import type { Race, CreateRaceDto, UpdateRaceDto } from '../types/race.types';
 
+export interface GetRacesParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+}
+
+export interface RacesResponse {
+  races: Race[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
 export const raceService = {
-  async getAll(): Promise<Race[]> {
-    const { data } = await api.get<{ success: boolean; races: Race[] }>('/races');
-    return data.races;
+  async getAll(params?: GetRacesParams): Promise<RacesResponse> {
+    const { data } = await api.get<{ success: boolean; races: Race[]; pagination: any }>('/races', { params });
+    return { races: data.races, pagination: data.pagination };
   },
 
   async getById(id: number): Promise<Race> {

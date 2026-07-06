@@ -4,14 +4,18 @@ const galponRepository = require('../galpon/galpon.repository');
 
 exports.registerVaccination = catchAsync(async (req, res) => {
     const galponId = req.galponId;
-    const vaccinations = await vaccinationService.registerVaccination(req.body, galponId);
+    const vaccinations = await vaccinationService.registerVaccination(req.body, galponId, req.user.id);
     res.status(201).json({ success: true, message: 'Vacunación registrada exitosamente.', vaccinations });
 });
 
 exports.getVaccinations = catchAsync(async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
-    const result = await vaccinationService.getVaccinations(req.galponId, req.user.id, page, limit);
+    const { startDate, endDate, races, profileId, all } = req.query;
+    
+    const filters = { startDate, endDate, races, profileId, all: all === 'true' };
+    
+    const result = await vaccinationService.getVaccinations(req.galponId, req.user.id, page, limit, filters);
     res.status(200).json({
         success: true,
         vaccinations: result.data,

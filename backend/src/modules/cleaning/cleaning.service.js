@@ -51,16 +51,26 @@ class CleaningService {
                 }
             }
 
+            // Obtener los conejos actualmente asignados a la jaula para guardar la "foto" histórica
+            const { Assignment, Rabbit } = require('../../domain/models');
+            const assignments = await Assignment.findAll({
+                where: { cageId: cage.id, status: 'asignado' },
+                include: [{ model: Rabbit, as: 'rabbit', attributes: ['id', 'code', 'name', 'race', 'imageUrl'] }]
+            });
+            const rabbitsSnapshot = assignments.map(a => a.rabbit).filter(Boolean);
+
             const cleaning = await cleaningRepository.create({
                 cageId,
                 cageNumber: cage.number,
                 cleaningDate: new Date(),
                 galponId,
-                profileId
+                profileId,
+                rabbitsSnapshot
             });
 
             const cleaningJson = cleaning.toJSON();
             cleaningJson.responsible = responsibleName;
+            cleaningJson.rabbits = rabbitsSnapshot;
             createdCleanings.push(cleaningJson);
 
             // Eliminar notificaciones de advertencia de limpieza previas de forma segura y global
@@ -84,7 +94,7 @@ class CleaningService {
         return createdCleanings;
     }
 
-    async getCleanings(galponId, profileId, page = 1, limit = 10) {
+    async getCleanings(galponId, profileId, page = 1, limit = 10, filters = {}) {
         if (!galponId) return createPaginatedResponse([], page, limit, 0);
 
         // Verificar que el usuario tiene acceso al galpón
@@ -103,8 +113,11 @@ class CleaningService {
         }
 
         const { limit: limitValue, offset, page: pageValue } = getPaginationParams(page, limit);
-        const cleanings = await cleaningRepository.findByGalponId(galponId, { limit: limitValue, offset }, cageIds);
-        const total = await cleaningRepository.countByGalponId(galponId, cageIds);
+        
+        const queryOptions = filters.all ? {} : { limit: limitValue, offset };
+        
+        const cleanings = await cleaningRepository.findByGalponId(galponId, queryOptions, cageIds, filters);
+        const total = await cleaningRepository.countByGalponId(galponId, cageIds, filters);
 
         const mappedCleanings = cleanings.map(c => {
             const plain = c.toJSON();
@@ -118,13 +131,22 @@ class CleaningService {
                     name = plain.profile.email;
                 }
             }
+            let rabbits = [];
+            if (plain.rabbitsSnapshot && (Array.isArray(plain.rabbitsSnapshot) ? plain.rabbitsSnapshot.length > 0 : Object.keys(plain.rabbitsSnapshot).length > 0)) {
+                rabbits = typeof plain.rabbitsSnapshot === 'string' ? JSON.parse(plain.rabbitsSnapshot) : plain.rabbitsSnapshot;
+            } else if (plain.Cage && plain.Cage.assignments) {
+                rabbits = plain.Cage.assignments.map(a => a.rabbit).filter(Boolean);
+            }
+            delete plain.Cage; // Clean up just in case
+
             return {
                 ...plain,
-                responsible: name.trim()
+                responsible: name.trim(),
+                rabbits
             };
         });
 
-        return createPaginatedResponse(mappedCleanings, pageValue, limitValue, total);
+        return createPaginatedResponse(mappedCleanings, filters.all ? 1 : pageValue, filters.all ? mappedCleanings.length : limitValue, total);
     }
 }
 

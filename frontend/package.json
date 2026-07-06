@@ -20,6 +20,8 @@
     "axios": "^1.7.2",
     "clsx": "^2.1.1",
     "js-cookie": "^3.0.5",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "lucide-react": "^0.390.0",
     "next": "14.2.3",
     "react": "^18.3.1",

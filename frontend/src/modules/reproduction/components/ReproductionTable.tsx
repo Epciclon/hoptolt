@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { reproductionService } from '../services/reproduction.service';
 import type { Reproduction } from '../types/reproduction.types';
-import { Button } from '@/shared/ui';
+import { Button, LoadingMessage } from '@/shared/ui';
 
 export function ReproductionTable() {
   const [reproductions, setReproductions] = useState<Reproduction[]>([]);
@@ -18,7 +18,7 @@ export function ReproductionTable() {
     try {
       setLoading(true);
       const data = await reproductionService.getAll();
-      setReproductions(data);
+      setReproductions(data.reproductions || data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar reproducciones');
     } finally {
@@ -36,7 +36,7 @@ export function ReproductionTable() {
     }
   };
 
-  if (loading) return <div className="text-center py-8">Cargando reproducciones...</div>;
+  if (loading) return <LoadingMessage message="Cargando reproducciones..." />;
   if (error) return <div className="text-red-600 py-8">{error}</div>;
   if (reproductions.length === 0) return <div className="text-center py-8 text-slate-500">No hay registros de reproducción</div>;
 

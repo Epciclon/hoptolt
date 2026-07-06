@@ -1,21 +1,28 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { cageService } from '../services/cage.service';
+import { cageService, GetCagesParams } from '../services/cage.service';
 import type { Cage } from '../types/cage.types';
 
-export function useCages() {
+export function useCages(initialParams?: GetCagesParams) {
   const queryClient = useQueryClient();
+
+  const [page, setPage] = useState(initialParams?.page || 1);
+  const [limit, setLimit] = useState(initialParams?.limit || 10);
+  const [search, setSearch] = useState(initialParams?.search || '');
+  const [type, setType] = useState(initialParams?.type || '');
+  const [status, setStatus] = useState(initialParams?.status || '');
 
   // Query: Fetch Cages
   const {
-    data: cages = [],
+    data,
     isLoading: loading,
     error: queryError,
     refetch: fetchCages,
   } = useQuery({
-    queryKey: ['cages'],
-    queryFn: () => cageService.getAll(),
+    queryKey: ['cages', { page, limit, search, type, status }],
+    queryFn: () => cageService.getAll({ page, limit, search, type, status }),
   });
 
   // Mutation: Delete Cage
@@ -36,10 +43,17 @@ export function useCages() {
   };
 
   return {
-    cages,
+    cages: data?.cages || [],
+    pagination: data?.pagination || { total: 0, page: 1, limit: 10, totalPages: 1 },
     loading,
     error: queryError ? (queryError as Error).message : null,
     fetchCages,
     deleteCage,
+    setPage,
+    setLimit,
+    setSearch,
+    setType,
+    setStatus,
+    filters: { page, limit, search, type, status }
   };
 }

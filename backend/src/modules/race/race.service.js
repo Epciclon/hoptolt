@@ -1,6 +1,7 @@
 const raceRepository = require('./race.repository');
 const { Rabbit } = require('../../domain/models');
 const AppError = require('../../errors/AppError');
+const { getPaginationParams, createPaginatedResponse } = require('../../common/helpers/pagination.helper');
 
 class RaceService {
     async registerRace(data, profileId) {
@@ -20,9 +21,29 @@ class RaceService {
         return race;
     }
 
-    async getAllRaces(profileId) {
-        if (!profileId) return [];
-        return raceRepository.findByProfile(profileId);
+    async getAllRaces(profileId, filters = {}, page = 1, limit = 10) {
+        if (!profileId) return createPaginatedResponse([], page, limit, 0);
+
+        const { limit: limitValue, offset, page: pageValue } = getPaginationParams(page, limit);
+        
+        const { Op } = require('sequelize');
+        const where = {};
+        
+        if (filters.search) {
+            where.name = { [Op.iLike]: `%${filters.search}%` };
+        }
+
+        const options = {
+            limit: limitValue,
+            offset,
+            where,
+            order: [['createdAt', 'DESC']]
+        };
+
+        const races = await raceRepository.findByProfile(profileId, options);
+        const total = await raceRepository.countByProfile(profileId, { where });
+
+        return createPaginatedResponse(races, pageValue, limitValue, total);
     }
 
     async editRaceDescription(id, data) {

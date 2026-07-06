@@ -6,6 +6,18 @@ export interface Vaccination {
   vaccines: string[];
   vaccinationDate: string;
   galponId: number;
+  profileId?: string;
+  rabbit?: {
+    code: string;
+    name?: string;
+    race: string;
+    imageUrl?: string;
+  };
+  profile?: {
+    username: string;
+    fullName: string;
+    email: string;
+  };
 }
 
 export interface CreateVaccinationDto {

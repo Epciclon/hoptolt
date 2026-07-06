@@ -4,6 +4,8 @@ export interface AssignedRabbit {
   name?: string;
   age?: number;
   weight?: number;
+  race?: string;
+  imageUrl?: string;
   cageNumber?: number;
   cageType?: string;
   cageId?: number;
@@ -18,8 +20,12 @@ export interface Assignment {
   assignedAt: string;
   rabbitCode?: string;
   rabbitName?: string;
+  rabbitAge?: number;
+  rabbitWeight?: number;
+  rabbitRace?: string;
   cageNumber?: number;
   cageType?: string;
+  photoUrl?: string;
 }
 
 export interface AssignRabbitDto {

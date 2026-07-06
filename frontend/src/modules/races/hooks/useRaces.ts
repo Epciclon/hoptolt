@@ -1,19 +1,24 @@
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { raceService } from '../services/race.service';
+import { raceService, GetRacesParams } from '../services/race.service';
 import type { Race } from '../types/race.types';
 
-export function useRaces() {
+export function useRaces(initialParams?: GetRacesParams) {
   const queryClient = useQueryClient();
+
+  const [page, setPage] = useState(initialParams?.page || 1);
+  const [limit, setLimit] = useState(initialParams?.limit || 10);
+  const [search, setSearch] = useState(initialParams?.search || '');
 
   // Query: Fetch Races
   const {
-    data: races = [],
+    data,
     isLoading: loading,
     error: queryError,
-    refetch: loadRaces,
+    refetch: fetchRaces,
   } = useQuery({
-    queryKey: ['races'],
-    queryFn: () => raceService.getAll(),
+    queryKey: ['races', { page, limit, search }],
+    queryFn: () => raceService.getAll({ page, limit, search }),
   });
 
   // Mutation: Delete Race
@@ -35,10 +40,15 @@ export function useRaces() {
   };
 
   return {
-    races,
+    races: data?.races || [],
+    pagination: data?.pagination || { total: 0, page: 1, limit: 10, totalPages: 1 },
     loading,
-    error: queryError ? (queryError as Error).message : '',
-    loadRaces,
+    error: queryError ? (queryError as Error).message : null,
+    fetchRaces,
     deleteRace,
+    setPage,
+    setLimit,
+    setSearch,
+    filters: { page, limit, search }
   };
 }

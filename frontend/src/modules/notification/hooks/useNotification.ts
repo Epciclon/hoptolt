@@ -37,14 +37,15 @@ export function useNotifications(options?: { limit?: number; offset?: number; un
   useEffect(() => {
     if (!user) return;
 
-    const channel = supabase.channel('realtime_notifications')
+    const channelId = `realtime_notifications_${user.id}_${Math.random().toString(36).substring(7)}`;
+    const channel = supabase.channel(channelId)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'notifications',
-          filter: `userId=eq.${user.id}`,
+          filter: `profileId=eq.${user.id}`,
         },
         () => {
           // Invalidate queries so React Query fetches the new data automatically

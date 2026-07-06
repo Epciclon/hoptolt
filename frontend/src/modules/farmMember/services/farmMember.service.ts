@@ -12,6 +12,11 @@ export const farmMemberService = {
     return data.workers;
   },
 
+  async getAllMembersByGalpon(galponId: number): Promise<FarmMember[]> {
+    const { data } = await api.get<{ success: boolean; members: FarmMember[] }>(`/galpones/${galponId}/members`);
+    return data.members;
+  },
+
   async getWorkerById(id: number): Promise<FarmMember> {
     const { data } = await api.get<{ success: boolean; worker: FarmMember }>(`/farm-members/${id}`);
     return data.worker;

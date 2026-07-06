@@ -69,12 +69,12 @@ export function GrowthForm({ onSuccess, onCancel }: GrowthFormProps) {
         {...register('weight')}
       />
 
-      <div className="flex gap-3 pt-2">
+      <div className="flex justify-end gap-3 pt-2">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+          Cancelar
+        </Button>
         <Button type="submit" loading={isSubmitting}>
           Registrar Crecimiento
-        </Button>
-        <Button type="button" variant="secondary" onClick={onCancel}>
-          Cancelar
         </Button>
       </div>
     </form>

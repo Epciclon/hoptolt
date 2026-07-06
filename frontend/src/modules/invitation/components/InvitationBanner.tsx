@@ -1,27 +1,31 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useInvitation } from '../hooks/useInvitation';
 import { useNotifications } from '@/modules/notification/hooks/useNotification';
+import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 import { Button } from '@/shared/ui';
 
 export function InvitationBanner() {
-  const { invitations, fetchMyPending, acceptInvitation, revokeInvitation } = useInvitation();
+  const { user } = useAuthContext();
+  const { invitations, acceptInvitation, revokeInvitation } = useInvitation();
   const { addNotification } = useNotifications();
   const [loadingToken, setLoadingToken] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchMyPending();
-  }, [fetchMyPending]);
+  const pendingForMe = invitations.filter(
+    (inv) =>
+      inv.status === 'pending' &&
+      inv.email.toLowerCase() === user?.email?.toLowerCase()
+  );
 
-  if (!invitations || invitations.length === 0) return null;
+  if (pendingForMe.length === 0) return null;
 
   const handleAccept = async (token: string) => {
     setLoadingToken(token);
     const success = await acceptInvitation(token);
     setLoadingToken(null);
     if (success) {
-      const galponName = invitations.find(i => i.token === token)?.galpon?.name;
+      const galponName = pendingForMe.find(i => i.token === token)?.galpon?.name;
       addNotification({
         type: 'success',
         title: '¡Te has unido a un galpón!',
@@ -38,7 +42,7 @@ export function InvitationBanner() {
 
   return (
     <div className="flex flex-col gap-3 mb-6">
-      {invitations.map((inv) => (
+      {pendingForMe.map((inv) => (
         <div key={inv.token} className="bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200 rounded-lg p-4 flex flex-col sm:flex-row items-center justify-between shadow-sm">
           <div className="flex items-center gap-3 mb-3 sm:mb-0">
             <div className="w-10 h-10 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center">

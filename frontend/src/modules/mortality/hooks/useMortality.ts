@@ -20,7 +20,7 @@ export function useMortality() {
     refetch: fetchMortalities,
   } = useQuery({
     queryKey: ['mortalities', activeGalpon?.id],
-    queryFn: () => mortalityService.getAll().catch(err => {
+    queryFn: () => mortalityService.getAll(undefined, false).catch(err => {
       if (err instanceof Error && err.message.includes('403')) return [];
       throw err;
     }),
@@ -66,8 +66,8 @@ export function useMortality() {
   const assignedCageIds = membershipData?.assignedCageIds || [];
 
   const loading = loadingMortalities || loadingRabbits || loadingMembership;
-  const error = errorMortalities ? (errorMortalities as Error).message : 
-                (errorRabbits ? (errorRabbits as Error).message : null);
+  const error = errorMortalities ? (errorMortalities as Error).message :
+    (errorRabbits ? (errorRabbits as Error).message : null);
 
   // Mutation: Create Mortality
   const createMortalityMutation = useMutation({
@@ -75,6 +75,8 @@ export function useMortality() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mortalities'] });
       queryClient.invalidateQueries({ queryKey: ['assignedRabbits'] });
+      queryClient.invalidateQueries({ queryKey: ['reproductions'] });
+      queryClient.invalidateQueries({ queryKey: ['kitMortalitiesHistory'] });
     },
   });
 

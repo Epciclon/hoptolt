@@ -37,9 +37,14 @@ export interface GenealogyTree {
   id: number;
   code: string;
   name: string;
+  imageUrl?: string | null;
+  sex?: string;
+  age?: number;
+  weight?: number;
+  race?: string;
   parents?: {
-    father?: GenealogyTree;
-    mother?: GenealogyTree;
+    father?: GenealogyTree | null;
+    mother?: GenealogyTree | null;
   };
 }
 

@@ -10,7 +10,12 @@ exports.registerMortality = catchAsync(async (req, res) => {
 exports.getMortalities = catchAsync(async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
-    const result = await mortalityService.getMortalities(req.galponId, req.user.id, page, limit);
+    const isKits = req.query.isKits !== undefined ? req.query.isKits === 'true' : null;
+    const { startDate, endDate, races, causes, profileId, all } = req.query;
+
+    const filters = { startDate, endDate, races, causes, profileId, all: all === 'true' };
+
+    const result = await mortalityService.getMortalities(req.galponId, req.user.id, page, limit, isKits, filters);
     
     const formatted = result.data.map(m => {
         let name = 'Sistema';
@@ -26,12 +31,18 @@ exports.getMortalities = catchAsync(async (req, res) => {
         return {
             id: m.id,
             rabbitId: m.rabbitId,
-            rabbitCode: m.Rabbit ? m.Rabbit.code : 'N/A',
-            rabbitName: m.Rabbit ? m.Rabbit.name : 'N/A',
+            rabbitCode: m.rabbit ? m.rabbit.code : 'N/A',
+            rabbitName: m.rabbit ? m.rabbit.name : 'N/A',
+            rabbitRace: m.rabbit ? m.rabbit.race : 'N/A',
+            rabbitImageUrl: m.rabbit ? m.rabbit.imageUrl : null,
             cause: m.cause,
             observations: m.observations,
             responsible: name,
+            profileUsername: m.profile ? m.profile.username : null,
+            profileEmail: m.profile ? m.profile.email : null,
             deathDate: m.deathDate,
+            isKits: m.isKits,
+            numberOfKits: m.numberOfKits,
             galponId: m.galponId,
             createdAt: m.createdAt,
             updatedAt: m.updatedAt

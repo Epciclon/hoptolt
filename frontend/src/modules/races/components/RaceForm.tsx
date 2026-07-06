@@ -36,7 +36,7 @@ export function RaceForm({ mode, defaultValues, raceId, onSuccess, onCancel }: R
   const [originalImageUrl, setOriginalImageUrl] = useState<string | undefined>();
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { uploadRaceImage } = useSupabase();
+  const { uploadRaceImage, deleteRaceImage } = useSupabase();
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -82,6 +82,13 @@ export function RaceForm({ mode, defaultValues, raceId, onSuccess, onCancel }: R
         const updateData: any = { description: values.description };
         if (imageUrl !== originalImageUrl) {
           updateData.imageUrl = imageUrl || null;
+          if (originalImageUrl) {
+            const encodedFileName = originalImageUrl.split('/').pop();
+            if (encodedFileName) {
+              const decodedFileName = decodeURIComponent(encodedFileName);
+              await deleteRaceImage(decodedFileName).catch(console.error);
+            }
+          }
         }
         await raceService.update(raceId!, updateData);
         showToast('Raza actualizada exitosamente.', 'success');
@@ -128,6 +135,7 @@ export function RaceForm({ mode, defaultValues, raceId, onSuccess, onCancel }: R
               src={imageUrl}
               alt="Imagen de la raza"
               fill
+              unoptimized
               className="object-contain rounded-lg"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             />
@@ -154,12 +162,12 @@ export function RaceForm({ mode, defaultValues, raceId, onSuccess, onCancel }: R
         {uploading && <p className="text-sm text-slate-500 mt-2">Subiendo imagen...</p>}
       </div>
 
-      <div className="flex gap-3 pt-2">
+      <div className="flex justify-end gap-3 pt-2">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+          Cancelar
+        </Button>
         <Button type="submit" loading={isSubmitting} disabled={uploading}>
           {mode === 'create' ? 'Registrar Raza' : 'Guardar Cambios'}
-        </Button>
-        <Button type="button" variant="secondary" onClick={onCancel}>
-          Cancelar
         </Button>
       </div>
     </form>

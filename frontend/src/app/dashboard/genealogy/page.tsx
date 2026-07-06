@@ -2,21 +2,44 @@
 
 import { useState } from 'react';
 import { GalponGuard } from '@/modules/galpones/components/GalponGuard';
-import { Plus } from 'lucide-react';
 import { Card, CardHeader, Button, Dialog } from '@/shared/ui';
-import { GenealogyTable } from '@/modules/genealogy/components/GenealogyTable';
+import { GenealogyCatalog } from '@/modules/genealogy/components/GenealogyCatalog';
 import { GenealogyForm } from '@/modules/genealogy/components/GenealogyForm';
-import { GenealogyTreeView } from '@/modules/genealogy/components/GenealogyTreeView';
-import type { Genealogy } from '@/modules/genealogy/types/genealogy.types';
+import { GenealogyTreeModal } from '@/modules/genealogy/components/GenealogyTreeModal';
+import { genealogyService } from '@/modules/genealogy/services/genealogy.service';
+import type { Rabbit } from '@/modules/rabbits/types/rabbit.types';
+import { useToast } from '@/shared/contexts/ToastContext';
+import { ConfirmDialog } from '@/shared/ui';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function GenealogyPage() {
   const [modal, setModal] = useState<'register' | 'edit' | 'view' | null>(null);
-  const [editData, setEditData] = useState<Genealogy | null>(null);
+  const [selectedRabbit, setSelectedRabbit] = useState<Rabbit | null>(null);
+  const [editRabbitId, setEditRabbitId] = useState<number | null>(null);
+  
+  const [toDeleteRabbit, setToDeleteRabbit] = useState<Rabbit | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  
+  const { showToast } = useToast();
+  const queryClient = useQueryClient();
 
-  const openRegister = () => setModal('register');
-  const openEdit = (genealogy: Genealogy) => { setEditData(genealogy); setModal('edit'); };
-  const openView = () => setModal('view');
-  const closeModal = () => { setModal(null); setEditData(null); };
+  const closeModal = () => { setModal(null); setEditRabbitId(null); setSelectedRabbit(null); };
+
+  const handleDeleteRelation = async () => {
+    if (!toDeleteRabbit) return;
+    setDeleting(true);
+    try {
+      await genealogyService.delete(toDeleteRabbit.id);
+      showToast('Relación genealógica eliminada exitosamente.', 'success');
+      queryClient.invalidateQueries({ queryKey: ['genealogies'] });
+    } catch (err) {
+      // It might throw a 404 if the rabbit doesn't have a relation to delete.
+      showToast(err instanceof Error ? err.message : 'No se pudo eliminar la relación (es posible que no exista).', 'error');
+    } finally {
+      setDeleting(false);
+      setToDeleteRabbit(null);
+    }
+  };
 
   return (
     <GalponGuard>
@@ -24,47 +47,53 @@ export default function GenealogyPage() {
       <CardHeader
         title="Gestionar Árbol Genealógico"
         subtitle="Registra y consulta las relaciones genealógicas de los conejos"
-        actions={
-          <div className="flex gap-2">
-            <Button icon={<Plus size={16} />} onClick={openRegister}>Registrar Relación</Button>
-            <Button variant="outline" onClick={openView}>Consultar Árbol</Button>
-          </div>
-        }
       />
-      <GenealogyTable onEdit={openEdit} />
+      <GenealogyCatalog 
+        onViewTree={(rabbit) => {
+          setSelectedRabbit(rabbit);
+          setModal('view');
+        }} 
+        onEditRelation={(rabbit) => {
+          setEditRabbitId(rabbit.id);
+          setModal('edit');
+        }} 
+        onDeleteRelation={(rabbit) => {
+          setToDeleteRabbit(rabbit);
+        }}
+      />
 
       <Dialog
-        open={modal === 'register'}
+        open={modal === 'register' || modal === 'edit'}
         onClose={closeModal}
-        title="Registrar Relación Genealógica"
+        title={modal === 'register' ? "Registrar Relación Genealógica" : "Editar Relación Genealógica"}
         size="xl"
       >
-        {modal === 'register' && (
-          <GenealogyForm onSuccess={closeModal} onCancel={closeModal} />
+        {(modal === 'register' || modal === 'edit') && (
+          <GenealogyForm 
+            rabbitId={editRabbitId || undefined} 
+            onSuccess={closeModal} 
+            onCancel={closeModal} 
+          />
         )}
       </Dialog>
 
-      <Dialog
-        open={modal === 'edit'}
-        onClose={closeModal}
-        title="Editar Relación Genealógica"
-        size="xl"
-      >
-        {modal === 'edit' && (
-          <GenealogyForm editData={editData || undefined} onSuccess={closeModal} onCancel={closeModal} />
-        )}
-      </Dialog>
+      {modal === 'view' && selectedRabbit && (
+        <GenealogyTreeModal 
+          rabbit={selectedRabbit} 
+          onClose={closeModal} 
+        />
+      )}
 
-      <Dialog
-        open={modal === 'view'}
-        onClose={closeModal}
-        title="Consultar Árbol Genealógico"
-        size="xl"
-      >
-        {modal === 'view' && (
-          <GenealogyTreeView onCancel={closeModal} />
-        )}
-      </Dialog>
+      <ConfirmDialog
+        open={!!toDeleteRabbit}
+        onClose={() => setToDeleteRabbit(null)}
+        onConfirm={handleDeleteRelation}
+        loading={deleting}
+        title="Eliminar Relación Genealógica"
+        description={`¿Estás seguro de que deseas desvincular a los padres del conejo ${toDeleteRabbit?.code}? Esto no eliminará a los conejos, solo borrará la línea genealógica.`}
+        confirmLabel="Sí, eliminar"
+        variant="danger"
+      />
       </Card>
     </GalponGuard>
   );

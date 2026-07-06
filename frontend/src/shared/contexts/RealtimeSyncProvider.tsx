@@ -18,7 +18,7 @@ export function RealtimeSyncProvider({ children }: { children: React.ReactNode }
       'rabbits', 'cages', 'assign_rabbits', 'feedings', 
       'vaccinations', 'dewormings', 'cleanings', 
       'reproductions', 'mortalities', 'races', 
-      'farm_members', 'growths'
+      'farm_members', 'growths', 'invitations'
     ];
 
     let channel = supabase.channel('global_schema_sync');
@@ -28,14 +28,13 @@ export function RealtimeSyncProvider({ children }: { children: React.ReactNode }
         'postgres_changes',
         { event: '*', schema: 'public', table: tableName },
         (payload: any) => {
-          console.log(`Realtime event received for ${tableName}!`, payload);
-          
           switch (tableName) {
             case 'rabbits':
               queryClient.invalidateQueries({ queryKey: ['rabbits'] });
               queryClient.invalidateQueries({ queryKey: ['assignedRabbits'] });
               queryClient.invalidateQueries({ queryKey: ['unassignedRabbits'] });
               queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+              queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
               queryClient.invalidateQueries({ queryKey: ['genealogy'] });
               queryClient.invalidateQueries({ queryKey: ['growthRecords'] });
               break;
@@ -66,6 +65,7 @@ export function RealtimeSyncProvider({ children }: { children: React.ReactNode }
               queryClient.invalidateQueries({ queryKey: ['reproductionCalendar'] });
               queryClient.invalidateQueries({ queryKey: ['reproductionDay'] });
               queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+              queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
               break;
             case 'mortalities':
               queryClient.invalidateQueries({ queryKey: ['mortalities'] });
@@ -73,6 +73,7 @@ export function RealtimeSyncProvider({ children }: { children: React.ReactNode }
               queryClient.invalidateQueries({ queryKey: ['unassignedRabbits'] });
               queryClient.invalidateQueries({ queryKey: ['rabbits'] });
               queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+              queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
               break;
             case 'races':
               queryClient.invalidateQueries({ queryKey: ['races'] });
@@ -80,10 +81,15 @@ export function RealtimeSyncProvider({ children }: { children: React.ReactNode }
             case 'farm_members':
               queryClient.invalidateQueries({ queryKey: ['myMemberships'] });
               queryClient.invalidateQueries({ queryKey: ['farmMembers'] });
+              queryClient.invalidateQueries({ queryKey: ['invitations'] });
               break;
             case 'growths':
               queryClient.invalidateQueries({ queryKey: ['growthRecords'] });
               queryClient.invalidateQueries({ queryKey: ['dailyWeights'] });
+              break;
+            case 'invitations':
+              queryClient.invalidateQueries({ queryKey: ['invitations'] });
+              queryClient.invalidateQueries({ queryKey: ['farmMembers'] });
               break;
           }
         }

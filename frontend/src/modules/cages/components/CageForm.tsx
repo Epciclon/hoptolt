@@ -12,9 +12,18 @@ import type { Cage } from '../types/cage.types';
 import { useQueryClient } from '@tanstack/react-query';
 
 const schema = z.object({
-  number: z.coerce.number().int().min(1).max(999),
-  type: z.enum(['engorde', 'reproducción']),
-  capacity: z.coerce.number().int().min(1).max(6),
+  number: z.coerce.number({
+    invalid_type_error: 'El número de jaula es obligatorio'
+  }).int('El número debe ser un entero').min(1, 'El número de jaula debe ser mayor o igual a 1').max(999, 'El número de jaula debe ser menor o igual a 999'),
+  type: z.enum(['engorde', 'reproducción'], {
+    errorMap: () => ({ message: 'El tipo de jaula debe ser engorde o reproducción' })
+  }),
+  capacity: z.coerce.number({
+    invalid_type_error: 'La capacidad es obligatoria'
+  }).int('La capacidad debe ser un entero').min(1, 'La capacidad debe ser mayor o igual a 1').max(6, 'La capacidad debe ser menor o igual a 6'),
+  status: z.enum(['operativa', 'mantenimiento'], {
+    errorMap: () => ({ message: 'El estado debe ser operativa o mantenimiento' })
+  }),
 }).refine(
   (data) => !(data.type === 'reproducción' && data.capacity !== 1),
   { message: 'La capacidad para reproducción debe ser 1.', path: ['capacity'] },
@@ -34,7 +43,6 @@ interface CageFormProps {
 }
 
 export function CageForm({ defaultValues, cageId, mode, onSuccess, onCancel }: CageFormProps) {
-
   const { activeGalpon } = useActiveGalpon();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
@@ -45,12 +53,12 @@ export function CageForm({ defaultValues, cageId, mode, onSuccess, onCancel }: C
       number: defaultValues?.number,
       type: defaultValues?.type ?? 'reproducción',
       capacity: defaultValues?.capacity ?? 1,
+      status: (defaultValues?.status as 'operativa' | 'mantenimiento') ?? 'operativa',
     },
   });
 
   const selectedType = watch('type');
 
-  // Auto-set capacity to 1 when reproduction is selected
   useEffect(() => {
     if (selectedType === 'reproducción') {
       setValue('capacity', 1);
@@ -58,7 +66,6 @@ export function CageForm({ defaultValues, cageId, mode, onSuccess, onCancel }: C
   }, [selectedType, setValue]);
 
   const onSubmit = async (values: FormValues) => {
-
     try {
       if (mode === 'create') {
         if (!activeGalpon) {
@@ -72,7 +79,7 @@ export function CageForm({ defaultValues, cageId, mode, onSuccess, onCancel }: C
           showToast('Debes seleccionar un galpón activo antes de editar una jaula.', 'error');
           return;
         }
-        await cageService.update(cageId!, { type: values.type, capacity: values.capacity, galponId: activeGalpon.id });
+        await cageService.update(cageId!, { type: values.type, capacity: values.capacity, status: values.status, galponId: activeGalpon.id });
         showToast('Jaula actualizada exitosamente.', 'success');
       }
       queryClient.invalidateQueries({ queryKey: ['cages'] });
@@ -123,12 +130,23 @@ export function CageForm({ defaultValues, cageId, mode, onSuccess, onCancel }: C
         {...register('capacity')}
       />
 
-      <div className="flex gap-3 pt-2">
+      <Select
+        label="Estado de la Jaula"
+        required
+        options={[
+          { value: 'operativa', label: 'Operativa' },
+          { value: 'mantenimiento', label: 'Mantenimiento' },
+        ]}
+        error={errors.status?.message}
+        {...register('status')}
+      />
+
+      <div className="flex justify-end gap-3 pt-2">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+          Cancelar
+        </Button>
         <Button type="submit" loading={isSubmitting}>
           {mode === 'create' ? 'Registrar Jaula' : 'Guardar Cambios'}
-        </Button>
-        <Button type="button" variant="secondary" onClick={onCancel}>
-          Cancelar
         </Button>
       </div>
     </form>

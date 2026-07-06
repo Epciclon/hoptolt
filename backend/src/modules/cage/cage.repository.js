@@ -14,14 +14,16 @@ class CageRepository {
     }
 
     async findByGalponId(galponId, options = {}) {
+        const { where = {}, ...rest } = options;
         return Cage.findAll({
-            where: { galponId },
-            ...options
+            where: { galponId, ...where },
+            ...rest
         });
     }
 
-    async countByGalponId(galponId) {
-        return Cage.count({ where: { galponId } });
+    async countByGalponId(galponId, options = {}) {
+        const { where = {} } = options;
+        return Cage.count({ where: { galponId, ...where } });
     }
 
     async findAll() {

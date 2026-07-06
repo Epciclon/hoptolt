@@ -31,3 +31,10 @@ exports.getGenealogyTree = catchAsync(async (req, res) => {
     const tree = await genealogyService.getGenealogyTree(req.params.rabbitId, req.query.levels || 3);
     res.status(200).json({ success: true, tree });
 });
+
+exports.checkConsanguinity = catchAsync(async (req, res) => {
+    const id1 = parseInt(req.params.id1, 10);
+    const id2 = parseInt(req.params.id2, 10);
+    const areRelated = await genealogyService.checkConsanguinity(id1, id2);
+    res.status(200).json({ success: true, areRelated });
+});

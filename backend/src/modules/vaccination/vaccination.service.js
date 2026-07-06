@@ -4,7 +4,7 @@ const AppError = require('../../errors/AppError');
 const { getPaginationParams, createPaginatedResponse } = require('../../common/helpers/pagination.helper');
 
 class VaccinationService {
-    async registerVaccination(data, galponId) {
+    async registerVaccination(data, galponId, profileId) {
         const { rabbitIds, vaccines } = data;
 
         const galpon = await Galpon.findByPk(galponId);
@@ -75,7 +75,8 @@ class VaccinationService {
                 rabbitId,
                 vaccines,
                 vaccinationDate: new Date(),
-                galponId
+                galponId,
+                profileId
             });
             createdVaccinations.push(vaccination);
         }
@@ -83,7 +84,7 @@ class VaccinationService {
         return createdVaccinations;
     }
 
-    async getVaccinations(galponId, profileId, page = 1, limit = 10) {
+    async getVaccinations(galponId, profileId, page = 1, limit = 10, filters = {}) {
         if (!galponId) return createPaginatedResponse([], page, limit, 0);
 
         // Verificar que el usuario tiene acceso al galpón
@@ -93,10 +94,13 @@ class VaccinationService {
         if (!membership) throw new AppError('No tienes acceso a este galpón.', 403);
 
         const { limit: limitValue, offset, page: pageValue } = getPaginationParams(page, limit);
-        const vaccinations = await vaccinationRepository.findByGalponId(galponId, { limit: limitValue, offset });
-        const total = await vaccinationRepository.countByGalponId(galponId);
+        
+        const queryOptions = filters.all ? {} : { limit: limitValue, offset };
+        
+        const vaccinations = await vaccinationRepository.findByGalponId(galponId, queryOptions, filters);
+        const total = await vaccinationRepository.countByGalponId(galponId, filters);
 
-        return createPaginatedResponse(vaccinations, pageValue, limitValue, total);
+        return createPaginatedResponse(vaccinations, filters.all ? 1 : pageValue, filters.all ? vaccinations.length : limitValue, total);
     }
 
     async getVaccinationsByRabbit(rabbitId) {

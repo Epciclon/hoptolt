@@ -151,22 +151,25 @@ export function NotificationIcon() {
     }
   };
 
-  const handleNotificationClick = (notification: any) => {
-    markAsRead(notification.id);
+  const handleNotificationClick = async (notification: any) => {
+    if (!notification.read) {
+      try {
+        await markAsRead(notification.id);
+      } catch (error) {
+        console.error('Error marking notification as read:', error);
+      }
+    }
     
     if (notification.data?.type === 'birth_warning' && notification.data?.estimatedBirthDate) {
       router.push(`/dashboard?date=${notification.data.estimatedBirthDate}&reproductionId=${notification.data.reproductionId}`);
-      setIsOpen(false);
     } else if (notification.data?.type === 'cleaning_warning') {
       router.push('/dashboard/cleaning');
-      setIsOpen(false);
     } else if (notification.data?.galponId && (notification.type === 'success' || notification.type === 'invitation')) {
       router.push('/dashboard/galpones');
-      setIsOpen(false);
     } else if (notification.data?.type === 'weight_estimation' || notification.data?.type === 'age_update') {
       router.push('/dashboard/notifications');
-      setIsOpen(false);
     }
+    setIsOpen(false);
   };
 
   const displayedNotifications = notifications.slice(0, limit);
@@ -189,7 +192,7 @@ export function NotificationIcon() {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 top-full mt-2 w-96 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-50">
+          <div className="fixed sm:absolute top-16 sm:top-full left-4 right-4 sm:left-auto sm:right-0 mt-2 w-auto sm:w-96 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-50">
             <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
               <h3 
                  onClick={() => {

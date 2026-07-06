@@ -144,14 +144,30 @@ export function MortalityForm({ selectedRabbits, onSuccess, onCancel }: Mortalit
         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
           Conejos a dar de baja:
         </p>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-2">
           {selectedRabbits.map(r => (
-            <Badge
+            <div
               key={r.id}
-              variant="info"
+              className="flex items-center gap-2 bg-white border border-slate-200 rounded-full pr-3 pl-1 py-1 shadow-sm"
             >
-              {r.code} {r.name ? `(${r.name})` : ''}
-            </Badge>
+              {r.imageUrl ? (
+                <img src={r.imageUrl} alt={r.code} className="w-6 h-6 rounded-full object-cover" />
+              ) : (
+                <div className="w-7 h-7 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-center">
+                  <span className="text-[7px] leading-[8px] font-bold text-slate-400 px-0.5">Sin foto</span>
+                </div>
+              )}
+              <div className="flex flex-col leading-tight justify-center">
+                <span className="text-sm font-semibold text-slate-800">
+                  {r.name || r.code}
+                </span>
+                {r.name && (
+                  <span className="text-[10px] text-slate-500 font-medium -mt-0.5">
+                    {r.code}
+                  </span>
+                )}
+              </div>
+            </div>
           ))}
         </div>
       </div>
@@ -237,7 +253,7 @@ export function MortalityForm({ selectedRabbits, onSuccess, onCancel }: Mortalit
         </Button>
         <Button
           type="submit"
-          variant="primary"
+          variant="danger"
           disabled={submitting}
         >
           {submitting ? 'Procesando...' : `Confirmar Baja (${selectedRabbits.length})`}

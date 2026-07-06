@@ -2,26 +2,30 @@
 
 import { useRaces } from '../hooks/useRaces';
 import type { Race } from '../types/race.types';
-import { Button, ConfirmDialog, Dialog } from '@/shared/ui';
+import { Button, ConfirmDialog, Dialog, LoadingMessage, CatalogCard } from '@/shared/ui';
+import { FilterBar } from '@/shared/ui/FilterBar';
+import { Pagination } from '@/shared/ui/Pagination';
 import { ImagePlaceholder } from '@/shared/ui/ImagePlaceholder';
 import { useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
 import { RaceForm } from './RaceForm';
 import { useToast } from '@/shared/contexts/ToastContext';
 import Image from 'next/image';
+import { useSupabase } from '../../../hooks/useSupabase';
 
 interface RaceCatalogProps {
   onSuccess?: () => void;
 }
 
 export function RaceCatalog({ onSuccess }: RaceCatalogProps) {
-  const { races, loading, error, loadRaces, deleteRace } = useRaces();
+  const { races, pagination, loading, error, fetchRaces: loadRaces, deleteRace, setPage, setSearch, filters } = useRaces();
   const { showToast } = useToast();
   const [selectedRaceId, setSelectedRaceId] = useState<number | null>(null);
   const [toDelete, setToDelete] = useState<Race | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [editingRace, setEditingRace] = useState<Race | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const { deleteRaceImage } = useSupabase();
 
   const toggleRaceSelection = (raceId: number) => {
     setSelectedRaceId(prev => prev === raceId ? null : raceId);
@@ -31,95 +35,90 @@ export function RaceCatalog({ onSuccess }: RaceCatalogProps) {
     if (!toDelete || !toDelete.id) return;
     setDeleting(true);
     const { success, error: deleteError } = await deleteRace(toDelete.id);
-    setDeleting(false);
     
     if (success) {
+      if (toDelete.imageUrl) {
+        const encodedFileName = toDelete.imageUrl.split('/').pop();
+        if (encodedFileName) {
+          const decodedFileName = decodeURIComponent(encodedFileName);
+          await deleteRaceImage(decodedFileName).catch(console.error);
+        }
+      }
       setToDelete(null);
       showToast(`Raza "${toDelete.name}" eliminada correctamente.`, 'success');
       onSuccess?.();
     } else {
       showToast(deleteError || 'Error al eliminar la raza.', 'error');
     }
+    setDeleting(false);
   };
 
-  if (loading) {
-    return <p className="text-center text-slate-500 py-8">Cargando razas...</p>;
-  }
-
   return (
-    <>
-      {races.length === 0 ? (
+    <div className="flex flex-col gap-4">
+      <FilterBar
+        searchValue={filters.search}
+        onSearchChange={(val) => { setSearch(val); setPage(1); }}
+        searchPlaceholder="Buscar raza por nombre..."
+      />
+
+      {loading ? (
+        <LoadingMessage message="Cargando razas..." />
+      ) : races.length === 0 ? (
         <p className="text-sm text-slate-500">No hay razas registradas.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {races.map((race) => {
             const isSelected = selectedRaceId === race.id;
             return (
-              <div
+              <CatalogCard
                 key={race.id}
+                imageUrl={race.imageUrl}
+                imageAlt={race.name}
+                title={race.name}
+                subtitle={race.description}
+                isSelected={isSelected}
                 onClick={() => toggleRaceSelection(race.id)}
-                className={`border rounded-lg overflow-hidden transition-colors cursor-pointer ${
-                  isSelected ? 'border-primary-500 bg-primary-50' : 'border-slate-200 bg-white hover:border-primary-300'
-                }`}
-              >
-                <div className={`p-3 border-b ${
-                  isSelected ? 'border-primary-300 bg-primary-100' : 'border-slate-200 bg-slate-50'
-                }`}>
-                  <h4 className="font-semibold text-slate-800">{race.name}</h4>
-                </div>
-                <div className="p-3 space-y-2">
-                  {race.imageUrl ? (
-                    <div className="relative w-full h-48 mb-2">
-                      <Image
-                        src={race.imageUrl}
-                        alt={race.name}
-                        fill
-                        className="object-contain rounded-lg"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      />
-                    </div>
-                  ) : (
-                    <div className="mb-2 flex justify-center">
-                      <ImagePlaceholder size="md" />
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-sm text-slate-600">{race.description}</p>
-                  </div>
-                  {isSelected && (
-                    <div className="flex gap-2 pt-2 justify-center">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        icon={<Pencil size={14} />}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingRace(race);
-                          setShowEditModal(true);
-                        }}
-                      >
-                        Editar
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="danger"
-                        size="sm"
-                        icon={<Trash2 size={14} />}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setToDelete(race);
-                        }}
-                      >
-                        Eliminar
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
+                actions={
+                  <>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      icon={<Pencil size={14} />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingRace(race);
+                        setShowEditModal(true);
+                      }}
+                    >
+                      Editar
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="danger"
+                      size="sm"
+                      icon={<Trash2 size={14} />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setToDelete(race);
+                      }}
+                    >
+                      Eliminar
+                    </Button>
+                  </>
+                }
+              />
             );
           })}
         </div>
+      )}
+
+      {!loading && races.length > 0 && (
+        <Pagination
+          currentPage={pagination.page}
+          totalPages={pagination.totalPages}
+          onPageChange={setPage}
+        />
       )}
 
       <ConfirmDialog
@@ -161,6 +160,6 @@ export function RaceCatalog({ onSuccess }: RaceCatalogProps) {
           />
         )}
       </Dialog>
-    </>
+    </div>
   );
 }

@@ -7,9 +7,9 @@ const { toCageDTO } = require('../../common/dtos/cage.dto');
 exports.assignRabbits = catchAsync(async (req, res) => {
     const galponId = req.galponId;
     const result = await assignmentService.assignRabbits(req.body, galponId);
-    res.status(201).json({ 
-        success: true, 
-        message: 'Asignación registrada exitosamente.', 
+    res.status(201).json({
+        success: true,
+        message: 'Asignación registrada exitosamente.',
         assignments: result.assignments.map(toAssignmentDTO),
         warnings: result.warnings || []
     });

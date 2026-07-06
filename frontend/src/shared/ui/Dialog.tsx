@@ -1,16 +1,18 @@
 'use client';
 
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from './Button';
 
-type DialogSize = 'sm' | 'md' | 'lg' | 'xl';
+type DialogSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
 
 interface DialogProps {
   open: boolean;
   onClose: () => void;
   title: string;
-  description?: string;
+  description?: ReactNode;
   children?: ReactNode;
   size?: DialogSize;
   hideClose?: boolean;
@@ -21,9 +23,17 @@ const sizeMap: Record<DialogSize, string> = {
   md: 'max-w-md',
   lg: 'max-w-lg',
   xl: 'max-w-xl',
+  '2xl': 'max-w-2xl',
+  '3xl': 'max-w-3xl',
 };
 
 export function Dialog({ open, onClose, title, description, children, size = 'md', hideClose = false }: DialogProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -32,11 +42,11 @@ export function Dialog({ open, onClose, title, description, children, size = 'md
     return () => document.removeEventListener('keydown', handler);
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-[999] flex items-center justify-center p-4"
       aria-modal="true"
       role="dialog"
     >
@@ -68,7 +78,8 @@ export function Dialog({ open, onClose, title, description, children, size = 'md
         </div>
         <div className="px-6 py-5 overflow-y-auto">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -77,7 +88,7 @@ interface ConfirmDialogProps {
   onClose: () => void;
   onConfirm: () => void;
   title: string;
-  description?: string;
+  description?: ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
   loading?: boolean;
@@ -104,22 +115,21 @@ export function ConfirmDialog({
   return (
     <Dialog open={open} onClose={onClose} title={title} description={description} size="sm" hideClose>
       <div className="flex gap-3 pt-2">
-        <button
+        <Button
+          variant="outline"
           onClick={onClose}
-          className="flex-1 px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 transition-colors"
+          className="flex-1"
         >
           {cancelLabel}
-        </button>
-        <button
+        </Button>
+        <Button
+          variant={variant}
           onClick={onConfirm}
-          disabled={loading}
-          className={cn(
-            'flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors disabled:opacity-60',
-            variantStyles[variant],
-          )}
+          loading={loading}
+          className="flex-1"
         >
-          {loading ? 'Procesando...' : confirmLabel}
-        </button>
+          {confirmLabel}
+        </Button>
       </div>
     </Dialog>
   );

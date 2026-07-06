@@ -4,7 +4,8 @@ import { Suspense, useEffect, useState } from 'react';
 import { Card } from '@/shared/ui';
 import { Box, Rabbit, Dna, ArrowLeftRight } from 'lucide-react';
 import { useActiveGalpon } from '@/modules/galpones/hooks/useActiveGalpon';
-import { BirthCalendar } from '@/modules/reproduction/components/BirthCalendar';
+import { DashboardCalendar } from '@/modules/reproduction/components/DashboardCalendar';
+import { InvitationBanner } from '@/modules/invitation/components/InvitationBanner';
 import api from '@/lib/api';
 
 interface GalponStats {
@@ -49,6 +50,7 @@ function DashboardHomeContent() {
 
   return (
     <div>
+      <InvitationBanner />
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-slate-800">Panel de Control</h2>
         <p className="text-base text-slate-500 mt-1">
@@ -85,13 +87,13 @@ function DashboardHomeContent() {
         })}
       </div>
 
-      {/* Calendario de Partos */}
+      {/* Calendario de Dashboard */}
       <Card>
-        <div className="px-1 pb-1">
+        <div className="px-1 pb-1 pt-2">
           <div className="mb-4">
-            <h3 className="text-lg font-bold text-slate-800">Calendario de Partos</h3>
+            <h3 className="text-lg font-bold text-slate-800">Calendario de Eventos</h3>
             <p className="text-sm text-slate-500 mt-0.5">
-              Partos estimados para el mes actual. Selecciona un día para ver el detalle.
+              Alterna entre las vistas para ver los partos, destetes o conejas en celo.
             </p>
           </div>
           <Suspense fallback={
@@ -99,7 +101,7 @@ function DashboardHomeContent() {
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-500" />
             </div>
           }>
-            <BirthCalendar />
+            <DashboardCalendar />
           </Suspense>
         </div>
       </Card>
