@@ -21,11 +21,14 @@ export function useActiveGalpon() {
   const setActiveMutation = useMutation({
     mutationFn: async (galponId: number) => {
       await galponService.setActive(galponId);
-      const galpon = await galponService.getById(galponId);
-      await refetchUser();
+      const galpon = await galponService.getActive();
+      await refetchUser(true);
       return galpon;
     },
     onSuccess: (galpon) => {
+      queryClient.removeQueries({
+        predicate: (query) => query.queryKey[0] !== 'galpones' && query.queryKey[0] !== 'activeGalpon'
+      });
       queryClient.setQueryData(['activeGalpon'], galpon);
     }
   });

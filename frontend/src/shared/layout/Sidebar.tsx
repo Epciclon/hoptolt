@@ -43,13 +43,7 @@ const navigation: NavItem[] = [
       { name: 'Reproducción y Parto', href: '/dashboard/reproduction' },
     ],
   },
-  {
-    name: 'Usuarios',
-    icon: Users,
-    children: [
-      { name: 'Equipo de Trabajo', href: '/dashboard/users' },
-    ],
-  },
+  { name: 'Equipo de Trabajo', href: '/dashboard/users', icon: Users },
   { name: 'Reportes', href: '/dashboard/reportes', icon: FileText },
   { name: 'Galpones', href: '/dashboard/galpones', icon: Building2 },
 ];

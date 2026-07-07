@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useActiveGalpon } from '@/modules/galpones/hooks/useActiveGalpon';
 import { useFarmMember } from '@/modules/farmMember/hooks/useFarmMember';
 import { useInvitation } from '@/modules/invitation/hooks/useInvitation';
-import { Button, Input, Dialog, ConfirmDialog, Alert, WorkerDetailsModal } from '@/shared/ui';
+import { Button, Input, Dialog, ConfirmDialog, Alert, WorkerDetailsModal, DashboardTabs, Card, CardHeader, SectionMessage } from '@/shared/ui';
+import { Users, Mail } from 'lucide-react';
 import { GalponGuard } from '@/modules/galpones/components/GalponGuard';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,6 +26,7 @@ export default function UsersPage() {
   const { showToast } = useToast();
   
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('workers');
   const [submitting, setSubmitting] = useState(false);
   const [workerToDelete, setWorkerToDelete] = useState<any>(null);
   const [invitationToDelete, setInvitationToDelete] = useState<any>(null);
@@ -88,15 +90,19 @@ export default function UsersPage() {
     }
   };
 
-  // Filter out pending and accepted invitations for display
   const pendingInvitations = invitations?.filter(i => i.status === 'pending') || [];
+
+  const tabs = [
+    { id: 'workers', label: `Trabajadores Activos (${workers.length})`, icon: <Users size={18} /> },
+    { id: 'invitations', label: `Invitaciones Pendientes (${pendingInvitations.length})`, icon: <Mail size={18} /> }
+  ];
 
   return (
     <GalponGuard
       customMessage="Seleccionar un galpón activo para gestionar sus usuarios"
       customDescription="Debes seleccionar un galpón antes de poder gestionar el equipo de trabajo. Dirígete a la sección de Galpones para seleccionar uno."
     >
-      <div className="space-y-6">
+      <Card className="min-h-[calc(100vh-7rem)]">
       {loadingGalpon ? (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
@@ -120,78 +126,85 @@ export default function UsersPage() {
         </div>
       ) : (
         <>
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-800">Gestión de Usuarios</h1>
-              <p className="text-slate-500 text-sm">Gestiona los trabajadores e invitaciones de {activeGalpon?.name || 'tu galpón'}</p>
-            </div>
-            <Button onClick={() => setIsModalOpen(true)}>+ Invitar Trabajador</Button>
-          </div>
+          <CardHeader 
+            title="Gestión de Usuarios" 
+            subtitle={`Gestiona los trabajadores e invitaciones de ${activeGalpon?.name || 'tu galpón'}`}
+            actions={<Button onClick={() => setIsModalOpen(true)}>+ Invitar Trabajador</Button>}
+          />
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Trabajadores Activos */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-              <div className="p-4 border-b border-slate-200 bg-slate-50">
-                <h2 className="font-semibold text-slate-800">Trabajadores Activos ({workers.length})</h2>
-              </div>
-              <div className="divide-y divide-slate-100">
-                {loadingWorkers ? (
-                  <div className="p-8 text-center text-slate-500">Cargando...</div>
-                ) : workers.length === 0 ? (
-                  <div className="p-8 text-center text-slate-500">No hay trabajadores activos en este galpón.</div>
-                ) : (
-                  workers.map(worker => (
-                    <div 
-                      key={worker.id} 
-                      className="p-4 flex justify-between items-center hover:bg-slate-100 cursor-pointer transition-colors group"
-                      onClick={() => setWorkerToView(worker)}
-                    >
-                      <div>
-                        <div className="font-medium text-slate-800">{worker.profile?.fullName}</div>
-                        <div className="text-xs text-slate-500">{worker.profile?.email} • @{worker.profile?.username}</div>
-                      </div>
-                      <span className="text-xs text-slate-400 group-hover:text-slate-600 transition-colors">
-                        Ver detalles →
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
+          <DashboardTabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
 
-            {/* Invitaciones Pendientes */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-              <div className="p-4 border-b border-slate-200 bg-slate-50">
-                <h2 className="font-semibold text-slate-800">Invitaciones Pendientes ({pendingInvitations.length})</h2>
-              </div>
-              <div className="divide-y divide-slate-100">
-                {loadingInv ? (
-                  <div className="p-8 text-center text-slate-500">Cargando...</div>
-                ) : pendingInvitations.length === 0 ? (
-                  <div className="p-8 text-center text-slate-500">No hay invitaciones pendientes.</div>
-                ) : (
-                  pendingInvitations.map(inv => (
-                    <div key={inv.token} className="p-4 flex justify-between items-center hover:bg-slate-50 transition-colors">
-                      <div>
-                        <div className="font-medium text-slate-800">{inv.email}</div>
-                        <div className="text-xs text-slate-500">Invitado por: {inv.inviter?.fullName || 'Usuario'} • Enviada: {new Date(inv.createdAt).toLocaleDateString()}</div>
-                      </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="text-red-600 border-red-200 hover:bg-red-50"
-                        onClick={() => setInvitationToDelete(inv)}
+          <div className="p-6 pt-0">
+            {activeTab === 'workers' && (
+              <>
+                <SectionMessage message="En esta fase se puede revisar el equipo de trabajo actual." />
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div className="divide-y divide-slate-100">
+                  {loadingWorkers ? (
+                    <div className="p-8 text-center text-slate-500">Cargando...</div>
+                  ) : workers.length === 0 ? (
+                    <div className="p-8 text-center text-slate-500">No hay trabajadores activos en este galpón.</div>
+                  ) : (
+                    workers.map(worker => (
+                      <div 
+                        key={worker.id} 
+                        className="p-4 flex justify-between items-center hover:bg-slate-100 cursor-pointer transition-colors group"
+                        onClick={() => setWorkerToView(worker)}
                       >
-                        Eliminar
-                      </Button>
-                    </div>
-                  ))
-                )}
+                        <div>
+                          <div className="font-medium text-slate-800">{worker.profile?.fullName}</div>
+                          <div className="text-xs text-slate-500">{worker.profile?.email} • @{worker.profile?.username}</div>
+                        </div>
+                        <span className="text-xs text-slate-400 group-hover:text-slate-600 transition-colors">
+                          Ver detalles →
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
-            </div>
+              </>
+            )}
+
+            {activeTab === 'invitations' && (
+              <>
+                <SectionMessage message="En esta fase se puede revisar las invitaciones pendientes." />
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div className="divide-y divide-slate-100">
+                  {loadingInv ? (
+                    <div className="p-8 text-center text-slate-500">Cargando...</div>
+                  ) : pendingInvitations.length === 0 ? (
+                    <div className="p-8 text-center text-slate-500">No hay invitaciones pendientes.</div>
+                  ) : (
+                    pendingInvitations.map(inv => (
+                      <div key={inv.token} className="p-4 flex justify-between items-center hover:bg-slate-50 transition-colors">
+                        <div>
+                          <div className="font-medium text-slate-800">{inv.email}</div>
+                          <div className="text-xs text-slate-500">Invitado por: {inv.inviter?.fullName || 'Usuario'} • Enviada: {new Date(inv.createdAt).toLocaleDateString()}</div>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="text-red-600 border-red-200 hover:bg-red-50"
+                          onClick={() => setInvitationToDelete(inv)}
+                        >
+                          Eliminar
+                        </Button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+              </>
+            )}
           </div>
 
-          <Dialog open={isModalOpen} onClose={() => setIsModalOpen(false)} title="Invitar Nuevo Trabajador">
+          <Dialog 
+            open={isModalOpen} 
+            onClose={() => setIsModalOpen(false)} 
+            title="Invitar Nuevo Trabajador"
+            description="Ingresa el correo electrónico del usuario que deseas invitar a colaborar en este galpón. Se le enviará una notificación para unirse."
+          >
             <form onSubmit={handleSubmit(onInvite)} className="space-y-4 pt-4">
               <Input
                 label="Correo Electrónico"
@@ -211,7 +224,7 @@ export default function UsersPage() {
           </Dialog>
         </>
       )}
-      </div>
+      </Card>
 
       <ConfirmDialog
         open={!!workerToDelete}

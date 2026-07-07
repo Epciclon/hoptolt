@@ -485,7 +485,11 @@ export function ReportGenerator({ galponId, galpon, onToast }: ReportGeneratorPr
 
             const a = document.createElement('a');
             a.href = blobUrl;
-            a.download = `Reporte_${moduleConfig?.label}_${new Date().getTime()}.pdf`;
+            const galponName = (galpon?.name || 'Galpon').replace(/\s+/g, '');
+            const reportName = (moduleConfig?.label || 'Reporte').replace(/\s+/g, '');
+            const today = new Date();
+            const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+            a.download = `${galponName}_${reportName}_${dateStr}.pdf`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);

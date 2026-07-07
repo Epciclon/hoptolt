@@ -10,16 +10,10 @@ import type { Galpon } from '@/modules/galpones/types/galpon.types';
 export default function GalponesPage() {
   const [modal, setModal] = useState<'create' | 'edit' | null>(null);
   const [editTarget, setEditTarget] = useState<Galpon | null>(null);
-  const [notification, setNotification] = useState<string | null>(null);
 
   const openCreate = () => { setEditTarget(null); setModal('create'); };
   const openEdit = (galpon: Galpon) => { setEditTarget(galpon); setModal('edit'); };
   const closeModal = () => { setModal(null); setEditTarget(null); };
-  
-  const handleSelectActive = (galpon: Galpon) => {
-    setNotification(`Usando galpón: ${galpon.name}`);
-    setTimeout(() => setNotification(null), 3000);
-  };
 
   return (
     <>
@@ -31,7 +25,7 @@ export default function GalponesPage() {
             <Button icon={<Plus size={16} />} onClick={openCreate}>Nuevo Galpón</Button>
           }
         />
-        <GalponTable onEdit={openEdit} onSelectActive={handleSelectActive} />
+        <GalponTable onEdit={openEdit} />
 
         <Dialog
           open={modal !== null}
@@ -51,11 +45,7 @@ export default function GalponesPage() {
         </Dialog>
       </Card>
 
-      {notification && (
-        <div className="fixed bottom-4 right-4 z-50">
-          <Alert variant="success" message={notification} />
-        </div>
-      )}
+
     </>
   );
 }

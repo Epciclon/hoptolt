@@ -76,8 +76,8 @@ export function MortalityTable() {
                 <p className="text-xs text-slate-500 font-medium mb-1">Conejo</p>
                 <div className="flex flex-col leading-tight">
                   <span className="font-semibold text-slate-800 text-sm">
-                    {selectedMortality.rabbitName && selectedMortality.rabbitName !== 'N/A' 
-                      ? selectedMortality.rabbitName 
+                    {selectedMortality.rabbitName && selectedMortality.rabbitName !== 'N/A'
+                      ? selectedMortality.rabbitName
                       : selectedMortality.rabbitCode}
                   </span>
                   {selectedMortality.rabbitName && selectedMortality.rabbitName !== 'N/A' && (

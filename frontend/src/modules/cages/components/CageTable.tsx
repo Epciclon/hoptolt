@@ -52,10 +52,10 @@ export function CageTable({ onEdit }: CageTableProps) {
         if (row.status === 'mantenimiento') {
           return <Badge variant="warning">Mantenimiento</Badge>;
         }
-        
+
         let label = 'Operativa';
         let variant: 'success' | 'info' | 'danger' | 'warning' | 'primary' | 'neutral' = 'success';
-        
+
         if (row.occupancyStatus === 'disponible') {
           label = 'Operativa (Libre)';
           variant = 'success';
@@ -63,8 +63,8 @@ export function CageTable({ onEdit }: CageTableProps) {
           label = `Operativa (Parcial ${row.assignedCount}/${row.capacity})`;
           variant = 'info';
         } else if (row.occupancyStatus === 'llena') {
-          label = row.type === 'reproducción' 
-            ? 'Operativa (Llena)' 
+          label = row.type === 'reproducción'
+            ? 'Operativa (Llena)'
             : `Operativa (Llena ${row.assignedCount}/${row.capacity})`;
           variant = 'danger';
         }

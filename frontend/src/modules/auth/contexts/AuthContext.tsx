@@ -10,7 +10,7 @@ import { useQueryClient } from '@tanstack/react-query';
 interface AuthContextValue {
   user: Profile | null;
   loading: boolean;
-  refetchUser: () => Promise<void>;
+  refetchUser: (silent?: boolean) => Promise<void>;
   logout: () => Promise<void>;
   supabase: ReturnType<typeof createClient>;
 }
@@ -25,14 +25,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const queryClient = useQueryClient();
 
-  const fetchUser = useCallback(async () => {
-    setLoading(true);
+  const fetchUser = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
 
       if (!session) {
         setUser(null);
-        setLoading(false);
+        if (!silent) setLoading(false);
         return;
       }
 
@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       setUser(null);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [supabase]);
 

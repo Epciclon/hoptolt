@@ -77,9 +77,10 @@ export function Table<T>({
                 data-active={isRowActive?.(row) ? 'true' : 'false'}
                 className={cn(
                   'border-t border-slate-100 transition-colors duration-150',
-                  'even:bg-slate-50/50',
                   onRowClick && 'cursor-pointer hover:bg-primary-50',
-                  isRowActive?.(row) && 'bg-green-100/40 border-l-4 border-l-green-500',
+                  isRowActive?.(row) 
+                    ? 'bg-green-100/40 border-l-4 border-l-green-500'
+                    : 'even:bg-slate-50/50'
                 )}
               >
                 {columns.map((col) => (

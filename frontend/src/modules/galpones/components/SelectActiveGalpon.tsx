@@ -44,14 +44,13 @@ export function SelectActiveGalpon() {
     {
       key: 'actions',
       header: 'Acciones',
-      headerClassName: 'text-right',
-      className: 'text-right',
       render: (row) => (
         <Button
           size="sm"
           variant={activeGalpon?.id === row.id ? 'secondary' : 'primary'}
           onClick={() => handleSelectGalpon(row)}
           disabled={activeGalpon?.id === row.id || selecting}
+          loading={selecting}
         >
           {activeGalpon?.id === row.id ? 'Seleccionado' : 'Seleccionar'}
         </Button>
@@ -61,6 +60,10 @@ export function SelectActiveGalpon() {
 
   return (
     <div className="space-y-4">
+      {selecting && (
+        <div className="fixed inset-0 z-50 bg-white/40 cursor-wait"></div>
+      )}
+
       {activeGalpon && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-sm text-blue-800">
@@ -75,6 +78,7 @@ export function SelectActiveGalpon() {
         loading={loading}
         rowKey={(row) => row.id}
         emptyMessage="No hay galpones registrados."
+        isRowActive={(row) => activeGalpon?.id === row.id}
       />
     </div>
   );

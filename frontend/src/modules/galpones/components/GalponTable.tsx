@@ -13,10 +13,9 @@ import { galponService } from '../services/galpon.service';
 
 interface GalponTableProps {
   onEdit?: (galpon: Galpon) => void;
-  onSelectActive?: (galpon: Galpon) => void;
 }
 
-export function GalponTable({ onEdit, onSelectActive }: GalponTableProps) {
+export function GalponTable({ onEdit }: GalponTableProps) {
   const { galpones, loading, error, refetch } = useGalpones();
   const { activeGalpon, setActive } = useActiveGalpon();
   const { user } = useAuthContext();
@@ -45,7 +44,6 @@ export function GalponTable({ onEdit, onSelectActive }: GalponTableProps) {
     const success = await setActive(galpon.id);
     if (success) {
       showToast(`Galpón "${galpon.name}" seleccionado como activo.`, 'success');
-      onSelectActive?.(galpon);
     }
     setSelecting(false);
   };
@@ -58,8 +56,6 @@ export function GalponTable({ onEdit, onSelectActive }: GalponTableProps) {
     {
       key: 'actions',
       header: 'Acciones',
-      headerClassName: 'text-right',
-      className: 'text-right',
       render: (row) => {
         const isOwner = user?.id === row.profileId;
         
@@ -68,7 +64,7 @@ export function GalponTable({ onEdit, onSelectActive }: GalponTableProps) {
         }
 
         return (
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex items-center gap-2">
             <Button 
               variant="outline" 
               size="sm" 
@@ -93,6 +89,9 @@ export function GalponTable({ onEdit, onSelectActive }: GalponTableProps) {
 
   return (
     <>
+      {selecting && (
+        <div className="fixed inset-0 z-50 bg-white/40 cursor-wait"></div>
+      )}
       <Table<Galpon>
         columns={columns}
         data={galpones}

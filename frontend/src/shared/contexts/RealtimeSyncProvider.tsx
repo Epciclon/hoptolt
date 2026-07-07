@@ -18,7 +18,9 @@ export function RealtimeSyncProvider({ children }: { children: React.ReactNode }
       'rabbits', 'cages', 'assign_rabbits', 'feedings', 
       'vaccinations', 'dewormings', 'cleanings', 
       'reproductions', 'mortalities', 'races', 
-      'farm_members', 'growths', 'invitations'
+      'farm_members', 'growths', 'invitations',
+      'galpones', 'worker_cages', 'worker_permissions',
+      'profiles', 'genealogies'
     ];
 
     let channel = supabase.channel('global_schema_sync');
@@ -90,6 +92,23 @@ export function RealtimeSyncProvider({ children }: { children: React.ReactNode }
             case 'invitations':
               queryClient.invalidateQueries({ queryKey: ['invitations'] });
               queryClient.invalidateQueries({ queryKey: ['farmMembers'] });
+              break;
+            case 'galpones':
+              queryClient.invalidateQueries({ queryKey: ['galpones'] });
+              queryClient.invalidateQueries({ queryKey: ['activeGalpon'] });
+              break;
+            case 'worker_cages':
+              queryClient.invalidateQueries({ queryKey: ['workerCages'] });
+              break;
+            case 'worker_permissions':
+              queryClient.invalidateQueries({ queryKey: ['workerPermissions'] });
+              break;
+            case 'profiles':
+              queryClient.invalidateQueries({ queryKey: ['profile'] });
+              queryClient.invalidateQueries({ queryKey: ['farmMembers'] });
+              break;
+            case 'genealogies':
+              queryClient.invalidateQueries({ queryKey: ['genealogy'] });
               break;
           }
         }

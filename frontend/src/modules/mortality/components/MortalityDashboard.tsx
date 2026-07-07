@@ -23,7 +23,7 @@ export function MortalityDashboard() {
         activeTab={activeTab}
         onTabChange={handleTabChange}
       />
-      
+
       <div className="p-6 pt-0">
         {activeTab === 'registro' && (
           <>
