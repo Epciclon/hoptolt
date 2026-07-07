@@ -6,21 +6,25 @@ import { Card, CardHeader, Button, Dialog, Alert } from '@/shared/ui';
 import { GalponTable } from '@/modules/galpones/components/GalponTable';
 import { GalponForm } from '@/modules/galpones/components/GalponForm';
 import type { Galpon } from '@/modules/galpones/types/galpon.types';
+import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 
 export default function GalponesPage() {
   const [modal, setModal] = useState<'create' | 'edit' | null>(null);
   const [editTarget, setEditTarget] = useState<Galpon | null>(null);
+  const { user } = useAuthContext();
 
   const openCreate = () => { setEditTarget(null); setModal('create'); };
   const openEdit = (galpon: Galpon) => { setEditTarget(galpon); setModal('edit'); };
   const closeModal = () => { setModal(null); setEditTarget(null); };
+
+
 
   return (
     <>
       <Card>
         <CardHeader
           title="Gestionar Galpones"
-          subtitle="Registra y administra los galpones del criadero"
+          subtitle="Administra los galpones del criadero y selecciona tu galpón activo"
           actions={
             <Button icon={<Plus size={16} />} onClick={openCreate}>Nuevo Galpón</Button>
           }

@@ -11,6 +11,7 @@ import type { Rabbit } from '@/modules/rabbits/types/rabbit.types';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { ConfirmDialog } from '@/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
+import { PermissionGuard } from '@/shared/layout/PermissionGuard';
 
 export default function GenealogyPage() {
   const [modal, setModal] = useState<'register' | 'edit' | 'view' | null>(null);
@@ -42,7 +43,8 @@ export default function GenealogyPage() {
   };
 
   return (
-    <GalponGuard>
+    <PermissionGuard moduleName="genealogy">
+      <GalponGuard>
       <Card>
       <CardHeader
         title="Gestionar Árbol Genealógico"
@@ -96,5 +98,6 @@ export default function GenealogyPage() {
       />
       </Card>
     </GalponGuard>
+  </PermissionGuard>
   );
 }

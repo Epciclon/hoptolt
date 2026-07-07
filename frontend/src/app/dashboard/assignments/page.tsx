@@ -6,6 +6,7 @@ import { Card, CardHeader, Button, Dialog } from '@/shared/ui';
 import { AssignmentTable } from '@/modules/assignments/components/AssignmentTable';
 import { AssignRabbitForm } from '@/modules/assignments/components/AssignRabbitForm';
 import { GalponGuard } from '@/modules/galpones/components/GalponGuard';
+import { PermissionGuard } from '@/shared/layout/PermissionGuard';
 
 export default function AssignmentsPage() {
   const [modal, setModal] = useState(false);
@@ -20,34 +21,36 @@ export default function AssignmentsPage() {
   };
 
   return (
-    <GalponGuard>
-      <Card>
-        <CardHeader
-          title="Asignaciones de Conejos"
-          subtitle="Gestiona qué conejo está en cada jaula"
-          actions={
-            <Button icon={<Plus size={16} />} onClick={openModal}>Asignar Conejo</Button>
-          }
-        />
-        
-        <div className="p-6">
-          <AssignmentTable key={refreshKey} />
-        </div>
+    <PermissionGuard moduleName="assignments">
+      <GalponGuard>
+        <Card>
+          <CardHeader
+            title="Asignaciones de Conejos"
+            subtitle="Gestiona qué conejo está en cada jaula"
+            actions={
+              <Button icon={<Plus size={16} />} onClick={openModal}>Asignar Conejo</Button>
+            }
+          />
+          
+          <div className="p-6">
+            <AssignmentTable key={refreshKey} />
+          </div>
 
-        <Dialog
-          open={modal}
-          onClose={closeModal}
-          title="Asignar Conejo a Jaula"
-          size="xl"
-        >
-          {modal && (
-            <AssignRabbitForm
-              onSuccess={handleSuccess}
-              onCancel={closeModal}
-            />
-          )}
-        </Dialog>
-      </Card>
-    </GalponGuard>
+          <Dialog
+            open={modal}
+            onClose={closeModal}
+            title="Asignar Conejo a Jaula"
+            size="xl"
+          >
+            {modal && (
+              <AssignRabbitForm
+                onSuccess={handleSuccess}
+                onCancel={closeModal}
+              />
+            )}
+          </Dialog>
+        </Card>
+      </GalponGuard>
+    </PermissionGuard>
   );
 }

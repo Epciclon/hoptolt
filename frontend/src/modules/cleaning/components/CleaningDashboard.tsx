@@ -6,9 +6,12 @@ import { Sparkles, Archive } from 'lucide-react';
 import { CleaningTable } from './CleaningTable';
 import { CleaningCatalog } from './CleaningCatalog';
 import { Card, CardHeader } from '@/shared/ui';
+import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 
 export function CleaningDashboard() {
   const { activeTab, handleTabChange, isInitialized } = usePersistentTab('cleaning', 'registro');
+  const { user } = useAuthContext();
+  const isOwner = user?.role === 'owner';
 
   if (!isInitialized) return null;
 
@@ -18,20 +21,20 @@ export function CleaningDashboard() {
       <DashboardTabs
         tabs={[
           { id: 'registro', label: 'Registro Diario', icon: <Sparkles size={18} /> },
-          { id: 'historial', label: 'Historial', icon: <Archive size={18} /> }
+          ...(isOwner ? [{ id: 'historial', label: 'Historial', icon: <Archive size={18} /> }] : [])
         ]}
-        activeTab={activeTab}
+        activeTab={isOwner ? activeTab : 'registro'}
         onTabChange={handleTabChange}
       />
       
       <div className="p-6 pt-0">
-        {activeTab === 'registro' && (
+        {activeTab === 'registro' || !isOwner ? (
           <>
             <SectionMessage message="En esta fase se puede registrar las limpiezas realizadas en las jaulas." />
             <CleaningCatalog />
           </>
-        )}
-        {activeTab === 'historial' && (
+        ) : null}
+        {isOwner && activeTab === 'historial' && (
           <>
             <SectionMessage message="En esta fase se puede revisar el historial de limpiezas." />
             <CleaningTable />

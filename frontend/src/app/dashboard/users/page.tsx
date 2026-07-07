@@ -11,6 +11,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/shared/contexts/ToastContext';
+import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { EditWorkerModal } from '@/modules/farmMember/components/EditWorkerModal';
 import { farmMemberService } from '@/modules/farmMember/services/farmMember.service';
@@ -24,6 +25,7 @@ export default function UsersPage() {
   const { workers, loading: loadingWorkers, fetchWorkers, removeWorker, updateWorker } = useFarmMember();
   const { invitations, loading: loadingInv, fetchByGalpon, createInvitation, revokeInvitation, error: invitationError } = useInvitation();
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('workers');
@@ -87,6 +89,7 @@ export default function UsersPage() {
     if (success) {
       showToast('Trabajador actualizado exitosamente', 'success');
       fetchWorkers();
+      queryClient.invalidateQueries({ queryKey: ['worker', workerToEdit.id] });
     }
   };
 
@@ -127,7 +130,7 @@ export default function UsersPage() {
       ) : (
         <>
           <CardHeader 
-            title="Gestión de Usuarios" 
+            title="Equipo de Trabajo" 
             subtitle={`Gestiona los trabajadores e invitaciones de ${activeGalpon?.name || 'tu galpón'}`}
             actions={<Button onClick={() => setIsModalOpen(true)}>+ Invitar Trabajador</Button>}
           />

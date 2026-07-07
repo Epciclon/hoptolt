@@ -1,8 +1,8 @@
 'use client';
 
 import { useActiveGalpon } from '../hooks/useActiveGalpon';
-import { Alert, Button } from '@/shared/ui';
-import Link from 'next/link';
+import { Alert, Card } from '@/shared/ui';
+import { SelectActiveGalpon } from './SelectActiveGalpon';
 
 interface GalponGuardProps {
   children: React.ReactNode;
@@ -27,21 +27,21 @@ export function GalponGuard({ children, requireGalpon = true, customMessage, cus
 
   if (requireGalpon && !activeGalpon) {
     return (
-      <div className="p-4">
-        <div className="max-w-md mx-auto">
-          <Alert
-            variant="error"
-            message={customMessage || "No hay galpón seleccionado"}
-          />
-          <p className="text-slate-600 text-sm mt-4 mb-6">
-            {customDescription || "Debes registrar y seleccionar un galpón antes de poder gestionar la crianza. Dirígete a la sección de Galpones para crear uno."}
+      <div className="p-4 max-w-4xl mx-auto">
+        <Alert
+          variant="error"
+          message={customMessage || "No hay galpón seleccionado"}
+        />
+        <div className="mt-4 mb-6">
+          <p className="text-slate-600 text-sm mb-4">
+            {customDescription || "Selecciona uno de los galpones disponibles para continuar."}
           </p>
-          <Link href="/dashboard/galpones">
-            <Button className="w-full">
-              Ir a Galpones
-            </Button>
-          </Link>
         </div>
+        <Card>
+          <div className="p-4">
+            <SelectActiveGalpon />
+          </div>
+        </Card>
       </div>
     );
   }

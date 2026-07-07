@@ -8,13 +8,11 @@ interface PermissionActionModalProps {
   onClose: () => void;
   onConfirm: (permissions: { canCreate: boolean; canRead: boolean; canUpdate: boolean; canDelete: boolean }) => void;
   moduleName: string;
-  noDelete?: boolean;
   isSensitive?: boolean;
-  workerOnly?: boolean;
   existingPermissions?: { canCreate: boolean; canRead: boolean; canUpdate: boolean; canDelete: boolean };
 }
 
-export function PermissionActionModal({ open, onClose, onConfirm, moduleName, noDelete = false, isSensitive = false, workerOnly = false, existingPermissions }: PermissionActionModalProps) {
+export function PermissionActionModal({ open, onClose, onConfirm, moduleName, isSensitive = false, existingPermissions }: PermissionActionModalProps) {
   const [permissions, setPermissions] = useState({
     canCreate: false,
     canRead: false,
@@ -39,19 +37,24 @@ export function PermissionActionModal({ open, onClose, onConfirm, moduleName, no
 
   // Determinar qué acciones mostrar
   const getAvailableActions = () => {
-    const actions = ['canCreate', 'canRead', 'canUpdate', 'canDelete'] as const;
+    const allActions = ['canCreate', 'canRead', 'canUpdate', 'canDelete'] as const;
     
-    // Si es workerOnly y no es Reproducción y Parto, solo mostrar Crear y Consultar
-    if (workerOnly && moduleName !== 'Reproducción y Parto') {
-      return actions.filter(action => action === 'canCreate' || action === 'canRead');
+    // Módulos que solo soportan Crear y Consultar
+    const twoActionsModules = ['Alimentación', 'Vacunación', 'Desparasitación', 'Limpieza', 'Mortalidad'];
+    
+    // Módulos que soportan Crear, Consultar y Eliminar (Desasignar)
+    const threeActionsModules = ['Asignar'];
+    
+    if (twoActionsModules.includes(moduleName)) {
+      return allActions.filter(action => action === 'canCreate' || action === 'canRead');
     }
     
-    // Si es noDelete, no mostrar Eliminar
-    if (noDelete) {
-      return actions.filter(action => action !== 'canDelete');
+    if (threeActionsModules.includes(moduleName)) {
+      return allActions.filter(action => action !== 'canUpdate');
     }
     
-    return actions;
+    // El resto (Jaulas, Razas, Conejos, Genealogía, Reproducción) soporta las 4 acciones
+    return allActions;
   };
 
   const handleToggle = (action: keyof typeof permissions) => {

@@ -82,15 +82,79 @@ class FarmMemberService {
 
         await this._assertOwner(member.galponId, requestingProfileId);
 
+        // 1. Obtener estado anterior
+        const oldCages = (member.assignedCages || []).map(c => c.cage.number);
+        const oldModules = (member.permissions || [])
+            .filter(p => p.canCreate || p.canRead || p.canUpdate || p.canDelete)
+            .map(p => p.moduleName);
+
         // Actualizar permisos si se proporcionan
         if (data.permissions !== undefined) {
             await farmMemberRepository.replacePermissions(farmMemberId, data.permissions);
         }
 
+        let newCagesNums = oldCages;
         // Actualizar jaulas si se proporcionan (solo jaulas con conejos asignados)
         if (data.cageIds !== undefined) {
             await this._validateOccupiedCages(data.cageIds, member.galponId);
             await farmMemberRepository.replaceWorkerCages(farmMemberId, data.cageIds);
+
+            if (data.cageIds.length > 0) {
+                const newCagesData = await Cage.findAll({ where: { id: data.cageIds } });
+                newCagesNums = newCagesData.map(c => c.number);
+            } else {
+                newCagesNums = [];
+            }
+        }
+
+        const newModules = data.permissions !== undefined 
+            ? data.permissions.filter(p => p.canCreate || p.canRead || p.canUpdate || p.canDelete).map(p => p.moduleName)
+            : oldModules;
+
+        // Calcular diferencias
+        const addedCages = newCagesNums.filter(c => !oldCages.includes(c));
+        const removedCages = oldCages.filter(c => !newCagesNums.includes(c));
+        const addedModules = newModules.filter(m => !oldModules.includes(m));
+        const removedModules = oldModules.filter(m => !newModules.includes(m));
+
+        // Enviar notificaciones si hubo cambios
+        if (addedCages.length > 0 || addedModules.length > 0 || removedCages.length > 0 || removedModules.length > 0) {
+            const ownerProfile = await Profile.findByPk(requestingProfileId);
+            const galpon = await galponRepository.findById(member.galponId);
+            
+            const MODULE_NAMES = {
+                feeding: 'alimentación', vaccination: 'vacunación', deworming: 'desparasitación',
+                cleaning: 'limpieza', mortality: 'mortalidad', reproduction: 'reproducción y parto',
+                reports: 'reportes', cages: 'jaulas', races: 'razas', rabbits: 'conejos',
+                assignments: 'asignaciones', genealogy: 'genealogía'
+            };
+            const translate = (m) => MODULE_NAMES[m] || m;
+
+            if (addedCages.length > 0 || addedModules.length > 0) {
+                let parts = [];
+                if (addedCages.length > 0) parts.push(`las jaulas ${addedCages.join(', ')}`);
+                if (addedModules.length > 0) parts.push(`los procesos de ${addedModules.map(translate).join(', ')}`);
+                
+                await notificationService.createNotification(member.profileId, {
+                    type: 'info',
+                    title: 'Nuevas asignaciones',
+                    message: `${ownerProfile.username} te asignó ${parts.join(' y ')} en el galpón "${galpon.name}".`,
+                    data: { galponId: galpon.id }
+                });
+            }
+
+            if (removedCages.length > 0 || removedModules.length > 0) {
+                let parts = [];
+                if (removedCages.length > 0) parts.push(`las jaulas ${removedCages.join(', ')}`);
+                if (removedModules.length > 0) parts.push(`los procesos de ${removedModules.map(translate).join(', ')}`);
+                
+                await notificationService.createNotification(member.profileId, {
+                    type: 'warning',
+                    title: 'Asignaciones removidas',
+                    message: `${ownerProfile.username} te quitó ${parts.join(' y ')} en el galpón "${galpon.name}".`,
+                    data: { galponId: galpon.id }
+                });
+            }
         }
 
         return farmMemberRepository.findById(farmMemberId);

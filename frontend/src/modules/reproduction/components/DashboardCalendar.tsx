@@ -153,11 +153,24 @@ export function DashboardCalendar() {
   };
 
   const currentConfig = typeConfig[calendarType];
+  const canViewReproduction = !permissionsLoading && hasPermission('reproduction');
 
   return (
-    <div className="space-y-4 relative">
+    <div className="space-y-4 relative px-1">
+      <div className="mb-4">
+        <h3 className="text-lg font-bold text-slate-800">
+          {canViewReproduction ? "Calendario de Eventos" : "Calendario General"}
+        </h3>
+        {canViewReproduction && (
+          <p className="text-sm text-slate-500 mt-0.5">
+            Alterna entre las vistas para ver los partos, destetes o conejas en celo.
+          </p>
+        )}
+      </div>
+
       {/* Selector de tipo de calendario */}
-      <div className="flex bg-slate-100 p-1 rounded-lg w-full max-w-2xl mx-auto mb-4 relative overflow-hidden">
+      {canViewReproduction && (
+        <div className="flex bg-slate-100 p-1 rounded-lg w-full max-w-2xl mx-auto mb-4 relative overflow-hidden">
         {isFetching && (
           <div className="absolute top-0 left-0 w-full h-0.5 bg-slate-200">
             <div className="h-full bg-primary-500 animate-pulse w-full"></div>
@@ -188,8 +201,9 @@ export function DashboardCalendar() {
           {typeConfig.weaning.icon} <span className="hidden sm:inline">{typeConfig.weaning.label}</span>
         </button>
       </div>
+      )}
 
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden w-full max-w-4xl mx-auto">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden w-full max-w-3xl mx-auto">
         {/* Header con navegación */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50">
           <button
@@ -229,17 +243,18 @@ export function DashboardCalendar() {
             {/* Day cells */}
             <div className="grid grid-cols-7 gap-1 sm:gap-2">
               {calendarGrid.map((day, idx) => {
-                if (day === null) return <div key={`e-${idx}`} className="aspect-square" />;
+                if (day === null) return <div key={`e-${idx}`} className="h-16 sm:h-20" />;
 
                 const dateKey = `${year}-${pad(month)}-${pad(day)}`;
                 const entries = (calendar as CalendarData)[dateKey] || [];
                 const hasEvents = entries.length > 0;
+                const isDayToday = isToday(day);
                 const isSelected = selectedDate === dateKey;
 
                 let bgClass = 'hover:bg-slate-100 text-slate-700';
                 let eventTextClass = 'text-slate-600';
                 
-                if (hasEvents) {
+                if (hasEvents && canViewReproduction) {
                   if (calendarType === 'births') {
                     bgClass = 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold';
                     eventTextClass = 'text-emerald-600';
@@ -250,23 +265,27 @@ export function DashboardCalendar() {
                     bgClass = 'bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold';
                     eventTextClass = 'text-amber-600';
                   }
+                } else if (isDayToday && !hasEvents) {
+                  bgClass = 'bg-slate-200/80 hover:bg-slate-200 text-slate-800 font-bold';
+                } else if (!hasEvents) {
+                  bgClass = 'opacity-50 cursor-default bg-slate-50/50 hover:bg-slate-50/50';
                 }
 
                 return (
                   <button
                     key={dateKey}
-                    onClick={() => { if (hasEvents) setSelectedDate(dateKey); }}
-                    disabled={!hasEvents}
+                    onClick={() => { if (hasEvents && canViewReproduction) setSelectedDate(dateKey); }}
+                    disabled={!hasEvents || !canViewReproduction}
                     className={`
-                      aspect-square rounded-lg flex flex-col items-center justify-center
+                      h-16 sm:h-20 rounded-lg flex flex-col items-center justify-center
                       text-sm transition-all duration-150 relative border
-                      ${isToday(day) ? 'ring-2 ring-primary-400 ring-offset-1 border-primary-200' : 'border-transparent'}
-                      ${isSelected ? 'ring-2 ring-slate-800 ring-offset-1 scale-105 z-10' : ''}
-                      ${hasEvents ? bgClass + ' shadow-sm cursor-pointer' : 'opacity-50 cursor-default bg-slate-50/50 hover:bg-slate-50/50'}
+                      ${isDayToday ? 'ring-2 ring-slate-400 ring-offset-1 border-slate-400 shadow-sm z-10' : 'border-transparent'}
+                      ${isSelected ? 'ring-2 ring-slate-800 ring-offset-1 scale-105 z-20' : ''}
+                      ${bgClass} ${hasEvents && canViewReproduction ? 'shadow-sm cursor-pointer' : ''}
                     `}
                   >
-                    <span className={`text-base sm:text-lg ${hasEvents ? 'font-bold' : ''}`}>{day}</span>
-                    {hasEvents && (
+                    <span className={`text-base sm:text-lg ${hasEvents && canViewReproduction ? 'font-bold' : ''}`}>{day}</span>
+                    {hasEvents && canViewReproduction && (
                       <span className={`
                         text-[10px] sm:text-xs font-bold mt-0.5 sm:mt-1 leading-none
                         ${isSelected ? 'text-slate-800' : eventTextClass}

@@ -108,23 +108,8 @@ class GalponService {
         const galpon = await galponRepository.findById(id);
         if (!galpon) throw new AppError('Galpón no encontrado.', 404);
 
-        // Verificar si el usuario es propietario o trabajador con permisos
-        const membership = await FarmMember.findOne({
-            where: { profileId, galponId: id, status: 'active' },
-            include: [{ association: 'permissions' }]
-        });
-
-        if (!membership) {
-            throw new AppError('No tienes acceso a este galpón.', 403);
-        }
-
-        // Si es trabajador, verificar permisos de edición
-        if (membership.role === 'worker') {
-            const permission = membership.permissions.find(p => p.moduleName === 'galpones');
-            if (!permission || !permission.canUpdate) {
-                throw new AppError('No tienes permiso para editar este galpón.', 403);
-            }
-        }
+        // Solo el propietario puede editar los detalles del galpón
+        await this._assertOwner(id, profileId);
 
         if (data.totalCapacity) {
             const cageCount = await Cage.count({ where: { galponId: id } });

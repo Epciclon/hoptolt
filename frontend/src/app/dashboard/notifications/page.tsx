@@ -10,10 +10,10 @@ import { useToast } from '@/shared/contexts/ToastContext';
 import { Bell, CheckCheck, Clock, Settings2, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Notification } from '@/modules/notification/types/notification.types';
+import { useNotifications } from '@/modules/notification/hooks/useNotification';
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { notifications, loading, markAsRead, markAllAsRead, deleteNotification, fetchNotifications } = useNotifications();
   const [filter, setFilter] = useState<string>('all');
   const [processing, setProcessing] = useState<number | null>(null);
   const { showToast } = useToast();
@@ -22,26 +22,9 @@ export default function NotificationsPage() {
   const [accepting, setAccepting] = useState<number | null>(null);
   const [rejecting, setRejecting] = useState<number | null>(null);
   const [selectedRabbitForNotification, setSelectedRabbitForNotification] = useState<Record<number, number | null>>({});
-  const fetchNotifications = async () => {
-    setLoading(true);
-    try {
-      const data = await notificationService.getAll();
-      setNotifications(data);
-    } catch (error) {
-      showToast('Error al cargar notificaciones', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchNotifications();
-  }, []);
-
   const handleMarkAllRead = async () => {
     try {
-      await notificationService.markAllAsRead();
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      await markAllAsRead();
       showToast('Notificaciones marcadas como leídas', 'success');
     } catch (error) {
       showToast('Error al marcar notificaciones', 'error');
@@ -50,8 +33,7 @@ export default function NotificationsPage() {
 
   const handleDelete = async (id: number) => {
     try {
-      await notificationService.delete(id);
-      setNotifications(prev => prev.filter(n => n.id !== id));
+      await deleteNotification(id);
       showToast('Notificación eliminada', 'success');
     } catch (error) {
       showToast('Error al eliminar notificación', 'error');
@@ -101,9 +83,7 @@ export default function NotificationsPage() {
       const success = await acceptInvitation(token);
       if (success) {
         showToast('¡Te has unido al galpón!', 'success');
-        await notificationService.markAsRead(notification.id);
-        await notificationService.delete(notification.id);
-        setNotifications(prev => prev.filter(n => n.id !== notification.id));
+        await deleteNotification(notification.id);
       }
     } catch (error) {
       showToast('Error al aceptar la invitación', 'error');
@@ -120,9 +100,7 @@ export default function NotificationsPage() {
     try {
       await revokeInvitation(token);
       showToast('Invitación rechazada', 'success');
-      await notificationService.markAsRead(notification.id);
-      await notificationService.delete(notification.id);
-      setNotifications(prev => prev.filter(n => n.id !== notification.id));
+      await deleteNotification(notification.id);
     } catch (error) {
       showToast('Error al rechazar la invitación', 'error');
     } finally {
@@ -133,8 +111,7 @@ export default function NotificationsPage() {
   const handleNotificationClick = async (notification: Notification) => {
     if (!notification.read) {
       try {
-        await notificationService.markAsRead(notification.id);
-        setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, read: true } : n));
+        await markAsRead(notification.id);
       } catch (error) {
         console.error('Error al marcar como leída:', error);
       }

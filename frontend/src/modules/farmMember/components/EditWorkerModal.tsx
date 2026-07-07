@@ -33,14 +33,11 @@ const ALL_PERMISSIONS = [
   'Limpieza',
   'Mortalidad',
   'Reproducción y Parto',
-  'Reportes',
   'Jaulas',
   'Razas',
   'Conejos',
   'Asignar',
-  'Genealogía',
-  'Usuarios',
-  'Galpones'
+  'Genealogía'
 ];
 
 // Función para normalizar el nombre del módulo (sin tildes, sin espacios)
@@ -82,14 +79,11 @@ const mapEnglishToSpanish = (englishName: string): string => {
     'cleaning': 'limpieza',
     'mortality': 'mortalidad',
     'reproduction': 'reproduccionyparto',
-    'reports': 'reportes',
     'cages': 'jaulas',
     'races': 'razas',
     'rabbits': 'conejos',
     'assignments': 'asignar',
-    'genealogy': 'genealogia',
-    'farmMembers': 'usuarios',
-    'galpones': 'galpones'
+    'genealogy': 'genealogia'
   };
   
   return mapping[englishName] || englishName;
@@ -101,9 +95,7 @@ const SENSITIVE_PERMISSIONS = [
   'Razas',
   'Conejos',
   'Asignar',
-  'Genealogía',
-  'Usuarios',
-  'Galpones'
+  'Genealogía'
 ];
 
 export function EditWorkerModal({ open, onClose, worker, onSave }: EditWorkerModalProps) {
@@ -470,9 +462,7 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: EditWorkerMod
         }}
         onConfirm={handlePermissionActionConfirm}
         moduleName={selectedAdvancedPermission || ''}
-        noDelete={selectedAdvancedPermission === 'Galpones' || selectedAdvancedPermission === 'Usuarios'}
         isSensitive={SENSITIVE_PERMISSIONS.includes(selectedAdvancedPermission || '')}
-        workerOnly={!SENSITIVE_PERMISSIONS.includes(selectedAdvancedPermission || '')}
         existingPermissions={editingPermissions || undefined}
       />
     </Dialog>

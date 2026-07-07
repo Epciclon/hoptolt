@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Dialog, Button } from '@/shared/ui';
 import { Mail, AtSign, Shield, Box, Pencil, Trash2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 
 // English-to-Spanish module name mapping for display
 const MODULE_DISPLAY_NAMES: Record<string, string> = {
@@ -69,20 +70,15 @@ export function WorkerDetailsModal({
   onEdit,
   onDelete,
 }: WorkerDetailsModalProps) {
-  const [fullWorker, setFullWorker] = useState<WorkerDetailsData | null>(null);
-  const [loading, setLoading] = useState(false);
+  const { data: fullWorkerData, isLoading: queryLoading } = useQuery({
+    queryKey: ['worker', worker?.id],
+    queryFn: () => fetchWorkerById(worker!.id),
+    enabled: !!open && !!worker?.id,
+    staleTime: 1000 * 60 * 5, // 5 minutos de cache
+  });
 
-  useEffect(() => {
-    if (open && worker) {
-      setLoading(true);
-      fetchWorkerById(worker.id)
-        .then(data => setFullWorker(data))
-        .catch(() => setFullWorker(worker))
-        .finally(() => setLoading(false));
-    } else {
-      setFullWorker(null);
-    }
-  }, [open, worker]);
+  const fullWorker = fullWorkerData || worker;
+  const loading = queryLoading && !!open;
 
   if (!worker) return null;
 

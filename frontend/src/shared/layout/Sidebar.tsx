@@ -100,6 +100,11 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       // Si es owner, mostrar todo
       if (role === 'owner') return true;
 
+      // Ocultar Reportes y Usuarios del menú para trabajadores
+      if (item.name === 'Reportes' || item.name === 'Usuarios') {
+        return false;
+      }
+
       // Items que siempre se muestran
       if (item.name === 'Inicio' || item.name === 'Galpones') {
         return true;

@@ -6,6 +6,7 @@ import { Card, CardHeader, Button, Dialog } from '@/shared/ui';
 import { CageTable } from '@/modules/cages/components/CageTable';
 import { CageForm } from '@/modules/cages/components/CageForm';
 import { GalponGuard } from '@/modules/galpones/components/GalponGuard';
+import { PermissionGuard } from '@/shared/layout/PermissionGuard';
 import type { Cage } from '@/modules/cages/types/cage.types';
 
 export default function CagesPage() {
@@ -17,34 +18,36 @@ export default function CagesPage() {
   const closeModal = () => { setModal(null); setEditTarget(null); };
 
   return (
-    <GalponGuard>
-      <Card>
-        <CardHeader
-          title="Gestión de Jaulas"
-          subtitle="Administra las jaulas del criadero"
-          actions={
-            <Button icon={<Plus size={16} />} onClick={openCreate}>Nueva Jaula</Button>
-          }
-        />
-        <CageTable onEdit={openEdit} />
+    <PermissionGuard moduleName="cages">
+      <GalponGuard>
+        <Card>
+          <CardHeader
+            title="Gestión de Jaulas"
+            subtitle="Administra las jaulas del criadero"
+            actions={
+              <Button icon={<Plus size={16} />} onClick={openCreate}>Nueva Jaula</Button>
+            }
+          />
+          <CageTable onEdit={openEdit} />
 
-        <Dialog
-          open={modal !== null}
-          onClose={closeModal}
-          title={modal === 'create' ? 'Nueva Jaula' : `Editar Jaula #${editTarget?.number}`}
-          size="md"
-        >
-          {modal !== null && (
-            <CageForm
-              mode={modal}
-              defaultValues={editTarget ?? undefined}
-              cageId={editTarget?.id}
-              onSuccess={closeModal}
-              onCancel={closeModal}
-            />
-          )}
-        </Dialog>
-      </Card>
-    </GalponGuard>
+          <Dialog
+            open={modal !== null}
+            onClose={closeModal}
+            title={modal === 'create' ? 'Nueva Jaula' : `Editar Jaula #${editTarget?.number}`}
+            size="md"
+          >
+            {modal !== null && (
+              <CageForm
+                mode={modal}
+                defaultValues={editTarget ?? undefined}
+                cageId={editTarget?.id}
+                onSuccess={closeModal}
+                onCancel={closeModal}
+              />
+            )}
+          </Dialog>
+        </Card>
+      </GalponGuard>
+    </PermissionGuard>
   );
 }

@@ -6,9 +6,12 @@ import { Skull, Archive } from 'lucide-react';
 import { MortalityTable } from './MortalityTable';
 import { MortalityCatalog } from './MortalityCatalog';
 import { Card, CardHeader } from '@/shared/ui';
+import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 
 export function MortalityDashboard() {
   const { activeTab, handleTabChange, isInitialized } = usePersistentTab('mortality', 'registro');
+  const { user } = useAuthContext();
+  const isOwner = user?.role === 'owner';
 
   if (!isInitialized) return null;
 
@@ -18,20 +21,20 @@ export function MortalityDashboard() {
       <DashboardTabs
         tabs={[
           { id: 'registro', label: 'Registro Diario', icon: <Skull size={18} /> },
-          { id: 'historial', label: 'Historial', icon: <Archive size={18} /> }
+          ...(isOwner ? [{ id: 'historial', label: 'Historial', icon: <Archive size={18} /> }] : [])
         ]}
-        activeTab={activeTab}
+        activeTab={isOwner ? activeTab : 'registro'}
         onTabChange={handleTabChange}
       />
 
       <div className="p-6 pt-0">
-        {activeTab === 'registro' && (
+        {activeTab === 'registro' || !isOwner ? (
           <>
             <SectionMessage message="En esta fase se puede registrar las bajas o mortalidades ocurridas." />
             <MortalityCatalog />
           </>
-        )}
-        {activeTab === 'historial' && (
+        ) : null}
+        {isOwner && activeTab === 'historial' && (
           <>
             <SectionMessage message="En esta fase se puede revisar el historial de mortalidades." />
             <MortalityTable />

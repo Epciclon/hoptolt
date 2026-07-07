@@ -3,12 +3,15 @@
 import { Suspense } from 'react';
 import { GalponGuard } from '@/modules/galpones/components/GalponGuard';
 import { ReproductionDashboard } from '@/modules/reproduction/components/ReproductionDashboard';
+import { PermissionGuard } from '@/shared/layout/PermissionGuard';
 
 function ReproductionPageContent() {
   return (
-    <GalponGuard>
-      <ReproductionDashboard />
-    </GalponGuard>
+    <PermissionGuard moduleName="reproduction">
+      <GalponGuard>
+        <ReproductionDashboard />
+      </GalponGuard>
+    </PermissionGuard>
   );
 }
 

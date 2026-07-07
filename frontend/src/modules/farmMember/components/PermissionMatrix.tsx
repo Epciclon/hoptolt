@@ -17,10 +17,6 @@ interface PermissionMatrixProps {
   permissions: ModulePermissions;
   onChange: (permissions: ModulePermissions) => void;
   modules?: string[];
-  // Si es true, solo muestra Crear y Consultar (para permisos de trabajador)
-  workerOnly?: boolean;
-  // Si es true, no muestra Eliminar (para Galpones y Usuarios)
-  noDelete?: boolean;
 }
 
 const MODULES = {
@@ -48,7 +44,7 @@ const ACTION_LABELS = {
   canDelete: 'Eliminar',
 };
 
-export function PermissionMatrix({ permissions, onChange, modules, workerOnly = false, noDelete = false }: PermissionMatrixProps) {
+export function PermissionMatrix({ permissions, onChange, modules }: PermissionMatrixProps) {
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
 
   // Usar los módulos proporcionados o los por defecto
@@ -56,15 +52,21 @@ export function PermissionMatrix({ permissions, onChange, modules, workerOnly = 
 
   // Determinar qué acciones mostrar según las props
   const getAvailableActions = (moduleName: string) => {
-    // Si es workerOnly y no es Reproducción y Parto, solo mostrar Crear y Consultar
-    if (workerOnly && moduleName.toLowerCase().replace(/\s/g, '') !== 'reproducciónyparto') {
-      return ACTIONS.filter(action => action === 'canCreate' || action === 'canRead');
+    const allActions = ['canCreate', 'canRead', 'canUpdate', 'canDelete'] as const;
+    const moduleLabel = MODULES[moduleName as keyof typeof MODULES];
+    
+    const twoActionsModules = ['Alimentación', 'Vacunación', 'Desparasitación', 'Limpieza', 'Mortalidad'];
+    const threeActionsModules = ['Asignar Jaula'];
+    
+    if (twoActionsModules.includes(moduleLabel)) {
+      return allActions.filter(action => action === 'canCreate' || action === 'canRead');
     }
-    // Si es noDelete, no mostrar Eliminar
-    if (noDelete) {
-      return ACTIONS.filter(action => action !== 'canDelete');
+    
+    if (threeActionsModules.includes(moduleLabel)) {
+      return allActions.filter(action => action !== 'canUpdate');
     }
-    return ACTIONS;
+    
+    return allActions;
   };
 
   const toggleModule = (moduleKey: string) => {

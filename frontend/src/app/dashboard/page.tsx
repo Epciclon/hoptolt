@@ -6,6 +6,7 @@ import { Box, Rabbit, Dna, ArrowLeftRight } from 'lucide-react';
 import { useActiveGalpon } from '@/modules/galpones/hooks/useActiveGalpon';
 import { DashboardCalendar } from '@/modules/reproduction/components/DashboardCalendar';
 import { InvitationBanner } from '@/modules/invitation/components/InvitationBanner';
+import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 import api from '@/lib/api';
 
 interface GalponStats {
@@ -23,6 +24,7 @@ const statsMeta = [
 ];
 
 function DashboardHomeContent() {
+  const { user } = useAuthContext();
   const { activeGalpon, loading: galponLoading } = useActiveGalpon();
   const [stats, setStats] = useState<GalponStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
@@ -52,16 +54,31 @@ function DashboardHomeContent() {
     <div>
       <InvitationBanner />
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-slate-800">Panel de Control</h2>
+        <h2 className="text-2xl font-bold text-slate-800">
+          ¡Hola {user?.fullName?.split(' ')[0] || 'Criador'}, bienvenido a Hoptolt!
+        </h2>
         <p className="text-base text-slate-500 mt-1">
           {activeGalpon
-            ? `Resumen del estado de ${activeGalpon.name}`
-            : 'Selecciona un galpón para ver las estadísticas'}
+            ? `Panel de control y estado de tu galpón activo: ${activeGalpon.name}`
+            : 'Selecciona un galpón para empezar'}
         </p>
       </div>
 
+      {/* Calendario de Dashboard */}
+      <Card>
+        <div className="px-1 pb-1 pt-2">
+          <Suspense fallback={
+            <div className="flex items-center justify-center py-20">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-500" />
+            </div>
+          }>
+            <DashboardCalendar />
+          </Suspense>
+        </div>
+      </Card>
+
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6 mb-6">
         {statsMeta.map((stat) => {
           const Icon = stat.icon;
           const value = stats ? stats[stat.key] : null;
@@ -86,25 +103,6 @@ function DashboardHomeContent() {
           );
         })}
       </div>
-
-      {/* Calendario de Dashboard */}
-      <Card>
-        <div className="px-1 pb-1 pt-2">
-          <div className="mb-4">
-            <h3 className="text-lg font-bold text-slate-800">Calendario de Eventos</h3>
-            <p className="text-sm text-slate-500 mt-0.5">
-              Alterna entre las vistas para ver los partos, destetes o conejas en celo.
-            </p>
-          </div>
-          <Suspense fallback={
-            <div className="flex items-center justify-center py-20">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-500" />
-            </div>
-          }>
-            <DashboardCalendar />
-          </Suspense>
-        </div>
-      </Card>
     </div>
   );
 }
