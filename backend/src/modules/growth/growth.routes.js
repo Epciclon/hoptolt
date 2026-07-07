@@ -5,7 +5,7 @@ const { authenticate } = require('../../common/middlewares/auth.middleware');
 
 router.use('/growth', authenticate);
 
-// PATCH /api/growth/weight/:notificationId/respond
-router.patch('/growth/weight/:notificationId/respond', growthController.respondToEstimation);
+// GET /api/growth/history/:rabbitId
+router.get('/growth/history/:rabbitId', growthController.getHistory);
 
 module.exports = router;

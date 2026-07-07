@@ -47,7 +47,7 @@ const Rabbit = sequelize.define('Rabbit', {
         type: DataTypes.DECIMAL(4, 2),
         allowNull: false,
         validate: {
-            min: 0.1,
+            min: 0.01,
             max: 4.5,
             isDecimal: { msg: 'El peso debe ser un número decimal válido' }
         }

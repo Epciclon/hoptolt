@@ -117,18 +117,11 @@ export function NotificationIcon() {
   const handleRespondToWeight = async (notification: any, action: 'accept' | 'reject' | 'revert') => {
     setProcessingWeight(notification.id);
     try {
-      await growthService.respondToEstimation(notification.id, action);
-      showToast(
-        action === 'accept' ? 'Peso actualizado correctamente' :
-        action === 'revert' ? 'Estimación revertida a pendiente' : 'Estimación rechazada',
-        'success'
-      );
-      if (action !== 'revert') {
-        markAsRead(notification.id);
-      }
-      // React Query ya habrá invalidado 'notifications' y actualizará automáticamente
+      // growthService.respondToEstimation has been deprecated/removed.
+      // Logic for responding to weights interactively is removed.
+      showToast('Funcionalidad deprecada', 'info');
     } catch (error) {
-      showToast('Error al procesar la estimación de peso', 'error');
+      showToast('Error al procesar', 'error');
     } finally {
       setProcessingWeight(null);
     }
@@ -137,15 +130,11 @@ export function NotificationIcon() {
   const handleRespondToWeightGrouped = async (notificationId: number, rabbitId: number, action: 'accept' | 'reject' | 'revert') => {
     setProcessingWeight(notificationId);
     try {
-      await growthService.respondToEstimation(notificationId, action, rabbitId);
-      showToast(
-        action === 'accept' ? 'Peso actualizado correctamente' :
-        action === 'revert' ? 'Estimación revertida a pendiente' : 'Estimación rechazada',
-        'success'
-      );
-      // React Query manejará la actualización de notificaciones al invalidar o a través de Realtime
+      // growthService.respondToEstimation has been deprecated/removed.
+      // Logic for responding to weights interactively is removed.
+      showToast('Funcionalidad deprecada', 'info');
     } catch (error) {
-      showToast('Error al procesar la estimación de peso', 'error');
+      showToast('Error al procesar', 'error');
     } finally {
       setProcessingWeight(null);
     }
@@ -276,124 +265,19 @@ export function NotificationIcon() {
                               </Button>
                             </div>
                           )}
-                          {notification.data?.type === 'weight_estimation' && (
-                            <div className="flex gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
-                              {notification.data.status === 'pending' && (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    variant="primary"
-                                    onClick={() => handleRespondToWeight(notification, 'accept')}
-                                    disabled={processingWeight === notification.id}
-                                  >
-                                    {processingWeight === notification.id ? 'Procesando...' : 'Aceptar Cambio'}
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="danger"
-                                    onClick={() => handleRespondToWeight(notification, 'reject')}
-                                    disabled={processingWeight === notification.id}
-                                  >
-                                    Rechazar
-                                  </Button>
-                                </>
-                              )}
-                              {notification.data.status === 'rejected' && (
-                                <Button
-                                  size="sm"
-                                  variant="warning"
-                                  onClick={() => handleRespondToWeight(notification, 'revert')}
-                                  disabled={processingWeight === notification.id}
-                                >
-                                  Revertir
-                                </Button>
-                              )}
-                              {notification.data.status === 'accepted' && (
-                                <span className="text-green-600 font-bold text-xs flex items-center gap-1">
-                                  ✓ Guardado
-                                </span>
-                              )}
-                            </div>
-                          )}
-                          {notification.data?.type === 'weight_estimations' && (
-                            <div className="mt-3 space-y-2" onClick={(e) => e.stopPropagation()}>
-                              <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                                Peso Estimado Conejos:
-                              </div>
-                              <div className="flex flex-col gap-1.5">
-                                {(notification.data.rabbits || []).map((rabbit: any) => {
-                                  const isSelected = selectedRabbitForNotification[notification.id] === rabbit.rabbitId;
-                                  return (
-                                    <div 
-                                      key={rabbit.rabbitId}
-                                      onClick={() => {
-                                        if (rabbit.status === 'pending' || rabbit.status === 'rejected') {
-                                          setSelectedRabbitForNotification(prev => ({
-                                            ...prev,
-                                            [notification.id]: isSelected ? null : rabbit.rabbitId
-                                          }));
-                                        }
-                                      }}
-                                      className={cn(
-                                        "p-2 rounded-lg border transition-colors flex items-center justify-between text-xs",
-                                        isSelected ? "bg-blue-50 border-blue-300" : "bg-slate-50 border-slate-200 hover:bg-slate-100",
-                                        (rabbit.status === 'pending' || rabbit.status === 'rejected') && "cursor-pointer"
-                                      )}
-                                    >
-                                      <div className="flex items-center gap-1.5 min-w-0">
-                                        <span className="font-semibold text-slate-700 shrink-0">{rabbit.rabbitCode}</span>
-                                        {rabbit.rabbitName && <span className="text-slate-500 text-[10px] truncate">({rabbit.rabbitName})</span>}
-                                      </div>
-
-                                      <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                                        {isSelected && rabbit.status === 'pending' && (
-                                          <div className="flex gap-1">
-                                            <Button
-                                              size="sm"
-                                              variant="primary"
-                                              className="h-6 text-[10px] px-2 py-0"
-                                              onClick={() => handleRespondToWeightGrouped(notification.id, rabbit.rabbitId, 'accept')}
-                                              disabled={processingWeight === notification.id}
-                                            >
-                                              Aceptar
-                                            </Button>
-                                            <Button
-                                              size="sm"
-                                              variant="danger"
-                                              className="h-6 text-[10px] px-2 py-0"
-                                              onClick={() => handleRespondToWeightGrouped(notification.id, rabbit.rabbitId, 'reject')}
-                                              disabled={processingWeight === notification.id}
-                                            >
-                                              Rechazar
-                                            </Button>
-                                          </div>
-                                        )}
-
-                                        {isSelected && rabbit.status === 'rejected' && (
-                                          <Button
-                                            size="sm"
-                                            variant="warning"
-                                            className="h-6 text-[10px] px-2 py-0"
-                                            onClick={() => handleRespondToWeightGrouped(notification.id, rabbit.rabbitId, 'revert')}
-                                            disabled={processingWeight === notification.id}
-                                          >
-                                            Revertir
-                                          </Button>
-                                        )}
-
-                                        {(!isSelected || rabbit.status === 'accepted') && (
-                                          <div className="flex items-center gap-1 font-medium text-[10px]">
-                                            <span className="text-slate-500">{rabbit.estimatedWeight} kg</span>
-                                            {rabbit.status === 'accepted' && <span className="text-green-600 font-bold">✓ Guardado</span>}
-                                            {rabbit.status === 'rejected' && <span className="text-red-500 font-bold">✕ (Revertir)</span>}
-                                            {rabbit.status === 'pending' && <span className="text-blue-500 font-bold">•</span>}
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
+                          {notification.data?.type === 'growth_summary' && (
+                            <div className="mt-2 bg-slate-100 rounded-md p-2 border border-slate-200">
+                              <p className="text-xs text-slate-700 font-medium mb-1">
+                                Actualizaciones ({notification.data.updatesCount || 0})
+                              </p>
+                              <ul className="text-xs text-slate-500 list-disc list-inside">
+                                {notification.data.details?.slice(0, 3).map((detail: string, i: number) => (
+                                  <li key={i} className="truncate">{detail}</li>
+                                ))}
+                                {notification.data.details?.length > 3 && (
+                                  <li className="italic text-slate-400">... y {notification.data.details.length - 3} más</li>
+                                )}
+                              </ul>
                             </div>
                           )}
                         </div>

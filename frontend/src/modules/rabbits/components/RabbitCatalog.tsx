@@ -8,8 +8,9 @@ import { FilterBar } from '@/shared/ui/FilterBar';
 import { Pagination } from '@/shared/ui/Pagination';
 import { ImagePlaceholder } from '@/shared/ui/ImagePlaceholder';
 import { useState } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, Info } from 'lucide-react';
 import { RabbitForm } from './RabbitForm';
+import { RabbitDetailsModal } from './RabbitDetailsModal';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { useSupabase } from '../../../hooks/useSupabase';
 import Image from 'next/image';
@@ -29,6 +30,8 @@ export function RabbitCatalog({ onSuccess }: RabbitCatalogProps) {
   const [deleting, setDeleting] = useState(false);
   const [editingRabbit, setEditingRabbit] = useState<Rabbit | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [detailsRabbit, setDetailsRabbit] = useState<Rabbit | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   const toggleRabbitSelection = (rabbitId: number) => {
     setSelectedRabbitId(prev => prev === rabbitId ? null : rabbitId);
@@ -97,6 +100,20 @@ export function RabbitCatalog({ onSuccess }: RabbitCatalogProps) {
                 subtitle={rabbit.race}
                 isSelected={isSelected}
                 onClick={() => toggleRabbitSelection(rabbit.id)}
+                topRightAction={
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDetailsRabbit(rabbit);
+                      setShowDetailsModal(true);
+                    }}
+                    className="bg-slate-900/70 hover:bg-slate-900 text-white p-1.5 rounded-md shadow-sm backdrop-blur-sm transition-colors"
+                    title="Ver Detalles e Historial Médico"
+                  >
+                    <Info size={16} />
+                  </button>
+                }
                 tags={
                   <>
                     <Badge variant={rabbit.sex === 'macho' ? 'primary' : 'success'}>
@@ -202,6 +219,15 @@ export function RabbitCatalog({ onSuccess }: RabbitCatalogProps) {
           />
         )}
       </Dialog>
+
+      <RabbitDetailsModal 
+        open={showDetailsModal} 
+        onClose={() => {
+          setShowDetailsModal(false);
+          setDetailsRabbit(null);
+        }} 
+        rabbit={detailsRabbit} 
+      />
     </div>
   );
 }

@@ -20,7 +20,10 @@ const schema = z.object({
     .string()
     .min(1, 'El nombre es obligatorio')
     .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'Solo letras y espacios'),
-  password: z.string().min(6, 'Mínimo 6 caracteres'),
+  password: z
+    .string()
+    .min(6, 'Mínimo 6 caracteres')
+    .regex(/[!@#$%^&*(),.?":{}|<>_]/, 'Debe contener al menos un carácter especial (ej. @#$%)'),
   confirmPassword: z.string().min(6, 'Debes confirmar tu contraseña'),
 }).refine((d) => d.password === d.confirmPassword, {
   message: 'Las contraseñas no coinciden',

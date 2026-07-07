@@ -16,14 +16,15 @@ import { useSupabase } from '@/hooks/useSupabase';
 import { ImagePlaceholder } from '@/shared/ui/ImagePlaceholder';
 import Image from 'next/image';
 import { useRef } from 'react';
+import { calculateEstimatedWeight, calculateAgeMonths } from '@/modules/growth/utils/growthEstimations';
 
 const schema = z.object({
   race: z.string().min(1, 'Selecciona una raza.'),
   code: z.string().optional(),
   name: z.string().min(1, 'El nombre es obligatorio.').max(50, 'Máximo 50 caracteres.'),
-  sex: z.enum(['macho', 'hembra'], { required_error: 'Selecciona el sexo.' }),
+  sex: z.enum(['macho', 'hembra'], { required_error: 'Selecciona el género.' }),
   birthDate: z.string().min(1, 'La fecha de nacimiento es obligatoria.'),
-  weight: z.coerce.number().min(0.1).max(4.5, 'Máximo 4.5 kg.'),
+  weight: z.coerce.number().min(0.01).max(4.5, 'Máximo 4.5 kg.'),
   purpose: z.enum(['Reproducción', 'Engorde'], { required_error: 'Selecciona el propósito.' }),
 });
 
@@ -72,6 +73,15 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
   const selectedSex = watch('sex');
   const selectedRace = watch('race');
   const selectedPurpose = watch('purpose');
+  const selectedBirthDate = watch('birthDate');
+
+  useEffect(() => {
+    if (mode === 'create' && selectedPurpose && selectedBirthDate) {
+      const age = calculateAgeMonths(selectedBirthDate);
+      const estWeight = calculateEstimatedWeight(selectedPurpose, age);
+      setValue('weight', estWeight, { shouldValidate: true });
+    }
+  }, [selectedPurpose, selectedBirthDate, mode, setValue]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -130,6 +140,7 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
         showToast('Conejo actualizado exitosamente.', 'success');
         queryClient.invalidateQueries({ queryKey: ['rabbits'] });
         queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
+        queryClient.invalidateQueries({ queryKey: ['rabbitGrowth', rabbitId] });
         onSuccess?.();
       }
     } catch (err) {
@@ -191,10 +202,10 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
       )}
 
       <Select
-        label="Sexo"
+        label="Género"
         required
         options={sexOptions}
-        placeholder="Selecciona el sexo"
+        placeholder="Selecciona el género"
         error={errors.sex?.message}
         value={selectedSex || ''}
         onChange={(e) => setValue('sex', e.target.value as 'macho' | 'hembra')}
@@ -217,7 +228,7 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
           onClick={suggestName}
           disabled={!selectedSex || suggestingName}
           loading={suggestingName}
-          title="Sugerir nombre según el sexo"
+          title="Sugerir nombre según el género"
           className="mb-[1px]"
         >
           Sugerir
@@ -232,26 +243,26 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
           error={errors.birthDate?.message}
           {...register('birthDate')}
         />
-        <Input
-          label="Peso (kg)"
-          type="number"
-          step="0.01"
+        <Select
+          label="Propósito"
           required
-          min={0.1}
-          max={4.5}
-          error={errors.weight?.message}
-          {...register('weight')}
+          options={purposeOptions}
+          placeholder="Selecciona el propósito"
+          error={errors.purpose?.message}
+          value={selectedPurpose || ''}
+          onChange={(e) => setValue('purpose', e.target.value as 'Reproducción' | 'Engorde')}
         />
       </div>
 
-      <Select
-        label="Propósito"
+      <Input
+        label="Peso (kg)"
+        type="number"
+        step="0.01"
         required
-        options={purposeOptions}
-        placeholder="Selecciona el propósito"
-        error={errors.purpose?.message}
-        value={selectedPurpose || ''}
-        onChange={(e) => setValue('purpose', e.target.value as 'Reproducción' | 'Engorde')}
+        min={0.01}
+        max={4.5}
+        error={errors.weight?.message}
+        {...register('weight')}
       />
 
       <div className="border-t border-slate-100 pt-3 mt-1">

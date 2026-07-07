@@ -66,6 +66,11 @@ export default function ProfilePage() {
       return;
     }
 
+    if (!/[!@#$%^&*(),.?":{}|<>_]/.test(newPassword)) {
+      showToast('La nueva contraseña debe contener al menos un carácter especial (ej. @#$%)', 'error');
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
       showToast('La nueva contraseña y su confirmación no coinciden', 'error');
       return;

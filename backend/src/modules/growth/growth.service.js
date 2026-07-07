@@ -30,70 +30,38 @@ class GrowthService {
                 const memberships = await FarmMember.findAll({ where: { profileId, status: 'active' } });
                 const ownedGalpones = await Galpon.findAll({ where: { profileId } });
 
-                const activeAssignments = await Assignment.findAll({
-                    where: { status: 'asignado' },
-                    include: [{ model: Rabbit, as: 'rabbit' }, { model: Cage, as: 'cage' }]
+                const galponIds = new Set();
+                ownedGalpones.forEach(g => galponIds.add(g.id));
+                memberships.forEach(m => galponIds.add(m.galponId));
+
+                if (galponIds.size === 0) return;
+
+                const rabbits = await Rabbit.findAll({
+                    where: { galponId: Array.from(galponIds) }
                 });
 
-                if (activeAssignments.length === 0) return;
-
-                const rabbitsToCheck = new Map();
-
-                // 1. Owner's cages
-                if (ownedGalpones.length > 0) {
-                    const galponIds = new Set(ownedGalpones.map(g => g.id));
-                    for (const a of activeAssignments) {
-                        if (a.cage && galponIds.has(a.cage.galponId) && a.rabbit) {
-                            rabbitsToCheck.set(a.rabbit.id, a);
-                        }
-                    }
-                }
-
-                // 2. Member's cages
-                for (const m of memberships) {
-                    if (m.role === 'owner') {
-                        for (const a of activeAssignments) {
-                            if (a.cage && a.cage.galponId === m.galponId && a.rabbit) {
-                                rabbitsToCheck.set(a.rabbit.id, a);
-                            }
-                        }
-                    } else if (m.role === 'worker') {
-                        const workerCages = await WorkerCage.findAll({ where: { farmMemberId: m.id } });
-                        const cageIds = new Set(workerCages.map(wc => wc.cageId));
-                        for (const a of activeAssignments) {
-                            if (a.cage && cageIds.has(a.cage.id) && a.rabbit) {
-                                rabbitsToCheck.set(a.rabbit.id, a);
-                            }
-                        }
-                    }
-                }
-
-                if (rabbitsToCheck.size === 0) return;
+                if (rabbits.length === 0) return;
 
                 const today = new Date();
                 const todayStr = today.toLocaleDateString('sv', { timeZone: 'America/Guayaquil' });
                 
-                const ageUpdates = [];
-                const weightEstimations = [];
-                const existingNotifications = await Notification.findAll({
-                    where: { profileId, type: 'info' }
-                });
+                const updates = [];
 
-                for (const [rabbitId, assignment] of rabbitsToCheck) {
-                    const rabbit = assignment.rabbit;
+                for (const rabbit of rabbits) {
                     const birthDate = new Date(rabbit.birthDate);
                     
                     let months = (today.getFullYear() - birthDate.getFullYear()) * 12;
                     months -= birthDate.getMonth();
                     months += today.getMonth();
                     
-                    // Si el día del mes actual es menor al día de nacimiento, aún no cumple el mes
                     if (today.getDate() < birthDate.getDate()) {
                         months--;
                     }
                     if (months < 0) months = 0;
 
-                    // Si la edad cambió
+                    const maxAge = rabbit.purpose === 'Engorde' ? 8 : 12;
+
+                    // Only update if age just incremented
                     if (rabbit.age !== months) {
                         await rabbit.update({ age: months });
                         await AuditLog.create({
@@ -102,111 +70,64 @@ class GrowthService {
                             entityId: rabbit.id,
                             details: { oldAge: rabbit.age, newAge: months, updatedBy: 'system' }
                         });
-                        ageUpdates.push(`${rabbit.code} (${months} meses)`);
-                    }
+                        
+                        let msg = `${rabbit.code} - ${rabbit.name || 'Sin nombre'} cumplió ${months} meses`;
 
-                    // Peso estimado
-                    const estimatedWeight = this.calculateEstimatedWeight(rabbit.purpose, rabbit.age);
-                    if (parseFloat(rabbit.weight) !== estimatedWeight) {
-                        weightEstimations.push({
-                            rabbitId: rabbit.id,
-                            rabbitCode: rabbit.code,
-                            rabbitName: rabbit.name || '',
-                            cageNumber: assignment.cage.number,
-                            age: rabbit.age,
-                            currentWeight: parseFloat(rabbit.weight),
-                            estimatedWeight: estimatedWeight,
-                            status: 'pending'
-                        });
-                    }
-                }
+                        // Only update weight if we haven't passed stabilization
+                        if (months <= maxAge) {
+                            const estimatedWeight = this.calculateEstimatedWeight(rabbit.purpose, months);
+                            
+                            // Check if weight actually differs to avoid duplicate useless records
+                            if (parseFloat(rabbit.weight) !== estimatedWeight) {
+                                const oldWeight = parseFloat(rabbit.weight);
+                                
+                                await Growth.create({
+                                    rabbitId: rabbit.id,
+                                    weight: estimatedWeight,
+                                    recordDate: new Date()
+                                });
 
-                // Generar notificación agrupada de edad para hoy si hubo actualizaciones
-                if (ageUpdates.length > 0) {
-                    // Check if already notified for today
-                    const ageNotifs = await Notification.findAll({
-                        where: { profileId, title: `Actualización de Edad - ${todayStr}` }
-                    });
-                    if (ageNotifs.length === 0) {
-                        await Notification.create({
-                            profileId,
-                            type: 'info',
-                            title: `Actualización de Edad - ${todayStr}`,
-                            message: `El sistema ha actualizado automáticamente la edad de ${ageUpdates.length} conejos: ${ageUpdates.join(', ')}`,
-                            data: {
-                                type: 'age_update',
-                                count: ageUpdates.length,
-                                updates: ageUpdates
+                                await rabbit.update({ weight: estimatedWeight });
+
+                                await AuditLog.create({
+                                    action: 'weight_update_auto',
+                                    entity: 'Rabbit',
+                                    entityId: rabbit.id,
+                                    details: { oldWeight, newWeight: estimatedWeight, source: 'system_estimation' }
+                                });
                             }
-                        });
+                            
+                            msg += ` y su peso estimado es ${estimatedWeight.toFixed(2)} kg.`;
+                            
+                            if (months === maxAge) {
+                                msg += ` (Este es el último peso estimado por el sistema. A partir de aquí se estabiliza el peso y quedará en manos del usuario si desea actualizarlo).`;
+                            }
+                        }
+
+                        updates.push(msg);
                     }
                 }
 
-                // Generar notificación agrupada de pesos si hubo diferencias
-                if (weightEstimations.length > 0) {
+                if (updates.length > 0) {
                     // Check if already notified for today
-                    const weightNotifs = await Notification.findAll({
-                        where: { 
-                            profileId, 
-                            title: `Estimación de Peso - ${todayStr}` 
-                        }
+                    const summaryNotifs = await Notification.findAll({
+                        where: { profileId, title: `Resumen de Crecimiento - ${todayStr}` }
                     });
-                    if (weightNotifs.length === 0) {
-                        const message = `El sistema ha calculado un peso estimado diferente para los siguientes conejos: ${weightEstimations.map(w => `${w.rabbitCode} (${w.rabbitName})`).join(', ')}. ¿Deseas actualizarlos?`;
+                    
+                    if (summaryNotifs.length === 0) {
+                        let message = `El sistema ha actualizado automáticamente la edad y peso de ${updates.length} conejos.`;
+
                         await Notification.create({
                             profileId,
                             type: 'info',
-                            title: `Estimación de Peso - ${todayStr}`,
+                            title: `Resumen de Crecimiento - ${todayStr}`,
                             message: message,
                             data: {
-                                type: 'weight_estimations',
-                                rabbits: weightEstimations
+                                type: 'growth_summary',
+                                updatesCount: updates.length,
+                                details: updates
                             }
                         });
-                    } else {
-                        // If notification exists, check if we need to add new rabbits to it
-                        const existingNotif = weightNotifs[0];
-                        let existingData = existingNotif.data;
-                        if (typeof existingData === 'string') {
-                            existingData = JSON.parse(existingData);
-                        }
-                        
-                        if (existingData.type === 'weight_estimations') {
-                            const existingRabbits = existingData.rabbits || [];
-                            const newRabbits = weightEstimations.filter(w => !existingRabbits.some(er => er.rabbitId === w.rabbitId));
-                            
-                            if (newRabbits.length > 0) {
-                                const updatedRabbits = [...existingRabbits, ...newRabbits];
-                                const pendingRabbits = updatedRabbits.filter(r => r.status === 'pending');
-                                
-                                let newMessage = '';
-                                if (pendingRabbits.length > 0) {
-                                    newMessage = `El sistema ha calculado un peso estimado diferente para los siguientes conejos: ${pendingRabbits.map(w => `${w.rabbitCode} (${w.rabbitName})`).join(', ')}. ¿Deseas actualizarlos?`;
-                                    
-                                    const acceptedRabbits = updatedRabbits.filter(r => r.status === 'accepted');
-                                    const rejectedRabbits = updatedRabbits.filter(r => r.status === 'rejected');
-                                    
-                                    const processedParts = [];
-                                    if (acceptedRabbits.length > 0) {
-                                        processedParts.push(`actualizado: ${acceptedRabbits.map(r => r.rabbitCode).join(', ')}`);
-                                    }
-                                    if (rejectedRabbits.length > 0) {
-                                        processedParts.push(`rechazado: ${rejectedRabbits.map(r => r.rabbitCode).join(', ')}`);
-                                    }
-                                    if (processedParts.length > 0) {
-                                        newMessage += ` (Ya procesados — ${processedParts.join('; ')}).`;
-                                    }
-                                } else {
-                                    newMessage = existingNotif.message;
-                                }
-
-                                existingNotif.message = newMessage;
-                                existingNotif.read = pendingRabbits.length === 0;
-                                existingNotif.data = { ...existingData, rabbits: updatedRabbits };
-                                existingNotif.changed('data', true);
-                                await existingNotif.save();
-                            }
-                        }
                     }
                 }
 
@@ -221,166 +142,16 @@ class GrowthService {
         return promise;
     }
 
-    async respondToWeightEstimation(notificationId, profileId, action, rabbitId) {
-        const notification = await Notification.findOne({ where: { id: notificationId, profileId } });
-        if (!notification) throw new AppError('Notificación no encontrada', 404);
+    async getHistory(rabbitId) {
+        const rabbit = await Rabbit.findByPk(rabbitId);
+        if (!rabbit) throw new AppError('Conejo no encontrado', 404);
 
-        let data = typeof notification.data === 'string' ? JSON.parse(notification.data) : notification.data;
-        
-        // Soporte de compatibilidad para notificaciones antiguas 'weight_estimation' (individuales)
-        if (data.type === 'weight_estimation') {
-            if (action === 'accept') {
-                const rabbit = await Rabbit.findByPk(data.rabbitId);
-                if (!rabbit) throw new AppError('Conejo no encontrado', 404);
+        const history = await Growth.findAll({
+            where: { rabbitId },
+            order: [['recordDate', 'DESC']]
+        });
 
-                await Growth.create({
-                    rabbitId: rabbit.id,
-                    weight: data.estimatedWeight,
-                    recordDate: new Date()
-                });
-
-                await rabbit.update({ weight: data.estimatedWeight });
-
-                await AuditLog.create({
-                    action: 'weight_update_manual',
-                    entity: 'Rabbit',
-                    entityId: rabbit.id,
-                    profileId,
-                    details: { oldWeight: data.currentWeight, newWeight: data.estimatedWeight, source: 'weight_estimation' }
-                });
-
-                const updatedData = { ...data, status: 'accepted' };
-                notification.data = updatedData;
-                notification.read = true;
-                notification.message = `Se actualizó el peso de: ${data.rabbitCode} (${data.rabbitName || ''}).`;
-                notification.changed('data', true);
-                await notification.save();
-
-                return { message: 'Peso actualizado correctamente', notification };
-            } else if (action === 'reject') {
-                const updatedData = { ...data, status: 'rejected' };
-                notification.data = updatedData;
-                notification.read = true;
-                notification.message = `Se rechazó la actualización de peso para: ${data.rabbitCode} (${data.rabbitName || ''}).`;
-                notification.changed('data', true);
-                await notification.save();
-                return { message: 'Estimación rechazada', notification };
-            } else if (action === 'revert') {
-                const updatedData = { ...data, status: 'pending' };
-                const originalMsg = `El conejo ${data.rabbitCode} (${data.rabbitName || ''}) tiene una edad de ${data.age} meses. Su peso estimado es ${data.estimatedWeight.toFixed(2)} kg (Peso actual: ${data.currentWeight} kg). ¿Deseas actualizarlo?`;
-                notification.data = updatedData;
-                notification.read = false;
-                notification.message = originalMsg;
-                notification.changed('data', true);
-                await notification.save();
-                return { message: 'Estimación revertida a pendiente', notification };
-            }
-        }
-
-        // Nueva lógica para notificaciones agrupadas 'weight_estimations'
-        if (data.type !== 'weight_estimations') throw new AppError('Notificación inválida', 400);
-
-        const rabbits = data.rabbits || [];
-
-        if (rabbitId) {
-            const rabbitData = rabbits.find(r => r.rabbitId === Number(rabbitId));
-            if (!rabbitData) throw new AppError('Conejo no encontrado en la notificación', 404);
-
-            if (action === 'accept') {
-                const rabbit = await Rabbit.findByPk(rabbitData.rabbitId);
-                if (!rabbit) throw new AppError('Conejo no encontrado en la base de datos', 404);
-
-                await Growth.create({
-                    rabbitId: rabbit.id,
-                    weight: rabbitData.estimatedWeight,
-                    recordDate: new Date()
-                });
-
-                await rabbit.update({ weight: rabbitData.estimatedWeight });
-
-                await AuditLog.create({
-                    action: 'weight_update_manual',
-                    entity: 'Rabbit',
-                    entityId: rabbit.id,
-                    profileId,
-                    details: { oldWeight: rabbitData.currentWeight, newWeight: rabbitData.estimatedWeight, source: 'weight_estimation' }
-                });
-
-                rabbitData.status = 'accepted';
-            } else if (action === 'reject') {
-                rabbitData.status = 'rejected';
-            } else if (action === 'revert') {
-                rabbitData.status = 'pending';
-            }
-        } else {
-            // Acción para todo el grupo
-            for (const r of rabbits) {
-                if (action === 'revert') {
-                    r.status = 'pending';
-                } else if (action === 'accept' && r.status === 'pending') {
-                    const rabbit = await Rabbit.findByPk(r.rabbitId);
-                    if (rabbit) {
-                        await Growth.create({ rabbitId: rabbit.id, weight: r.estimatedWeight, recordDate: new Date() });
-                        await rabbit.update({ weight: r.estimatedWeight });
-                        await AuditLog.create({
-                            action: 'weight_update_manual',
-                            entity: 'Rabbit',
-                            entityId: rabbit.id,
-                            profileId,
-                            details: { oldWeight: r.currentWeight, newWeight: r.estimatedWeight, source: 'weight_estimation' }
-                        });
-                        r.status = 'accepted';
-                    }
-                } else if (action === 'reject' && r.status === 'pending') {
-                    r.status = 'rejected';
-                }
-            }
-        }
-
-        const pendingRabbits = rabbits.filter(r => r.status === 'pending');
-        const acceptedRabbits = rabbits.filter(r => r.status === 'accepted');
-        const rejectedRabbits = rabbits.filter(r => r.status === 'rejected');
-
-        let newMessage = '';
-        if (pendingRabbits.length > 0) {
-            newMessage = `El sistema ha calculado un peso estimado diferente para los siguientes conejos: ${pendingRabbits.map(w => `${w.rabbitCode} (${w.rabbitName})`).join(', ')}. ¿Deseas actualizarlos?`;
-            
-            const processedParts = [];
-            if (acceptedRabbits.length > 0) {
-                processedParts.push(`actualizado: ${acceptedRabbits.map(r => r.rabbitCode).join(', ')}`);
-            }
-            if (rejectedRabbits.length > 0) {
-                processedParts.push(`rechazado: ${rejectedRabbits.map(r => r.rabbitCode).join(', ')}`);
-            }
-            if (processedParts.length > 0) {
-                newMessage += ` (Ya procesados — ${processedParts.join('; ')}).`;
-            }
-        } else {
-            // Todos procesados
-            const acceptedParts = [];
-            if (acceptedRabbits.length > 0) {
-                acceptedParts.push(`Se actualizó el peso de: ${acceptedRabbits.map(r => `${r.rabbitCode} (${r.rabbitName})`).join(', ')}`);
-            }
-            const rejectedParts = [];
-            if (rejectedRabbits.length > 0) {
-                rejectedParts.push(`Se rechazó la actualización para: ${rejectedRabbits.map(r => `${r.rabbitCode} (${r.rabbitName})`).join(', ')}`);
-            }
-            
-            newMessage = [...acceptedParts, ...rejectedParts].join('. ');
-            if (!newMessage) newMessage = 'No se realizaron actualizaciones de peso.';
-        }
-
-        notification.message = newMessage;
-        notification.read = pendingRabbits.length === 0;
-
-        notification.data = { ...data, rabbits };
-        notification.changed('data', true);
-        await notification.save();
-
-        return { 
-            message: 'Estimación procesada correctamente', 
-            notification 
-        };
+        return history;
     }
 }
 

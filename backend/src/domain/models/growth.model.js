@@ -19,7 +19,7 @@ const Growth = sequelize.define('Growth', {
         type: DataTypes.DECIMAL(4, 2),
         allowNull: false,
         validate: {
-            min: 0.1,
+            min: 0.01,
             max: 4.5
         }
     },

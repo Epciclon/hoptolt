@@ -40,39 +40,6 @@ export default function NotificationsPage() {
     }
   };
 
-  const handleRespondToWeight = async (notification: Notification, action: 'accept' | 'reject' | 'revert') => {
-    setProcessing(notification.id);
-    try {
-      await growthService.respondToEstimation(notification.id, action);
-      showToast(
-        action === 'accept' ? 'Peso actualizado correctamente' : 
-        action === 'revert' ? 'Estimación revertida a pendiente' : 'Estimación rechazada', 
-        'success'
-      );
-      await fetchNotifications(); // Recargar para obtener el estado JSON actualizado
-    } catch (error) {
-      showToast('Error al procesar la estimación de peso', 'error');
-    } finally {
-      setProcessing(null);
-    }
-  };
-
-  const handleRespondToWeightGrouped = async (notificationId: number, rabbitId: number, action: 'accept' | 'reject' | 'revert') => {
-    setProcessing(notificationId);
-    try {
-      await growthService.respondToEstimation(notificationId, action, rabbitId);
-      showToast(
-        action === 'accept' ? 'Peso actualizado correctamente' : 
-        action === 'revert' ? 'Estimación revertida a pendiente' : 'Estimación rechazada', 
-        'success'
-      );
-      await fetchNotifications(); // Recargar para obtener el estado actualizado
-    } catch (error) {
-      showToast('Error al procesar la estimación de peso', 'error');
-    } finally {
-      setProcessing(null);
-    }
-  };
 
   const handleAcceptInvitation = async (notification: Notification) => {
     const token = notification.data?.invitationToken;
@@ -269,137 +236,19 @@ export default function NotificationsPage() {
                       </div>
                     </div>
 
-                    {/* Acciones específicas por tipo */}
-                    {notification.data?.type === 'weight_estimation' && (
-                      <div className="mt-3 flex gap-2" onClick={(e) => e.stopPropagation()}>
-                        {notification.data.status === 'pending' && (
-                          <>
-                            <Button
-                              variant="primary"
-                              onClick={() => handleRespondToWeight(notification, 'accept')}
-                              disabled={processing === notification.id}
-                            >
-                              {processing === notification.id ? 'Procesando...' : 'Aceptar Cambio'}
-                            </Button>
-                            <Button
-                              variant="danger"
-                              onClick={() => handleRespondToWeight(notification, 'reject')}
-                              disabled={processing === notification.id}
-                            >
-                              Rechazar
-                            </Button>
-                          </>
-                        )}
-                        
-                        {notification.data.status === 'rejected' && (
-                          <Button
-                            variant="warning"
-                            onClick={() => handleRespondToWeight(notification, 'revert')}
-                            disabled={processing === notification.id}
-                          >
-                            {processing === notification.id ? 'Revertiendo...' : 'Revertir Decisión'}
-                          </Button>
-                        )}
-                        
-                        {notification.data.status === 'accepted' && (
-                          <span className="text-green-600 font-bold text-sm flex items-center gap-1">
-                            ✓ Guardado
-                          </span>
-                        )}
-                      </div>
-                    )}
-
-                    {notification.data?.type === 'weight_estimations' && (
-                      <div className="mt-4 space-y-3" onClick={(e) => e.stopPropagation()}>
-                        <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-                          Conejos con estimaciones de peso (Haz clic en un conejo para actuar):
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          {(notification.data.rabbits || []).map((rabbit: any) => {
-                            const isSelected = selectedRabbitForNotification[notification.id] === rabbit.rabbitId;
-                            return (
-                              <div 
-                                key={rabbit.rabbitId}
-                                onClick={() => {
-                                  if (rabbit.status === 'pending' || rabbit.status === 'rejected') {
-                                    setSelectedRabbitForNotification(prev => ({
-                                      ...prev,
-                                      [notification.id]: isSelected ? null : rabbit.rabbitId
-                                    }));
-                                  }
-                                }}
-                                className={cn(
-                                  "p-3 rounded-lg border transition-colors flex items-center justify-between",
-                                  isSelected ? "bg-blue-50 border-blue-300" : "bg-slate-50 border-slate-200 hover:bg-slate-100",
-                                  (rabbit.status === 'pending' || rabbit.status === 'rejected') && "cursor-pointer"
-                                )}
-                              >
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-slate-700">{rabbit.rabbitCode}</span>
-                                  {rabbit.rabbitName && <span className="text-slate-500 text-sm">({rabbit.rabbitName})</span>}
-                                  <span className="text-xs px-2 py-0.5 rounded-full bg-slate-200 text-slate-600">
-                                    Jaula {rabbit.cageNumber}
-                                  </span>
-                                </div>
-
-                                <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-                                  {isSelected && rabbit.status === 'pending' && (
-                                    <div className="flex gap-2">
-                                      <Button
-                                        size="sm"
-                                        variant="primary"
-                                        onClick={() => handleRespondToWeightGrouped(notification.id, rabbit.rabbitId, 'accept')}
-                                        disabled={processing === notification.id}
-                                      >
-                                        Aceptar Cambio
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="danger"
-                                        onClick={() => handleRespondToWeightGrouped(notification.id, rabbit.rabbitId, 'reject')}
-                                        disabled={processing === notification.id}
-                                      >
-                                        Rechazar
-                                      </Button>
-                                    </div>
-                                  )}
-
-                                  {isSelected && rabbit.status === 'rejected' && (
-                                    <Button
-                                      size="sm"
-                                      variant="warning"
-                                      onClick={() => handleRespondToWeightGrouped(notification.id, rabbit.rabbitId, 'revert')}
-                                      disabled={processing === notification.id}
-                                    >
-                                      Revertir Decisión
-                                    </Button>
-                                  )}
-
-                                  {(!isSelected || rabbit.status === 'accepted') && (
-                                    <div className="text-xs flex items-center gap-2.5 font-medium">
-                                      <span className="text-slate-400">Actual: {rabbit.currentWeight} kg</span>
-                                      <span className="text-slate-500">→ Estimado: {rabbit.estimatedWeight} kg</span>
-                                      {rabbit.status === 'accepted' && (
-                                        <span className="text-green-600 font-semibold flex items-center gap-1">
-                                          ✓ Guardado
-                                        </span>
-                                      )}
-                                      {rabbit.status === 'rejected' && (
-                                        <span className="text-red-600 font-semibold flex items-center gap-1">
-                                          ✕ Rechazado (Clic para revertir)
-                                        </span>
-                                      )}
-                                      {rabbit.status === 'pending' && (
-                                        <span className="text-blue-600 font-semibold">
-                                          • Pendiente (Clic para actuar)
-                                        </span>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
+                    {notification.data?.type === 'growth_summary' && (
+                      <div className="mt-4 p-4 rounded-lg bg-slate-50 border border-slate-100" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex gap-6">
+                          {notification.data.updatesCount > 0 && (
+                            <div className="w-full">
+                              <p className="text-sm font-semibold text-slate-700 mb-2">Conejos Actualizados ({notification.data.updatesCount})</p>
+                              <ul className="text-xs text-slate-600 list-disc list-inside space-y-1">
+                                {notification.data.details?.map((detail: string, i: number) => (
+                                  <li key={i}>{detail}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}

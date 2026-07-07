@@ -1,6 +1,6 @@
 const rabbitRepository = require('./rabbit.repository');
 const raceRepository = require('../race/race.repository');
-const { Assignment, FarmMember } = require('../../domain/models');
+const { Assignment, FarmMember, Growth } = require('../../domain/models');
 const AppError = require('../../errors/AppError');
 const { getPaginationParams, createPaginatedResponse } = require('../../common/helpers/pagination.helper');
 const { generateRandomName } = require('../../common/helpers/names.helper');
@@ -77,7 +77,7 @@ class RabbitService {
 
         const age = this.calculateAge(birthDate);
 
-        return rabbitRepository.create({
+        const rabbit = await rabbitRepository.create({
             code,
             name: name.trim(),
             race: race.trim(),
@@ -90,6 +90,14 @@ class RabbitService {
             galponId,
             profileId
         });
+
+        await Growth.create({
+            rabbitId: rabbit.id,
+            weight: rabbit.weight,
+            recordDate: new Date()
+        });
+
+        return rabbit;
     }
 
     async getRabbit(id, profileId) {
@@ -158,7 +166,44 @@ class RabbitService {
             data.age = this.calculateAge(data.birthDate);
         }
 
-        return rabbitRepository.update(rabbit, data);
+        const oldWeight = parseFloat(rabbit.weight);
+        const newWeight = data.weight !== undefined ? parseFloat(data.weight) : oldWeight;
+
+        const updatedRabbit = await rabbitRepository.update(rabbit, data);
+
+        if (newWeight !== oldWeight) {
+            // Find the most recent growth record
+            const latestGrowth = await Growth.findOne({
+                where: { rabbitId: rabbit.id },
+                order: [['recordDate', 'DESC']]
+            });
+
+            if (latestGrowth) {
+                // Determine if the latest growth record was made this current month
+                const today = new Date();
+                const latestDate = new Date(latestGrowth.recordDate);
+                if (today.getMonth() === latestDate.getMonth() && today.getFullYear() === latestDate.getFullYear()) {
+                    // Update the existing record instead of duplicating
+                    await latestGrowth.update({ weight: newWeight, recordDate: new Date() });
+                } else {
+                    // It's a new month (or first edit in a long time), create a new one
+                    await Growth.create({
+                        rabbitId: rabbit.id,
+                        weight: newWeight,
+                        recordDate: new Date()
+                    });
+                }
+            } else {
+                // If somehow no baseline existed, create one
+                await Growth.create({
+                    rabbitId: rabbit.id,
+                    weight: newWeight,
+                    recordDate: new Date()
+                });
+            }
+        }
+
+        return updatedRabbit;
     }
 
     async deleteRabbit(id, profileId) {
