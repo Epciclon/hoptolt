@@ -15,14 +15,20 @@ class RabbitService {
             limit: 1
         });
         
+        const stripTrailingDigits = (str) => {
+            let i = str.length - 1;
+            while (i >= 0 && str[i] >= '0' && str[i] <= '9') i--;
+            return str.substring(0, i + 1);
+        };
+
         let prefix = '';
         if (existingRabbits && existingRabbits.length > 0) {
             // Reutilizar el prefijo de la misma raza
-            prefix = existingRabbits[0].code.replace(/\d+$/, '').toUpperCase();
+            prefix = stripTrailingDigits(existingRabbits[0].code).toUpperCase();
         } else {
             // Generar nuevo prefijo verificando colisiones en el galpón
             const allRabbits = await rabbitRepository.findByGalpon(galponId, { attributes: ['code'] });
-            const takenPrefixes = new Set(allRabbits.map(r => r.code.replace(/\d+$/, '').toUpperCase()));
+            const takenPrefixes = new Set(allRabbits.map(r => stripTrailingDigits(r.code).toUpperCase()));
             
             const words = raceName.trim().split(/\s+/);
             if (words.length > 1) {

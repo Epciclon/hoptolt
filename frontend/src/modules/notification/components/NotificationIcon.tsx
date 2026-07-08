@@ -190,23 +190,16 @@ export function NotificationIcon() {
           />
           <div className="fixed sm:absolute top-16 sm:top-full left-4 right-4 sm:left-auto sm:right-0 mt-2 w-auto sm:w-96 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-50">
             <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h3 
-                 role="button"
-                 tabIndex={0}
+              <button 
+                 type="button"
                  onClick={() => {
                    router.push('/dashboard/notifications');
                    setIsOpen(false);
                  }}
-                 onKeyDown={(e) => {
-                   if (e.key === 'Enter' || e.key === ' ') {
-                     router.push('/dashboard/notifications');
-                     setIsOpen(false);
-                   }
-                 }}
-                 className="font-semibold text-slate-700 cursor-pointer hover:text-primary-600 transition-colors"
+                 className="font-semibold text-slate-700 cursor-pointer hover:text-primary-600 transition-colors bg-transparent border-none p-0 text-left text-base"
                >
                  Notificaciones
-               </h3>
+               </button>
               {unreadCount > 0 && (
                 <button
                   onClick={() => markAllAsRead()}
