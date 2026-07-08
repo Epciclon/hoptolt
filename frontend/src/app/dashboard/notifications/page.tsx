@@ -250,7 +250,7 @@ export default function NotificationsPage() {
                       </div>
 
                       {notification.data?.type === 'growth_summary' && (
-                        <div className="mt-4 p-4 rounded-lg bg-slate-50 border border-slate-100" role="presentation" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                        <div className="mt-4 p-4 rounded-lg bg-slate-50 border border-slate-100">
                           <div className="flex gap-6">
                             {notification.data.updatesCount > 0 && (
                               <div className="w-full">
@@ -267,7 +267,7 @@ export default function NotificationsPage() {
                       )}
 
                       {notification.type === 'invitation' && (
-                        <div className="mt-4 p-4 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-between" role="presentation" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                        <div className="mt-4 p-4 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-between">
                           <div>
                             <p className="text-sm font-medium text-slate-700">Invitación a unirse a un galpón</p>
                             <p className="text-xs text-slate-500 mt-1">Galpón: {notification.data?.galponName || 'Galpón'}</p>

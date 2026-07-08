@@ -26,16 +26,22 @@ export function AssignmentTable() {
     if (!toUnassign?.rabbitIds?.length) return;
     setProcessing(true);
     
-    // Unassign all selected rabbits
-    await Promise.all(toUnassign.rabbitIds.map(rabbitId => {
-      const assignment = assignments.find(a => a.rabbitId === rabbitId && a.cageId === toUnassign.cageId);
-      return assignment ? unassignRabbit(assignment.id) : Promise.resolve();
-    }));
-    
-    setProcessing(false);
-    setToUnassign(null);
-    setSelectedRabbitsByCage(prev => ({ ...prev, [toUnassign.cageId]: [] }));
-    showToast('Conejos desasignados exitosamente.', 'success');
+    try {
+      // Unassign all selected rabbits
+      await Promise.all(toUnassign.rabbitIds.map(rabbitId => {
+        const assignment = assignments.find(a => a.rabbitId === rabbitId && a.cageId === toUnassign.cageId);
+        return assignment ? unassignRabbit(assignment.id) : Promise.resolve();
+      }));
+      
+      setToUnassign(null);
+      setSelectedRabbitsByCage(prev => ({ ...prev, [toUnassign.cageId]: [] }));
+      showToast('Conejos desasignados exitosamente.', 'success');
+    } catch (err) {
+      console.error('Error al desasignar conejos:', err);
+      showToast('Error al desasignar los conejos.', 'error');
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const handleRabbitSelect = (cageId: number, rabbitId: number) => {
@@ -187,7 +193,10 @@ export function AssignmentTable() {
         onClose={() => setToUnassign(null)}
         onConfirm={handleConfirmUnassign}
         loading={processing}
-        title={`Desasignar ${toUnassign?.rabbitIds?.length || 0} conejo${(toUnassign?.rabbitIds?.length || 0) > 1 ? 's' : ''}`}
+        title={`Desasignar ${toUnassign?.rabbitIds?.length || 0} ${(() => {
+          const count = toUnassign?.rabbitIds?.length || 0;
+          return count === 1 ? 'conejo' : 'conejos';
+        })()}`}
         description={`Los conejos seleccionados serán liberados de la jaula.`}
         confirmLabel="Sí, desasignar"
         variant="danger"

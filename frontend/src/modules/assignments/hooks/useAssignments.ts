@@ -47,13 +47,8 @@ export function useAssignments() {
   });
 
   const unassignRabbit = async (id: number): Promise<boolean> => {
-    try {
-      await unassignRabbitMutation.mutateAsync(id);
-      return true;
-    } catch (err) {
-      console.error(err);
-      return false;
-    }
+    await unassignRabbitMutation.mutateAsync(id);
+    return true;
   };
 
   const assignRabbitsMutation = useMutation({

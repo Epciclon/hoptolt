@@ -160,7 +160,8 @@ export function AssignRabbitForm({ onSuccess, onCancel }: Readonly<AssignRabbitF
 
   const getSubmitLabel = () => {
     if (selectedRabbits.length === 0) return 'Asignar Conejos';
-    return `Asignar ${selectedRabbits.length} conejo${selectedRabbits.length > 1 ? 's' : ''}`;
+    const label = selectedRabbits.length > 1 ? 'conejos' : 'conejo';
+    return `Asignar ${selectedRabbits.length} ${label}`;
   };
 
   return (
