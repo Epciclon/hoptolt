@@ -37,23 +37,19 @@ const inputSanitizer = (req, res, next) => {
             .trim();
     };
 
-    if (req.body) {
-        for (const key of Object.keys(req.body)) {
+    const sanitizeObject = (obj) => {
+        if (!obj) return;
+        for (const key of Object.keys(obj)) {
             if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
-            if (typeof req.body[key] === 'string') {
-                req.body[key] = sanitizeString(req.body[key]);
+            if (typeof obj[key] === 'string') {
+                obj[key] = sanitizeString(obj[key]);
             }
         }
-    }
+    };
 
-    if (req.query) {
-        for (const key of Object.keys(req.query)) {
-            if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
-            if (typeof req.query[key] === 'string') {
-                req.query[key] = sanitizeString(req.query[key]);
-            }
-        }
-    }
+    sanitizeObject(req.body);
+    sanitizeObject(req.query);
+    sanitizeObject(req.params);
 
     next();
 };

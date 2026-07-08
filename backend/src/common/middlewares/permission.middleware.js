@@ -15,7 +15,7 @@ const checkPermission = (moduleName, action) => {
             const { Profile } = require('../../domain/models');
             const profile = await Profile.findByPk(profileId);
             
-            if (!profile || !profile.activeGalponId) {
+            if (!profile?.activeGalponId) {
                 throw new AppError('No tienes un galpón activo seleccionado.', 403);
             }
 
@@ -46,7 +46,7 @@ const checkPermission = (moduleName, action) => {
             // Verificar si tiene el permiso específico
             const permission = membership.permissions.find(p => p.moduleName === moduleName);
             
-            if (!permission || !permission[action]) {
+            if (!permission?.[action]) {
                 throw new AppError(`No tienes permiso para ${action} en el módulo ${moduleName}.`, 403);
             }
 
@@ -74,7 +74,7 @@ const checkModuleAccess = (moduleName) => {
             const { Profile } = require('../../domain/models');
             const profile = await Profile.findByPk(profileId);
             
-            if (!profile || !profile.activeGalponId) {
+            if (!profile?.activeGalponId) {
                 throw new AppError('No tienes un galpón activo seleccionado.', 403);
             }
 

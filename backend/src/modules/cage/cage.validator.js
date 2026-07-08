@@ -1,6 +1,6 @@
 const validateCreateCage = (req, res, next) => {
     const errors = [];
-    const { number, type, capacity, status, galponId } = req.body;
+    const { number, type, capacity, status } = req.body;
 
     if (number === undefined || number === null || number === '') {
         errors.push('El número de jaula es obligatorio.');
@@ -32,7 +32,7 @@ const validateCreateCage = (req, res, next) => {
 
 const validateEditCage = (req, res, next) => {
     const errors = [];
-    const { type, capacity, status, galponId } = req.body;
+    const { type, capacity, status } = req.body;
 
     if (type && !['engorde', 'reproducción'].includes(type)) {
         errors.push('El tipo de jaula debe ser engorde o reproducción.');

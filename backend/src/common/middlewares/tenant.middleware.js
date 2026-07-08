@@ -6,7 +6,7 @@
 const tenantFilter = (req, res, next) => {
     try {
         // Si hay usuario autenticado, inyectar su profileId en req.tenantId
-        if (req.user && req.user.id) {
+        if (req.user?.id) {
             req.tenantId = req.user.id;
         }
         next();

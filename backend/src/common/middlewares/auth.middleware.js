@@ -50,7 +50,7 @@ function clearCache(userId) {
 const authenticate = async (req, res, next) => {
     try {
         const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        if (!authHeader?.startsWith('Bearer ')) {
             throw new AppError('No autenticado. Proporcione un token válido.', 401);
         }
 

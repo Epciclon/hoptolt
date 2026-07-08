@@ -46,7 +46,7 @@ const startReproductionCron = () => {
                 });
             }
         } catch (error) {
-            // Error silencioso en cron
+            console.error('Error en el cron de reproducción:', error.message);
         }
     });
 };

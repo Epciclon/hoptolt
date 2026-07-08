@@ -95,7 +95,7 @@ const requirePermission = (moduleName, action) => {
 
             // Si se solicita acceso a assignments.canRead y el trabajador tiene permisos de control,
             // conceder acceso automáticamente
-            if (moduleName === 'assignments' && action === 'canRead' && (!permission || !permission[action])) {
+            if (moduleName === 'assignments' && action === 'canRead' && !permission?.[action]) {
                 // Buscar si el trabajador tiene cualquier permiso de control
                 const hasControlPermission = await WorkerPermission.findOne({
                     where: {
@@ -110,7 +110,7 @@ const requirePermission = (moduleName, action) => {
                 }
             }
 
-            if (!permission || !permission[action]) {
+            if (!permission?.[action]) {
                 const actionNames = {
                     canRead: 'leer',
                     canCreate: 'crear',

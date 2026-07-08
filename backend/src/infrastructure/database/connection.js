@@ -1,7 +1,7 @@
 const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
-const dialectOptions = process.env.DATABASE_URL && process.env.DATABASE_URL.includes('supabase')
+const dialectOptions = process.env.DATABASE_URL?.includes('supabase')
     ? { ssl: { rejectUnauthorized: false } }
     : {};
 

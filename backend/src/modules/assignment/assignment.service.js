@@ -49,6 +49,24 @@ class AssignmentService {
         return warnings;
     }
 
+    async validateAndGetRabbits(rabbitIds, galponId) {
+        const rabbits = [];
+        for (const id of rabbitIds) {
+            const rabbit = await rabbitRepository.findById(id);
+            if (!rabbit) throw new AppError(`El conejo con ID ${id} no existe.`, 404);
+
+            if (rabbit.galponId !== galponId) {
+                throw new AppError(`El conejo con ID ${id} no pertenece al galpón activo.`, 400);
+            }
+
+            const existingAssignment = await assignmentRepository.findActiveByRabbitId(id);
+            if (existingAssignment) throw new AppError(`El conejo con ID ${id} ya está asignado a una jaula.`, 400);
+
+            rabbits.push(rabbit);
+        }
+        return rabbits;
+    }
+
     async assignRabbits(data, galponId) {
         const { cageId, rabbitIds } = data;
 
@@ -67,20 +85,7 @@ class AssignmentService {
             throw new AppError('Solo se pueden asignar conejos a jaulas operativas.', 400);
         }
 
-        const rabbits = [];
-        for (const id of rabbitIds) {
-            const rabbit = await rabbitRepository.findById(id);
-            if (!rabbit) throw new AppError(`El conejo con ID ${id} no existe.`, 404);
-
-            if (rabbit.galponId !== galponId) {
-                throw new AppError(`El conejo con ID ${id} no pertenece al galpón activo.`, 400);
-            }
-
-            const existingAssignment = await assignmentRepository.findActiveByRabbitId(id);
-            if (existingAssignment) throw new AppError(`El conejo con ID ${id} ya está asignado a una jaula.`, 400);
-
-            rabbits.push(rabbit);
-        }
+        const rabbits = await this.validateAndGetRabbits(rabbitIds, galponId);
 
         const currentCount = await assignmentRepository.countActiveByCageId(cageId);
         if (currentCount + rabbitIds.length > cage.capacity) {
@@ -146,8 +151,8 @@ class AssignmentService {
     async getAvailableRabbits(galponId) {
         const allRabbits = await rabbitRepository.findByGalpon(galponId);
         const assignedRabbits = await assignmentRepository.findByGalponId(galponId);
-        const assignedIds = assignedRabbits.map(a => a.rabbitId);
-        return allRabbits.filter(r => !assignedIds.includes(r.id));
+        const assignedIds = new Set(assignedRabbits.map(a => a.rabbitId));
+        return allRabbits.filter(r => !assignedIds.has(r.id));
     }
 
     async getOperativeCages(galponId) {

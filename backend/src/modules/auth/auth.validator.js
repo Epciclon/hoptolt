@@ -2,15 +2,11 @@
  * Validadores para los endpoints de autenticación.
  */
 
-const validateRegister = (req, res, next) => {
-    const errors = [];
-    const { username, email, fullName, password, confirmPassword } = req.body;
-
-    // Username: letras, números, guión bajo, mínimo 4 caracteres
+const validateUsername = (username, errors) => {
     if (!username || username.trim() === '') {
         errors.push('El nombre de usuario es obligatorio.');
     } else {
-        const usernameRegex = /^[a-zA-Z0-9_]+$/;
+        const usernameRegex = /^\w+$/;
         if (!usernameRegex.test(username.trim())) {
             errors.push('El nombre de usuario solo puede contener letras, números y guión bajo (_).');
         } else if (username.trim().length < 4) {
@@ -19,8 +15,9 @@ const validateRegister = (req, res, next) => {
             errors.push('El nombre de usuario no puede superar 50 caracteres.');
         }
     }
+};
 
-    // Email
+const validateEmail = (email, errors) => {
     if (!email || email.trim() === '') {
         errors.push('El correo electrónico es obligatorio.');
     } else {
@@ -29,8 +26,9 @@ const validateRegister = (req, res, next) => {
             errors.push('El correo electrónico no tiene un formato válido.');
         }
     }
+};
 
-    // Nombre completo: solo letras y espacios
+const validateFullName = (fullName, errors) => {
     if (!fullName || fullName.trim() === '') {
         errors.push('El nombre completo es obligatorio.');
     } else {
@@ -39,6 +37,15 @@ const validateRegister = (req, res, next) => {
             errors.push('El nombre completo solo puede contener letras y espacios.');
         }
     }
+};
+
+const validateRegister = (req, res, next) => {
+    const errors = [];
+    const { username, email, fullName, password, confirmPassword } = req.body;
+
+    validateUsername(username, errors);
+    validateEmail(email, errors);
+    validateFullName(fullName, errors);
 
     // Contraseña
     if (!password || password.length < 6) {

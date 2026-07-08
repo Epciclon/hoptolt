@@ -129,166 +129,8 @@ class AuthService {
         // 3. Ejecutar borrado físico en cascada dentro de una transacción
         const t = await sequelize.transaction();
         try {
-            // Obtener todos los galpones que este perfil posee (rol owner)
-            const ownedGalpones = await Galpon.findAll({ 
-                where: { profileId },
-                transaction: t
-            });
-            const ownedGalponIds = ownedGalpones.map(g => g.id);
-
-            // Obtener todas las jaulas de sus galpones
-            let ownedCageIds = [];
-            if (ownedGalponIds.length > 0) {
-                const cages = await Cage.findAll({
-                    where: { galponId: { [Op.in]: ownedGalponIds } },
-                    transaction: t
-                });
-                ownedCageIds = cages.map(c => c.id);
-            }
-
-            // Obtener todos los conejos de sus galpones
-            let ownedRabbitIds = [];
-            if (ownedGalponIds.length > 0) {
-                const rabbits = await Rabbit.findAll({
-                    where: { galponId: { [Op.in]: ownedGalponIds } },
-                    transaction: t
-                });
-                ownedRabbitIds = rabbits.map(r => r.id);
-            }
-
-            // A. Eliminar registros de actividad/alimentación/sanidad relacionados con sus jaulas y conejos
-            // 1. Feeding (alimentación)
-            if (ownedCageIds.length > 0) {
-                await Feeding.destroy({ where: { cageId: { [Op.in]: ownedCageIds } }, transaction: t });
-            }
-            // 2. Vaccination (vacunación)
-            if (ownedRabbitIds.length > 0) {
-                await Vaccination.destroy({ where: { rabbitId: { [Op.in]: ownedRabbitIds } }, transaction: t });
-            }
-            // 3. Deworming (desparasitación)
-            if (ownedRabbitIds.length > 0) {
-                await Deworming.destroy({ where: { rabbitId: { [Op.in]: ownedRabbitIds } }, transaction: t });
-            }
-            // 4. Growth (pesajes)
-            if (ownedRabbitIds.length > 0) {
-                await Growth.destroy({ where: { rabbitId: { [Op.in]: ownedRabbitIds } }, transaction: t });
-            }
-            // 5. Mortality (mortalidad)
-            await Mortality.destroy({
-                where: {
-                    [Op.or]: [
-                        { profileId },
-                        ownedRabbitIds.length > 0 ? { rabbitId: { [Op.in]: ownedRabbitIds } } : null
-                    ].filter(Boolean)
-                },
-                transaction: t
-            });
-            // 6. Cleaning (limpieza)
-            await Cleaning.destroy({
-                where: {
-                    [Op.or]: [
-                        { profileId },
-                        ownedCageIds.length > 0 ? { cageId: { [Op.in]: ownedCageIds } } : null
-                    ].filter(Boolean)
-                },
-                transaction: t
-            });
-            // 7. Genealogy (genealogía)
-            if (ownedRabbitIds.length > 0) {
-                await Genealogy.destroy({
-                    where: {
-                        [Op.or]: [
-                            { rabbitId: { [Op.in]: ownedRabbitIds } },
-                            { fatherId: { [Op.in]: ownedRabbitIds } },
-                            { motherId: { [Op.in]: ownedRabbitIds } }
-                        ]
-                    },
-                    transaction: t
-                });
-            }
-            // 8. Reproduction (reproducción)
-            if (ownedRabbitIds.length > 0) {
-                await Reproduction.destroy({
-                    where: {
-                        [Op.or]: [
-                            { femaleId: { [Op.in]: ownedRabbitIds } },
-                            { maleId: { [Op.in]: ownedRabbitIds } }
-                        ]
-                    },
-                    transaction: t
-                });
-            }
-            // 9. Assignment (asignaciones de conejo a jaula)
-            if (ownedRabbitIds.length > 0 || ownedCageIds.length > 0) {
-                await Assignment.destroy({
-                    where: {
-                        [Op.or]: [
-                            ownedRabbitIds.length > 0 ? { rabbitId: { [Op.in]: ownedRabbitIds } } : null,
-                            ownedCageIds.length > 0 ? { cageId: { [Op.in]: ownedCageIds } } : null
-                        ].filter(Boolean)
-                    },
-                    transaction: t
-                });
-            }
-
-            // B. Eliminar conejos, jaulas y razas
-            if (ownedRabbitIds.length > 0) {
-                await Rabbit.destroy({ where: { id: { [Op.in]: ownedRabbitIds } }, transaction: t });
-            }
-            if (ownedCageIds.length > 0) {
-                await Cage.destroy({ where: { id: { [Op.in]: ownedCageIds } }, transaction: t });
-            }
-            // Eliminar razas asociadas
-            await Race.destroy({
-                where: {
-                    [Op.or]: [
-                        { profileId },
-                        ownedGalponIds.length > 0 ? { galponId: { [Op.in]: ownedGalponIds } } : null
-                    ].filter(Boolean)
-                },
-                transaction: t
-            });
-
-            // C. Eliminar FarmMembers y sus dependencias (WorkerPermission, WorkerCage)
-            // Membresías asociadas a los galpones propios O membresías del usuario como trabajador en otros galpones
-            const memberships = await FarmMember.findAll({
-                where: {
-                    [Op.or]: [
-                        { profileId },
-                        ownedGalponIds.length > 0 ? { galponId: { [Op.in]: ownedGalponIds } } : null
-                    ].filter(Boolean)
-                },
-                transaction: t
-            });
-            const membershipIds = memberships.map(m => m.id);
-
-            if (membershipIds.length > 0) {
-                // Eliminar permisos
-                await WorkerPermission.destroy({ where: { farmMemberId: { [Op.in]: membershipIds } }, transaction: t });
-                // Eliminar jaulas asignadas a trabajadores
-                await WorkerCage.destroy({ where: { farmMemberId: { [Op.in]: membershipIds } }, transaction: t });
-                // Eliminar miembros
-                await FarmMember.destroy({ where: { id: { [Op.in]: membershipIds } }, transaction: t });
-            }
-
-            // D. Eliminar invitaciones, notificaciones y logs de auditoría
-            await Invitation.destroy({
-                where: {
-                    [Op.or]: [
-                        { invitedBy: profileId },
-                        ownedGalponIds.length > 0 ? { galponId: { [Op.in]: ownedGalponIds } } : null
-                    ].filter(Boolean)
-                },
-                transaction: t
-            });
-            await Notification.destroy({ where: { profileId }, transaction: t });
-            await AuditLog.destroy({ where: { profileId }, transaction: t });
-
-            // E. Eliminar Galpones propios
-            if (ownedGalponIds.length > 0) {
-                await Galpon.destroy({ where: { id: { [Op.in]: ownedGalponIds } }, transaction: t });
-            }
-
+            await this._performCascadeDelete(profileId, t);
+            
             // F. Eliminar Profile local
             await Profile.destroy({ where: { id: profileId }, transaction: t });
 
@@ -302,6 +144,151 @@ class AuthService {
         } catch (error) {
             await t.rollback();
             throw error;
+        }
+    }
+
+    async _performCascadeDelete(profileId, t) {
+        const ownedGalpones = await Galpon.findAll({ 
+            where: { profileId },
+            transaction: t
+        });
+        const ownedGalponIds = ownedGalpones.map(g => g.id);
+
+        let ownedCageIds = [];
+        if (ownedGalponIds.length > 0) {
+            const cages = await Cage.findAll({
+                where: { galponId: { [Op.in]: ownedGalponIds } },
+                transaction: t
+            });
+            ownedCageIds = cages.map(c => c.id);
+        }
+
+        let ownedRabbitIds = [];
+        if (ownedGalponIds.length > 0) {
+            const rabbits = await Rabbit.findAll({
+                where: { galponId: { [Op.in]: ownedGalponIds } },
+                transaction: t
+            });
+            ownedRabbitIds = rabbits.map(r => r.id);
+        }
+
+        if (ownedCageIds.length > 0) {
+            await Feeding.destroy({ where: { cageId: { [Op.in]: ownedCageIds } }, transaction: t });
+        }
+        if (ownedRabbitIds.length > 0) {
+            await Vaccination.destroy({ where: { rabbitId: { [Op.in]: ownedRabbitIds } }, transaction: t });
+            await Deworming.destroy({ where: { rabbitId: { [Op.in]: ownedRabbitIds } }, transaction: t });
+            await Growth.destroy({ where: { rabbitId: { [Op.in]: ownedRabbitIds } }, transaction: t });
+        }
+
+        await Mortality.destroy({
+            where: {
+                [Op.or]: [
+                    { profileId },
+                    ownedRabbitIds.length > 0 ? { rabbitId: { [Op.in]: ownedRabbitIds } } : null
+                ].filter(Boolean)
+            },
+            transaction: t
+        });
+
+        await Cleaning.destroy({
+            where: {
+                [Op.or]: [
+                    { profileId },
+                    ownedCageIds.length > 0 ? { cageId: { [Op.in]: ownedCageIds } } : null
+                ].filter(Boolean)
+            },
+            transaction: t
+        });
+
+        if (ownedRabbitIds.length > 0) {
+            await Genealogy.destroy({
+                where: {
+                    [Op.or]: [
+                        { rabbitId: { [Op.in]: ownedRabbitIds } },
+                        { fatherId: { [Op.in]: ownedRabbitIds } },
+                        { motherId: { [Op.in]: ownedRabbitIds } }
+                    ]
+                },
+                transaction: t
+            });
+            await Reproduction.destroy({
+                where: {
+                    [Op.or]: [
+                        { femaleId: { [Op.in]: ownedRabbitIds } },
+                        { maleId: { [Op.in]: ownedRabbitIds } }
+                    ]
+                },
+                transaction: t
+            });
+            await Assignment.destroy({
+                where: {
+                    [Op.or]: [
+                        { rabbitId: { [Op.in]: ownedRabbitIds } }
+                    ]
+                },
+                transaction: t
+            });
+        }
+        if (ownedCageIds.length > 0) {
+            await Assignment.destroy({
+                where: {
+                    [Op.or]: [
+                        { cageId: { [Op.in]: ownedCageIds } }
+                    ]
+                },
+                transaction: t
+            });
+        }
+
+        if (ownedRabbitIds.length > 0) {
+            await Rabbit.destroy({ where: { id: { [Op.in]: ownedRabbitIds } }, transaction: t });
+        }
+        if (ownedCageIds.length > 0) {
+            await Cage.destroy({ where: { id: { [Op.in]: ownedCageIds } }, transaction: t });
+        }
+
+        await Race.destroy({
+            where: {
+                [Op.or]: [
+                    { profileId },
+                    ownedGalponIds.length > 0 ? { galponId: { [Op.in]: ownedGalponIds } } : null
+                ].filter(Boolean)
+            },
+            transaction: t
+        });
+
+        const memberships = await FarmMember.findAll({
+            where: {
+                [Op.or]: [
+                    { profileId },
+                    ownedGalponIds.length > 0 ? { galponId: { [Op.in]: ownedGalponIds } } : null
+                ].filter(Boolean)
+            },
+            transaction: t
+        });
+        const membershipIds = memberships.map(m => m.id);
+
+        if (membershipIds.length > 0) {
+            await WorkerPermission.destroy({ where: { farmMemberId: { [Op.in]: membershipIds } }, transaction: t });
+            await WorkerCage.destroy({ where: { farmMemberId: { [Op.in]: membershipIds } }, transaction: t });
+            await FarmMember.destroy({ where: { id: { [Op.in]: membershipIds } }, transaction: t });
+        }
+
+        await Invitation.destroy({
+            where: {
+                [Op.or]: [
+                    { invitedBy: profileId },
+                    ownedGalponIds.length > 0 ? { galponId: { [Op.in]: ownedGalponIds } } : null
+                ].filter(Boolean)
+            },
+            transaction: t
+        });
+        await Notification.destroy({ where: { profileId }, transaction: t });
+        await AuditLog.destroy({ where: { profileId }, transaction: t });
+
+        if (ownedGalponIds.length > 0) {
+            await Galpon.destroy({ where: { id: { [Op.in]: ownedGalponIds } }, transaction: t });
         }
     }
 }
