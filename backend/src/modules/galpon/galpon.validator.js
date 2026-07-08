@@ -41,18 +41,22 @@ const checkCapacityAndFood = (totalCapacity, foodTypes, errors) => {
     }
 };
 
+const validateSingleVaccine = (vaccine, errors) => {
+    if (!vaccine.name || vaccine.name.trim() === '') {
+        errors.push('Cada vacuna debe tener un nombre.');
+    }
+    if (!vaccine.period || !Number.isInteger(Number(vaccine.period)) || Number(vaccine.period) <= 0) {
+        errors.push('Cada vacuna debe tener un período válido (número entero positivo).');
+    }
+};
+
 const checkVaccines = (vaccines, errors) => {
     if (!Array.isArray(vaccines) || vaccines.length === 0) {
         errors.push('Debe seleccionar al menos una vacuna.');
-    } else {
-        for (const vaccine of vaccines) {
-            if (!vaccine.name || vaccine.name.trim() === '') {
-                errors.push('Cada vacuna debe tener un nombre.');
-            }
-            if (!vaccine.period || !Number.isInteger(Number(vaccine.period)) || Number(vaccine.period) <= 0) {
-                errors.push('Cada vacuna debe tener un período válido (número entero positivo).');
-            }
-        }
+        return;
+    }
+    for (const vaccine of vaccines) {
+        validateSingleVaccine(vaccine, errors);
     }
 };
 
@@ -131,19 +135,15 @@ const checkEditCapacityAndFood = (totalCapacity, foodTypes, errors) => {
 };
 
 const checkEditVaccines = (vaccines, errors) => {
-    if (vaccines !== undefined && Array.isArray(vaccines)) {
-        if (vaccines.length === 0) {
-            errors.push('Debe seleccionar al menos una vacuna.');
-        } else {
-            for (const vaccine of vaccines) {
-                if (!vaccine.name || vaccine.name.trim() === '') {
-                    errors.push('Cada vacuna debe tener un nombre.');
-                }
-                if (!vaccine.period || !Number.isInteger(Number(vaccine.period)) || Number(vaccine.period) <= 0) {
-                    errors.push('Cada vacuna debe tener un período válido (número entero positivo).');
-                }
-            }
-        }
+    if (vaccines === undefined || !Array.isArray(vaccines)) return;
+    
+    if (vaccines.length === 0) {
+        errors.push('Debe seleccionar al menos una vacuna.');
+        return;
+    }
+    
+    for (const vaccine of vaccines) {
+        validateSingleVaccine(vaccine, errors);
     }
 };
 

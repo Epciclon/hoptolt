@@ -37,9 +37,15 @@ export function Table<T>({
     const val = (row as Record<string, unknown>)[col.key];
     if (val === null || val === undefined) return '-';
     if (typeof val === 'string') return val;
-    if (typeof val === 'number' || typeof val === 'boolean') return String(val);
-    if (typeof val === 'object') return JSON.stringify(val);
-    return String(val);
+    if (typeof val === 'number' || typeof val === 'boolean' || typeof val === 'bigint') return val.toString();
+    if (typeof val === 'object') {
+      try {
+        return JSON.stringify(val);
+      } catch {
+        return '-';
+      }
+    }
+    return '-';
   };
 
   const renderBody = () => {

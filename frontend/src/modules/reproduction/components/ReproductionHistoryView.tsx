@@ -205,7 +205,7 @@ function getFilteredMortalities(mortalities: any[], reproductions: Reproduction[
     };
   });
 }
-function MortalityDetails({ record: selectedRecord }: { record: Mortality & { type: 'mortality'; maleCode?: string | null; maleName?: string | null; maleRace?: string | null; } }) {
+function MortalityDetails({ record: selectedRecord }: Readonly<{ record: Mortality & { type: 'mortality'; maleCode?: string | null; maleName?: string | null; maleRace?: string | null; } }>) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
@@ -310,7 +310,7 @@ function MortalityDetails({ record: selectedRecord }: { record: Mortality & { ty
   );
 }
 
-function ReproductionDetails({ record: selectedRecord }: { record: Reproduction & { type: 'reproduction' } }) {
+function ReproductionDetails({ record: selectedRecord }: Readonly<{ record: Reproduction & { type: 'reproduction' } }>) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
