@@ -21,7 +21,7 @@ const paddingMap = {
   lg:   'p-6 sm:p-8',
 };
 
-export function Card({ children, className, padding = 'md' }: CardProps) {
+export function Card({ children, className, padding = 'md' }: Readonly<CardProps>) {
   return (
     <div className={cn('bg-white rounded-xl shadow-card border border-slate-100', paddingMap[padding], className)}>
       {children}
@@ -29,7 +29,7 @@ export function Card({ children, className, padding = 'md' }: CardProps) {
   );
 }
 
-export function CardHeader({ title, subtitle, actions, className }: CardHeaderProps) {
+export function CardHeader({ title, subtitle, actions, className }: Readonly<CardHeaderProps>) {
   return (
     <div className={cn('flex items-start justify-between gap-4 mb-5', className)}>
       <div>

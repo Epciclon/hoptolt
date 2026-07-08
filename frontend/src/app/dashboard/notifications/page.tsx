@@ -207,16 +207,14 @@ export default function NotificationsPage() {
             return (
               <div className="divide-y divide-slate-100">
                 {filteredNotifications.map((notification) => (
-                  <div 
+                  <button 
                     key={notification.id}
-                    role="button"
+                    type="button"
                     className={cn(
-                      "p-6 flex items-start gap-4 hover:bg-slate-50 transition-colors group cursor-pointer",
+                      "w-full text-left p-6 flex items-start gap-4 hover:bg-slate-50 transition-colors group cursor-pointer",
                       !notification.read && "bg-blue-50/30"
                     )}
                     onClick={() => handleNotificationClick(notification)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleNotificationClick(notification); }}
-                    tabIndex={0}
                   >
                     <div className={cn('w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold shrink-0', getTypeColor(notification.type))}>
                       {getIconByType(notification.type)}
@@ -293,7 +291,7 @@ export default function NotificationsPage() {
                         </div>
                       )}
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             );

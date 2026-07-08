@@ -26,7 +26,7 @@ interface PermissionGuardProps {
   requiredPermission?: string;
 }
 
-export function PermissionGuard({ children, requiredPermission }: PermissionGuardProps) {
+export function PermissionGuard({ children, requiredPermission }: Readonly<PermissionGuardProps>) {
   const router = useRouter();
   const pathname = usePathname();
   const { hasPermission, role, loading } = usePermissions();

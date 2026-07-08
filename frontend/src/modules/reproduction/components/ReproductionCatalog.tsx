@@ -3,9 +3,9 @@
 import { useReproduction } from '../hooks/useReproduction';
 import { FilterBar } from '@/shared/ui/FilterBar';
 import type { Reproduction } from '../types/reproduction.types';
-import { Button, ConfirmDialog, Dialog, Select, RabbitSelectableCard, CageGroupCard } from '@/shared/ui';
+import { Dialog, Select, RabbitSelectableCard, CageGroupCard, Button } from '@/shared/ui';
 import { useState } from 'react';
-import { Pencil, Trash2, Calendar } from 'lucide-react';
+import { Trash2, Calendar } from 'lucide-react';
 import { ReproductionForm } from './ReproductionForm';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { Input } from '@/shared/ui/Input';
@@ -16,7 +16,7 @@ interface ReproductionCatalogProps {
   onSuccess?: () => void;
 }
 
-export function ReproductionCatalog({ reproductions, onSuccess }: ReproductionCatalogProps) {
+export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<ReproductionCatalogProps>) {
   const { cancelReproduction, registerBirth } = useReproduction();
   const { showToast } = useToast();
   const [toCancel, setToCancel] = useState<Reproduction | null>(null);
@@ -27,7 +27,6 @@ export function ReproductionCatalog({ reproductions, onSuccess }: ReproductionCa
   const [toRegisterBirth, setToRegisterBirth] = useState<Reproduction | null>(null);
   const [actualBirthDate, setActualBirthDate] = useState<string>('');
   const [registeringBirth, setRegisteringBirth] = useState(false);
-  const [bornKits, setBornKits] = useState<number | ''>('');
 
   const [editingReproduction, setEditingReproduction] = useState<Reproduction | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -56,7 +55,7 @@ export function ReproductionCatalog({ reproductions, onSuccess }: ReproductionCa
   };
 
   const handleConfirmCancel = async () => {
-    if (!toCancel || !toCancel.id || !cancelReason) return;
+    if (!toCancel?.id || !cancelReason) return;
     
     let action: 'delete' | 'fail' = 'delete';
     let finalReason = cancelReason;
@@ -259,10 +258,9 @@ export function ReproductionCatalog({ reproductions, onSuccess }: ReproductionCa
                     <p className="text-slate-500 mb-1">Fecha de monta</p>
                     <p className="font-medium text-slate-700">{formatDateTime(reproduction.mountDate)}</p>
                   </div>
-                  <div 
-                    role="button"
-                    tabIndex={0}
-                    className={`bg-slate-50/50 border border-slate-100 p-2 rounded flex justify-between items-center ${
+                  <button 
+                    type="button"
+                    className={`bg-slate-50/50 border border-slate-100 p-2 rounded flex justify-between items-center w-full text-left ${
                       isExpanded 
                         ? 'cursor-pointer hover:bg-primary-50 hover:border-primary-200 transition-colors group' 
                         : ''
@@ -273,27 +271,13 @@ export function ReproductionCatalog({ reproductions, onSuccess }: ReproductionCa
                       setEditingReproduction(reproduction);
                       setShowEditModal(true);
                     }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        if (!isExpanded) return;
-                        e.stopPropagation();
-                        setEditingReproduction(reproduction);
-                        setShowEditModal(true);
-                      }
-                    }}
-
-                    title={isExpanded ? "Clic para editar fechas" : ""}
                   >
-                    <div className="flex items-center gap-1.5">
-                      <p className={`text-slate-500 ${isExpanded ? 'group-hover:text-primary-600' : ''}`}>
-                        Fecha estimada de parto
-                      </p>
-                      {isExpanded && <Calendar size={14} className="opacity-40 group-hover:opacity-100 text-primary-500 transition-opacity" />}
-                    </div>
-                    <p className={`font-medium ${canGiveBirth ? 'text-amber-600' : 'text-slate-700'} ${isExpanded ? 'group-hover:text-primary-700' : ''}`}>
-                      {formatDateTime(reproduction.estimatedBirthDate)}
+                    <p className="text-slate-500 mb-1 flex items-center gap-1">
+                      <Calendar size={12} className="opacity-70" />
+                      Fecha est. de parto
                     </p>
-                  </div>
+                    <p className={`font-bold text-sm ${canGiveBirth ? 'text-amber-600' : 'text-slate-700'}`}>{formatDateTime(reproduction.estimatedBirthDate)}</p>
+                  </button>
                   <div className={`p-2 rounded flex justify-between items-center border ${
                     nearBirth
                       ? 'bg-orange-50 border-orange-200'
@@ -314,7 +298,6 @@ export function ReproductionCatalog({ reproductions, onSuccess }: ReproductionCa
 
                 {isExpanded && (
                   <div 
-                    role="presentation"
                     className="mt-4 flex flex-col gap-2 animate-in fade-in slide-in-from-top-1 duration-150"
                     onClick={(e) => e.stopPropagation()}
                     onKeyDown={(e) => e.stopPropagation()}
@@ -362,7 +345,10 @@ export function ReproductionCatalog({ reproductions, onSuccess }: ReproductionCa
           setCancelReason('');
           setCancelReasonOther('');
         }}
-        title={`Cancelar Gestación: ${toCancel?.femaleCode}${toCancel?.femaleName ? ` — ${toCancel.femaleName}` : ''}`}
+        title={(() => {
+          const name = toCancel?.femaleName ? ` — ${toCancel.femaleName}` : '';
+          return `Cancelar Gestación: ${toCancel?.femaleCode ?? ''}${name}`;
+        })()}
       >
         <div className="p-4">
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4">
@@ -425,7 +411,10 @@ export function ReproductionCatalog({ reproductions, onSuccess }: ReproductionCa
           setToRegisterBirth(null);
           setActualBirthDate('');
         }}
-        title={`Registrar Parto: ${toRegisterBirth?.femaleCode}${toRegisterBirth?.femaleName ? ` — ${toRegisterBirth.femaleName}` : ''}`}
+        title={(() => {
+          const name = toRegisterBirth?.femaleName ? ` — ${toRegisterBirth.femaleName}` : '';
+          return `Registrar Parto: ${toRegisterBirth?.femaleCode ?? ''}${name}`;
+        })()}
       >
         <form onSubmit={handleRegisterBirth} className="p-4">
           <p className="text-sm text-slate-600 mb-4">
@@ -465,7 +454,10 @@ export function ReproductionCatalog({ reproductions, onSuccess }: ReproductionCa
           setShowEditModal(false);
           setEditingReproduction(null);
         }}
-        title={`Editar monta de ${editingReproduction?.femaleCode}${editingReproduction?.femaleName ? ` — ${editingReproduction.femaleName}` : ''}`}
+        title={(() => {
+          const name = editingReproduction?.femaleName ? ` — ${editingReproduction.femaleName}` : '';
+          return `Editar monta de ${editingReproduction?.femaleCode ?? ''}${name}`;
+        })()}
         size="xl"
       >
         {editingReproduction && (

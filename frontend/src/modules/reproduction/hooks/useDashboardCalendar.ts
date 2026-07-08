@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { reproductionService } from '../services/reproduction.service';
-import type { Reproduction } from '../types/reproduction.types';
+
 
 export function useDashboardCalendar() {
   const [activeParams, setActiveParams] = useState<{ year: number; month: number; type: string } | null>(null);
@@ -48,6 +48,7 @@ export function useDashboardCalendar() {
     try {
       return await reproductionService.getByDay(year, month, day);
     } catch (err) {
+      console.error('Error fetching calendar by day:', err);
       return [];
     }
   }, []);
@@ -56,6 +57,7 @@ export function useDashboardCalendar() {
     try {
       return await reproductionService.getById(id);
     } catch (err) {
+      console.error('Error fetching reproduction by id:', err);
       return null;
     }
   }, []);

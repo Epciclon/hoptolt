@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Home, Box, Dna, Rabbit, Network, ArrowLeftRight,
-  Utensils, Syringe, Pill, TrendingUp, Sparkles, Skull,
-  Heart, Users, FileText, BookOpen, Building2, ChevronDown,
-  LogOut, User, Menu, X, ChevronLeft,
+  Utensils, Syringe, Pill, Sparkles, Skull,
+  Heart, Users, FileText, Building2, ChevronDown,
+  User, Menu,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
@@ -77,7 +77,7 @@ interface SidebarProps {
   onToggle: () => void;
 }
 
-export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export function Sidebar({ collapsed, onToggle }: Readonly<SidebarProps>) {
   const pathname = usePathname();
   const [openGroups, setOpenGroups] = useState<string[]>(['Gestionar Crianza']);
   const { hasPermission, role, loading } = usePermissions();

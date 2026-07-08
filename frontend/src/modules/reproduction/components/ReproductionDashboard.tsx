@@ -12,7 +12,7 @@ import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 
 export function ReproductionDashboard() {
   const { activeTab, handleTabChange, isInitialized } = usePersistentTab('reproduction', 'montas');
-  const { reproductions, loading, fetchReproductions } = useReproduction();
+  const { reproductions, fetchReproductions } = useReproduction();
   const { user } = useAuthContext();
   const isOwner = user?.role === 'owner';
 

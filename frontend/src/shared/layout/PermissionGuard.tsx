@@ -11,7 +11,7 @@ interface PermissionGuardProps {
   requireOwner?: boolean;
 }
 
-export function PermissionGuard({ children, moduleName, requireOwner = false }: PermissionGuardProps) {
+export function PermissionGuard({ children, moduleName, requireOwner = false }: Readonly<PermissionGuardProps>) {
   const { hasPermission, loading } = usePermissions();
   const { user } = useAuthContext();
   const isOwner = user?.role === 'owner';

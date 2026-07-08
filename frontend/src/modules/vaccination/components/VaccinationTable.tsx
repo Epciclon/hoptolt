@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { Vaccination } from '../types/vaccination.types';
 import { useVaccination } from '../hooks/useVaccination';
-import { LoadingMessage, Dialog, Badge } from '@/shared/ui';
+import { LoadingMessage, Dialog } from '@/shared/ui';
 import { Table, Column } from '@/shared/ui/Table';
 
 export function VaccinationTable() {
@@ -32,12 +32,12 @@ export function VaccinationTable() {
       if (!vConfig) return { name: vName, nextDate: null, diffDays: null, period: null };
 
       const date = new Date(vaccination.vaccinationDate);
-      const nextDate = new Date(date.getTime());
+      const nextDate = new Date(date);
       nextDate.setDate(nextDate.getDate() + vConfig.period);
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const nextDateMid = new Date(nextDate.getTime());
+      const nextDateMid = new Date(nextDate);
       nextDateMid.setHours(0, 0, 0, 0);
 
       const diffTime = nextDateMid.getTime() - today.getTime();
@@ -179,28 +179,33 @@ export function VaccinationTable() {
               <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 mt-4">
                 <p className="text-xs text-slate-500 font-medium mb-3">Seguimiento de Vacuna Aplicada</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {nextVacs.length > 0 ? nextVacs.map((vac, idx) => (
-                    <div key={idx} className="flex flex-col leading-tight border border-slate-100 rounded bg-white p-2 justify-center">
+                  {nextVacs.length > 0 ? nextVacs.map((vac) => (
+                    <div key={vac.name} className="flex flex-col leading-tight border border-slate-100 rounded bg-white p-2 justify-center">
                       <span className="text-xs font-semibold text-slate-700">{vac.name}</span>
-                      {vac.nextDate ? (
-                        vac.diffDays! > 0 ? (
-                          <span className="text-[11px] text-slate-500 font-medium mt-1">
-                            Faltan {vac.diffDays} día{vac.diffDays !== 1 ? 's' : ''}
-                          </span>
-                        ) : vac.diffDays === 0 ? (
-                          <span className="text-[11px] text-slate-600 font-medium mt-1">
-                            Toca hoy
-                          </span>
-                        ) : (
+                      {(() => {
+                        if (!vac.nextDate) {
+                          return <span className="text-[11px] text-slate-500 font-medium mt-1">Sin período</span>;
+                        }
+                        if (vac.diffDays! > 0) {
+                          return (
+                            <span className="text-[11px] text-slate-500 font-medium mt-1">
+                              Faltan {vac.diffDays} día{vac.diffDays !== 1 ? 's' : ''}
+                            </span>
+                          );
+                        }
+                        if (vac.diffDays === 0) {
+                          return (
+                            <span className="text-[11px] text-slate-600 font-medium mt-1">
+                              Toca hoy
+                            </span>
+                          );
+                        }
+                        return (
                           <span className="text-[11px] text-slate-500 font-medium mt-1">
                             Atrasada {Math.abs(vac.diffDays!)} día{Math.abs(vac.diffDays!) !== 1 ? 's' : ''}
                           </span>
-                        )
-                      ) : (
-                        <span className="text-[11px] text-slate-500 font-medium mt-1">
-                          Sin período
-                        </span>
-                      )}
+                        );
+                      })()}
                     </div>
                   )) : (
                     <p className="text-sm text-slate-500">No hay datos de período configurados</p>

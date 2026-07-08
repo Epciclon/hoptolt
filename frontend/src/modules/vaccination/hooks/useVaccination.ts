@@ -3,8 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { vaccinationService } from '../services/vaccination.service';
 import { assignmentService } from '@/modules/assignments/services/assignment.service';
-import type { Vaccination, GalponVaccine } from '../types/vaccination.types';
-import type { AssignedRabbit } from '@/modules/assignments/types/assignment.types';
+
 
 export function useVaccination() {
   const queryClient = useQueryClient();
@@ -41,9 +40,12 @@ export function useVaccination() {
   });
 
   const loading = loadingVaccinations || loadingRabbits || loadingVaccines;
-  const error = errorVaccinations ? (errorVaccinations as Error).message :
-    (errorRabbits ? (errorRabbits as Error).message :
-      (errorVaccines ? (errorVaccines as Error).message : null));
+  const error = (() => {
+    if (errorVaccinations) return (errorVaccinations as Error).message;
+    if (errorRabbits) return (errorRabbits as Error).message;
+    if (errorVaccines) return (errorVaccines as Error).message;
+    return null;
+  })();
 
   // Mutation: Create Vaccination
   const createVaccinationMutation = useMutation({

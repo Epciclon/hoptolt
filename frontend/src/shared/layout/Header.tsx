@@ -3,14 +3,14 @@
 import { useState, useEffect } from 'react';
 import { ChevronDown, User, LogOut, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useRouter } from 'next/navigation';
+
 import Link from 'next/link';
 import Cookies from 'js-cookie';
 import { useAuth } from '@/modules/auth/hooks/useAuth';
 import { NotificationIcon } from '@/modules/notification/components/NotificationIcon';
 
 export function Header() {
-  const router = useRouter();
+
   const { user, logout } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -53,7 +53,7 @@ export function Header() {
 
           {dropdownOpen && (
             <>
-              <div role="button" tabIndex={0} aria-label="Cerrar menú" className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setDropdownOpen(false); }} />
+              <button type="button" aria-label="Cerrar menú" className="fixed inset-0 z-40 w-full h-full cursor-default bg-transparent border-none p-0" onClick={() => setDropdownOpen(false)} />
               <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-50">
                 <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
                   <p className="text-sm font-semibold text-slate-700">{user?.fullName || 'Usuario'}</p>

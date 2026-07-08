@@ -26,7 +26,7 @@ interface ReproductionFormProps {
   editingReproduction?: Reproduction;
 }
 
-export function ReproductionForm({ onSuccess, onCancel, editingReproduction }: ReproductionFormProps) {
+export function ReproductionForm({ onSuccess, onCancel, editingReproduction }: Readonly<ReproductionFormProps>) {
   const { showToast } = useToast();
   const { updateReproduction } = useReproduction();
   const [femaleRabbit, setFemaleRabbit] = useState<Rabbit | null>(null);

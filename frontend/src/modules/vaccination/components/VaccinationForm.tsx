@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState } from 'react';
-import { Input, Button, Alert } from '@/shared/ui';
+import { Input, Button } from '@/shared/ui';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { vaccinationService } from '../services/vaccination.service';
 
@@ -22,7 +22,7 @@ interface VaccinationFormProps {
   onCancel?: () => void;
 }
 
-export function VaccinationForm({ onSuccess, onCancel }: VaccinationFormProps) {
+export function VaccinationForm({ onSuccess, onCancel }: Readonly<VaccinationFormProps>) {
 
   const { showToast } = useToast();
   const [rabbitInput, setRabbitInput] = useState('');

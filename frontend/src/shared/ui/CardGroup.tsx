@@ -13,7 +13,7 @@ interface CardGroupProps {
   className?: string;
 }
 
-export function CardGroup({ title, subtitle, items, className }: CardGroupProps) {
+export function CardGroup({ title, subtitle, items, className }: Readonly<CardGroupProps>) {
   return (
     <div className={cn('bg-white rounded-xl shadow-card border border-slate-100 p-6', className)}>
       <div className="mb-4">

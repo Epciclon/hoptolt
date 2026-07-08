@@ -13,7 +13,7 @@ const sizeStyles = {
   lg: 'h-64 w-full',
 };
 
-export function ImagePlaceholder({ className, size = 'md' }: ImagePlaceholderProps) {
+export function ImagePlaceholder({ className, size = 'md' }: Readonly<ImagePlaceholderProps>) {
   return (
     <div
       className={cn(

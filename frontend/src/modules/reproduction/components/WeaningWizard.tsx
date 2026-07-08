@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Baby, ChevronRight, Minus, Plus } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { Dialog, Button, Input } from '@/shared/ui';
 import { RabbitForm } from '@/modules/rabbits/components/RabbitForm';
 import { genealogyService } from '@/modules/genealogy/services/genealogy.service';
@@ -19,13 +19,13 @@ interface WeaningWizardProps {
 
 type WizardStep = 'ask' | 'count' | 'register';
 
-export function WeaningWizard({ open, onClose, onFinish, reproduction, finishing }: WeaningWizardProps) {
+export function WeaningWizard({ open, onClose, onFinish, reproduction, finishing }: Readonly<WeaningWizardProps>) {
   const { showToast } = useToast();
   const [step, setStep] = useState<WizardStep>('ask');
   const [keepCountStr, setKeepCountStr] = useState<string>('1');
   const keepCount = Math.max(1, Number.parseInt(keepCountStr) || 1);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [linkingGenealogy, setLinkingGenealogy] = useState(false);
+
   const [willKeepKits, setWillKeepKits] = useState<boolean | null>(null);
   const [showEarlyFinishConfirm, setShowEarlyFinishConfirm] = useState(false);
   const topRef = useRef<HTMLDivElement>(null);
@@ -77,7 +77,7 @@ export function WeaningWizard({ open, onClose, onFinish, reproduction, finishing
   const handleRabbitRegistered = async (rabbit?: Rabbit) => {
     if (!rabbit) return;
 
-    setLinkingGenealogy(true);
+
     showToast('Enlazando árbol genealógico de la cría...', 'info');
     try {
       await genealogyService.register({
@@ -89,8 +89,6 @@ export function WeaningWizard({ open, onClose, onFinish, reproduction, finishing
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'No se pudo enlazar el árbol genealógico automáticamente.';
       showToast(msg, 'warning');
-    } finally {
-      setLinkingGenealogy(false);
     }
 
     const nextIndex = currentIndex + 1;
@@ -102,10 +100,16 @@ export function WeaningWizard({ open, onClose, onFinish, reproduction, finishing
     }
   };
 
-  const title =
-    step === 'ask' ? `Finalizar Ciclo de Lactancia: ${reproduction.femaleCode}${reproduction.femaleName ? ` - ${reproduction.femaleName}` : ''}` :
-    step === 'count' ? 'Crías Retenidas' :
-    `Registrar Cría ${currentIndex + 1} de ${keepCount}`;
+  const title = (() => {
+    if (step === 'ask') {
+      const namePart = reproduction.femaleName ? ` - ${reproduction.femaleName}` : '';
+      return `Finalizar Ciclo de Lactancia: ${reproduction.femaleCode}${namePart}`;
+    }
+    if (step === 'count') {
+      return 'Crías Retenidas';
+    }
+    return `Registrar Cría ${currentIndex + 1} de ${keepCount}`;
+  })();
 
   return (
     <>
@@ -210,16 +214,18 @@ export function WeaningWizard({ open, onClose, onFinish, reproduction, finishing
           <div className="flex flex-col gap-4">
             {keepCount > 1 && (
               <div className="flex items-center gap-1.5">
-                {Array.from({ length: keepCount }).map((_, i) => (
-                  <div
-                    key={i}
-                    className={`h-2 flex-1 rounded-full transition-colors duration-300 ${
-                      i < currentIndex ? 'bg-green-400' :
-                      i === currentIndex ? 'bg-primary-500' :
-                      'bg-slate-200'
-                    }`}
-                  />
-                ))}
+                {Array.from({ length: keepCount }).map((_, i) => {
+                  let colorClass = 'bg-slate-200';
+                  if (i < currentIndex) colorClass = 'bg-green-400';
+                  else if (i === currentIndex) colorClass = 'bg-primary-500';
+                  
+                  return (
+                    <div
+                      key={`step-${i}`}
+                      className={`h-2 flex-1 rounded-full transition-colors duration-300 ${colorClass}`}
+                    />
+                  );
+                })}
               </div>
             )}
             <RabbitForm

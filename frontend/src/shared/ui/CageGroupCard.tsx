@@ -19,28 +19,23 @@ export function CageGroupCard({
   children,
   footer,
   headerBadge
-}: CageGroupCardProps) {
+}: Readonly<CageGroupCardProps>) {
   const isSelectable = !!onCageClick;
 
+  const Component = isSelectable ? 'button' : 'div';
+
   return (
-    <div
-      role={isSelectable ? "button" : undefined}
-      tabIndex={isSelectable ? 0 : undefined}
+    <Component
+      type={isSelectable ? 'button' : undefined}
       onClick={isSelectable ? onCageClick : undefined}
-      onKeyDown={(e) => {
-        if (isSelectable && (e.key === 'Enter' || e.key === ' ')) {
-          e.preventDefault();
-          onCageClick?.();
-        }
-      }}
       className={cn(
-        'border shadow-sm rounded-xl p-4 transition-all duration-150 flex flex-col',
-        isSelectable ? 'cursor-pointer' : '',
-        isSelected
-          ? 'border-primary-500 ring-1 ring-primary-500 bg-white shadow-sm'
-          : isSelectable
-            ? 'border-slate-300 bg-white hover:border-primary-400'
-            : 'border-slate-300 bg-white hover:shadow-md'
+        'border shadow-sm rounded-xl p-4 transition-all duration-150 flex flex-col text-left w-full',
+        isSelectable && 'cursor-pointer',
+        (() => {
+          if (isSelected) return 'border-primary-500 ring-1 ring-primary-500 bg-white shadow-sm';
+          if (isSelectable) return 'border-slate-300 bg-white hover:border-primary-400';
+          return 'border-slate-300 bg-white hover:shadow-md';
+        })()
       )}
     >
       <div className="flex flex-col items-center justify-center mb-4 border-b border-slate-200 pb-3 relative">
@@ -66,6 +61,6 @@ export function CageGroupCard({
           {footer}
         </div>
       )}
-    </div>
+    </Component>
   );
 }

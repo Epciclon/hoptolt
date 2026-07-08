@@ -12,7 +12,7 @@ interface VaccinationCatalogProps {
 
 const VACCINES_STORAGE_KEY = 'vaccination_selected_vaccines';
 
-export function VaccinationCatalog({ onSuccess }: VaccinationCatalogProps) {
+export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogProps>) {
   const { assignedRabbits, galponVaccines, loading, createVaccination, vaccinations, isCreating } = useVaccination();
   const { showToast } = useToast();
   const [selectedRabbitIds, setSelectedRabbitIds] = useState<number[]>([]);

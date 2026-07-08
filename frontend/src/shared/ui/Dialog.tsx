@@ -27,7 +27,7 @@ const sizeMap: Record<DialogSize, string> = {
   '3xl': 'max-w-3xl',
 };
 
-export function Dialog({ open, onClose, title, description, children, size = 'md', hideClose = false }: DialogProps) {
+export function Dialog({ open, onClose, title, description, children, size = 'md', hideClose = false }: Readonly<DialogProps>) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -45,18 +45,16 @@ export function Dialog({ open, onClose, title, description, children, size = 'md
   if (!open || !mounted) return null;
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-[999] flex items-center justify-center p-4"
+    <dialog
+      open
+      className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-transparent border-none m-0 w-full h-full max-w-none max-h-none"
       aria-modal="true"
-      role="dialog"
     >
-      <div
-        role="button"
-        tabIndex={0}
+      <button
+        type="button"
         aria-label="Cerrar diálogo"
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm border-none cursor-default w-full h-full block"
         onClick={onClose}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClose(); }}
       />
       <div
         className={cn(
@@ -82,7 +80,7 @@ export function Dialog({ open, onClose, title, description, children, size = 'md
         </div>
         <div className="px-6 py-5 overflow-y-auto">{children}</div>
       </div>
-    </div>,
+    </dialog>,
     document.body
   );
 }
@@ -115,7 +113,7 @@ export function ConfirmDialog({
   cancelLabel = 'Cancelar',
   loading = false,
   variant = 'danger',
-}: ConfirmDialogProps) {
+}: Readonly<ConfirmDialogProps>) {
   return (
     <Dialog open={open} onClose={onClose} title={title} description={description} size="sm" hideClose>
       <div className="flex gap-3 pt-2">

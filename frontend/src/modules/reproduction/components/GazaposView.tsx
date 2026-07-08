@@ -349,7 +349,10 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
                         setBornKits('');
                       }
                     }}
-                    title={hasKits ? (isExpanded ? 'Clic para registrar una baja de gazapos' : '') : (isExpanded ? 'Toca para registrar la cantidad de gazapos nacidos' : '')}
+                    title={(() => {
+                      if (!isExpanded) return '';
+                      return hasKits ? 'Clic para registrar una baja de gazapos' : 'Toca para registrar la cantidad de gazapos nacidos';
+                    })()}
                   >
                     <p className="text-slate-500 mb-1 flex justify-between items-center">
                       Gazapos Nacidos

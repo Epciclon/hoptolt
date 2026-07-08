@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/utils/supabase/client';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 
-export function RealtimeSyncProvider({ children }: { children: React.ReactNode }) {
+export function RealtimeSyncProvider({ children }: Readonly<{ children: React.ReactNode }>) {
   const queryClient = useQueryClient();
   const supabase = createClient();
   const { user } = useAuthContext();

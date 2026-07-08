@@ -14,7 +14,7 @@ interface DashboardTabsProps {
   onTabChange: (tabId: string) => void;
 }
 
-export function DashboardTabs({ tabs, activeTab, onTabChange }: DashboardTabsProps) {
+export function DashboardTabs({ tabs, activeTab, onTabChange }: Readonly<DashboardTabsProps>) {
   return (
     <div className="flex border-b border-slate-200 mb-6 px-6 overflow-x-auto hide-scrollbar">
       {tabs.map((tab) => (

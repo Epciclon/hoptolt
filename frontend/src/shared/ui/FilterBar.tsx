@@ -34,7 +34,7 @@ export function FilterBar({
   filters = [],
   className,
   children
-}: FilterBarProps) {
+}: Readonly<FilterBarProps>) {
   return (
     <div className={cn("flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-3 rounded-xl border border-slate-200 shadow-sm", className)}>
       <div className="relative w-full sm:w-80">

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { reproductionService } from '../services/reproduction.service';
-import type { Reproduction, ReproductionFemale, ReproductionMale } from '../types/reproduction.types';
+
 
 export function useReproduction() {
   const queryClient = useQueryClient();
@@ -88,6 +88,7 @@ export function useReproduction() {
       await deleteReproductionMutation.mutateAsync(id);
       return true;
     } catch (err) {
+      console.error('Error deleting reproduction:', err);
       return false;
     }
   };

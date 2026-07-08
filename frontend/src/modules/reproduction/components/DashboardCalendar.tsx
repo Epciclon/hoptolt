@@ -7,6 +7,8 @@ import { useSearchParams } from 'next/navigation';
 import { useDashboardCalendar } from '../hooks/useDashboardCalendar';
 import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
 
+export type CalendarEventType = 'births' | 'weaning' | 'receptive';
+
 interface CalendarEntry {
   id: string | number;
   femaleId: number;
@@ -23,7 +25,7 @@ interface CalendarEntry {
   receptiveDate?: string;
   cageNumber?: number;
   cageType?: string;
-  type: 'births' | 'weaning' | 'receptive';
+  type: CalendarEventType;
 }
 
 type CalendarData = Record<string, CalendarEntry[]>;
@@ -53,7 +55,7 @@ function formatDate(dateStr?: string) {
 
 /** Returns CSS class strings for a calendar day cell based on event/state context. */
 function getDayStyles(
-  calendarType: 'births' | 'weaning' | 'receptive',
+  calendarType: CalendarEventType,
   hasEvents: boolean,
   isDayToday: boolean,
   canViewReproduction: boolean
@@ -73,7 +75,7 @@ export function DashboardCalendar() {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1); // 1-based
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [calendarType, setCalendarType] = useState<'births' | 'weaning' | 'receptive'>('births');
+  const [calendarType, setCalendarType] = useState<CalendarEventType>('births');
   const [searchTerm, setSearchTerm] = useState('');
   
   const { calendar, isFetching, error, fetchCalendar } = useDashboardCalendar();

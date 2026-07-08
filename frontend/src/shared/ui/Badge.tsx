@@ -17,7 +17,7 @@ const variantStyles: Record<BadgeVariant, string> = {
   neutral: 'bg-slate-100 text-slate-600',
 };
 
-export function Badge({ children, variant = 'neutral', className }: BadgeProps) {
+export function Badge({ children, variant = 'neutral', className }: Readonly<BadgeProps>) {
   return (
     <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold', variantStyles[variant], className)}>
       {children}

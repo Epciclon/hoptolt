@@ -32,7 +32,7 @@ const config: Record<AlertVariant, { icon: ReactNode; styles: string }> = {
   },
 };
 
-export function Alert({ variant, message, onClose, className }: AlertProps) {
+export function Alert({ variant, message, onClose, className }: Readonly<AlertProps>) {
   const { icon, styles } = config[variant];
 
   return (
