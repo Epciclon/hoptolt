@@ -97,7 +97,7 @@ export function Sidebar({ collapsed, onToggle }: Readonly<SidebarProps>) {
   // Filtrar items del menú según permisos
   const filterNavigation = (items: NavItem[]): NavItem[] => {
     return items.filter(item => {
-      // Si es owner, mostrar todo
+      // Si es owner, mostrar todas las opciones
       if (role === 'owner') return true;
 
       // Ocultar Reportes y Usuarios del menú para trabajadores

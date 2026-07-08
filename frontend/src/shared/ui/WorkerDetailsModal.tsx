@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+
 import { Dialog, Button } from '@/shared/ui';
 import { Mail, AtSign, Shield, Box, Pencil, Trash2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';

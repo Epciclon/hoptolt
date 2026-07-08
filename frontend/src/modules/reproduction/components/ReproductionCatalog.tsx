@@ -299,15 +299,13 @@ export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<Repro
                 {isExpanded && (
                   <div 
                     className="mt-4 flex flex-col gap-2 animate-in fade-in slide-in-from-top-1 duration-150"
-                    onClick={(e) => e.stopPropagation()}
-                    onKeyDown={(e) => e.stopPropagation()}
-                    role="presentation"
                   >
                     <Button
                       type="button"
                       variant="primary"
                       className="w-full"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setToRegisterBirth(reproduction);
                         const ecuadorDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
                         const y = ecuadorDate.getFullYear();
@@ -323,7 +321,7 @@ export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<Repro
                       variant="danger"
                       icon={<Trash2 size={16} />}
                       className="w-full justify-center gap-2"
-                      onClick={() => setToCancel(reproduction)}
+                      onClick={(e) => { e.stopPropagation(); setToCancel(reproduction); }}
                     >
                       Eliminar
                     </Button>

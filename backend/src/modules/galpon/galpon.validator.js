@@ -41,7 +41,7 @@ const checkCapacityAndFood = (totalCapacity, foodTypes, errors) => {
     }
 };
 
-const checkVaccinesAndDeworming = (vaccines, dewormingPeriod, errors) => {
+const checkVaccines = (vaccines, errors) => {
     if (!Array.isArray(vaccines) || vaccines.length === 0) {
         errors.push('Debe seleccionar al menos una vacuna.');
     } else {
@@ -54,11 +54,19 @@ const checkVaccinesAndDeworming = (vaccines, dewormingPeriod, errors) => {
             }
         }
     }
+};
+
+const checkDeworming = (dewormingPeriod, errors) => {
     if (dewormingPeriod === undefined || dewormingPeriod === null || dewormingPeriod === '') {
         errors.push('El período de desparasitación es obligatorio.');
     } else if (!Number.isInteger(Number(dewormingPeriod)) || Number(dewormingPeriod) <= 0) {
         errors.push('El período de desparasitación debe ser un número entero positivo.');
     }
+};
+
+const checkVaccinesAndDeworming = (vaccines, dewormingPeriod, errors) => {
+    checkVaccines(vaccines, errors);
+    checkDeworming(dewormingPeriod, errors);
 };
 
 const validateCreateGalpon = (req, res, next) => {
@@ -122,7 +130,7 @@ const checkEditCapacityAndFood = (totalCapacity, foodTypes, errors) => {
     }
 };
 
-const checkEditVaccinesAndDeworming = (vaccines, dewormingPeriod, errors) => {
+const checkEditVaccines = (vaccines, errors) => {
     if (vaccines !== undefined && Array.isArray(vaccines)) {
         if (vaccines.length === 0) {
             errors.push('Debe seleccionar al menos una vacuna.');
@@ -137,11 +145,19 @@ const checkEditVaccinesAndDeworming = (vaccines, dewormingPeriod, errors) => {
             }
         }
     }
+};
+
+const checkEditDeworming = (dewormingPeriod, errors) => {
     if (dewormingPeriod !== undefined && dewormingPeriod !== null && dewormingPeriod !== '') {
         if (!Number.isInteger(Number(dewormingPeriod)) || Number(dewormingPeriod) <= 0) {
             errors.push('El período de desparasitación debe ser un número entero positivo.');
         }
     }
+};
+
+const checkEditVaccinesAndDeworming = (vaccines, dewormingPeriod, errors) => {
+    checkEditVaccines(vaccines, errors);
+    checkEditDeworming(dewormingPeriod, errors);
 };
 
 module.exports = { validateCreateGalpon, validateEditGalpon };

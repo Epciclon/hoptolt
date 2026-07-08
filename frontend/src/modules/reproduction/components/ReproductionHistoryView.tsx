@@ -205,6 +205,236 @@ function getFilteredMortalities(mortalities: any[], reproductions: Reproduction[
     };
   });
 }
+function MortalityDetails({ record: selectedRecord }: { record: Mortality & { type: 'mortality'; maleCode?: string | null; maleName?: string | null; maleRace?: string | null; } }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+        <p className="text-xs text-slate-500 font-medium mb-1">Coneja</p>
+        <div className="flex items-center gap-3 mt-2">
+          {selectedRecord.rabbitImageUrl ? (
+            <img src={selectedRecord.rabbitImageUrl} alt="Coneja" className="w-10 h-10 rounded-full object-cover shadow-sm border border-slate-200" />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-[10px] text-slate-400 border border-slate-200">
+              Sin foto
+            </div>
+          )}
+          <div className="flex flex-col leading-tight">
+            <span className="text-sm font-bold text-slate-800">{selectedRecord.rabbitName || selectedRecord.rabbitCode}</span>
+            {selectedRecord.rabbitName && <span className="text-xs text-slate-500">{selectedRecord.rabbitCode}</span>}
+            {selectedRecord.rabbitRace && <span className="text-xs text-slate-500 capitalize">{selectedRecord.rabbitRace}</span>}
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+        <p className="text-xs text-slate-500 font-medium mb-1">Pareja</p>
+        <div className="flex items-center gap-3 mt-2">
+          {(selectedRecord as any).maleImageUrl ? (
+            <img src={(selectedRecord as any).maleImageUrl} alt="Pareja" className="w-10 h-10 rounded-full object-cover shadow-sm border border-slate-200" />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-[10px] text-slate-400 border border-slate-200 text-center leading-none">
+              Sin foto
+            </div>
+          )}
+          <div className="flex flex-col leading-tight">
+            {selectedRecord.maleCode ? (
+              <>
+                <span className="text-sm font-bold text-slate-800">{selectedRecord.maleName || selectedRecord.maleCode}</span>
+                {selectedRecord.maleName && <span className="text-xs text-slate-500">{selectedRecord.maleCode}</span>}
+                <span className="text-xs text-slate-500 capitalize">{selectedRecord.maleRace || 'Raza no especificada'}</span>
+              </>
+            ) : (
+              <span className="text-sm font-medium text-slate-500 mt-1">No registrado</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+        <p className="text-xs text-slate-500 font-medium mb-1">Estado</p>
+        <p className="text-sm font-semibold text-slate-800 mt-2 capitalize">
+          Baja Parcial
+        </p>
+      </div>
+
+      <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+        <p className="text-xs text-slate-500 font-medium mb-1">Fecha de Baja</p>
+        <div className="flex flex-col mt-2">
+          <span className="text-sm font-semibold text-slate-800">{new Date(selectedRecord.deathDate as any).toLocaleDateString('es-EC')}</span>
+          <span className="text-xs text-slate-500">{new Date(selectedRecord.deathDate as any).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}</span>
+        </div>
+      </div>
+
+      <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 w-full">
+        <p className="text-xs text-slate-500 font-medium mb-1">Reportado por</p>
+        <div className="flex flex-col leading-tight">
+          <span className="text-sm font-semibold text-slate-800">
+            {selectedRecord.profile?.fullName || selectedRecord.profile?.username || 'Sistema'}
+          </span>
+          {selectedRecord.profile?.username && (
+            <span className="text-[11px] text-slate-500 font-medium mt-0.5">
+              @{selectedRecord.profile.username}
+            </span>
+          )}
+          {selectedRecord.profile?.email && (
+            <span className="text-[10px] text-slate-400 mt-0.5 break-all">
+              {selectedRecord.profile.email}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+        <p className="text-xs text-slate-500 font-medium mb-1">Causa de Muerte</p>
+        <p className="text-sm font-semibold text-slate-800 mt-2 capitalize">
+          {selectedRecord.cause || 'No especificada'}
+        </p>
+      </div>
+
+      <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+        <p className="text-xs text-slate-500 font-medium mb-1">Cantidad de Gazapos</p>
+        <p className="text-sm font-semibold text-slate-800 mt-2">
+          {selectedRecord.numberOfKits === 1 ? '1 muerto' : `${selectedRecord.numberOfKits} muertos`}
+        </p>
+      </div>
+
+      {(selectedRecord.observations) && (
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 sm:col-span-2">
+          <p className="text-xs text-slate-500 font-medium mb-1">Observaciones</p>
+          <p className="text-sm font-semibold text-slate-800 mt-2">
+            {selectedRecord.observations}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ReproductionDetails({ record: selectedRecord }: { record: Reproduction & { type: 'reproduction' } }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+        <p className="text-xs text-slate-500 font-medium mb-1">Coneja</p>
+        <div className="flex items-center gap-3 mt-2">
+          {selectedRecord.imageUrl ? (
+            <img src={selectedRecord.imageUrl} alt="Coneja" className="w-10 h-10 rounded-full object-cover shadow-sm border border-slate-200" />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-[10px] text-slate-400 border border-slate-200">
+              Sin foto
+            </div>
+          )}
+          <div className="flex flex-col leading-tight">
+            <span className="text-sm font-bold text-slate-800">{selectedRecord.femaleName || selectedRecord.femaleCode}</span>
+            {selectedRecord.femaleName && <span className="text-xs text-slate-500">{selectedRecord.femaleCode}</span>}
+            <span className="text-xs text-slate-500 capitalize">{selectedRecord.femaleRace || 'Raza no especificada'}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+        <p className="text-xs text-slate-500 font-medium mb-1">Pareja</p>
+        <div className="flex items-center gap-3 mt-2">
+          {(selectedRecord as any).maleImageUrl ? (
+            <img src={(selectedRecord as any).maleImageUrl} alt="Pareja" className="w-10 h-10 rounded-full object-cover shadow-sm border border-slate-200" />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-[10px] text-slate-400 border border-slate-200 text-center leading-none">
+              Sin foto
+            </div>
+          )}
+          <div className="flex flex-col leading-tight">
+            {selectedRecord.maleCode ? (
+              <>
+                <span className="text-sm font-bold text-slate-800">{selectedRecord.maleName || selectedRecord.maleCode}</span>
+                {selectedRecord.maleName && <span className="text-xs text-slate-500">{selectedRecord.maleCode}</span>}
+                <span className="text-xs text-slate-500 capitalize">{selectedRecord.maleRace || 'Raza no especificada'}</span>
+              </>
+            ) : (
+              <span className="text-sm font-medium text-slate-500 mt-1">No registrado</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {selectedRecord.status === 'fallido' ? (
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+          <p className="text-xs text-slate-500 font-medium mb-1">Fecha de Cancelación</p>
+          <div className="flex flex-col mt-2">
+            <span className="text-sm font-semibold text-slate-800">{selectedRecord.updatedAt ? new Date(selectedRecord.updatedAt as any).toLocaleDateString('es-EC') : 'N/A'}</span>
+            <span className="text-xs text-slate-500">{selectedRecord.updatedAt ? new Date(selectedRecord.updatedAt as any).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+            <p className="text-xs text-slate-500 font-medium mb-1">Fecha de Monta</p>
+            <div className="flex flex-col mt-2">
+              <span className="text-sm font-semibold text-slate-800">{new Date(selectedRecord.mountDate).toLocaleDateString('es-EC')}</span>
+              <span className="text-xs text-slate-500">{new Date(selectedRecord.mountDate).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+          </div>
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+            <p className="text-xs text-slate-500 font-medium mb-1">Fecha de Destete de Gazapos</p>
+            <div className="flex flex-col mt-2">
+              <span className="text-sm font-semibold text-slate-800">{selectedRecord.updatedAt ? new Date(selectedRecord.updatedAt as any).toLocaleDateString('es-EC') : 'N/A'}</span>
+              <span className="text-xs text-slate-500">{selectedRecord.updatedAt ? new Date(selectedRecord.updatedAt as any).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+            </div>
+          </div>
+        </>
+      )}
+
+      <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 w-full">
+        <p className="text-xs text-slate-500 font-medium mb-1">Reportado por</p>
+        <div className="flex flex-col leading-tight">
+          <span className="text-sm font-semibold text-slate-800">
+            {selectedRecord.profile?.fullName || selectedRecord.profile?.username || 'Sistema'}
+          </span>
+          {selectedRecord.profile?.username && (
+            <span className="text-[11px] text-slate-500 font-medium mt-0.5">
+              @{selectedRecord.profile.username}
+            </span>
+          )}
+          {selectedRecord.profile?.email && (
+            <span className="text-[10px] text-slate-400 mt-0.5 break-all">
+              {selectedRecord.profile.email}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 w-full">
+        <p className="text-xs text-slate-500 font-medium mb-1">Estado</p>
+        <p className="text-sm font-semibold text-slate-800 mt-2 capitalize">
+          {selectedRecord.status}
+        </p>
+      </div>
+
+      {!!selectedRecord.bornKits && (
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 w-full">
+          <p className="text-xs text-slate-500 font-medium mb-1">Cantidad de Gazapos</p>
+          <p className="text-sm font-semibold text-slate-800 mt-2">
+            {(() => {
+              const isFallido = selectedRecord.status === 'fallido';
+              const labelSingular = isFallido ? 'muerto' : 'vivo';
+              const labelPlural = isFallido ? 'muertos' : 'vivos';
+              return selectedRecord.bornKits === 1 
+                ? `1 ${labelSingular}` 
+                : `${selectedRecord.bornKits} ${labelPlural}`;
+            })()}
+          </p>
+        </div>
+      )}
+
+      {selectedRecord.status === 'fallido' && (
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 sm:col-span-2">
+          <p className="text-xs text-slate-500 font-medium mb-1">Cancelación de Parto</p>
+          <p className="text-sm font-semibold text-slate-800 mt-2">
+            {selectedRecord.cancellationReason || 'No especificada'}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function ReproductionHistoryView({ reproductions }: Readonly<ReproductionHistoryViewProps>) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -276,228 +506,9 @@ export function ReproductionHistoryView({ reproductions }: Readonly<Reproduction
           <div className="space-y-6 pt-2">
 
             {selectedRecord.type === 'mortality' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                  <p className="text-xs text-slate-500 font-medium mb-1">Coneja</p>
-                  <div className="flex items-center gap-3 mt-2">
-                    {selectedRecord.rabbitImageUrl ? (
-                      <img src={selectedRecord.rabbitImageUrl} alt="Coneja" className="w-10 h-10 rounded-full object-cover shadow-sm border border-slate-200" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-[10px] text-slate-400 border border-slate-200">
-                        Sin foto
-                      </div>
-                    )}
-                    <div className="flex flex-col leading-tight">
-                      <span className="text-sm font-bold text-slate-800">{selectedRecord.rabbitName || selectedRecord.rabbitCode}</span>
-                      {selectedRecord.rabbitName && <span className="text-xs text-slate-500">{selectedRecord.rabbitCode}</span>}
-                      {selectedRecord.rabbitRace && <span className="text-xs text-slate-500 capitalize">{selectedRecord.rabbitRace}</span>}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                  <p className="text-xs text-slate-500 font-medium mb-1">Pareja</p>
-                  <div className="flex items-center gap-3 mt-2">
-                    {(selectedRecord as any).maleImageUrl ? (
-                      <img src={(selectedRecord as any).maleImageUrl} alt="Pareja" className="w-10 h-10 rounded-full object-cover shadow-sm border border-slate-200" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-[10px] text-slate-400 border border-slate-200 text-center leading-none">
-                        Sin foto
-                      </div>
-                    )}
-                    <div className="flex flex-col leading-tight">
-                      {selectedRecord.maleCode ? (
-                        <>
-                          <span className="text-sm font-bold text-slate-800">{selectedRecord.maleName || selectedRecord.maleCode}</span>
-                          {selectedRecord.maleName && <span className="text-xs text-slate-500">{selectedRecord.maleCode}</span>}
-                          <span className="text-xs text-slate-500 capitalize">{selectedRecord.maleRace || 'Raza no especificada'}</span>
-                        </>
-                      ) : (
-                        <span className="text-sm font-medium text-slate-500 mt-1">No registrado</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                  <p className="text-xs text-slate-500 font-medium mb-1">Estado</p>
-                  <p className="text-sm font-semibold text-slate-800 mt-2 capitalize">
-                    Baja Parcial
-                  </p>
-                </div>
-
-                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                    <p className="text-xs text-slate-500 font-medium mb-1">Fecha de Baja</p>
-                    <div className="flex flex-col mt-2">
-                      <span className="text-sm font-semibold text-slate-800">{new Date(selectedRecord.deathDate as any).toLocaleDateString('es-EC')}</span>
-                      <span className="text-xs text-slate-500">{new Date(selectedRecord.deathDate as any).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}</span>
-                    </div>
-                  </div>
-
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 w-full">
-                  <p className="text-xs text-slate-500 font-medium mb-1">Reportado por</p>
-                  <div className="flex flex-col leading-tight">
-                    <span className="text-sm font-semibold text-slate-800">
-                      {selectedRecord.profile?.fullName || selectedRecord.profile?.username || 'Sistema'}
-                    </span>
-                    {selectedRecord.profile?.username && (
-                      <span className="text-[11px] text-slate-500 font-medium mt-0.5">
-                        @{selectedRecord.profile.username}
-                      </span>
-                    )}
-                    {selectedRecord.profile?.email && (
-                      <span className="text-[10px] text-slate-400 mt-0.5 break-all">
-                        {selectedRecord.profile.email}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                  <p className="text-xs text-slate-500 font-medium mb-1">Causa de Muerte</p>
-                  <p className="text-sm font-semibold text-slate-800 mt-2 capitalize">
-                    {selectedRecord.cause || 'No especificada'}
-                  </p>
-                </div>
-
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                  <p className="text-xs text-slate-500 font-medium mb-1">Cantidad de Gazapos</p>
-                  <p className="text-sm font-semibold text-slate-800 mt-2">
-                    {selectedRecord.numberOfKits === 1 ? '1 muerto' : `${selectedRecord.numberOfKits} muertos`}
-                  </p>
-                </div>
-
-                {(selectedRecord.observations) && (
-                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 sm:col-span-2">
-                    <p className="text-xs text-slate-500 font-medium mb-1">Observaciones</p>
-                    <p className="text-sm font-semibold text-slate-800 mt-2">
-                      {selectedRecord.observations}
-                    </p>
-                  </div>
-                )}
-              </div>
+              <MortalityDetails record={selectedRecord} />
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                  <p className="text-xs text-slate-500 font-medium mb-1">Coneja</p>
-                  <div className="flex items-center gap-3 mt-2">
-                    {selectedRecord.imageUrl ? (
-                      <img src={selectedRecord.imageUrl} alt="Coneja" className="w-10 h-10 rounded-full object-cover shadow-sm border border-slate-200" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-[10px] text-slate-400 border border-slate-200">
-                        Sin foto
-                      </div>
-                    )}
-                    <div className="flex flex-col leading-tight">
-                      <span className="text-sm font-bold text-slate-800">{selectedRecord.femaleName || selectedRecord.femaleCode}</span>
-                      {selectedRecord.femaleName && <span className="text-xs text-slate-500">{selectedRecord.femaleCode}</span>}
-                      <span className="text-xs text-slate-500 capitalize">{selectedRecord.femaleRace || 'Raza no especificada'}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                  <p className="text-xs text-slate-500 font-medium mb-1">Pareja</p>
-                  <div className="flex items-center gap-3 mt-2">
-                    {(selectedRecord as any).maleImageUrl ? (
-                      <img src={(selectedRecord as any).maleImageUrl} alt="Pareja" className="w-10 h-10 rounded-full object-cover shadow-sm border border-slate-200" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-[10px] text-slate-400 border border-slate-200 text-center leading-none">
-                        Sin foto
-                      </div>
-                    )}
-                    <div className="flex flex-col leading-tight">
-                      {selectedRecord.maleCode ? (
-                        <>
-                          <span className="text-sm font-bold text-slate-800">{selectedRecord.maleName || selectedRecord.maleCode}</span>
-                          {selectedRecord.maleName && <span className="text-xs text-slate-500">{selectedRecord.maleCode}</span>}
-                          <span className="text-xs text-slate-500 capitalize">{selectedRecord.maleRace || 'Raza no especificada'}</span>
-                        </>
-                      ) : (
-                        <span className="text-sm font-medium text-slate-500 mt-1">No registrado</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {selectedRecord.status === 'fallido' ? (
-                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                    <p className="text-xs text-slate-500 font-medium mb-1">Fecha de Cancelación</p>
-                    <div className="flex flex-col mt-2">
-                      <span className="text-sm font-semibold text-slate-800">{selectedRecord.updatedAt ? new Date(selectedRecord.updatedAt as any).toLocaleDateString('es-EC') : 'N/A'}</span>
-                      <span className="text-xs text-slate-500">{selectedRecord.updatedAt ? new Date(selectedRecord.updatedAt as any).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }) : ''}</span>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                      <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                        <p className="text-xs text-slate-500 font-medium mb-1">Fecha de Monta</p>
-                        <div className="flex flex-col mt-2">
-                          <span className="text-sm font-semibold text-slate-800">{new Date(selectedRecord.mountDate).toLocaleDateString('es-EC')}</span>
-                          <span className="text-xs text-slate-500">{new Date(selectedRecord.mountDate).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
-                      </div>
-                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                      <p className="text-xs text-slate-500 font-medium mb-1">Fecha de Destete de Gazapos</p>
-                      <div className="flex flex-col mt-2">
-                        <span className="text-sm font-semibold text-slate-800">{selectedRecord.updatedAt ? new Date(selectedRecord.updatedAt as any).toLocaleDateString('es-EC') : 'N/A'}</span>
-                        <span className="text-xs text-slate-500">{selectedRecord.updatedAt ? new Date(selectedRecord.updatedAt as any).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }) : ''}</span>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 w-full">
-                  <p className="text-xs text-slate-500 font-medium mb-1">Reportado por</p>
-                  <div className="flex flex-col leading-tight">
-                    <span className="text-sm font-semibold text-slate-800">
-                      {selectedRecord.profile?.fullName || selectedRecord.profile?.username || 'Sistema'}
-                    </span>
-                    {selectedRecord.profile?.username && (
-                      <span className="text-[11px] text-slate-500 font-medium mt-0.5">
-                        @{selectedRecord.profile.username}
-                      </span>
-                    )}
-                    {selectedRecord.profile?.email && (
-                      <span className="text-[10px] text-slate-400 mt-0.5 break-all">
-                        {selectedRecord.profile.email}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 w-full">
-                  <p className="text-xs text-slate-500 font-medium mb-1">Estado</p>
-                  <p className="text-sm font-semibold text-slate-800 mt-2 capitalize">
-                    {selectedRecord.status}
-                  </p>
-                </div>
-
-                {!!selectedRecord.bornKits && (
-                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 w-full">
-                    <p className="text-xs text-slate-500 font-medium mb-1">Cantidad de Gazapos</p>
-                    <p className="text-sm font-semibold text-slate-800 mt-2">
-                      {(() => {
-                        const isFallido = selectedRecord.status === 'fallido';
-                        const labelSingular = isFallido ? 'muerto' : 'vivo';
-                        const labelPlural = isFallido ? 'muertos' : 'vivos';
-                        return selectedRecord.bornKits === 1 
-                          ? `1 ${labelSingular}` 
-                          : `${selectedRecord.bornKits} ${labelPlural}`;
-                      })()}
-                    </p>
-                  </div>
-                )}
-
-                {selectedRecord.status === 'fallido' && (
-                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 sm:col-span-2">
-                    <p className="text-xs text-slate-500 font-medium mb-1">Cancelación de Parto</p>
-                    <p className="text-sm font-semibold text-slate-800 mt-2">
-                      {selectedRecord.cancellationReason || 'No especificada'}
-                    </p>
-                  </div>
-                )}
-              </div>
+              <ReproductionDetails record={selectedRecord} />
             )}
           </div>
         </Dialog>

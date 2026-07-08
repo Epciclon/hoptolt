@@ -34,7 +34,7 @@ export function PermissionGuard({ children, requiredPermission }: Readonly<Permi
   useEffect(() => {
     if (loading) return;
 
-    // Si es owner, tiene acceso a todo
+    // Si es owner, tiene acceso completo
     if (role === 'owner') return;
 
     // Determinar el permiso requerido basado en la ruta actual

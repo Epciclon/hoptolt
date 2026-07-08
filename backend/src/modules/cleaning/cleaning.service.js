@@ -91,7 +91,10 @@ class CleaningService {
             if (!w.data) continue;
             let dataObj = w.data;
             if (typeof dataObj === 'string') {
-                try { dataObj = JSON.parse(dataObj); } catch (e) { continue; }
+                try { dataObj = JSON.parse(dataObj); } catch (e) { 
+                    console.error('Error parsing warning data', e);
+                    continue; 
+                }
             }
             if (dataObj?.type === 'cleaning_warning' && Number(dataObj.cageId) === Number(cageId)) {
                 await w.destroy();

@@ -1,4 +1,4 @@
-import { createServerClient, serializeCookieHeader, parseCookieHeader } from '@supabase/ssr'
+import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
 export async function createClient() {

@@ -41,7 +41,7 @@ export const generatePDF = ({ title, subtitle, columns, data, filename, action =
     // Add table
     autoTable(doc, {
         head: [columns.map(col => col.header)],
-        body: data.map(item => columns.map(col => item[col.dataKey] !== undefined && item[col.dataKey] !== null ? item[col.dataKey] : 'N/A')),
+        body: data.map(item => columns.map(col => item[col.dataKey] ?? 'N/A')),
         startY: startY,
         theme: 'grid',
         styles: { fontSize: 9, cellPadding: 3 },
