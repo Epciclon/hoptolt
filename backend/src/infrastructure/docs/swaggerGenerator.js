@@ -69,52 +69,68 @@ class SwaggerAutoGenerator {
         const baseName = path.basename(filePath, '.js');
         const modelName = baseName.replace('.model', '');
 
-        const modelMatch = content.match(/const (\w+) = sequelize\.define\(['"](\w+)['"],\s*({[\s\S]*?})\s*\);/);
-        if (modelMatch) {
-            const [, , name, definition] = modelMatch;
-            this.models[name] = this.parseModelDefinition(definition, modelName);
-            this.modelSchemas[name] = this.generateSchemaFromModel(this.models[name]);
+        const matchStart = content.match(/const (\w+) = sequelize\.define\(['"](\w+)['"],\s*\{/);
+        if (matchStart) {
+            const name = matchStart[2];
+            const startIdx = matchStart.index + matchStart[0].length - 1;
+            const endIdx = content.lastIndexOf(');');
+            if (endIdx > startIdx) {
+                const definition = content.substring(startIdx, endIdx);
+                this.models[name] = this.parseModelDefinition(definition, modelName);
+                this.modelSchemas[name] = this.generateSchemaFromModel(this.models[name]);
+            }
         }
     }
 
     parseModelDefinition(definition, modelName) {
         const fields = {};
 
-        const fieldStartRegex = /([a-zA-Z0-9_]+):\s*\{/g;
-        let match;
-        while ((match = fieldStartRegex.exec(definition)) !== null) {
-            const fieldName = match[1];
-            const startIndex = match.index + match[0].length;
-            const endIndex = definition.indexOf('}', startIndex);
-            
-            if (endIndex === -1) continue;
-            
-            const blockContent = definition.substring(startIndex, endIndex);
-            
-            const typeMatch = blockContent.match(/type:\s*DataTypes\.(\w+)/);
-            if (!typeMatch) continue;
+        let i = 0;
+        while (i < definition.length) {
+            const colonBraceIdx = definition.indexOf(': {', i);
+            if (colonBraceIdx === -1) break;
 
-            const dataType = typeMatch[1];
-            fields[fieldName] = {
-                type: this.mapDataTypeToSwagger(dataType),
-                description: this.generateFieldDescription(fieldName, modelName)
-            };
+            let endWord = colonBraceIdx - 1;
+            while (endWord >= 0 && /\s/.test(definition[endWord])) endWord--;
 
-            const enumMatch = blockContent.match(/values:\s*\[([^\]]+)\]/);
-            if (enumMatch) {
-                fields[fieldName].enum = enumMatch[1].split(',').map(v => v.replace(/['"\s]/g, ''));
+            let startWord = endWord;
+            while (startWord >= 0 && /[a-zA-Z0-9_]/.test(definition[startWord])) startWord--;
+            startWord++;
+
+            if (startWord <= endWord) {
+                const fieldName = definition.substring(startWord, endWord + 1);
+                const startIndex = colonBraceIdx + 3;
+                const endIndex = definition.indexOf('}', startIndex);
+
+                if (endIndex !== -1) {
+                    const blockContent = definition.substring(startIndex, endIndex);
+                    const typeMatch = blockContent.match(/type:\s*DataTypes\.(\w+)/);
+                    if (typeMatch) {
+                        const dataType = typeMatch[1];
+                        fields[fieldName] = {
+                            type: this.mapDataTypeToSwagger(dataType),
+                            description: this.generateFieldDescription(fieldName, modelName)
+                        };
+
+                        const enumMatch = blockContent.match(/values:\s*\[([^\]]+)\]/);
+                        if (enumMatch) {
+                            fields[fieldName].enum = enumMatch[1].split(',').map(v => v.replace(/['"\s]/g, ''));
+                        }
+
+                        const minMatch = blockContent.match(/min:\s*(\d+)/);
+                        if (minMatch) fields[fieldName].minimum = Number.parseInt(minMatch[1]);
+
+                        const maxMatch = blockContent.match(/max:\s*(\d+)/);
+                        if (maxMatch) fields[fieldName].maximum = Number.parseInt(maxMatch[1]);
+
+                        const allowNullMatch = blockContent.match(/allowNull:\s*(false|true)/);
+                        if (allowNullMatch && allowNullMatch[1] === 'false') {
+                            fields[fieldName].required = true;
+                        }
+                    }
+                }
             }
-
-            const minMatch = blockContent.match(/min:\s*(\d+)/);
-            if (minMatch) fields[fieldName].minimum = Number.parseInt(minMatch[1]);
-
-            const maxMatch = blockContent.match(/max:\s*(\d+)/);
-            if (maxMatch) fields[fieldName].maximum = Number.parseInt(maxMatch[1]);
-
-            const allowNullMatch = blockContent.match(/allowNull:\s*(false|true)/);
-            if (allowNullMatch && allowNullMatch[1] === 'false') {
-                fields[fieldName].required = true;
-            }
+            i = colonBraceIdx + 3;
         }
 
         return fields;
