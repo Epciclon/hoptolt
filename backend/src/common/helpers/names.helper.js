@@ -1,8 +1,10 @@
 /**
  * Generador de nombres por combinación de sílabas.
  * Evita la necesidad de APIs externas y garantiza variedad
- * y seguridad (sin palabras ofensivas).
+ * seguridad (sin palabras ofensivas).
  */
+
+const crypto = require('crypto');
 
 const prefixes = [
     'Lu', 'Pe', 'Co', 'Mi', 'Bo', 'Ni', 'Pa', 'Ti', 'Ro', 'Pru', 
@@ -23,7 +25,7 @@ const hembraSuffixes = [
 ];
 
 function getRandomElement(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
+    return arr[crypto.randomInt(arr.length)];
 }
 
 /**
@@ -33,7 +35,7 @@ function getRandomElement(arr) {
  */
 function generateRandomName(sex) {
     // 50% de probabilidad de tener una sílaba media extra
-    const useMiddle = Math.random() > 0.5;
+    const useMiddle = crypto.randomInt(2) === 1;
     
     const prefix = getRandomElement(prefixes);
     const middle = useMiddle ? getRandomElement(middles) : '';

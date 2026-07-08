@@ -37,7 +37,7 @@ export function useNotifications(options?: { limit?: number; offset?: number; un
   useEffect(() => {
     if (!user) return;
 
-    const channelId = `realtime_notifications_${user.id}_${Math.random().toString(36).substring(7)}`;
+    const channelId = `realtime_notifications_${user.id}_${crypto.randomUUID()}`;
     const channel = supabase.channel(channelId)
       .on(
         'postgres_changes',

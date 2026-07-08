@@ -5,6 +5,7 @@ const AppError = require('../../errors/AppError');
 const { getPaginationParams, createPaginatedResponse } = require('../../common/helpers/pagination.helper');
 const { generateRandomName } = require('../../common/helpers/names.helper');
 const { Op } = require('sequelize');
+const crypto = require('crypto');
 
 class RabbitService {
     async generateCode(raceName, galponId) {
@@ -46,7 +47,7 @@ class RabbitService {
         let code = '';
         let codeExists = true;
         while (codeExists) {
-            const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+            const randomNum = crypto.randomInt(1000).toString().padStart(3, '0');
             code = `${prefix}${randomNum}`;
             const exists = await rabbitRepository.findByGalpon(galponId, { where: { code } });
             codeExists = exists.length > 0;
