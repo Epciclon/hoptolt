@@ -9,10 +9,6 @@ const validateRegisterGenealogy = (req, res, next) => {
         errors.push('El ID del conejo es obligatorio.');
     }
 
-    if (!fatherId && !motherId) {
-        errors.push('Debe proporcionar al menos un padre o una madre.');
-    }
-
     if (fatherId && fatherId === rabbitId) {
         errors.push('El padre no puede ser el mismo conejo.');
     }

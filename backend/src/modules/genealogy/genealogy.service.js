@@ -152,11 +152,7 @@ class GenealogyService {
         return { ...result.toJSON(), consanguinityWarning };
     }
 
-    async deleteGenealogy(rabbitId) {
-        const genealogy = await genealogyRepository.findByRabbitId(rabbitId);
-        if (!genealogy) throw new AppError('Relación genealógica no encontrada.', 404);
-        await genealogyRepository.delete(genealogy);
-    }
+
 
     async getGenealogyTree(rabbitId, levels = 3) {
         const rabbit = await Rabbit.findByPk(rabbitId, { paranoid: false });
@@ -246,7 +242,7 @@ class GenealogyService {
         if (parentId === rabbit.id) {
             throw new AppError(`El conejo no puede ser su ${Pronombre} ${label}.`, 400);
         }
-        await this._validateParent(parentId, rabbit, sex, label, false);
+        await this._validateParent(parentId, rabbit, sex, label, true);
         const ancestors = await this.getAncestors(parentId, 10);
         if (ancestors.includes(rabbit.id)) throw new AppError(`${Article} ${label} no puede ser descendiente del hijo (ciclo genealógico).`, 400);
     }

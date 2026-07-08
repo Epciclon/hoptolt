@@ -1,11 +1,13 @@
 import { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import type { AssignedRabbit } from '@/modules/assignments/types/assignment.types';
+import { X } from 'lucide-react';
 
 interface RabbitSelectableCardProps {
   rabbit: AssignedRabbit;
   isSelected?: boolean;
   onClick?: () => void;
+  onRemove?: () => void;
   extras?: ReactNode; // Extra content when selected, e.g. "Última vacunación"
   children?: ReactNode; // Content that ALWAYS renders below the rabbit info
 }
@@ -14,6 +16,7 @@ export function RabbitSelectableCard({
   rabbit,
   isSelected = false,
   onClick,
+  onRemove,
   extras,
   children
 }: Readonly<RabbitSelectableCardProps>) {
@@ -26,7 +29,7 @@ export function RabbitSelectableCard({
       type={isSelectable ? "button" : undefined}
       onClick={isSelectable ? onClick : undefined}
       className={cn(
-        'border rounded-lg p-3 transition-all duration-150 bg-white text-left w-full block',
+        'border rounded-lg p-3 transition-all duration-150 bg-white text-left w-full block relative',
         isSelectable && 'cursor-pointer',
         (() => {
           if (isSelected) return 'border-primary-500 ring-1 ring-primary-500 shadow-sm';
@@ -47,19 +50,31 @@ export function RabbitSelectableCard({
           <div>
             {rabbit.name ? (
               <>
-                <h4 className="font-bold text-sm text-slate-800 leading-tight">{rabbit.name}</h4>
+                <h4 className="font-bold text-sm text-slate-800 leading-tight pr-6">{rabbit.name}</h4>
                 <p className="text-xs text-slate-500">{rabbit.code}</p>
               </>
             ) : (
-              <h4 className="font-bold text-sm text-slate-800 leading-tight">{rabbit.code}</h4>
+              <h4 className="font-bold text-sm text-slate-800 leading-tight pr-6">{rabbit.code}</h4>
             )}
           </div>
         </div>
-        {rabbit.race && (
-          <span className="px-2 py-0.5 bg-slate-50 text-slate-600 text-[10px] font-medium rounded-full shrink-0 ml-1 capitalize border border-slate-200">
-            {rabbit.race}
-          </span>
-        )}
+        <div className="flex items-center gap-1">
+          {rabbit.race && (
+            <span className="px-2 py-0.5 bg-slate-50 text-slate-600 text-[10px] font-medium rounded-full shrink-0 capitalize border border-slate-200">
+              {rabbit.race}
+            </span>
+          )}
+          {onRemove && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onRemove(); }}
+              className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full p-1 transition-colors -mt-1 -mr-1"
+              title="Quitar"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
       </div>
 
       {(rabbit.age !== undefined || rabbit.weight !== undefined) && (

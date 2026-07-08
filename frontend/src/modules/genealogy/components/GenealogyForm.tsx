@@ -17,10 +17,7 @@ const schema = z.object({
   rabbitId: z.number().min(1, 'El conejo es obligatorio'),
   fatherId: z.number().optional().nullable(),
   motherId: z.number().optional().nullable(),
-}).refine(
-  (data) => data.fatherId !== null || data.motherId !== null,
-  { message: 'Debes proporcionar al menos un padre o una madre', path: ['fatherId'] }
-);
+});
 
 type FormValues = z.infer<typeof schema>;
 
@@ -169,6 +166,27 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
           handleConsanguinityWarning(result.consanguinityWarning);
           return;
         }
+        showToast('Relación genealógica actualizada exitosamente.', 'success');
+        queryClient.invalidateQueries({ queryKey: ['genealogies'] });
+        onSuccess?.();
+        reset();
+        setSelectedRabbit(null);
+        setSelectedFather(null);
+        setSelectedMother(null);
+        setRabbitSearch('');
+        setFatherSearch('');
+        setMotherSearch('');
+      } else {
+        const payload = {
+          rabbitId: values.rabbitId,
+          fatherId: values.fatherId ?? undefined,
+          motherId: values.motherId ?? undefined,
+        };
+        const result = await genealogyService.register(payload);
+        if (result.consanguinityWarning) {
+          handleConsanguinityWarning(result.consanguinityWarning);
+          return;
+        }
         showToast('Relación genealógica registrada exitosamente.', 'success');
         queryClient.invalidateQueries({ queryKey: ['genealogies'] });
         onSuccess?.();
@@ -272,8 +290,7 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
           {selectedRabbit ? (
             <RabbitSelectableCard 
               rabbit={selectedRabbit} 
-              onClick={!rabbitId && !editData ? () => { setSelectedRabbit(null); setValue('rabbitId', 0 as any); setRabbitSearch(''); } : undefined} 
-              extras={!rabbitId && !editData ? <span className="text-red-500 flex items-center gap-1 justify-center"><X size={14}/> Cambiar</span> : undefined} 
+              onRemove={!rabbitId && !editData ? () => { setSelectedRabbit(null); setValue('rabbitId', 0 as any); setRabbitSearch(''); } : undefined} 
             />
           ) : (
             <div className="relative" ref={rabbitDropdownRef}>
@@ -305,8 +322,7 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
           {selectedFather ? (
             <RabbitSelectableCard 
               rabbit={selectedFather} 
-              onClick={handleClearFather} 
-              extras={<span className="text-red-500 flex items-center gap-1 justify-center"><X size={14}/> Quitar padre</span>} 
+              onRemove={handleClearFather} 
             />
           ) : (
             <div className="relative" ref={fatherDropdownRef}>
@@ -337,8 +353,7 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
           {selectedMother ? (
             <RabbitSelectableCard 
               rabbit={selectedMother} 
-              onClick={handleClearMother} 
-              extras={<span className="text-red-500 flex items-center gap-1 justify-center"><X size={14}/> Quitar madre</span>} 
+              onRemove={handleClearMother} 
             />
           ) : (
             <div className="relative" ref={motherDropdownRef}>

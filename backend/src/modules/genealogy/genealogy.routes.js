@@ -14,6 +14,5 @@ router.get('/genealogies/check-consanguinity/:id1/:id2', requirePermission('repr
 router.get('/genealogies/:rabbitId', requirePermission('genealogy', 'canRead'), genealogyController.getGenealogy);
 router.get('/genealogies/:rabbitId/tree', requirePermission('genealogy', 'canRead'), genealogyController.getGenealogyTree);
 router.put('/genealogies/:rabbitId', requirePermission('genealogy', 'canUpdate'), galponContext, validateEditGenealogy, genealogyController.editGenealogy);
-router.delete('/genealogies/:rabbitId', requirePermission('genealogy', 'canDelete'), genealogyController.deleteGenealogy);
 
 module.exports = router;

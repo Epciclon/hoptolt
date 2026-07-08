@@ -22,15 +22,10 @@ export function CageGroupCard({
 }: Readonly<CageGroupCardProps>) {
   const isSelectable = !!onCageClick;
 
-  const Component = isSelectable ? 'button' : 'div';
-
   return (
-    <Component
-      type={isSelectable ? 'button' : undefined}
-      onClick={isSelectable ? onCageClick : undefined}
+    <div
       className={cn(
-        'border shadow-sm rounded-xl p-4 transition-all duration-150 flex flex-col text-left w-full',
-        isSelectable && 'cursor-pointer',
+        'group relative border shadow-sm rounded-xl p-4 transition-all duration-150 flex flex-col text-left w-full',
         (() => {
           if (isSelected) return 'border-primary-500 ring-1 ring-primary-500 bg-white shadow-sm';
           if (isSelectable) return 'border-slate-300 bg-white hover:border-primary-400';
@@ -38,12 +33,22 @@ export function CageGroupCard({
         })()
       )}
     >
-      <div className="flex flex-col items-center justify-center mb-4 border-b border-slate-200 pb-3 relative">
+      {/* Invisible button for full-card click accessibility without nested buttons */}
+      {isSelectable && onCageClick && (
+        <button
+          type="button"
+          onClick={onCageClick}
+          className="absolute inset-0 z-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-inset rounded-xl"
+          aria-label={`Seleccionar jaula ${cageNumber}`}
+        />
+      )}
+
+      <div className="flex flex-col items-center justify-center mb-4 border-b border-slate-200 pb-3 relative z-10 pointer-events-none">
         <h3 className="text-lg font-bold text-slate-800 text-center mb-1">
           Jaula #{cageNumber}
         </h3>
         {headerBadge && (
-          <div className="absolute right-0 top-0">
+          <div className="absolute right-0 top-0 pointer-events-auto">
             {headerBadge}
           </div>
         )}
@@ -52,15 +57,15 @@ export function CageGroupCard({
         </span>
       </div>
 
-      <div className="flex-1 space-y-3">
+      <div className="flex-1 space-y-3 relative z-10 pointer-events-auto">
         {children}
       </div>
 
       {footer && (
-        <div className="mt-4 pt-3 border-t border-slate-100">
+        <div className="mt-4 pt-3 border-t border-slate-100 relative z-10 pointer-events-auto">
           {footer}
         </div>
       )}
-    </Component>
+    </div>
   );
 }

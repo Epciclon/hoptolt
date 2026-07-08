@@ -32,9 +32,5 @@ export const genealogyService = {
   async checkConsanguinity(id1: number, id2: number): Promise<boolean> {
     const { data } = await api.get<{ success: boolean; areRelated: boolean }>(`/genealogies/check-consanguinity/${id1}/${id2}`);
     return data.areRelated;
-  },
-
-  async delete(rabbitId: number): Promise<void> {
-    await api.delete(`/genealogies/${rabbitId}`);
   }
 };

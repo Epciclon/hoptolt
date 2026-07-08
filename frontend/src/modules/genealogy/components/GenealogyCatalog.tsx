@@ -12,11 +12,10 @@ import type { Rabbit } from '@/modules/rabbits/types/rabbit.types';
 interface GenealogyCatalogProps {
   onViewTree: (rabbit: Rabbit) => void;
   onEditRelation: (rabbit: Rabbit) => void;
-  onDeleteRelation: (rabbit: Rabbit) => void;
 }
 
-export function GenealogyCatalog({ onViewTree, onEditRelation, onDeleteRelation }: Readonly<GenealogyCatalogProps>) {
-  const { rabbits, pagination, loading, setPage, setSearch, setRace, setSex, setPurpose, filters } = useRabbits();
+export function GenealogyCatalog({ onViewTree, onEditRelation }: Readonly<GenealogyCatalogProps>) {
+  const { rabbits, pagination, loading, setPage, setSearch, setRace, setSex, filters } = useRabbits();
   const { races } = useRaces();
   
   const [selectedRabbitId, setSelectedRabbitId] = useState<number | null>(null);
@@ -29,10 +28,6 @@ export function GenealogyCatalog({ onViewTree, onEditRelation, onDeleteRelation 
   const sexOptions = [
     { label: 'Macho', value: 'macho' },
     { label: 'Hembra', value: 'hembra' }
-  ];
-  const purposeOptions = [
-    { label: 'Reproducción', value: 'Reproducción' },
-    { label: 'Engorde', value: 'Engorde' }
   ];
 
   const formatAge = (age: number | null | undefined) => {
@@ -102,20 +97,7 @@ export function GenealogyCatalog({ onViewTree, onEditRelation, onDeleteRelation 
                     onEditRelation(rabbit);
                   }}
                 >
-                  Padres
-                </Button>
-                <Button
-                  type="button"
-                  variant="danger"
-                  size="sm"
-                  className="flex-1 min-w-[80px]"
-                  icon={<Trash2 size={14} />}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeleteRelation(rabbit);
-                  }}
-                >
-                  Eliminar
+                  Editar Padres
                 </Button>
               </>
             }
@@ -134,8 +116,7 @@ export function GenealogyCatalog({ onViewTree, onEditRelation, onDeleteRelation 
         searchPlaceholder="Buscar conejo por código o nombre..."
         filters={[
           { key: 'race', placeholder: 'Todas las Razas', options: raceOptions, value: filters.race || '', onChange: (val) => { setRace(val); setPage(1); } },
-          { key: 'sex', placeholder: 'Cualquier Sexo', options: sexOptions, value: filters.sex || '', onChange: (val) => { setSex(val); setPage(1); } },
-          { key: 'purpose', placeholder: 'Todo Propósito', options: purposeOptions, value: filters.purpose || '', onChange: (val) => { setPurpose(val); setPage(1); } }
+          { key: 'sex', placeholder: 'Cualquier Sexo', options: sexOptions, value: filters.sex || '', onChange: (val) => { setSex(val); setPage(1); } }
         ]}
       />
 

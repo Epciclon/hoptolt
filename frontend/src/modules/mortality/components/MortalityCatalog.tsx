@@ -67,10 +67,15 @@ export function MortalityCatalog({ onSuccess }: Readonly<MortalityCatalogProps>)
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-end">
+      <div className="flex justify-end mb-2">
         {assignedRabbits.length > 0 && (
-          <Button type="button" variant="outline" size="sm" onClick={selectAllRabbits}>
-            {selectedRabbitIds.length === assignedRabbits.length ? 'Deseleccionar todos' : 'Seleccionar todos'}
+          <Button 
+            type="button" 
+            variant={selectedRabbitIds.length === assignedRabbits.length && assignedRabbits.length > 0 ? 'success' : 'outline'}
+            size="sm" 
+            onClick={selectAllRabbits}
+          >
+            {selectedRabbitIds.length === assignedRabbits.length && assignedRabbits.length > 0 ? 'Deseleccionar todos' : 'Seleccionar todos'}
           </Button>
         )}
       </div>

@@ -30,7 +30,7 @@ const sizeStyles: Record<ButtonSize, string> = {
   lg: 'px-5 py-2.5 text-sm rounded-lg h-10',
 };
 
-export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+export const Button = forwardRef<HTMLButtonElement, Readonly<ButtonProps>>(
   ({ variant = 'primary', size = 'md', loading = false, icon, fullWidth, className, children, disabled, ...props }, ref) => (
     <button
       ref={ref}

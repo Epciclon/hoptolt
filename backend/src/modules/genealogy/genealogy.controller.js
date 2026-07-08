@@ -22,11 +22,6 @@ exports.editGenealogy = catchAsync(async (req, res) => {
     res.status(200).json({ success: true, message: 'Relación genealógica actualizada exitosamente.', genealogy });
 });
 
-exports.deleteGenealogy = catchAsync(async (req, res) => {
-    await genealogyService.deleteGenealogy(req.params.rabbitId);
-    res.status(200).json({ success: true, message: 'Relación genealógica eliminada exitosamente.' });
-});
-
 exports.getGenealogyTree = catchAsync(async (req, res) => {
     const tree = await genealogyService.getGenealogyTree(req.params.rabbitId, req.query.levels || 3);
     res.status(200).json({ success: true, tree });

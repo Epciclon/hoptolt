@@ -210,9 +210,14 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
         )}
       </div>
 
-      <div className="flex justify-end">
-        <Button type="button" variant="outline" size="sm" onClick={selectAllRabbits}>
-          Seleccionar todos
+      <div className="flex justify-end mb-2">
+        <Button 
+          type="button" 
+          variant={selectedRabbitIds.length === assignedRabbits.length && assignedRabbits.length > 0 ? 'success' : 'outline'}
+          size="sm" 
+          onClick={selectAllRabbits}
+        >
+          {selectedRabbitIds.length === assignedRabbits.length && assignedRabbits.length > 0 ? 'Deseleccionar todos' : 'Seleccionar todos'}
         </Button>
       </div>
 

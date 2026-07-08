@@ -87,7 +87,12 @@ export function useFeeding() {
   // Mutation: Create Feeding
   const createFeedingMutation = useMutation({
     mutationFn: (payload: { cageIds: number[]; foodTypes: string[]; justification?: string; shift?: 'mañana' | 'tarde' }) => feedingService.create(payload),
-    onSuccess: () => {
+    onSuccess: (newFeedings) => {
+      // Optimizamos la actualización en caché para que la barra de progreso reaccione al instante
+      queryClient.setQueryData(['feedings', activeGalpon?.id], (old: any[] = []) => {
+        return [...newFeedings, ...old];
+      });
+      // También invalidamos para garantizar sincronización
       queryClient.invalidateQueries({ queryKey: ['feedings'] });
     },
   });

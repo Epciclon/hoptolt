@@ -18,29 +18,7 @@ export default function GenealogyPage() {
   const [selectedRabbit, setSelectedRabbit] = useState<Rabbit | null>(null);
   const [editRabbitId, setEditRabbitId] = useState<number | null>(null);
   
-  const [toDeleteRabbit, setToDeleteRabbit] = useState<Rabbit | null>(null);
-  const [deleting, setDeleting] = useState(false);
-  
-  const { showToast } = useToast();
-  const queryClient = useQueryClient();
-
   const closeModal = () => { setModal(null); setEditRabbitId(null); setSelectedRabbit(null); };
-
-  const handleDeleteRelation = async () => {
-    if (!toDeleteRabbit) return;
-    setDeleting(true);
-    try {
-      await genealogyService.delete(toDeleteRabbit.id);
-      showToast('Relación genealógica eliminada exitosamente.', 'success');
-      queryClient.invalidateQueries({ queryKey: ['genealogies'] });
-    } catch (err) {
-      // It might throw a 404 if the rabbit doesn't have a relation to delete.
-      showToast(err instanceof Error ? err.message : 'No se pudo eliminar la relación (es posible que no exista).', 'error');
-    } finally {
-      setDeleting(false);
-      setToDeleteRabbit(null);
-    }
-  };
 
   return (
     <PermissionGuard moduleName="genealogy">
@@ -59,9 +37,6 @@ export default function GenealogyPage() {
           setEditRabbitId(rabbit.id);
           setModal('edit');
         }} 
-        onDeleteRelation={(rabbit) => {
-          setToDeleteRabbit(rabbit);
-        }}
       />
 
       <Dialog
@@ -86,16 +61,6 @@ export default function GenealogyPage() {
         />
       )}
 
-      <ConfirmDialog
-        open={!!toDeleteRabbit}
-        onClose={() => setToDeleteRabbit(null)}
-        onConfirm={handleDeleteRelation}
-        loading={deleting}
-        title="Eliminar Relación Genealógica"
-        description={`¿Estás seguro de que deseas desvincular a los padres del conejo ${toDeleteRabbit?.code}? Esto no eliminará a los conejos, solo borrará la línea genealógica.`}
-        confirmLabel="Sí, eliminar"
-        variant="danger"
-      />
       </Card>
     </GalponGuard>
   </PermissionGuard>

@@ -242,8 +242,8 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
     return getEcuadorDateString(fd) === currentEcuadorDateStr;
   });
 
-  const uniqueCagesMorning = new Set(feedingsToday.filter(f => f.shift === 'mañana').map(f => f.cageId)).size;
-  const uniqueCagesAfternoon = new Set(feedingsToday.filter(f => f.shift === 'tarde').map(f => f.cageId)).size;
+  const uniqueCagesMorning = new Set(feedingsToday.filter(f => f.shift?.toLowerCase() === 'mañana').map(f => f.cageId)).size;
+  const uniqueCagesAfternoon = new Set(feedingsToday.filter(f => f.shift?.toLowerCase() === 'tarde').map(f => f.cageId)).size;
   const totalCages = cageGroups.length;
 
   const morningPercentage = totalCages > 0 ? (uniqueCagesMorning / totalCages) * 100 : 0;
@@ -342,8 +342,15 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
       </div>
 
       <div className="flex justify-end mb-2">
-        <Button type="button" variant="outline" size="sm" onClick={selectAllCages}>
-          Seleccionar todos
+        <Button 
+          type="button" 
+          variant={selectedCageNumbers.length === cageGroups.length && cageGroups.length > 0 ? 'success' : 'outline'}
+          size="sm" 
+          onClick={selectAllCages}
+        >
+          {selectedCageNumbers.length === cageGroups.length && cageGroups.length > 0
+            ? 'Deseleccionar todos'
+            : 'Seleccionar todos'}
         </Button>
       </div>
 

@@ -113,9 +113,14 @@ export function CleaningCatalog({ onSuccess }: Readonly<CleaningCatalogProps>) {
     <div className="flex flex-col gap-4">
       {error && <Alert variant="error" message={error} />}
 
-      <div className="flex justify-end">
-        <Button type="button" variant="outline" size="sm" onClick={selectAllCages}>
-          {selectedCageNumbers.length === cageGroups.length ? 'Deseleccionar todas' : 'Seleccionar todas'}
+      <div className="flex justify-end mb-2">
+        <Button 
+          type="button" 
+          variant={selectedCageNumbers.length === cageGroups.length && cageGroups.length > 0 ? 'success' : 'outline'}
+          size="sm" 
+          onClick={selectAllCages}
+        >
+          {selectedCageNumbers.length === cageGroups.length && cageGroups.length > 0 ? 'Deseleccionar todas' : 'Seleccionar todas'}
         </Button>
       </div>
 

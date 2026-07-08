@@ -47,7 +47,11 @@ export function DewormingCatalog({ onSuccess }: Readonly<DewormingCatalogProps>)
   };
 
   const selectAllRabbits = () => {
-    setSelectedRabbitIds(assignedRabbits.map(r => r.id));
+    if (selectedRabbitIds.length === assignedRabbits.length) {
+      setSelectedRabbitIds([]);
+    } else {
+      setSelectedRabbitIds(assignedRabbits.map(r => r.id));
+    }
   };
 
   const handleRegister = () => {
@@ -114,9 +118,14 @@ export function DewormingCatalog({ onSuccess }: Readonly<DewormingCatalogProps>)
         </p>
       </div>
 
-      <div className="flex justify-end">
-        <Button type="button" variant="outline" size="sm" onClick={selectAllRabbits}>
-          Seleccionar todos
+      <div className="flex justify-end mb-2">
+        <Button 
+          type="button" 
+          variant={selectedRabbitIds.length === assignedRabbits.length && assignedRabbits.length > 0 ? 'success' : 'outline'}
+          size="sm" 
+          onClick={selectAllRabbits}
+        >
+          {selectedRabbitIds.length === assignedRabbits.length && assignedRabbits.length > 0 ? 'Deseleccionar todos' : 'Seleccionar todos'}
         </Button>
       </div>
 
