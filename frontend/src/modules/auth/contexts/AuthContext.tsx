@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { authService } from '../services/auth.service';
 import type { Profile } from '../types/auth.types';
@@ -17,7 +17,7 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [user, setUser] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -40,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const profile = await authService.getMe();
       setUser(profile);
     } catch (error) {
+      console.error(error);
       setUser(null);
     } finally {
       if (!silent) setLoading(false);
@@ -48,16 +49,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      // Limpiar todo el caché de React Query para que no queden datos de la sesión anterior
       queryClient.clear();
-      // Cerrar sesión en Supabase
       await supabase.auth.signOut();
     } catch (error) {
       console.error('Error logging out:', error);
     } finally {
-      // Limpiar estado local
       setUser(null);
-      // Hacer un reemplazo de ubicación completo para limpiar todo el cache del cliente
       if (typeof window !== 'undefined') {
         window.location.replace('/login');
       }
@@ -73,8 +70,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // y el login ya sincroniza el perfil, por lo que no es necesario.
   }, [fetchUser, router]);
 
+  const contextValue = useMemo(() => ({ user, loading, refetchUser: fetchUser, logout, supabase }), [user, loading, fetchUser, logout, supabase]);
+
   return (
-    <AuthContext.Provider value={{ user, loading, refetchUser: fetchUser, logout, supabase }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

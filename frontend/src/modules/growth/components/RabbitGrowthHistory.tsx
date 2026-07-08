@@ -9,7 +9,7 @@ interface RabbitGrowthHistoryProps {
   rabbitId: number;
 }
 
-export function RabbitGrowthHistory({ rabbitId }: RabbitGrowthHistoryProps) {
+export function RabbitGrowthHistory({ rabbitId }: Readonly<RabbitGrowthHistoryProps>) {
   const { data: growths = [], isLoading: loading, error: queryError } = useQuery({
     queryKey: ['growths', rabbitId],
     queryFn: () => growthService.getHistory(rabbitId),

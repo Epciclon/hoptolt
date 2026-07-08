@@ -10,7 +10,7 @@ interface MortalityCatalogProps {
   onSuccess?: () => void;
 }
 
-export function MortalityCatalog({ onSuccess }: MortalityCatalogProps) {
+export function MortalityCatalog({ onSuccess }: Readonly<MortalityCatalogProps>) {
   const { assignedRabbits, loading } = useMortality();
 
   const [selectedRabbitIds, setSelectedRabbitIds] = useState<number[]>([]);

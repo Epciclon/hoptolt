@@ -131,7 +131,7 @@ const checkModuleAccess = (moduleName) => {
 const filterByWorkerCages = (cageIdParam = 'cageId') => {
     return (req, res, next) => {
         if (req.user.role === 'owner') {
-            return next(); // Los propietarios ven todo
+            return next(); // Los propietarios tienen acceso a todas las jaulas
         }
 
         const workerCages = req.workerCages || [];

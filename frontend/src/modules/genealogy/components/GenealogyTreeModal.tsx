@@ -189,7 +189,7 @@ export function GenealogyTreeModal({ rabbit, onClose }: Readonly<GenealogyTreeMo
           <ZoomableViewer>
             <div className="flex flex-col gap-0 p-8 pb-32 mx-auto" style={{ minWidth: typeof minTreeWidth === 'number' ? `${minTreeWidth}px` : minTreeWidth }}>
               {treeGenerations.map((generation, level) => (
-                <div key={`gen-level-${level}`} className="w-full">
+                <div key={generation.map(n => n?.id || 'none').join('-')} className="w-full">
                   {renderGeneration(generation, level, treeGenerations[level + 1])}
                 </div>
               ))}

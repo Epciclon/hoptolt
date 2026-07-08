@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Table, Dialog, Badge, LoadingMessage } from '@/shared/ui';
+import { Table, Dialog, LoadingMessage } from '@/shared/ui';
 import type { Column } from '@/shared/ui/Table';
 import type { Mortality } from '../types/mortality.types';
 import { useMortality } from '../hooks/useMortality';

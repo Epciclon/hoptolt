@@ -78,6 +78,16 @@ const validateEditGalpon = (req, res, next) => {
     const errors = [];
     const { name, province, location, totalCapacity, foodTypes, vaccines, dewormingPeriod } = req.body;
 
+    checkEditName(name, errors);
+    checkEditProvinceAndLocation(province, location, errors);
+    checkEditCapacityAndFood(totalCapacity, foodTypes, errors);
+    checkEditVaccinesAndDeworming(vaccines, dewormingPeriod, errors);
+
+    if (errors.length > 0) return res.status(400).json({ success: false, errors });
+    next();
+};
+
+const checkEditName = (name, errors) => {
     if (name !== undefined && name !== null && name !== '') {
         const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
         if (!nameRegex.test(name.trim())) {
@@ -86,29 +96,33 @@ const validateEditGalpon = (req, res, next) => {
             errors.push('El nombre del galpón tiene un límite máximo de 50 caracteres.');
         }
     }
+};
 
+const checkEditProvinceAndLocation = (province, location, errors) => {
     if (province && !PROVINCES.has(province)) {
         errors.push('La provincia debe ser una opción válida de la lista predefinida.');
     }
-
     if (location !== undefined && location !== null && location !== '') {
         if (location.trim().length > 100) {
             errors.push('La ubicación tiene un límite máximo de 100 caracteres.');
         }
     }
+};
 
+const checkEditCapacityAndFood = (totalCapacity, foodTypes, errors) => {
     if (totalCapacity !== undefined && totalCapacity !== null && totalCapacity !== '') {
         if (!Number.isInteger(Number(totalCapacity)) || Number(totalCapacity) <= 0) {
             errors.push('La capacidad total debe ser un número entero positivo.');
         }
     }
-
     if (foodTypes !== undefined && Array.isArray(foodTypes)) {
         if (foodTypes.length === 0) {
             errors.push('Debe seleccionar al menos un tipo de alimento.');
         }
     }
+};
 
+const checkEditVaccinesAndDeworming = (vaccines, dewormingPeriod, errors) => {
     if (vaccines !== undefined && Array.isArray(vaccines)) {
         if (vaccines.length === 0) {
             errors.push('Debe seleccionar al menos una vacuna.');
@@ -123,15 +137,11 @@ const validateEditGalpon = (req, res, next) => {
             }
         }
     }
-
     if (dewormingPeriod !== undefined && dewormingPeriod !== null && dewormingPeriod !== '') {
         if (!Number.isInteger(Number(dewormingPeriod)) || Number(dewormingPeriod) <= 0) {
             errors.push('El período de desparasitación debe ser un número entero positivo.');
         }
     }
-
-    if (errors.length > 0) return res.status(400).json({ success: false, errors });
-    next();
 };
 
 module.exports = { validateCreateGalpon, validateEditGalpon };

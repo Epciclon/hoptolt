@@ -209,6 +209,7 @@ export default function NotificationsPage() {
                 {filteredNotifications.map((notification) => (
                   <div 
                     key={notification.id}
+                    role="button"
                     className={cn(
                       "p-6 flex items-start gap-4 hover:bg-slate-50 transition-colors group cursor-pointer",
                       !notification.read && "bg-blue-50/30"
@@ -249,7 +250,7 @@ export default function NotificationsPage() {
                       </div>
 
                       {notification.data?.type === 'growth_summary' && (
-                        <div className="mt-4 p-4 rounded-lg bg-slate-50 border border-slate-100" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                        <div className="mt-4 p-4 rounded-lg bg-slate-50 border border-slate-100" role="presentation" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                           <div className="flex gap-6">
                             {notification.data.updatesCount > 0 && (
                               <div className="w-full">
@@ -266,7 +267,7 @@ export default function NotificationsPage() {
                       )}
 
                       {notification.type === 'invitation' && (
-                        <div className="mt-4 p-4 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-between" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                        <div className="mt-4 p-4 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-between" role="presentation" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                           <div>
                             <p className="text-sm font-medium text-slate-700">Invitación a unirse a un galpón</p>
                             <p className="text-xs text-slate-500 mt-1">Galpón: {notification.data?.galponName || 'Galpón'}</p>

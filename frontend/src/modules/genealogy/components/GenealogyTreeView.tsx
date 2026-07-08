@@ -110,6 +110,7 @@ export function GenealogyTreeView({ onCancel }: Readonly<GenealogyTreeViewProps>
 
             let label = '';
             if (level !== 0) {
+              const isFather = index % 2 === 0;
               label = isFather ? 'Padre' : 'Madre';
             }
 
@@ -229,7 +230,7 @@ export function GenealogyTreeView({ onCancel }: Readonly<GenealogyTreeViewProps>
           <h3 className="font-semibold mb-3">Árbol Genealógico</h3>
           <div className="min-w-full flex flex-col gap-0">
             {buildGenerations(tree, 6).map((generation, level) => (
-              <div key={`gen-${level}`}>
+              <div key={generation.map(n => n?.id || 'none').join('-')}>
                 {renderGeneration(generation, level, buildGenerations(tree, 6)[level + 1])}
               </div>
             ))}

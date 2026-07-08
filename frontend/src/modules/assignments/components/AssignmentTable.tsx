@@ -23,7 +23,7 @@ export function AssignmentTable() {
   const limit = 12;
 
   const handleConfirmUnassign = async () => {
-    if (!toUnassign || !toUnassign.rabbitIds || toUnassign.rabbitIds.length === 0) return;
+    if (!toUnassign?.rabbitIds?.length) return;
     setProcessing(true);
     
     // Unassign all selected rabbits
@@ -111,13 +111,16 @@ export function AssignmentTable() {
         />
       )}
 
-      {loading ? (
+      {loading && (
         <LoadingMessage message="Cargando asignaciones..." />
-      ) : Object.keys(groupedByCage).length === 0 ? (
+      )}
+      {!loading && Object.keys(groupedByCage).length === 0 && (
         <p className="text-sm text-slate-500 py-8">No hay conejos con jaula asignada en el galpón activo.</p>
-      ) : filteredGroups.length === 0 ? (
+      )}
+      {!loading && Object.keys(groupedByCage).length > 0 && filteredGroups.length === 0 && (
         <p className="text-sm text-slate-500 py-8">No se encontraron jaulas con los filtros aplicados.</p>
-      ) : (
+      )}
+      {!loading && Object.keys(groupedByCage).length > 0 && filteredGroups.length > 0 && (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 items-start">
             {paginatedGroups.map(group => {

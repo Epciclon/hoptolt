@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { Button, Input, Select, Table, Card, CardHeader, Badge } from '@/shared/ui';
+import { Button, Input, Select, Card, CardHeader, Badge } from '@/shared/ui';
 import { Calendar, Download, FileText, Settings, Info, X, Maximize, Minimize } from 'lucide-react';
 import type { PDFColumn } from '@/shared/utils/pdfGenerator';
 import { REPORT_MODULES } from '../types/reports.types';
@@ -10,13 +10,33 @@ import { useRaces } from '../../races/hooks/useRaces';
 import { farmMemberService } from '../../farmMember/services/farmMember.service';
 import type { FarmMember } from '../../farmMember/types/farmMember.types';
 
+const formatCageNumber = (num: any, type: any) => {
+    if (!num) return 'N/A';
+    if (!type) return String(num);
+    const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
+    return `${num} (${capitalizedType})`;
+};
+
+const formatRabbitInfo = (code: any, name: any) => {
+    const safeCode = code || 'N/A';
+    if (name && name !== 'N/A') return `${safeCode} - ${name}`;
+    return safeCode;
+};
+
+const formatArrayOrString = (val: any) => Array.isArray(val) ? val.join(', ') : (val || 'N/A');
+const getResponsible = (row: any) => row.profileName || row.responsible || row.profile?.fullName || row.profile?.username || 'N/A';
+const formatRabbitsList = (rabbits: any[]) => {
+    if (!Array.isArray(rabbits) || rabbits.length === 0) return 'Ninguno';
+    return rabbits.map((r: any) => formatRabbitInfo(r.code, r.name)).join('\n');
+};
+
 interface ReportGeneratorProps {
     galponId: number | string;
     galpon?: any;
     onToast: (msg: string, type?: 'success' | 'error') => void;
 }
 
-export function ReportGenerator({ galponId, galpon, onToast }: ReportGeneratorProps) {
+export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGeneratorProps>) {
     const [selectedModule, setSelectedModule] = useState(REPORT_MODULES[0].id);
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
@@ -79,19 +99,19 @@ export function ReportGenerator({ galponId, galpon, onToast }: ReportGeneratorPr
                 return {
                     ui: [
                         { key: 'feedingDate', header: 'Fecha y Hora', render: (row: any) => formatDateTime(row.feedingDate) },
-                        { key: 'cageNumber', header: 'Jaula', render: (row: any) => row.cageNumber ? `${row.cageNumber} ${row.cageType ? `(${capitalizeString(row.cageType)})` : ''}` : 'N/A' },
+                        { key: 'cageNumber', header: 'Jaula', render: (row: any) => formatCageNumber(row.cageNumber, row.cageType) },
                         {
                             key: 'rabbits', header: 'Conejos', render: (row: any) => (
                                 <div className="flex flex-col gap-1">
                                     {Array.isArray(row.rabbits) && row.rabbits.length > 0
-                                        ? row.rabbits.map((r: any, i: number) => <span key={i} className="whitespace-nowrap">{r.code} {r.name ? `- ${r.name}` : ''}</span>)
+                                        ? row.rabbits.map((r: any) => <span key={r.code || Math.random().toString()} className="whitespace-nowrap">{formatRabbitInfo(r.code, r.name)}</span>)
                                         : 'Ninguno'
                                     }
                                 </div>
                             )
                         },
-                        { key: 'foodTypes', header: 'Alimento', render: (row: any) => Array.isArray(row.foodTypes) ? row.foodTypes.join(', ') : (row.foodTypes || 'N/A') },
-                        { key: 'responsible', header: 'Reportado por', render: (row: any) => row.profileName || row.profile?.fullName || row.profile?.username || 'N/A' },
+                        { key: 'foodTypes', header: 'Alimento', render: (row: any) => formatArrayOrString(row.foodTypes) },
+                        { key: 'responsible', header: 'Reportado por', render: (row: any) => getResponsible(row) },
                         {
                             key: 'justification', header: 'Justificación', render: (row: any) => (
                                 <div className="max-w-[200px] whitespace-normal break-words">
@@ -115,15 +135,11 @@ export function ReportGenerator({ galponId, galpon, onToast }: ReportGeneratorPr
                         { key: 'vaccinationDate', header: 'Fecha y Hora', render: (row: any) => formatDateTime(row.vaccinationDate) },
                         { key: 'cageNumber', header: 'Jaula', render: (row: any) => row.cageNumber || 'N/A' },
                         {
-                            key: 'rabbitInfo', header: 'Conejo', render: (row: any) => {
-                                const code = row.rabbitCode || row.rabbit?.code || 'N/A';
-                                const name = row.rabbitName || row.rabbit?.name || '';
-                                return <span className="font-medium whitespace-nowrap">{code} {name ? `- ${name}` : ''}</span>;
-                            }
+                            key: 'rabbitInfo', header: 'Conejo', render: (row: any) => <span className="font-medium whitespace-nowrap">{formatRabbitInfo(row.rabbitCode || row.rabbit?.code, row.rabbitName || row.rabbit?.name)}</span>
                         },
                         { key: 'rabbitRace', header: 'Raza', render: (row: any) => row.rabbitRace || row.rabbit?.race || 'N/A' },
-                        { key: 'vaccines', header: 'Vacunas', render: (row: any) => Array.isArray(row.vaccines) ? row.vaccines.join(', ') : (row.vaccines || 'N/A') },
-                        { key: 'responsible', header: 'Reportado por', render: (row: any) => row.profileName || row.profile?.fullName || row.profile?.username || 'N/A' }
+                        { key: 'vaccines', header: 'Vacunas', render: (row: any) => formatArrayOrString(row.vaccines) },
+                        { key: 'responsible', header: 'Reportado por', render: (row: any) => getResponsible(row) }
                     ],
                     pdf: [
                         { header: 'Fecha y Hora', dataKey: 'formattedDate' },
@@ -140,14 +156,10 @@ export function ReportGenerator({ galponId, galpon, onToast }: ReportGeneratorPr
                         { key: 'dewormingDate', header: 'Fecha y Hora', render: (row: any) => formatDateTime(row.dewormingDate) },
                         { key: 'cageNumber', header: 'Jaula', render: (row: any) => row.cageNumber || 'N/A' },
                         {
-                            key: 'rabbitInfo', header: 'Conejo', render: (row: any) => {
-                                const code = row.rabbitCode || row.rabbit?.code || 'N/A';
-                                const name = row.rabbitName || row.rabbit?.name || '';
-                                return <span className="font-medium whitespace-nowrap">{code} {name ? `- ${name}` : ''}</span>;
-                            }
+                            key: 'rabbitInfo', header: 'Conejo', render: (row: any) => <span className="font-medium whitespace-nowrap">{formatRabbitInfo(row.rabbitCode || row.rabbit?.code, row.rabbitName || row.rabbit?.name)}</span>
                         },
                         { key: 'rabbitRace', header: 'Raza', render: (row: any) => row.rabbitRace || row.rabbit?.race || 'N/A' },
-                        { key: 'responsible', header: 'Reportado por', render: (row: any) => row.profileName || row.profile?.fullName || row.profile?.username || 'N/A' }
+                        { key: 'responsible', header: 'Reportado por', render: (row: any) => getResponsible(row) }
                     ],
                     pdf: [
                         { header: 'Fecha y Hora', dataKey: 'formattedDate' },
@@ -162,23 +174,19 @@ export function ReportGenerator({ galponId, galpon, onToast }: ReportGeneratorPr
                     ui: [
                         { key: 'cleaningDate', header: 'Fecha y Hora', render: (row: any) => formatDateTime(row.cleaningDate) },
                         {
-                            key: 'cageNumber', header: 'Jaula', render: (row: any) => {
-                                const num = row.cageNumber || row.Cage?.number;
-                                const type = row.cageType || row.Cage?.type;
-                                return num ? `${num} ${type ? `(${capitalizeString(type)})` : ''}` : 'N/A';
-                            }
+                            key: 'cageNumber', header: 'Jaula', render: (row: any) => formatCageNumber(row.cageNumber || row.Cage?.number, row.cageType || row.Cage?.type)
                         },
                         {
                             key: 'rabbits', header: 'Conejos', render: (row: any) => (
                                 <div className="flex flex-col gap-1">
                                     {Array.isArray(row.rabbits) && row.rabbits.length > 0
-                                        ? row.rabbits.map((r: any, i: number) => <span key={i} className="whitespace-nowrap">{r.code} {r.name ? `- ${r.name}` : ''}</span>)
+                                        ? row.rabbits.map((r: any) => <span key={r.code || Math.random().toString()} className="whitespace-nowrap">{formatRabbitInfo(r.code, r.name)}</span>)
                                         : 'Ninguno'
                                     }
                                 </div>
                             )
                         },
-                        { key: 'responsible', header: 'Reportado por', render: (row: any) => row.profileName || row.responsible || row.profile?.fullName || 'N/A' }
+                        { key: 'responsible', header: 'Reportado por', render: (row: any) => getResponsible(row) }
                     ],
                     pdf: [
                         { header: 'Fecha y Hora', dataKey: 'formattedDate' },
@@ -192,16 +200,12 @@ export function ReportGenerator({ galponId, galpon, onToast }: ReportGeneratorPr
                     ui: [
                         { key: 'deathDate', header: 'Fecha', render: (row: any) => formatDateTime(row.deathDate, false) },
                         {
-                            key: 'rabbit', header: 'Conejo', render: (row: any) => {
-                                const code = row.rabbitCode || 'N/A';
-                                const name = row.rabbitName;
-                                return (name && name !== 'N/A') ? `${code} - ${name}` : code;
-                            }
+                            key: 'rabbit', header: 'Conejo', render: (row: any) => formatRabbitInfo(row.rabbitCode, row.rabbitName)
                         },
                         { key: 'race', header: 'Raza', render: (row: any) => row.rabbitRace || 'N/A' },
                         { key: 'cause', header: 'Causa' },
                         { key: 'observations', header: 'Observaciones' },
-                        { key: 'responsible', header: 'Reportado por', render: (row: any) => row.profileName || row.responsible || row.profile?.fullName || 'N/A' }
+                        { key: 'responsible', header: 'Reportado por', render: (row: any) => getResponsible(row) }
                     ],
                     pdf: [
                         { header: 'Fecha', dataKey: 'formattedDate' },
@@ -212,7 +216,7 @@ export function ReportGenerator({ galponId, galpon, onToast }: ReportGeneratorPr
                         { header: 'Reportado por', dataKey: 'responsible' }
                     ]
                 };
-            case 'reproduction':
+            case 'reproduction': {
                 const isAll = selectedStatuses.length === 0;
                 const showEstado = true;
                 const showGazapos = !isAll && selectedStatuses.every(s => ['lactancia', 'completado', 'fallido', 'parcial'].includes(s));
@@ -222,21 +226,13 @@ export function ReportGenerator({ galponId, galpon, onToast }: ReportGeneratorPr
                     { key: 'mountDate', header: 'Fecha y Hora de Monta', render: (row: any) => formatDateTime(row.mountDate) },
                     { key: 'cageNumber', header: 'Jaula', render: (row: any) => row.cageNumber || 'N/A' },
                     {
-                        key: 'female', header: 'Hembra', render: (row: any) => {
-                            const code = row.femaleCode || 'N/A';
-                            const name = row.femaleName;
-                            return (name && name !== 'N/A') ? `${code} - ${name}` : code;
-                        }
+                        key: 'female', header: 'Hembra', render: (row: any) => formatRabbitInfo(row.femaleCode, row.femaleName)
                     },
                     {
-                        key: 'male', header: 'Macho', render: (row: any) => {
-                            const code = row.maleCode || 'N/A';
-                            const name = row.maleName;
-                            return (name && name !== 'N/A') ? `${code} - ${name}` : code;
-                        }
+                        key: 'male', header: 'Macho', render: (row: any) => formatRabbitInfo(row.maleCode, row.maleName)
                     },
                     { key: 'race', header: 'Raza', render: (row: any) => row.femaleRace || 'N/A' },
-                    { key: 'responsible', header: 'Reportado por', render: (row: any) => row.profile?.fullName || row.profile?.username || 'N/A' }
+                    { key: 'responsible', header: 'Reportado por', render: (row: any) => getResponsible(row) }
                 ];
 
                 const pdfColumns: any[] = [
@@ -274,8 +270,8 @@ export function ReportGenerator({ galponId, galpon, onToast }: ReportGeneratorPr
                     pdfColumns.push({ header: 'Causa', dataKey: 'cancellationReasonStr' });
                 }
 
-
                 return { ui: uiColumns, pdf: pdfColumns };
+            }
             default:
                 return { ui: [], pdf: [] };
         }
@@ -366,70 +362,52 @@ export function ReportGenerator({ galponId, galpon, onToast }: ReportGeneratorPr
 
                 if (selectedModule === 'feeding') {
                     row.formattedDate = formatDateTime(item.feedingDate);
-                    row.cageNumber = item.cageNumber ? `${item.cageNumber} ${item.cageType ? `(${capitalizeString(item.cageType)})` : ''}` : 'N/A';
-                    row.foodTypesStr = Array.isArray(item.foodTypes) ? item.foodTypes.join(', ') : (item.foodTypes || 'N/A');
+                    row.cageNumber = formatCageNumber(item.cageNumber, item.cageType);
+                    row.foodTypesStr = formatArrayOrString(item.foodTypes);
                     row.justificationStr = item.justification || 'N/A';
-                    row.rabbitsListStr = Array.isArray(item.rabbits) && item.rabbits.length > 0
-                        ? item.rabbits.map((r: any) => `${r.code} ${r.name ? `- ${r.name}` : ''}`).join('\n')
-                        : 'Ninguno';
-                    row.responsible = item.profileName || item.profile?.fullName || item.profile?.username || 'N/A';
+                    row.rabbitsListStr = formatRabbitsList(item.rabbits);
+                    row.responsible = getResponsible(item);
                 } else if (selectedModule === 'vaccination') {
                     row.formattedDate = formatDateTime(item.vaccinationDate);
                     row.cageNumber = item.rabbit?.assignments?.[0]?.cage?.number || 'N/A';
-                    const rabbitCode = item.rabbitCode || item.rabbit?.code || 'N/A';
-                    const rabbitName = item.rabbitName || item.rabbit?.name || '';
-                    row.rabbitInfo = `${rabbitCode}${rabbitName ? ` - ${rabbitName}` : ''}`;
+                    row.rabbitInfo = formatRabbitInfo(item.rabbitCode || item.rabbit?.code, item.rabbitName || item.rabbit?.name);
                     row.rabbitRace = item.rabbitRace || item.rabbit?.race || 'N/A';
-                    row.vaccinesList = Array.isArray(item.vaccines) ? item.vaccines.join(', ') : (item.vaccines || 'N/A');
-                    row.responsible = item.profileName || item.profile?.fullName || item.profile?.username || 'N/A';
+                    row.vaccinesList = formatArrayOrString(item.vaccines);
+                    row.responsible = getResponsible(item);
                 } else if (selectedModule === 'deworming') {
                     row.formattedDate = formatDateTime(item.dewormingDate);
                     row.cageNumber = item.rabbit?.assignments?.[0]?.cage?.number || 'N/A';
-                    const rabbitCode = item.rabbitCode || item.rabbit?.code || 'N/A';
-                    const rabbitName = item.rabbitName || item.rabbit?.name || '';
-                    row.rabbitInfo = `${rabbitCode}${rabbitName ? ` - ${rabbitName}` : ''}`;
+                    row.rabbitInfo = formatRabbitInfo(item.rabbitCode || item.rabbit?.code, item.rabbitName || item.rabbit?.name);
                     row.rabbitRace = item.rabbitRace || item.rabbit?.race || 'N/A';
-                    row.responsible = item.profileName || item.profile?.fullName || item.profile?.username || 'N/A';
+                    row.responsible = getResponsible(item);
                 } else if (selectedModule === 'cleaning') {
                     row.formattedDate = formatDateTime(item.cleaningDate);
-                    const num = item.cageNumber || item.Cage?.number;
-                    const type = item.cageType || item.Cage?.type;
-                    row.cageNumber = num ? `${num} ${type ? `(${capitalizeString(type)})` : ''}` : 'N/A';
-                    row.rabbitsListStr = Array.isArray(item.rabbits) && item.rabbits.length > 0
-                        ? item.rabbits.map((r: any) => `${r.code} ${r.name ? `- ${r.name}` : ''}`).join('\n')
-                        : 'Ninguno';
-                    row.responsible = item.profileName || item.responsible || item.profile?.fullName || 'N/A';
+                    row.cageNumber = formatCageNumber(item.cageNumber || item.Cage?.number, item.cageType || item.Cage?.type);
+                    row.rabbitsListStr = formatRabbitsList(item.rabbits);
+                    row.responsible = getResponsible(item);
                 } else if (selectedModule === 'mortality') {
                     row.formattedDate = formatDateTime(item.deathDate, false);
-                    const code = item.rabbitCode || 'N/A';
-                    const name = item.rabbitName;
-                    row.rabbitInfo = (name && name !== 'N/A') ? `${code} - ${name}` : code;
+                    row.rabbitInfo = formatRabbitInfo(item.rabbitCode, item.rabbitName);
                     row.rabbitRace = item.rabbitRace || 'N/A';
-                    row.responsible = item.profileName || item.responsible || item.profile?.fullName || 'N/A';
+                    row.responsible = getResponsible(item);
                 } else if (selectedModule === 'reproduction') {
                     row.formattedDate = formatDateTime(item.mountDate);
                     row.cageNumber = item.cageNumber || 'N/A';
-
-                    const fCode = item.femaleCode || 'N/A';
-                    row.femaleInfo = (item.femaleName && item.femaleName !== 'N/A') ? `${fCode} - ${item.femaleName}` : fCode;
-
-                    const mCode = item.maleCode || 'N/A';
-                    row.maleInfo = (item.maleName && item.maleName !== 'N/A') ? `${mCode} - ${item.maleName}` : mCode;
-
+                    row.femaleInfo = formatRabbitInfo(item.femaleCode, item.femaleName);
+                    row.maleInfo = formatRabbitInfo(item.maleCode, item.maleName);
                     row.femaleRace = item.femaleRace || 'N/A';
                     row.formattedStatus = capitalizeString(item.status || '');
-                    row.responsible = item.profile?.fullName || item.profile?.username || 'N/A';
+                    row.responsible = getResponsible(item);
 
                     let kitsStr = '-';
                     if (item.bornKits !== null && item.bornKits !== undefined) {
-                        const kits = item.bornKits;
                         const st = (item.status || '').toLowerCase();
                         if (['lactancia', 'completado'].includes(st)) {
-                            kitsStr = `${kits} vivo${kits === 1 ? '' : 's'}`;
+                            kitsStr = `${item.bornKits} vivo${item.bornKits === 1 ? '' : 's'}`;
                         } else if (['fallido', 'parcial'].includes(st)) {
-                            kitsStr = `${kits} muerto${kits === 1 ? '' : 's'}`;
+                            kitsStr = `${item.bornKits} muerto${item.bornKits === 1 ? '' : 's'}`;
                         } else {
-                            kitsStr = kits.toString();
+                            kitsStr = item.bornKits.toString();
                         }
                     }
                     row.bornKitsStr = kitsStr;
@@ -492,7 +470,7 @@ export function ReportGenerator({ galponId, galpon, onToast }: ReportGeneratorPr
             a.download = `${galponName}_${reportName}_${dateStr}.pdf`;
             document.body.appendChild(a);
             a.click();
-            document.body.removeChild(a);
+            a.remove();
 
             setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
 
@@ -569,13 +547,11 @@ export function ReportGenerator({ galponId, galpon, onToast }: ReportGeneratorPr
                                     {selectedRaces.length > 0 && (
                                         <div className="flex flex-wrap gap-2 mt-2">
                                             {selectedRaces.map(race => (
-                                                <div
+                                                <button
                                                     key={race}
-                                                    role="button"
-                                                    tabIndex={0}
+                                                    type="button"
                                                     onClick={() => setSelectedRaces(selectedRaces.filter(r => r !== race))}
-                                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedRaces(selectedRaces.filter(r => r !== race)); }}
-                                                    className="cursor-pointer"
+                                                    className="cursor-pointer bg-transparent border-0 p-0"
                                                 >
                                                     <Badge
                                                         variant="neutral"
@@ -583,7 +559,7 @@ export function ReportGenerator({ galponId, galpon, onToast }: ReportGeneratorPr
                                                     >
                                                         {race} <X size={12} />
                                                     </Badge>
-                                                </div>
+                                                </button>
                                             ))}
                                         </div>
                                     )}
@@ -612,13 +588,11 @@ export function ReportGenerator({ galponId, galpon, onToast }: ReportGeneratorPr
                                     {selectedCageTypes.length > 0 && (
                                         <div className="flex flex-wrap gap-2 mt-2">
                                             {selectedCageTypes.map(type => (
-                                                <div
+                                                <button
                                                     key={type}
-                                                    role="button"
-                                                    tabIndex={0}
+                                                    type="button"
                                                     onClick={() => setSelectedCageTypes(selectedCageTypes.filter(t => t !== type))}
-                                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedCageTypes(selectedCageTypes.filter(t => t !== type)); }}
-                                                    className="cursor-pointer"
+                                                    className="cursor-pointer bg-transparent border-0 p-0"
                                                 >
                                                     <Badge
                                                         variant="neutral"
@@ -626,7 +600,7 @@ export function ReportGenerator({ galponId, galpon, onToast }: ReportGeneratorPr
                                                     >
                                                         {capitalizeString(type)} <X size={12} />
                                                     </Badge>
-                                                </div>
+                                                </button>
                                             ))}
                                         </div>
                                     )}
@@ -660,13 +634,11 @@ export function ReportGenerator({ galponId, galpon, onToast }: ReportGeneratorPr
                                             const member = members.find(m => m.profile?.id === profileId);
                                             const name = member?.profile?.fullName || member?.profile?.username || 'Usuario';
                                             return (
-                                                <div
+                                                <button
                                                     key={profileId}
-                                                    role="button"
-                                                    tabIndex={0}
+                                                    type="button"
                                                     onClick={() => setSelectedProfileIds(selectedProfileIds.filter(id => id !== profileId))}
-                                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedProfileIds(selectedProfileIds.filter(id => id !== profileId)); }}
-                                                    className="cursor-pointer"
+                                                    className="cursor-pointer bg-transparent border-0 p-0"
                                                 >
                                                     <Badge
                                                         variant="neutral"
@@ -674,7 +646,7 @@ export function ReportGenerator({ galponId, galpon, onToast }: ReportGeneratorPr
                                                     >
                                                         {name} <X size={12} />
                                                     </Badge>
-                                                </div>
+                                                </button>
                                             );
                                         })}
                                     </div>
@@ -717,13 +689,11 @@ export function ReportGenerator({ galponId, galpon, onToast }: ReportGeneratorPr
                                                 ].find(s => s.value === st)?.label;
                                                 
                                                 return (
-                                                    <div
+                                                    <button
                                                         key={st}
-                                                        role="button"
-                                                        tabIndex={0}
+                                                        type="button"
                                                         onClick={() => setSelectedStatuses(selectedStatuses.filter(s => s !== st))}
-                                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedStatuses(selectedStatuses.filter(s => s !== st)); }}
-                                                        className="cursor-pointer"
+                                                        className="cursor-pointer bg-transparent border-0 p-0"
                                                     >
                                                         <Badge
                                                             variant="neutral"
@@ -731,7 +701,7 @@ export function ReportGenerator({ galponId, galpon, onToast }: ReportGeneratorPr
                                                         >
                                                             {label} <X size={12} />
                                                         </Badge>
-                                                    </div>
+                                                    </button>
                                                 );
                                             })}
                                         </div>

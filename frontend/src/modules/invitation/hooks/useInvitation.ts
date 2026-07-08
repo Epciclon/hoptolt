@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { invitationService } from '../services/invitation.service';
-import type { Invitation } from '../types/invitation.types';
+
 import { useActiveGalpon } from '@/modules/galpones/hooks/useActiveGalpon';
 
 export function useInvitation() {
@@ -34,7 +34,13 @@ export function useInvitation() {
 
   const invitations = [...pendingInvitations, ...galponInvitations].filter((v, i, a) => a.findIndex(t => (t.id === v.id)) === i);
   const loading = loadingPending || loadingGalpon;
-  const error = errorPending ? (errorPending as Error).message : (errorGalpon ? (errorGalpon as Error).message : null);
+  
+  let error = null;
+  if (errorPending) {
+    error = (errorPending as Error).message;
+  } else if (errorGalpon) {
+    error = (errorGalpon as Error).message;
+  }
 
   const createInvitationMutation = useMutation({
     mutationFn: ({ galponId, email }: { galponId: number; email: string }) => invitationService.createInvitation(galponId, { email }),
@@ -48,6 +54,7 @@ export function useInvitation() {
       await createInvitationMutation.mutateAsync({ galponId, email });
       return true;
     } catch (err) {
+      console.error(err);
       return false;
     }
   };
@@ -67,6 +74,7 @@ export function useInvitation() {
       await acceptInvitationMutation.mutateAsync(token);
       return true;
     } catch (err) {
+      console.error(err);
       return false;
     }
   };
@@ -83,6 +91,7 @@ export function useInvitation() {
       await revokeInvitationMutation.mutateAsync(token);
       return true;
     } catch (err) {
+      console.error(err);
       return false;
     }
   };

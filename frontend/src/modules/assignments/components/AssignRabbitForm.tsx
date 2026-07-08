@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button, Alert, Input, LoadingMessage } from '@/shared/ui';
 import { useToast } from '@/shared/contexts/ToastContext';
-import { assignmentService } from '../services/assignment.service';
+
 import { useAssignments } from '../hooks/useAssignments';
 import type { Cage } from '@/modules/cages/types/cage.types';
 import type { Rabbit } from '@/modules/rabbits/types/rabbit.types';
@@ -23,7 +23,7 @@ interface AssignRabbitFormProps {
   onCancel?: () => void;
 }
 
-export function AssignRabbitForm({ onSuccess, onCancel }: AssignRabbitFormProps) {
+export function AssignRabbitForm({ onSuccess, onCancel }: Readonly<AssignRabbitFormProps>) {
   const { assignRabbits, operativeCages: cages, availableRabbits: rabbits, loading: loadingData } = useAssignments();
   const { showToast } = useToast();
 
@@ -152,11 +152,16 @@ export function AssignRabbitForm({ onSuccess, onCancel }: AssignRabbitFormProps)
 
   const currentAssigned = selectedCage ? (selectedCage.assignedCount || 0) : 0;
   const remainingCapacity = selectedCage ? Math.max(0, selectedCage.capacity - currentAssigned - selectedRabbits.length) : 0;
-  const canAddMore = remainingCapacity > 0 && selectedCage !== null;
+
 
   if (loadingData) {
     return <LoadingMessage message="Cargando jaulas y conejos disponibles..." />;
   }
+
+  const getSubmitLabel = () => {
+    if (selectedRabbits.length === 0) return 'Asignar Conejos';
+    return `Asignar ${selectedRabbits.length} conejo${selectedRabbits.length > 1 ? 's' : ''}`;
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5 min-h-[320px]">
@@ -292,7 +297,7 @@ export function AssignRabbitForm({ onSuccess, onCancel }: AssignRabbitFormProps)
           Cancelar
         </Button>
         <Button type="submit" loading={isSubmitting} disabled={selectedRabbits.length === 0 || !selectedCage}>
-          Asignar {selectedRabbits.length > 0 ? `${selectedRabbits.length} conejo${selectedRabbits.length > 1 ? 's' : ''}` : 'Conejos'}
+          {getSubmitLabel()}
         </Button>
       </div>
     </form>

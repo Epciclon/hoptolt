@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Button, Input, Dialog, Badge } from '@/shared/ui';
+import { Button, Input, Dialog } from '@/shared/ui';
 import { useMortality } from '../hooks/useMortality';
 import { useToast } from '@/shared/contexts/ToastContext';
 import type { AssignedRabbit } from '@/modules/assignments/types/assignment.types';
@@ -12,7 +12,7 @@ interface MortalityFormProps {
   onCancel?: () => void;
 }
 
-export function MortalityForm({ selectedRabbits, onSuccess, onCancel }: MortalityFormProps) {
+export function MortalityForm({ selectedRabbits, onSuccess, onCancel }: Readonly<MortalityFormProps>) {
   const { createMortality } = useMortality();
   const { showToast } = useToast();
   const [submitting, setSubmitting] = useState(false);
@@ -127,7 +127,7 @@ export function MortalityForm({ selectedRabbits, onSuccess, onCancel }: Mortalit
 
   const causeOptions = [...baseCauseOptions];
   if (customCause && !baseCauseOptions.some(opt => opt.value === customCause)) {
-    causeOptions.splice(causeOptions.length - 1, 0, {
+    causeOptions.splice(-1, 0, {
       value: customCause,
       label: customCause // Show only the cause name directly as typed, e.g., "Gripe"
     });

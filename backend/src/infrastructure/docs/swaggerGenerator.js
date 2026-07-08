@@ -94,7 +94,7 @@ class SwaggerAutoGenerator {
             while (endWord >= 0 && /\s/.test(definition[endWord])) endWord--;
 
             let startWord = endWord;
-            while (startWord >= 0 && /[a-zA-Z0-9_]/.test(definition[startWord])) startWord--;
+            while (startWord >= 0 && /\w/.test(definition[startWord])) startWord--;
             startWord++;
 
             if (startWord <= endWord) {
@@ -104,36 +104,40 @@ class SwaggerAutoGenerator {
 
                 if (endIndex !== -1) {
                     const blockContent = definition.substring(startIndex, endIndex);
-                    const typeMatch = blockContent.match(/type:\s*DataTypes\.(\w+)/);
-                    if (typeMatch) {
-                        const dataType = typeMatch[1];
-                        fields[fieldName] = {
-                            type: this.mapDataTypeToSwagger(dataType),
-                            description: this.generateFieldDescription(fieldName, modelName)
-                        };
-
-                        const enumMatch = blockContent.match(/values:\s*\[([^\]]+)\]/);
-                        if (enumMatch) {
-                            fields[fieldName].enum = enumMatch[1].split(',').map(v => v.replace(/['"\s]/g, ''));
-                        }
-
-                        const minMatch = blockContent.match(/min:\s*(\d+)/);
-                        if (minMatch) fields[fieldName].minimum = Number.parseInt(minMatch[1]);
-
-                        const maxMatch = blockContent.match(/max:\s*(\d+)/);
-                        if (maxMatch) fields[fieldName].maximum = Number.parseInt(maxMatch[1]);
-
-                        const allowNullMatch = blockContent.match(/allowNull:\s*(false|true)/);
-                        if (allowNullMatch && allowNullMatch[1] === 'false') {
-                            fields[fieldName].required = true;
-                        }
-                    }
+                    this._extractFieldAttributes(fields, fieldName, blockContent, modelName);
                 }
             }
             i = colonBraceIdx + 3;
         }
 
         return fields;
+    }
+
+    _extractFieldAttributes(fields, fieldName, blockContent, modelName) {
+        const typeMatch = blockContent.match(/type:\s*DataTypes\.(\w+)/);
+        if (typeMatch) {
+            const dataType = typeMatch[1];
+            fields[fieldName] = {
+                type: this.mapDataTypeToSwagger(dataType),
+                description: this.generateFieldDescription(fieldName, modelName)
+            };
+
+            const enumMatch = blockContent.match(/values:\s*\[([^\]]+)\]/);
+            if (enumMatch) {
+                fields[fieldName].enum = enumMatch[1].split(',').map(v => v.replace(/['"\s]/g, ''));
+            }
+
+            const minMatch = blockContent.match(/min:\s*(\d+)/);
+            if (minMatch) fields[fieldName].minimum = Number.parseInt(minMatch[1]);
+
+            const maxMatch = blockContent.match(/max:\s*(\d+)/);
+            if (maxMatch) fields[fieldName].maximum = Number.parseInt(maxMatch[1]);
+
+            const allowNullMatch = blockContent.match(/allowNull:\s*(false|true)/);
+            if (allowNullMatch?.[1] === 'false') {
+                fields[fieldName].required = true;
+            }
+        }
     }
 
     mapDataTypeToSwagger(dataType) {

@@ -90,6 +90,7 @@ export const authService = {
         username: data.user.user_metadata.username || email.split('@')[0],
       });
     } catch (syncError) {
+      console.error(syncError);
       // Silencioso: el perfil puede ya existir por el trigger
     }
 
@@ -146,7 +147,7 @@ export const authService = {
 
     // 1. Obtener usuario actual para sacar su email
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user || !user.email) throw new Error('Usuario no autenticado.');
+    if (!user?.email) throw new Error('Usuario no autenticado.');
 
     // 2. Re-verificar contraseña actual intentando hacer login silencioso
     const { error: signInError } = await supabase.auth.signInWithPassword({

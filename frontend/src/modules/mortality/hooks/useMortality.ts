@@ -5,7 +5,7 @@ import { mortalityService } from '../services/mortality.service';
 import { assignmentService } from '@/modules/assignments/services/assignment.service';
 import { farmMemberService } from '@/modules/farmMember/services/farmMember.service';
 import { useActiveGalpon } from '@/modules/galpones/hooks/useActiveGalpon';
-import type { Mortality, CreateMortalityDto } from '../types/mortality.types';
+import type { CreateMortalityDto } from '../types/mortality.types';
 import type { AssignedRabbit } from '@/modules/assignments/types/assignment.types';
 
 export function useMortality() {
@@ -66,8 +66,12 @@ export function useMortality() {
   const assignedCageIds = membershipData?.assignedCageIds || [];
 
   const loading = loadingMortalities || loadingRabbits || loadingMembership;
-  const error = errorMortalities ? (errorMortalities as Error).message :
-    (errorRabbits ? (errorRabbits as Error).message : null);
+  let error = null;
+  if (errorMortalities) {
+    error = (errorMortalities as Error).message;
+  } else if (errorRabbits) {
+    error = (errorRabbits as Error).message;
+  }
 
   // Mutation: Create Mortality
   const createMortalityMutation = useMutation({

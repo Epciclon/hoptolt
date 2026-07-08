@@ -3,8 +3,8 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useState, useEffect } from 'react';
-import { Input, Select, Button, Alert } from '@/shared/ui';
+import { useEffect } from 'react';
+import { Input, Select, Button } from '@/shared/ui';
 import { cageService } from '../services/cage.service';
 import { useActiveGalpon } from '@/modules/galpones/hooks/useActiveGalpon';
 import { useToast } from '@/shared/contexts/ToastContext';
@@ -42,7 +42,7 @@ interface CageFormProps {
   onCancel?: () => void;
 }
 
-export function CageForm({ defaultValues, cageId, mode, onSuccess, onCancel }: CageFormProps) {
+export function CageForm({ defaultValues, cageId, mode, onSuccess, onCancel }: Readonly<CageFormProps>) {
   const { activeGalpon } = useActiveGalpon();
   const { showToast } = useToast();
   const queryClient = useQueryClient();

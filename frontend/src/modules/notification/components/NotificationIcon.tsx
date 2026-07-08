@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 
 
 export function NotificationIcon() {
-  const [limit, setLimit] = useState(10);
+  const [limit] = useState(10);
   const { notifications, markAsRead, markAllAsRead, deleteNotification, unreadCount } = useNotifications({ limit });
   const { acceptInvitation, revokeInvitation } = useInvitation();
   const { showToast } = useToast();

@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { genealogyService } from '../services/genealogy.service';
-import type { Genealogy, GenealogyTree } from '../types/genealogy.types';
+import type { GenealogyTree } from '../types/genealogy.types';
 
 export function useGenealogy() {
   const queryClient = useQueryClient();
@@ -39,6 +39,7 @@ export function useGenealogy() {
     try {
       return await genealogyService.getTree(rabbitId, levels);
     } catch (err) {
+      console.error(err);
       return null;
     }
   };
@@ -57,6 +58,7 @@ export function useGenealogy() {
       await editGenealogyMutation.mutateAsync({ rabbitId, data });
       return true;
     } catch (err) {
+      console.error(err);
       return false;
     }
   };

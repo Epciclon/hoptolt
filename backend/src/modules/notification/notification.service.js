@@ -147,7 +147,7 @@ class NotificationService {
                         order: [['cleaningDate', 'DESC']]
                     });
 
-                    if (!lastCleaning || !lastCleaning.cleaningDate) continue;
+                    if (!lastCleaning?.cleaningDate) continue;
 
                     const diffTime = today.getTime() - new Date(lastCleaning.cleaningDate).getTime();
                     const daysWithoutCleaning = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -252,16 +252,20 @@ class NotificationService {
                 if (typeof dataObj === 'string') {
                     try { dataObj = JSON.parse(dataObj); } catch (e) { console.error("Error parsing notification data", e); continue; }
                 }
-                if (filterType === 'birth') {
-                    if (dataObj?.reproductionId) notifiedIds.add(Number(dataObj.reproductionId));
-                } else if (filterType === 'weaning') {
-                    if (dataObj?.type === 'weaning_alert' && dataObj?.reproductionId) notifiedIds.add(Number(dataObj.reproductionId));
-                } else if (filterType === 'cleaning') {
-                    if (dataObj?.type === 'cleaning_warning' && dataObj?.cageId) notifiedIds.add(Number(dataObj.cageId));
-                }
+                this._addNotifiedId(notifiedIds, dataObj, filterType);
             }
         }
         return notifiedIds;
+    }
+
+    _addNotifiedId(notifiedIds, dataObj, filterType) {
+        if (filterType === 'birth' && dataObj?.reproductionId) {
+            notifiedIds.add(Number(dataObj.reproductionId));
+        } else if (filterType === 'weaning' && dataObj?.type === 'weaning_alert' && dataObj?.reproductionId) {
+            notifiedIds.add(Number(dataObj.reproductionId));
+        } else if (filterType === 'cleaning' && dataObj?.type === 'cleaning_warning' && dataObj?.cageId) {
+            notifiedIds.add(Number(dataObj.cageId));
+        }
     }
 
     async _getCagesToCheckForCleaning(profileId, assignedCageIds) {
@@ -292,12 +296,16 @@ class NotificationService {
                 const assignedCages = await Cage.findAll({
                     where: { id: { [Op.in]: cageIds }, galponId: m.galponId }
                 });
-                for (const c of assignedCages) {
-                    if (!cagesToCheck.some(x => x.id === c.id)) cagesToCheck.push(c);
-                }
+                this._addUniqueCages(cagesToCheck, assignedCages);
             }
         }
         return cagesToCheck;
+    }
+
+    _addUniqueCages(cagesToCheck, newCages) {
+        for (const c of newCages) {
+            if (!cagesToCheck.some(x => x.id === c.id)) cagesToCheck.push(c);
+        }
     }
 }
 

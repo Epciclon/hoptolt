@@ -140,24 +140,8 @@ class GenealogyService {
         const newFatherId = fatherId !== undefined ? fatherId : genealogy.fatherId;
         const newMotherId = motherId !== undefined ? motherId : genealogy.motherId;
 
-        if (newFatherId && newFatherId === rabbitId) {
-            throw new AppError('El conejo no puede ser su propio padre.', 400);
-        }
-        if (newMotherId && newMotherId === rabbitId) {
-            throw new AppError('El conejo no puede ser su propia madre.', 400);
-        }
-
-        if (newFatherId) {
-            await this._validateParent(newFatherId, rabbit, 'macho', 'padre', false);
-            const fatherAncestors = await this.getAncestors(newFatherId, 10);
-            if (fatherAncestors.includes(rabbitId)) throw new AppError('El padre no puede ser descendiente del hijo (ciclo genealógico).', 400);
-        }
-
-        if (newMotherId) {
-            await this._validateParent(newMotherId, rabbit, 'hembra', 'madre', false);
-            const motherAncestors = await this.getAncestors(newMotherId, 10);
-            if (motherAncestors.includes(rabbitId)) throw new AppError('La madre no puede ser descendiente del hijo (ciclo genealógico).', 400);
-        }
+        await this._validateParentUpdate(newFatherId, rabbit, 'macho', 'padre');
+        await this._validateParentUpdate(newMotherId, rabbit, 'hembra', 'madre');
 
         let consanguinityWarning = null;
         if (newFatherId && newMotherId) {
@@ -256,6 +240,19 @@ class GenealogyService {
             else warning = 'ADVERTENCIA: Este padre ya tiene hijos con otras madres. Esto puede causar problemas de salud en los descendientes.';
         }
         return warning;
+    }
+
+    async _validateParentUpdate(parentId, rabbit, sex, label) {
+        if (!parentId) return;
+        const Article = label === 'madre' ? 'La' : 'El';
+        const Pronombre = label === 'madre' ? 'propia' : 'propio';
+        
+        if (parentId === rabbit.id) {
+            throw new AppError(`El conejo no puede ser su ${Pronombre} ${label}.`, 400);
+        }
+        await this._validateParent(parentId, rabbit, sex, label, false);
+        const ancestors = await this.getAncestors(parentId, 10);
+        if (ancestors.includes(rabbit.id)) throw new AppError(`${Article} ${label} no puede ser descendiente del hijo (ciclo genealógico).`, 400);
     }
 }
 

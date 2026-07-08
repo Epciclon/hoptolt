@@ -51,6 +51,7 @@ export function useAssignments() {
       await unassignRabbitMutation.mutateAsync(id);
       return true;
     } catch (err) {
+      console.error(err);
       return false;
     }
   };

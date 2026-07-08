@@ -218,57 +218,33 @@ exports.deleteReproduction = catchAsync(async (req, res) => {
     res.status(200).json({ success: true, message: 'Monta eliminada exitosamente.' });
 });
 
+// Helper
+async function getWorkerCageIds(userId, galponId) {
+    const { FarmMember, Galpon, WorkerCage } = require('../../domain/models');
+    
+    const galpon = await Galpon.findByPk(galponId);
+    if (galpon && galpon.profileId === userId) return null;
+    
+    const ownerMembership = await FarmMember.findOne({
+        where: { profileId: userId, galponId: galponId, role: 'owner' }
+    });
+    if (ownerMembership) return null;
+
+    const membership = await FarmMember.findOne({
+        where: { profileId: userId, galponId: galponId, role: 'worker' },
+        include: [{ model: WorkerCage, as: 'assignedCages', attributes: ['cageId'] }]
+    });
+    
+    return membership?.assignedCages ? membership.assignedCages.map(wc => wc.cageId) : [];
+}
+
 exports.getReproductionCalendar = catchAsync(async (req, res) => {
     const galponId = req.galponId;
     const year  = Number.parseInt(req.query.year)  || new Date().getFullYear();
     const month = Number.parseInt(req.query.month) || (new Date().getMonth() + 1); // 1-12
     const type  = req.query.type || 'births';
 
-    // Obtener cageIds del trabajador si no es owner
-    let cageIds = null;
-    const { FarmMember, Galpon } = require('../../domain/models');
-    
-    // Verificar si el usuario es owner del galpón
-    const galpon = await Galpon.findByPk(galponId);
-    let isOwner = false;
-    
-    if (galpon && galpon.profileId === req.user.id) {
-        isOwner = true;
-    } else {
-        const ownerMembership = await FarmMember.findOne({
-            where: {
-                profileId: req.user.id,
-                galponId: galponId,
-                role: 'owner'
-            }
-        });
-        if (ownerMembership) isOwner = true;
-    }
-
-    if (!isOwner) {
-        cageIds = [];
-        // Si no es owner, obtener jaulas asignadas como worker
-        const { WorkerCage } = require('../../domain/models');
-        
-        const membership = await FarmMember.findOne({
-            where: {
-                profileId: req.user.id,
-                galponId: galponId,
-                role: 'worker'
-            },
-            include: [
-                {
-                    model: WorkerCage,
-                    as: 'assignedCages',
-                    attributes: ['cageId']
-                }
-            ]
-        });
-        
-        if (membership?.assignedCages) {
-            cageIds = membership.assignedCages.map(wc => wc.cageId);
-        }
-    }
+    const cageIds = await getWorkerCageIds(req.user.id, galponId);
 
     const records = await reproductionService.getReproductionCalendar(galponId, year, month, type, cageIds);
 
@@ -308,7 +284,14 @@ exports.getReproductionCalendar = catchAsync(async (req, res) => {
     const grouped = {};
     for (const r of records) {
         const formatEcuador = (d) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guayaquil', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
-        let valToFormat = type === 'births' ? r.estimatedBirthDate : (type === 'weaning' ? r.estimatedWeaningDate : r.receptiveDate);
+        let valToFormat;
+        if (type === 'births') {
+            valToFormat = r.estimatedBirthDate;
+        } else if (type === 'weaning') {
+            valToFormat = r.estimatedWeaningDate;
+        } else {
+            valToFormat = r.receptiveDate;
+        }
         const dateKey = _getDateKey(valToFormat, formatEcuador);
 
         if (!dateKey) continue;
@@ -329,50 +312,7 @@ exports.getReproductionByDay = catchAsync(async (req, res) => {
     const month = Number.parseInt(req.query.month) || (new Date().getMonth() + 1); // 1-12
     const day   = Number.parseInt(req.query.day)   || new Date().getDate();
 
-    let cageIds = null;
-    const { FarmMember, Galpon } = require('../../domain/models');
-
-    // Verificar si el usuario es owner del galpón
-    const galpon = await Galpon.findByPk(galponId);
-    let isOwner = false;
-    
-    if (galpon && galpon.profileId === req.user.id) {
-        isOwner = true;
-    } else {
-        const ownerMembership = await FarmMember.findOne({
-            where: {
-                profileId: req.user.id,
-                galponId: galponId,
-                role: 'owner'
-            }
-        });
-        if (ownerMembership) isOwner = true;
-    }
-
-    if (!isOwner) {
-        cageIds = [];
-        // Si no es owner, obtener jaulas asignadas como worker
-        const { WorkerCage } = require('../../domain/models');
-        
-        const membership = await FarmMember.findOne({
-            where: {
-                profileId: req.user.id,
-                galponId: galponId,
-                role: 'worker'
-            },
-            include: [
-                {
-                    model: WorkerCage,
-                    as: 'assignedCages',
-                    attributes: ['cageId']
-                }
-            ]
-        });
-        
-        if (membership?.assignedCages) {
-            cageIds = membership.assignedCages.map(wc => wc.cageId);
-        }
-    }
+    const cageIds = await getWorkerCageIds(req.user.id, galponId);
 
     const records = await reproductionService.getReproductionByDay(galponId, year, month, day, cageIds);
 
