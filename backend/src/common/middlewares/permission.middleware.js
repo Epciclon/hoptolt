@@ -6,53 +6,56 @@ const { FarmMember } = require('../../domain/models');
  * @param {string} moduleName - Nombre del módulo (ej: 'cages', 'rabbits', 'feeding')
  * @param {string} action - Acción requerida (ej: 'canCreate', 'canRead', 'canUpdate', 'canDelete')
  */
+const getMembershipData = async (req) => {
+    const profileId = req.user.id;
+    
+    const { Profile, Galpon } = require('../../domain/models');
+    const profile = await Profile.findByPk(profileId);
+    
+    if (!profile?.activeGalponId) {
+        throw new AppError('No tienes un galpón activo seleccionado.', 403);
+    }
+
+    const galpon = await Galpon.findByPk(profile.activeGalponId);
+    
+    if (galpon && galpon.profileId === profileId) {
+        return { isOwner: true, activeGalponId: profile.activeGalponId };
+    }
+
+    const membership = await FarmMember.findOne({
+        where: { 
+            profileId, 
+            galponId: profile.activeGalponId, 
+            status: 'active',
+            role: 'worker'
+        },
+        include: [{ association: 'permissions' }]
+    });
+
+    if (!membership) {
+        throw new AppError('No tienes acceso a este galpón.', 403);
+    }
+
+    return { isOwner: false, activeGalponId: profile.activeGalponId, membership };
+};
+
 const checkPermission = (moduleName, action) => {
     return async (req, res, next) => {
         try {
-            const profileId = req.user.id;
+            const data = await getMembershipData(req);
             
-            // Obtener el galpón activo del usuario
-            const { Profile } = require('../../domain/models');
-            const profile = await Profile.findByPk(profileId);
-            
-            if (!profile?.activeGalponId) {
-                throw new AppError('No tienes un galpón activo seleccionado.', 403);
-            }
-
-            // Verificar si el usuario es propietario del galpón (los propietarios tienen todos los permisos)
-            const { Galpon } = require('../../domain/models');
-            const galpon = await Galpon.findByPk(profile.activeGalponId);
-            
-            if (galpon && galpon.profileId === profileId) {
-                // El usuario es propietario, tiene todos los permisos
+            if (data.isOwner) {
                 return next();
             }
 
-            // Si no es propietario, verificar permisos específicos
-            const membership = await FarmMember.findOne({
-                where: { 
-                    profileId, 
-                    galponId: profile.activeGalponId, 
-                    status: 'active',
-                    role: 'worker'
-                },
-                include: [{ association: 'permissions' }]
-            });
-
-            if (!membership) {
-                throw new AppError('No tienes acceso a este galpón.', 403);
-            }
-
-            // Verificar si tiene el permiso específico
-            const permission = membership.permissions.find(p => p.moduleName === moduleName);
+            const permission = data.membership.permissions.find(p => p.moduleName === moduleName);
             
             if (!permission?.[action]) {
                 throw new AppError(`No tienes permiso para ${action} en el módulo ${moduleName}.`, 403);
             }
 
-            // Agregar el galpón activo al request para uso posterior
-            req.activeGalponId = profile.activeGalponId;
-            req.workerCages = membership.workerCages?.map(wc => wc.cageId) || [];
+            req.activeGalponId = data.activeGalponId;
+            req.workerCages = data.membership.workerCages?.map(wc => wc.cageId) || [];
             
             next();
         } catch (error) {
@@ -68,54 +71,26 @@ const checkPermission = (moduleName, action) => {
 const checkModuleAccess = (moduleName) => {
     return async (req, res, next) => {
         try {
-            const profileId = req.user.id;
+            const data = await getMembershipData(req);
             
-            // Obtener el galpón activo del usuario
-            const { Profile } = require('../../domain/models');
-            const profile = await Profile.findByPk(profileId);
-            
-            if (!profile?.activeGalponId) {
-                throw new AppError('No tienes un galpón activo seleccionado.', 403);
-            }
-
-            // Verificar si el usuario es propietario del galpón
-            const { Galpon } = require('../../domain/models');
-            const galpon = await Galpon.findByPk(profile.activeGalponId);
-            
-            if (galpon && galpon.profileId === profileId) {
+            if (data.isOwner) {
                 return next();
             }
 
-            // Si no es propietario, verificar si tiene algún permiso en el módulo
-            const membership = await FarmMember.findOne({
-                where: { 
-                    profileId, 
-                    galponId: profile.activeGalponId, 
-                    status: 'active',
-                    role: 'worker'
-                },
-                include: [{ association: 'permissions' }]
-            });
-
-            if (!membership) {
-                throw new AppError('No tienes acceso a este galpón.', 403);
-            }
-
-            const permission = membership.permissions.find(p => p.moduleName === moduleName);
+            const permission = data.membership.permissions.find(p => p.moduleName === moduleName);
             
             if (!permission) {
                 throw new AppError(`No tienes acceso al módulo ${moduleName}.`, 403);
             }
 
-            // Verificar si tiene al menos un permiso en el módulo
             const hasAnyPermission = permission.canCreate || permission.canRead || permission.canUpdate || permission.canDelete;
             
             if (!hasAnyPermission) {
                 throw new AppError(`No tienes permisos en el módulo ${moduleName}.`, 403);
             }
 
-            req.activeGalponId = profile.activeGalponId;
-            req.workerCages = membership.workerCages?.map(wc => wc.cageId) || [];
+            req.activeGalponId = data.activeGalponId;
+            req.workerCages = data.membership.workerCages?.map(wc => wc.cageId) || [];
             
             next();
         } catch (error) {
