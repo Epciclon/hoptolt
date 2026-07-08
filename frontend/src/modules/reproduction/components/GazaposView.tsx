@@ -2,10 +2,10 @@
 
 import { useReproduction } from '../hooks/useReproduction';
 import type { Reproduction } from '../types/reproduction.types';
-import { Button, ConfirmDialog, Dialog, Input, Select, Badge, Alert, RabbitSelectableCard, CageGroupCard } from '@/shared/ui';
+import { Button, Dialog, Input, Select, RabbitSelectableCard, CageGroupCard } from '@/shared/ui';
 import { FilterBar } from '@/shared/ui/FilterBar';
 import { useState, useEffect, useRef } from 'react';
-import { Baby, Calendar, AlertTriangle, FileText, CheckCircle2, Trash2, Pencil } from 'lucide-react';
+import { AlertTriangle, Trash2, Pencil } from 'lucide-react';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { mortalityService } from '@/modules/mortality/services/mortality.service';
 import { WeaningWizard } from './WeaningWizard';
@@ -15,7 +15,7 @@ interface GazaposViewProps {
   onSuccess?: () => void;
 }
 
-export function GazaposView({ reproductions, onSuccess }: GazaposViewProps) {
+export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewProps>) {
   const { cancelReproduction, finishLactation, registerBirth } = useReproduction();
   const { showToast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
@@ -208,7 +208,7 @@ export function GazaposView({ reproductions, onSuccess }: GazaposViewProps) {
 
   const mortalityCauseOptions = [...baseMortalityCauseOptions];
   if (mortalityCustomCause && !baseMortalityCauseOptions.some(opt => opt.value === mortalityCustomCause)) {
-    mortalityCauseOptions.splice(mortalityCauseOptions.length - 1, 0, {
+    mortalityCauseOptions.splice(-1, 0, {
       value: mortalityCustomCause,
       label: mortalityCustomCause
     });
@@ -231,7 +231,7 @@ export function GazaposView({ reproductions, onSuccess }: GazaposViewProps) {
   const handleCancelMortalityCustomCause = () => {
     setMortalityCause(mortalityPrevCause);
     const matched = mortalityCauseOptions.find(opt => opt.value === mortalityPrevCause);
-    setMortalityCauseSearch(matched ? matched.label : '');
+    setMortalityCauseSearch(matched?.label ?? '');
     setIsMortalityCustomCauseModalOpen(false);
   };
 
@@ -331,15 +331,13 @@ export function GazaposView({ reproductions, onSuccess }: GazaposViewProps) {
                 onClick={() => setExpandedId(isExpanded ? null : reproduction.id)}
               >
                 <div className="grid grid-cols-2 gap-2 text-xs mb-4">
-                  <div 
-                    role="button"
-                    tabIndex={0}
-                    className={`border p-2 rounded relative transition-colors ${
-                      isExpanded 
-                        ? hasKits
-                          ? 'bg-white/60 border-slate-100 cursor-pointer hover:bg-emerald-50 group'
-                          : 'bg-white/60 border-slate-100 cursor-pointer hover:bg-slate-50 group' 
-                        : 'bg-white/60 border-slate-100'
+                  <button
+                    type="button"
+                    className={`border p-2 rounded relative transition-colors text-left ${
+                      !isExpanded ? 'bg-white/60 border-slate-100' :
+                      hasKits
+                        ? 'bg-white/60 border-slate-100 cursor-pointer hover:bg-emerald-50 group'
+                        : 'bg-white/60 border-slate-100 cursor-pointer hover:bg-slate-50 group'
                     }`}
                     onClick={(e) => { 
                       if (!isExpanded) return;
@@ -349,18 +347,6 @@ export function GazaposView({ reproductions, onSuccess }: GazaposViewProps) {
                       } else {
                         setToRegisterKits(reproduction);
                         setBornKits('');
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        if (!isExpanded) return;
-                        e.stopPropagation();
-                        if (hasKits) {
-                          setToRegisterMortality(reproduction);
-                        } else {
-                          setToRegisterKits(reproduction);
-                          setBornKits('');
-                        }
                       }
                     }}
                     title={hasKits ? (isExpanded ? 'Clic para registrar una baja de gazapos' : '') : (isExpanded ? 'Toca para registrar la cantidad de gazapos nacidos' : '')}
@@ -373,7 +359,7 @@ export function GazaposView({ reproductions, onSuccess }: GazaposViewProps) {
                     <p className={`font-bold text-sm ${hasKits ? 'text-slate-700' : 'text-slate-400 font-normal italic'}`}>
                       {hasKits ? reproduction.bornKits : 'Toca para registrar'}
                     </p>
-                  </div>
+                  </button>
                   <div className="border p-2 rounded bg-white/60 border-slate-100">
                     <p className="text-slate-500 mb-1">Días en Lactancia</p>
                     <p className="font-bold text-sm text-slate-700">{daysInLactation} / 30</p>
@@ -399,8 +385,7 @@ export function GazaposView({ reproductions, onSuccess }: GazaposViewProps) {
                 </div>
 
                 {isExpanded && (
-                  <div 
-                    role="presentation"
+                  <div
                     className="mt-4 flex flex-col gap-2 animate-in fade-in slide-in-from-top-1 duration-150"
                     onClick={(e) => e.stopPropagation()}
                     onKeyDown={(e) => e.stopPropagation()}
@@ -452,7 +437,10 @@ export function GazaposView({ reproductions, onSuccess }: GazaposViewProps) {
           setCancelReason('');
           setCancelReasonDetail('');
         }}
-        title={`Cancelar Lactancia: ${toCancel?.femaleCode} ${toCancel?.femaleName ? `- ${toCancel.femaleName}` : ''}`}
+        title={(() => {
+          const name = toCancel?.femaleName ? ` - ${toCancel.femaleName}` : '';
+          return `Cancelar Lactancia: ${toCancel?.femaleCode ?? ''}${name}`;
+        })()}
       >
         <div className="p-4">
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4">

@@ -127,7 +127,7 @@ export function MortalityForm({ selectedRabbits, onSuccess, onCancel }: Readonly
 
   const causeOptions = [...baseCauseOptions];
   if (customCause && !baseCauseOptions.some(opt => opt.value === customCause)) {
-    causeOptions.splice(causeOptions.length - 1, 0, {
+    causeOptions.splice(-1, 0, {
       value: customCause,
       label: customCause // Show only the cause name directly as typed, e.g., "Gripe"
     });

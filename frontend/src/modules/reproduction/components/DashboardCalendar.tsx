@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Baby, Heart, CalendarDays, Loader2, X, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Baby, Heart, CalendarDays } from 'lucide-react';
 import { Alert, Dialog, Button, FilterBar } from '@/shared/ui';
 import { useSearchParams } from 'next/navigation';
 import { useDashboardCalendar } from '../hooks/useDashboardCalendar';
@@ -50,6 +50,24 @@ function formatDate(dateStr?: string) {
   return d.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+
+/** Returns CSS class strings for a calendar day cell based on event/state context. */
+function getDayStyles(
+  calendarType: 'births' | 'weaning' | 'receptive',
+  hasEvents: boolean,
+  isDayToday: boolean,
+  canViewReproduction: boolean
+): { bgClass: string; eventTextClass: string } {
+  if (hasEvents && canViewReproduction) {
+    if (calendarType === 'births') return { bgClass: 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold', eventTextClass: 'text-emerald-600' };
+    if (calendarType === 'receptive') return { bgClass: 'bg-pink-50 hover:bg-pink-100 text-pink-800 font-semibold', eventTextClass: 'text-pink-600' };
+    return { bgClass: 'bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold', eventTextClass: 'text-amber-600' };
+  }
+  if (isDayToday) return { bgClass: 'bg-slate-200/80 hover:bg-slate-200 text-slate-800 font-bold', eventTextClass: 'text-slate-600' };
+  if (!hasEvents) return { bgClass: 'opacity-50 cursor-default bg-slate-50/50 hover:bg-slate-50/50', eventTextClass: 'text-slate-600' };
+  return { bgClass: 'hover:bg-slate-100 text-slate-700', eventTextClass: 'text-slate-600' };
+}
+
 export function DashboardCalendar() {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
@@ -58,7 +76,7 @@ export function DashboardCalendar() {
   const [calendarType, setCalendarType] = useState<'births' | 'weaning' | 'receptive'>('births');
   const [searchTerm, setSearchTerm] = useState('');
   
-  const { calendar, loading, isFetching, error, fetchCalendar } = useDashboardCalendar();
+  const { calendar, isFetching, error, fetchCalendar } = useDashboardCalendar();
   const { hasPermission, loading: permissionsLoading } = usePermissions();
 
   const searchParams = useSearchParams();
@@ -121,7 +139,7 @@ export function DashboardCalendar() {
     const term = searchTerm.toLowerCase();
     return (
       entry.femaleCode.toLowerCase().includes(term) ||
-      (entry.femaleName && entry.femaleName.toLowerCase().includes(term))
+      entry.femaleName?.toLowerCase().includes(term)
     );
   });
 
@@ -243,33 +261,14 @@ export function DashboardCalendar() {
             {/* Day cells */}
             <div className="grid grid-cols-7 gap-1 sm:gap-2">
               {calendarGrid.map((day, idx) => {
-                if (day === null) return <div key={`e-${idx}`} className="h-16 sm:h-20" />;
+                if (day === null) return <div key={`empty-${String(idx)}`} className="h-16 sm:h-20" />;
 
                 const dateKey = `${year}-${pad(month)}-${pad(day)}`;
                 const entries = (calendar as CalendarData)[dateKey] || [];
                 const hasEvents = entries.length > 0;
                 const isDayToday = isToday(day);
                 const isSelected = selectedDate === dateKey;
-
-                let bgClass = 'hover:bg-slate-100 text-slate-700';
-                let eventTextClass = 'text-slate-600';
-                
-                if (hasEvents && canViewReproduction) {
-                  if (calendarType === 'births') {
-                    bgClass = 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold';
-                    eventTextClass = 'text-emerald-600';
-                  } else if (calendarType === 'receptive') {
-                    bgClass = 'bg-pink-50 hover:bg-pink-100 text-pink-800 font-semibold';
-                    eventTextClass = 'text-pink-600';
-                  } else {
-                    bgClass = 'bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold';
-                    eventTextClass = 'text-amber-600';
-                  }
-                } else if (isDayToday && !hasEvents) {
-                  bgClass = 'bg-slate-200/80 hover:bg-slate-200 text-slate-800 font-bold';
-                } else if (!hasEvents) {
-                  bgClass = 'opacity-50 cursor-default bg-slate-50/50 hover:bg-slate-50/50';
-                }
+                const { bgClass, eventTextClass } = getDayStyles(calendarType, hasEvents, isDayToday, canViewReproduction);
 
                 return (
                   <button

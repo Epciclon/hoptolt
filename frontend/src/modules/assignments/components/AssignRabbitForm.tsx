@@ -151,7 +151,6 @@ export function AssignRabbitForm({ onSuccess, onCancel }: Readonly<AssignRabbitF
   });
 
   const currentAssigned = selectedCage ? (selectedCage.assignedCount || 0) : 0;
-  const remainingCapacity = selectedCage ? Math.max(0, selectedCage.capacity - currentAssigned - selectedRabbits.length) : 0;
 
 
   if (loadingData) {
