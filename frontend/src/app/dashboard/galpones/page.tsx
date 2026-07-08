@@ -2,16 +2,14 @@
 
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
-import { Card, CardHeader, Button, Dialog, Alert } from '@/shared/ui';
+import { Card, CardHeader, Button, Dialog } from '@/shared/ui';
 import { GalponTable } from '@/modules/galpones/components/GalponTable';
 import { GalponForm } from '@/modules/galpones/components/GalponForm';
 import type { Galpon } from '@/modules/galpones/types/galpon.types';
-import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
-
 export default function GalponesPage() {
   const [modal, setModal] = useState<'create' | 'edit' | null>(null);
   const [editTarget, setEditTarget] = useState<Galpon | null>(null);
-  const { user } = useAuthContext();
+
 
   const openCreate = () => { setEditTarget(null); setModal('create'); };
   const openEdit = (galpon: Galpon) => { setEditTarget(galpon); setModal('edit'); };
@@ -20,7 +18,6 @@ export default function GalponesPage() {
 
 
   return (
-    <>
       <Card>
         <CardHeader
           title="Gestionar Galpones"
@@ -48,8 +45,5 @@ export default function GalponesPage() {
           )}
         </Dialog>
       </Card>
-
-
-    </>
   );
 }

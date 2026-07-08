@@ -6,7 +6,6 @@ import type { CageItem } from '@/shared/ui';
 import { useFeeding } from '../hooks/useFeeding';
 import { useAuth } from '@/modules/auth/hooks/useAuth';
 import { useToast } from '@/shared/contexts/ToastContext';
-import type { AssignedRabbit } from '@/modules/assignments/types/assignment.types';
 
 interface FeedingCatalogProps {
   onSuccess?: () => void;
@@ -14,7 +13,7 @@ interface FeedingCatalogProps {
 
 const FOOD_TYPES_STORAGE_KEY = 'feeding_selected_food_types';
 
-export function FeedingCatalog({ onSuccess }: FeedingCatalogProps) {
+export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
   const { assignedRabbits, foodTypes, loading, createFeeding, feedings } = useFeeding();
   const { user } = useAuth();
 

@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState } from 'react';
-import { Input, Button, Alert } from '@/shared/ui';
+import { Input, Button } from '@/shared/ui';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { galponService } from '../services/galpon.service';
 import type { Galpon } from '../types/galpon.types';
@@ -51,7 +51,7 @@ interface GalponFormProps {
   onCancel?: () => void;
 }
 
-export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel }: GalponFormProps) {
+export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel }: Readonly<GalponFormProps>) {
 
   const { showToast } = useToast();
   const [selectedFoods, setSelectedFoods] = useState<string[]>(defaultValues?.foodTypes || []);
@@ -59,7 +59,7 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
   const [foodSearch, setFoodSearch] = useState('');
   const [vaccineSearch, setVaccineSearch] = useState('');
   const queryClient = useQueryClient();
-  const [provincesearch, setProvinceSearch] = useState('');
+  const [provinceSearch, setProvinceSearch] = useState('');
   const [showFoodDropdown, setShowFoodDropdown] = useState(false);
   const [showVaccineDropdown, setShowVaccineDropdown] = useState(false);
   const [showProvinceDropdown, setShowProvinceDropdown] = useState(false);
@@ -162,10 +162,8 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
   );
 
   const filteredProvinces = PROVINCES.filter(p =>
-    p.toLowerCase().includes(provincesearch.toLowerCase())
+    p.toLowerCase().includes(provinceSearch.toLowerCase())
   );
-
-  const selectedProvince = defaultValues?.province || '';
 
   const onSubmit = async (values: FormValues) => {
 
@@ -200,7 +198,7 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
         <div className="relative">
           <Input
             placeholder="Buscar provincia..."
-            value={provincesearch}
+            value={provinceSearch}
             onChange={(e) => { setProvinceSearch(e.target.value); setShowProvinceDropdown(true); }}
             onFocus={() => setShowProvinceDropdown(true)}
           />

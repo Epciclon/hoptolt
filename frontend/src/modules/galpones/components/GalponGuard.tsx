@@ -11,7 +11,7 @@ interface GalponGuardProps {
   customDescription?: string;
 }
 
-export function GalponGuard({ children, requireGalpon = true, customMessage, customDescription }: GalponGuardProps) {
+export function GalponGuard({ children, requireGalpon = true, customMessage, customDescription }: Readonly<GalponGuardProps>) {
   const { activeGalpon, loading } = useActiveGalpon();
 
   if (loading) {

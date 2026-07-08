@@ -10,7 +10,7 @@ interface CleaningCatalogProps {
   onSuccess?: () => void;
 }
 
-export function CleaningCatalog({ onSuccess }: CleaningCatalogProps) {
+export function CleaningCatalog({ onSuccess }: Readonly<CleaningCatalogProps>) {
   const { assignedRabbits, cleanings, loading, createCleaning, error } = useCleaning();
 
   const { showToast } = useToast();

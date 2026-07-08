@@ -32,7 +32,7 @@ const MODULE_DISPLAY_NAMES: Record<string, string> = {
   galpones: 'Galpones',
 };
 
-export function WorkerDetailsModal({ open, onClose, worker, onEdit, onDelete }: WorkerDetailsModalProps) {
+export function WorkerDetailsModal({ open, onClose, worker, onEdit, onDelete }: Readonly<WorkerDetailsModalProps>) {
   const [fullWorker, setFullWorker] = useState<FarmMember | null>(null);
   const [loading, setLoading] = useState(false);
 

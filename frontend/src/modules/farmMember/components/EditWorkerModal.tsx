@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Dialog } from '@/shared/ui/Dialog';
 import { Button, Alert, Input } from '@/shared/ui';
-import { PermissionMatrix } from './PermissionMatrix';
 import { PermissionActionModal } from './PermissionActionModal';
 import { assignmentService } from '@/modules/assignments/services/assignment.service';
 import { farmMemberService } from '../services/farmMember.service';
@@ -90,15 +89,15 @@ const mapEnglishToSpanish = (englishName: string): string => {
 };
 
 // Permisos sensibles (requieren advertencia)
-const SENSITIVE_PERMISSIONS = [
+const SENSITIVE_PERMISSIONS = new Set([
   'Jaulas',
   'Razas',
   'Conejos',
   'Asignar',
   'Genealogía'
-];
+]);
 
-export function EditWorkerModal({ open, onClose, worker, onSave }: EditWorkerModalProps) {
+export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<EditWorkerModalProps>) {
   const [permissions, setPermissions] = useState<ModulePermissions>({});
   const [selectedCages, setSelectedCages] = useState<number[]>([]);
   const [occupiedCages, setOccupiedCages] = useState<any[]>([]);
@@ -311,12 +310,10 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: EditWorkerMod
             />
             {showCageDropdown && (
               <div className="absolute z-10 w-full border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-white mt-1">
-                {loadingCages ? (
-                  <p className="text-gray-500 text-sm p-3">Cargando jaulas...</p>
-                ) : filteredCages.length === 0 ? (
-                  <p className="text-gray-500 text-sm p-3">No hay jaulas disponibles</p>
-                ) : (
-                  filteredCages.map(cage => (
+                {(() => {
+                  if (loadingCages) return <p className="text-gray-500 text-sm p-3">Cargando jaulas...</p>;
+                  if (filteredCages.length === 0) return <p className="text-gray-500 text-sm p-3">No hay jaulas disponibles</p>;
+                  return filteredCages.map(cage => (
                     <button
                       key={cage.id}
                       type="button"
@@ -325,8 +322,8 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: EditWorkerMod
                     >
                       Jaula #{cage.number} — {cage.type.charAt(0).toUpperCase() + cage.type.slice(1)}
                     </button>
-                  ))
-                )}
+                  ));
+                })()}
               </div>
             )}
           </div>
@@ -413,12 +410,10 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: EditWorkerMod
                 
                 return (
                   <div key={moduleName} className="border border-slate-200 rounded-lg overflow-hidden">
-                    <div 
-                      role="button"
-                      tabIndex={0}
-                      className="flex justify-between items-center p-3 bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors"
+                    <button 
+                      type="button"
+                      className="w-full text-left bg-transparent border-none outline-none flex justify-between items-center p-3 bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors block"
                       onClick={() => handleEditPermission(moduleName, permissionName)}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleEditPermission(moduleName, permissionName); }}
                     >
                       <div>
                         <span className="font-medium text-slate-700">{permissionName}</span>
@@ -436,7 +431,7 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: EditWorkerMod
                       >
                         ×
                       </button>
-                    </div>
+                    </button>
                   </div>
                 );
               })}
@@ -465,7 +460,7 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: EditWorkerMod
         }}
         onConfirm={handlePermissionActionConfirm}
         moduleName={selectedAdvancedPermission || ''}
-        isSensitive={SENSITIVE_PERMISSIONS.includes(selectedAdvancedPermission || '')}
+        isSensitive={SENSITIVE_PERMISSIONS.has(selectedAdvancedPermission || '')}
         existingPermissions={editingPermissions || undefined}
       />
     </Dialog>

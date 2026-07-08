@@ -11,7 +11,7 @@ interface GenealogyTreeViewProps {
   onCancel?: () => void;
 }
 
-export function GenealogyTreeView({ onCancel }: GenealogyTreeViewProps) {
+export function GenealogyTreeView({ onCancel }: Readonly<GenealogyTreeViewProps>) {
   const [search, setSearch] = useState('');
   const [selectedRabbit, setSelectedRabbit] = useState<Rabbit | null>(null);
   const [tree, setTree] = useState<GenealogyTree | null>(null);
@@ -68,12 +68,10 @@ export function GenealogyTreeView({ onCancel }: GenealogyTreeViewProps) {
       const nextGen: (GenealogyTree | null)[] = [];
 
       currentGen.forEach(n => {
-        if (n && n.parents) {
-          nextGen.push(n.parents.father || null);
-          nextGen.push(n.parents.mother || null);
+        if (n?.parents) {
+          nextGen.push(n.parents.father || null, n.parents.mother || null);
         } else {
-          nextGen.push(null);
-          nextGen.push(null);
+          nextGen.push(null, null);
         }
       });
 
@@ -86,13 +84,21 @@ export function GenealogyTreeView({ onCancel }: GenealogyTreeViewProps) {
   };
 
   const renderGeneration = (generation: (GenealogyTree | null)[], level: number, nextGeneration?: (GenealogyTree | null)[]): JSX.Element => {
-    const bgColor = level === 0 ? 'bg-blue-100 border-blue-300' :
-      level === 1 ? 'bg-green-50 border-green-200' :
-        'bg-yellow-50 border-yellow-200';
+    let bgColor = 'bg-yellow-50 border-yellow-200';
+    if (level === 0) bgColor = 'bg-blue-100 border-blue-300';
+    else if (level === 1) bgColor = 'bg-green-50 border-green-200';
 
-    const padding = level === 0 ? 'p-3' : level === 1 ? 'p-2' : 'p-1.5';
-    const fontSize = level === 0 ? 'text-sm' : level === 1 ? 'text-xs' : 'text-[10px]';
-    const minW = level === 0 ? 'min-w-[160px]' : level === 1 ? 'min-w-[140px]' : 'min-w-[120px]';
+    let padding = 'p-1.5';
+    if (level === 0) padding = 'p-3';
+    else if (level === 1) padding = 'p-2';
+
+    let fontSize = 'text-[10px]';
+    if (level === 0) fontSize = 'text-sm';
+    else if (level === 1) fontSize = 'text-xs';
+
+    let minW = 'min-w-[120px]';
+    if (level === 0) minW = 'min-w-[160px]';
+    else if (level === 1) minW = 'min-w-[140px]';
 
     return (
       <div className="flex flex-col items-center">
@@ -102,8 +108,10 @@ export function GenealogyTreeView({ onCancel }: GenealogyTreeViewProps) {
               return <div key={`null-${level}-${index}`} className={`${minW}`}></div>;
             }
 
-            const isFather = index % 2 === 0;
-            const label = level === 0 ? '' : (isFather ? 'Padre' : 'Madre');
+            let label = '';
+            if (level !== 0) {
+              label = isFather ? 'Padre' : 'Madre';
+            }
 
             return (
               <div key={node.id} className="flex flex-col items-center">
@@ -154,96 +162,22 @@ export function GenealogyTreeView({ onCancel }: GenealogyTreeViewProps) {
 
               if (parentCount === 2) {
                 lines.push(
-                  <line
-                    key={`v-${node.id}`}
-                    x1={`${nodeX}%`}
-                    y1="0"
-                    x2={`${nodeX}%`}
-                    y2="50%"
-                    stroke="#94a3b8"
-                    strokeWidth="2"
-                  />
-                );
-                lines.push(
-                  <line
-                    key={`h-${node.id}`}
-                    x1={`${child1X}%`}
-                    y1="50%"
-                    x2={`${child2X}%`}
-                    y2="50%"
-                    stroke="#94a3b8"
-                    strokeWidth="2"
-                  />
-                );
-                lines.push(
-                  <line
-                    key={`v1-${node.id}`}
-                    x1={`${child1X}%`}
-                    y1="50%"
-                    x2={`${child1X}%`}
-                    y2="100%"
-                    stroke="#94a3b8"
-                    strokeWidth="2"
-                  />
-                );
-                lines.push(
-                  <line
-                    key={`v2-${node.id}`}
-                    x1={`${child2X}%`}
-                    y1="50%"
-                    x2={`${child2X}%`}
-                    y2="100%"
-                    stroke="#94a3b8"
-                    strokeWidth="2"
-                  />
+                  <line key={`v-${node.id}`} x1={`${nodeX}%`} y1="0" x2={`${nodeX}%`} y2="50%" stroke="#94a3b8" strokeWidth="2" />,
+                  <line key={`h-${node.id}`} x1={`${child1X}%`} y1="50%" x2={`${child2X}%`} y2="50%" stroke="#94a3b8" strokeWidth="2" />,
+                  <line key={`v1-${node.id}`} x1={`${child1X}%`} y1="50%" x2={`${child1X}%`} y2="100%" stroke="#94a3b8" strokeWidth="2" />,
+                  <line key={`v2-${node.id}`} x1={`${child2X}%`} y1="50%" x2={`${child2X}%`} y2="100%" stroke="#94a3b8" strokeWidth="2" />
                 );
               } else if (parentCount === 1) {
                 const childX = child1X || child2X;
                 if (nodeX !== childX) {
                   lines.push(
-                    <line
-                      key={`v-${node.id}`}
-                      x1={`${nodeX}%`}
-                      y1="0"
-                      x2={`${nodeX}%`}
-                      y2="50%"
-                      stroke="#94a3b8"
-                      strokeWidth="2"
-                    />
-                  );
-                  lines.push(
-                    <line
-                      key={`h-${node.id}`}
-                      x1={`${nodeX}%`}
-                      y1="50%"
-                      x2={`${childX}%`}
-                      y2="50%"
-                      stroke="#94a3b8"
-                      strokeWidth="2"
-                    />
-                  );
-                  lines.push(
-                    <line
-                      key={`v1-${node.id}`}
-                      x1={`${childX}%`}
-                      y1="50%"
-                      x2={`${childX}%`}
-                      y2="100%"
-                      stroke="#94a3b8"
-                      strokeWidth="2"
-                    />
+                    <line key={`v-${node.id}`} x1={`${nodeX}%`} y1="0" x2={`${nodeX}%`} y2="50%" stroke="#94a3b8" strokeWidth="2" />,
+                    <line key={`h-${node.id}`} x1={`${nodeX}%`} y1="50%" x2={`${childX}%`} y2="50%" stroke="#94a3b8" strokeWidth="2" />,
+                    <line key={`v1-${node.id}`} x1={`${childX}%`} y1="50%" x2={`${childX}%`} y2="100%" stroke="#94a3b8" strokeWidth="2" />
                   );
                 } else {
                   lines.push(
-                    <line
-                      key={`v-${node.id}`}
-                      x1={`${nodeX}%`}
-                      y1="0"
-                      x2={`${nodeX}%`}
-                      y2="100%"
-                      stroke="#94a3b8"
-                      strokeWidth="2"
-                    />
+                    <line key={`v-${node.id}`} x1={`${nodeX}%`} y1="0" x2={`${nodeX}%`} y2="100%" stroke="#94a3b8" strokeWidth="2" />
                   );
                 }
               }
@@ -295,7 +229,7 @@ export function GenealogyTreeView({ onCancel }: GenealogyTreeViewProps) {
           <h3 className="font-semibold mb-3">Árbol Genealógico</h3>
           <div className="min-w-full flex flex-col gap-0">
             {buildGenerations(tree, 6).map((generation, level) => (
-              <div key={level}>
+              <div key={`gen-${level}`}>
                 {renderGeneration(generation, level, buildGenerations(tree, 6)[level + 1])}
               </div>
             ))}

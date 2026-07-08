@@ -2,14 +2,14 @@
 
 import { useState } from 'react';
 import { GalponGuard } from '@/modules/galpones/components/GalponGuard';
-import { Card, CardHeader, Button, Dialog } from '@/shared/ui';
+import { Card, CardHeader, Dialog, ConfirmDialog } from '@/shared/ui';
 import { GenealogyCatalog } from '@/modules/genealogy/components/GenealogyCatalog';
 import { GenealogyForm } from '@/modules/genealogy/components/GenealogyForm';
 import { GenealogyTreeModal } from '@/modules/genealogy/components/GenealogyTreeModal';
 import { genealogyService } from '@/modules/genealogy/services/genealogy.service';
 import type { Rabbit } from '@/modules/rabbits/types/rabbit.types';
 import { useToast } from '@/shared/contexts/ToastContext';
-import { ConfirmDialog } from '@/shared/ui';
+
 import { useQueryClient } from '@tanstack/react-query';
 import { PermissionGuard } from '@/shared/layout/PermissionGuard';
 

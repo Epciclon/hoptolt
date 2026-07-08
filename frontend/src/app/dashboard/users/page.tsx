@@ -23,7 +23,7 @@ const schema = z.object({
 export default function UsersPage() {
   const { activeGalpon, loading: loadingGalpon } = useActiveGalpon();
   const { workers, loading: loadingWorkers, fetchWorkers, removeWorker, updateWorker } = useFarmMember();
-  const { invitations, loading: loadingInv, fetchByGalpon, createInvitation, revokeInvitation, error: invitationError } = useInvitation();
+  const { invitations, loading: loadingInv, createInvitation, revokeInvitation, error: invitationError } = useInvitation();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   
@@ -100,17 +100,91 @@ export default function UsersPage() {
     { id: 'invitations', label: `Invitaciones Pendientes (${pendingInvitations.length})`, icon: <Mail size={18} /> }
   ];
 
-  return (
-    <GalponGuard
-      customMessage="Seleccionar un galpón activo para gestionar sus usuarios"
-      customDescription="Debes seleccionar un galpón antes de poder gestionar el equipo de trabajo. Dirígete a la sección de Galpones para seleccionar uno."
-    >
-      <Card className="min-h-[calc(100vh-7rem)]">
-      {loadingGalpon ? (
+  const renderWorkersTab = () => {
+    let content;
+    if (loadingWorkers) {
+      content = <div className="p-8 text-center text-slate-500">Cargando...</div>;
+    } else if (workers.length === 0) {
+      content = <div className="p-8 text-center text-slate-500">No hay trabajadores activos en este galpón.</div>;
+    } else {
+      content = workers.map(worker => (
+        <button 
+          key={worker.id} 
+          type="button"
+          className="w-full text-left bg-transparent border-none outline-none p-4 flex justify-between items-center hover:bg-slate-100 cursor-pointer transition-colors group block"
+          onClick={() => setWorkerToView(worker)}
+        >
+          <div>
+            <div className="font-medium text-slate-800">{worker.profile?.fullName}</div>
+            <div className="text-xs text-slate-500">{worker.profile?.email} • @{worker.profile?.username}</div>
+          </div>
+          <span className="text-xs text-slate-400 group-hover:text-slate-600 transition-colors">
+            Ver detalles →
+          </span>
+        </button>
+      ));
+    }
+
+    return (
+      <>
+        <SectionMessage message="En esta fase se puede revisar el equipo de trabajo actual." />
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="divide-y divide-slate-100">
+            {content}
+          </div>
+        </div>
+      </>
+    );
+  };
+
+  const renderInvitationsTab = () => {
+    let content;
+    if (loadingInv) {
+      content = <div className="p-8 text-center text-slate-500">Cargando...</div>;
+    } else if (pendingInvitations.length === 0) {
+      content = <div className="p-8 text-center text-slate-500">No hay invitaciones pendientes.</div>;
+    } else {
+      content = pendingInvitations.map(inv => (
+        <div key={inv.token} className="p-4 flex justify-between items-center hover:bg-slate-50 transition-colors">
+          <div>
+            <div className="font-medium text-slate-800">{inv.email}</div>
+            <div className="text-xs text-slate-500">Invitado por: {inv.inviter?.fullName || 'Usuario'} • Enviada: {new Date(inv.createdAt).toLocaleDateString()}</div>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="text-red-600 border-red-200 hover:bg-red-50"
+            onClick={() => setInvitationToDelete(inv)}
+          >
+            Eliminar
+          </Button>
+        </div>
+      ));
+    }
+
+    return (
+      <>
+        <SectionMessage message="En esta fase se puede revisar las invitaciones pendientes." />
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="divide-y divide-slate-100">
+            {content}
+          </div>
+        </div>
+      </>
+    );
+  };
+
+  const renderMainContent = () => {
+    if (loadingGalpon) {
+      return (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
         </div>
-      ) : !isOwner ? (
+      );
+    }
+
+    if (!isOwner) {
+      return (
         <div className="p-4">
           <div className="max-w-md mx-auto">
             <Alert
@@ -127,109 +201,58 @@ export default function UsersPage() {
             </Link>
           </div>
         </div>
-      ) : (
-        <>
-          <CardHeader 
-            title="Equipo de Trabajo" 
-            subtitle={`Gestiona los trabajadores e invitaciones de ${activeGalpon?.name || 'tu galpón'}`}
-            actions={<Button onClick={() => setIsModalOpen(true)}>+ Invitar Trabajador</Button>}
-          />
+      );
+    }
 
-          <DashboardTabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
+    return (
+      <>
+        <CardHeader 
+          title="Equipo de Trabajo" 
+          subtitle={`Gestiona los trabajadores e invitaciones de ${activeGalpon?.name || 'tu galpón'}`}
+          actions={<Button onClick={() => setIsModalOpen(true)}>+ Invitar Trabajador</Button>}
+        />
 
-          <div className="p-6 pt-0">
-            {activeTab === 'workers' && (
-              <>
-                <SectionMessage message="En esta fase se puede revisar el equipo de trabajo actual." />
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="divide-y divide-slate-100">
-                  {loadingWorkers ? (
-                    <div className="p-8 text-center text-slate-500">Cargando...</div>
-                  ) : workers.length === 0 ? (
-                    <div className="p-8 text-center text-slate-500">No hay trabajadores activos en este galpón.</div>
-                  ) : (
-                    workers.map(worker => (
-                      <div 
-                        key={worker.id} 
-                        role="button"
-                        tabIndex={0}
-                        className="p-4 flex justify-between items-center hover:bg-slate-100 cursor-pointer transition-colors group"
-                        onClick={() => setWorkerToView(worker)}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setWorkerToView(worker); }}
-                      >
-                        <div>
-                          <div className="font-medium text-slate-800">{worker.profile?.fullName}</div>
-                          <div className="text-xs text-slate-500">{worker.profile?.email} • @{worker.profile?.username}</div>
-                        </div>
-                        <span className="text-xs text-slate-400 group-hover:text-slate-600 transition-colors">
-                          Ver detalles →
-                        </span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-              </>
-            )}
+        <DashboardTabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
 
-            {activeTab === 'invitations' && (
-              <>
-                <SectionMessage message="En esta fase se puede revisar las invitaciones pendientes." />
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="divide-y divide-slate-100">
-                  {loadingInv ? (
-                    <div className="p-8 text-center text-slate-500">Cargando...</div>
-                  ) : pendingInvitations.length === 0 ? (
-                    <div className="p-8 text-center text-slate-500">No hay invitaciones pendientes.</div>
-                  ) : (
-                    pendingInvitations.map(inv => (
-                      <div key={inv.token} className="p-4 flex justify-between items-center hover:bg-slate-50 transition-colors">
-                        <div>
-                          <div className="font-medium text-slate-800">{inv.email}</div>
-                          <div className="text-xs text-slate-500">Invitado por: {inv.inviter?.fullName || 'Usuario'} • Enviada: {new Date(inv.createdAt).toLocaleDateString()}</div>
-                        </div>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          className="text-red-600 border-red-200 hover:bg-red-50"
-                          onClick={() => setInvitationToDelete(inv)}
-                        >
-                          Eliminar
-                        </Button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-              </>
-            )}
-          </div>
+        <div className="p-6 pt-0">
+          {activeTab === 'workers' && renderWorkersTab()}
+          {activeTab === 'invitations' && renderInvitationsTab()}
+        </div>
 
-          <Dialog 
-            open={isModalOpen} 
-            onClose={() => setIsModalOpen(false)} 
-            title="Invitar Nuevo Trabajador"
-            description="Ingresa el correo electrónico del usuario que deseas invitar a colaborar en este galpón. Se le enviará una notificación para unirse."
-          >
-            <form onSubmit={handleSubmit(onInvite)} className="space-y-4 pt-4">
-              <Input
-                label="Correo Electrónico"
-                type="email"
-                placeholder="correo@ejemplo.com"
-                error={errors.email?.message}
-                {...register('email')}
-              />
-              
-              <div className="pt-2 flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsModalOpen(false)} type="button">Cancelar</Button>
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? 'Enviando...' : 'Enviar Invitación'}
-                </Button>
-              </div>
-            </form>
-          </Dialog>
-        </>
-      )}
+        <Dialog 
+          open={isModalOpen} 
+          onClose={() => setIsModalOpen(false)} 
+          title="Invitar Nuevo Trabajador"
+          description="Ingresa el correo electrónico del usuario que deseas invitar a colaborar en este galpón. Se le enviará una notificación para unirse."
+        >
+          <form onSubmit={handleSubmit(onInvite)} className="space-y-4 pt-4">
+            <Input
+              label="Correo Electrónico"
+              type="email"
+              placeholder="correo@ejemplo.com"
+              error={errors.email?.message}
+              {...register('email')}
+            />
+            
+            <div className="pt-2 flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsModalOpen(false)} type="button">Cancelar</Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? 'Enviando...' : 'Enviar Invitación'}
+              </Button>
+            </div>
+          </form>
+        </Dialog>
+      </>
+    );
+  };
+
+  return (
+    <GalponGuard
+      customMessage="Seleccionar un galpón activo para gestionar sus usuarios"
+      customDescription="Debes seleccionar un galpón antes de poder gestionar el equipo de trabajo. Dirígete a la sección de Galpones para seleccionar uno."
+    >
+      <Card className="min-h-[calc(100vh-7rem)]">
+        {renderMainContent()}
       </Card>
 
       <ConfirmDialog

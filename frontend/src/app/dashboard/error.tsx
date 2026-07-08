@@ -7,10 +7,10 @@ import { useRouter } from 'next/navigation';
 export default function DashboardError({
   error,
   reset,
-}: {
+}: Readonly<{
   error: Error & { digest?: string };
   reset: () => void;
-}) {
+}>) {
   const router = useRouter();
 
   useEffect(() => {

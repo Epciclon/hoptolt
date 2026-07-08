@@ -10,7 +10,7 @@ interface DewormingCatalogProps {
   onSuccess?: () => void;
 }
 
-export function DewormingCatalog({ onSuccess }: DewormingCatalogProps) {
+export function DewormingCatalog({ onSuccess }: Readonly<DewormingCatalogProps>) {
   const { assignedRabbits, dewormingPeriod, loading, createDeworming, dewormings, isCreating } = useDeworming();
 
   const { showToast } = useToast();

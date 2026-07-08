@@ -5,7 +5,6 @@ import { feedingService } from '../services/feeding.service';
 import { assignmentService } from '@/modules/assignments/services/assignment.service';
 import { farmMemberService } from '@/modules/farmMember/services/farmMember.service';
 import { useActiveGalpon } from '@/modules/galpones/hooks/useActiveGalpon';
-import type { Feeding } from '../types/feeding.types';
 import type { AssignedRabbit } from '@/modules/assignments/types/assignment.types';
 
 export function useFeeding() {
@@ -32,7 +31,6 @@ export function useFeeding() {
     data: assignedRabbits = [],
     isLoading: loadingRabbits,
     error: errorRabbits,
-    refetch: fetchAssignedRabbits,
   } = useQuery({
     queryKey: ['assignedRabbits', activeGalpon?.id],
     queryFn: () => assignmentService.getAssignedRabbits().catch((err) => {
@@ -65,11 +63,12 @@ export function useFeeding() {
       try {
         const memberships = await farmMemberService.getMyMemberships();
         const activeMembership = memberships.find((m) => m.galponId === activeGalpon?.id);
-        if (activeMembership && activeMembership.assignedCages) {
+        if (activeMembership?.assignedCages) {
           return activeMembership.assignedCages.map((ac: any) => ac.cageId);
         }
         return [];
       } catch (err) {
+        console.error(err);
         return [];
       }
     },
@@ -77,7 +76,13 @@ export function useFeeding() {
   });
 
   const loading = loadingFeedings || loadingRabbits || loadingFoodTypes || loadingCages;
-  const error = errorFeedings ? (errorFeedings as Error).message : (errorRabbits ? (errorRabbits as Error).message : null);
+  let errorStr = null;
+  if (errorFeedings) {
+    errorStr = (errorFeedings as Error).message;
+  } else if (errorRabbits) {
+    errorStr = (errorRabbits as Error).message;
+  }
+  const error = errorStr;
 
   // Mutation: Create Feeding
   const createFeedingMutation = useMutation({

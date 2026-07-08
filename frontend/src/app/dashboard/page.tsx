@@ -93,7 +93,7 @@ function DashboardHomeContent() {
                     <div className="h-8 w-12 bg-slate-200 rounded animate-pulse" />
                   ) : (
                     <p className="text-2xl font-bold text-slate-800">
-                      {value !== null && value !== undefined ? value : '—'}
+                      {value ?? '—'}
                     </p>
                   )}
                   <p className="text-sm text-slate-500 mt-0.5">{stat.label}</p>

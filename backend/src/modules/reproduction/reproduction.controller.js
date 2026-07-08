@@ -91,7 +91,7 @@ exports.getAllReproductions = catchAsync(async (req, res) => {
                 maleName: male?.name || '',
                 maleRace: male?.race || '',
                 maleImageUrl: male?.imageUrl || null,
-                isMaleDeleted: male?.deletedAt ? true : false,
+                isMaleDeleted: !!male?.deletedAt,
                 mountDate: reproduction.mountDate,
                 estimatedBirthDate: reproduction.estimatedBirthDate,
                 bornKits: reproduction.bornKits,
@@ -265,25 +265,51 @@ exports.getReproductionCalendar = catchAsync(async (req, res) => {
             ]
         });
         
-        if (membership && membership.assignedCages) {
+        if (membership?.assignedCages) {
             cageIds = membership.assignedCages.map(wc => wc.cageId);
         }
     }
 
     const records = await reproductionService.getReproductionCalendar(galponId, year, month, type, cageIds);
 
+    const _getDateKey = (val, formatEcuador) => {
+        if (!val) return null;
+        if (val instanceof Date) return formatEcuador(val);
+        if (typeof val === 'string') return val.split('T')[0];
+        return String(val);
+    };
+
+    const _buildCalendarEntry = (r, type, cage) => {
+        if (type === 'receptive') {
+            return {
+                id: r.id, femaleId: r.femaleId, femaleCode: r.femaleCode, femaleName: r.femaleName,
+                femaleImageUrl: r.femaleImageUrl || null, receptiveDate: r.receptiveDate,
+                cageNumber: r.cageNumber, cageType: r.cageType, type: 'receptive'
+            };
+        } else if (type === 'weaning') {
+            return {
+                id: r.id, femaleId: r.femaleId, femaleCode: r.female?.code || 'N/A', femaleName: r.female?.name || '',
+                femaleImageUrl: r.female?.imageUrl || null, maleId: r.maleId, maleCode: r.male?.code || null,
+                maleName: r.male?.name || null, maleImageUrl: r.male?.imageUrl || null, mountDate: r.mountDate,
+                estimatedBirthDate: r.estimatedBirthDate, estimatedWeaningDate: r.estimatedWeaningDate,
+                cageNumber: cage?.number || null, cageType: cage?.type || null, type: 'weaning'
+            };
+        }
+        return {
+            id: r.id, femaleId: r.femaleId, femaleCode: r.female?.code || 'N/A', femaleName: r.female?.name || '',
+            femaleImageUrl: r.female?.imageUrl || null, maleId: r.maleId, maleCode: r.male?.code || null,
+            maleName: r.male?.name || null, maleImageUrl: r.male?.imageUrl || null, mountDate: r.mountDate,
+            estimatedBirthDate: r.estimatedBirthDate, cageNumber: cage?.number || null, cageType: cage?.type || null,
+            type: 'births'
+        };
+    };
+
     // Group by date string (YYYY-MM-DD)
     const grouped = {};
     for (const r of records) {
-        let dateKey;
         const formatEcuador = (d) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guayaquil', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
-        if (type === 'births') {
-            dateKey = r.estimatedBirthDate instanceof Date ? formatEcuador(r.estimatedBirthDate) : (typeof r.estimatedBirthDate === 'string' ? r.estimatedBirthDate.split('T')[0] : String(r.estimatedBirthDate));
-        } else if (type === 'weaning') {
-            dateKey = r.estimatedWeaningDate instanceof Date ? formatEcuador(r.estimatedWeaningDate) : (typeof r.estimatedWeaningDate === 'string' ? r.estimatedWeaningDate.split('T')[0] : String(r.estimatedWeaningDate));
-        } else if (type === 'receptive') {
-            dateKey = r.receptiveDate instanceof Date ? formatEcuador(r.receptiveDate) : (typeof r.receptiveDate === 'string' ? r.receptiveDate.split('T')[0] : String(r.receptiveDate));
-        }
+        let valToFormat = type === 'births' ? r.estimatedBirthDate : (type === 'weaning' ? r.estimatedWeaningDate : r.receptiveDate);
+        const dateKey = _getDateKey(valToFormat, formatEcuador);
 
         if (!dateKey) continue;
 
@@ -291,55 +317,7 @@ exports.getReproductionCalendar = catchAsync(async (req, res) => {
         const cage = assignment?.cage || null;
 
         if (!grouped[dateKey]) grouped[dateKey] = [];
-        
-        if (type === 'receptive') {
-            grouped[dateKey].push({
-                id: r.id,
-                femaleId: r.femaleId,
-                femaleCode: r.femaleCode,
-                femaleName: r.femaleName,
-                femaleImageUrl: r.femaleImageUrl || null,
-                receptiveDate: r.receptiveDate,
-                cageNumber: r.cageNumber,
-                cageType: r.cageType,
-                type: 'receptive'
-            });
-        } else if (type === 'weaning') {
-            grouped[dateKey].push({
-                id: r.id,
-                femaleId: r.femaleId,
-                femaleCode: r.female?.code || 'N/A',
-                femaleName: r.female?.name || '',
-                femaleImageUrl: r.female?.imageUrl || null,
-                maleId: r.maleId,
-                maleCode: r.male?.code || null,
-                maleName: r.male?.name || null,
-                maleImageUrl: r.male?.imageUrl || null,
-                mountDate: r.mountDate,
-                estimatedBirthDate: r.estimatedBirthDate,
-                estimatedWeaningDate: r.estimatedWeaningDate,
-                cageNumber: cage?.number || null,
-                cageType: cage?.type || null,
-                type: 'weaning'
-            });
-        } else {
-            grouped[dateKey].push({
-                id: r.id,
-                femaleId: r.femaleId,
-                femaleCode: r.female?.code || 'N/A',
-                femaleName: r.female?.name || '',
-                femaleImageUrl: r.female?.imageUrl || null,
-                maleId: r.maleId,
-                maleCode: r.male?.code || null,
-                maleName: r.male?.name || null,
-                maleImageUrl: r.male?.imageUrl || null,
-                mountDate: r.mountDate,
-                estimatedBirthDate: r.estimatedBirthDate,
-                cageNumber: cage?.number || null,
-                cageType: cage?.type || null,
-                type: 'births'
-            });
-        }
+        grouped[dateKey].push(_buildCalendarEntry(r, type, cage));
     }
 
     res.status(200).json({ success: true, calendar: grouped });
@@ -391,7 +369,7 @@ exports.getReproductionByDay = catchAsync(async (req, res) => {
             ]
         });
         
-        if (membership && membership.assignedCages) {
+        if (membership?.assignedCages) {
             cageIds = membership.assignedCages.map(wc => wc.cageId);
         }
     }

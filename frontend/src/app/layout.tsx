@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: 'Hoptolt: gestión integral de criaderos de conejos',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="es">
       <body>

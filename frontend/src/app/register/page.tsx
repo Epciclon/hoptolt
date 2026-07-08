@@ -14,7 +14,7 @@ const schema = z.object({
     .string()
     .min(4, 'Mínimo 4 caracteres')
     .max(50, 'Máximo 50 caracteres')
-    .regex(/^[a-zA-Z0-9_]+$/, 'Solo letras, números y guión bajo'),
+    .regex(/^\w+$/, 'Solo letras, números y guión bajo'),
   email: z.string().email('Ingresa un correo válido'),
   fullName: z
     .string()

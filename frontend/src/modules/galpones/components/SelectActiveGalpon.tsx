@@ -1,16 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/shared/ui';
+import { Button, Table } from '@/shared/ui';
 import type { Column } from '@/shared/ui/Table';
-import { Table } from '@/shared/ui';
 import { useGalpones } from '../hooks/useGalpones';
 import { useActiveGalpon } from '../hooks/useActiveGalpon';
 import { useToast } from '@/shared/contexts/ToastContext';
 import type { Galpon } from '../types/galpon.types';
 
 export function SelectActiveGalpon() {
-  const { galpones, loading, error } = useGalpones();
+  const { galpones, loading } = useGalpones();
   const { activeGalpon, setActive } = useActiveGalpon();
   const { showToast } = useToast();
   const [selecting, setSelecting] = useState(false);

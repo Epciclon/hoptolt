@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { rabbitService, type GetRabbitsParams } from '../services/rabbit.service';
-import type { Rabbit } from '../types/rabbit.types';
+
 
 export function useRabbits(initialParams?: GetRabbitsParams) {
   const queryClient = useQueryClient();

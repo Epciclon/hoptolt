@@ -9,8 +9,8 @@ import { useToast } from '@/shared/contexts/ToastContext';
 import { genealogyService } from '../services/genealogy.service';
 import { rabbitService } from '@/modules/rabbits/services/rabbit.service';
 import type { Rabbit } from '@/modules/rabbits/types/rabbit.types';
-import type { Genealogy, UpdateGenealogyDto } from '../types/genealogy.types';
-import { X, Network, AlertTriangle } from 'lucide-react';
+import type { UpdateGenealogyDto } from '../types/genealogy.types';
+import { X } from 'lucide-react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 
 const schema = z.object({
@@ -30,7 +30,7 @@ interface GenealogyFormProps {
   rabbitId?: number;
 }
 
-export function GenealogyForm({ onSuccess, onCancel, rabbitId }: GenealogyFormProps) {
+export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<GenealogyFormProps>) {
 
   const { showToast } = useToast();
   const queryClient = useQueryClient();
@@ -100,41 +100,61 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: GenealogyFormPr
 
   // Warning modal
   const [showWarningModal, setShowWarningModal] = useState(false);
-  const [warningMessage, setWarningMessage] = useState('');
   const [warningDetails, setWarningDetails] = useState<string[]>([]);
   const [consequenceExplanation, setConsequenceExplanation] = useState('');
-  const [pendingSubmit, setPendingSubmit] = useState<FormValues | null>(null);
 
-  const { register, handleSubmit, formState: { errors, isSubmitting }, setValue, reset } = useForm<FormValues>({
+  const { handleSubmit, formState: { errors, isSubmitting }, setValue, reset } = useForm<FormValues>({
     resolver: zodResolver(schema),
   });
 
   useEffect(() => {
-    if (!loading && rabbitId) {
-      const rabbit = rabbits.find((r: Rabbit) => r.id === rabbitId);
-      if (rabbit) {
-        setSelectedRabbit(rabbit);
-        setValue('rabbitId', rabbit.id);
+    if (loading || !rabbitId) return;
+
+    const rabbit = rabbits.find((r: Rabbit) => r.id === rabbitId);
+    if (rabbit) {
+      setSelectedRabbit(rabbit);
+      setValue('rabbitId', rabbit.id);
+    }
+    
+    if (!existingGenealogy) return;
+
+    if (existingGenealogy.fatherId) {
+      const father = potentialFathers.find((r: Rabbit) => r.id === existingGenealogy.fatherId);
+      if (father) {
+        setSelectedFather(father);
+        setValue('fatherId', father.id);
       }
-      
-      if (existingGenealogy) {
-        if (existingGenealogy.fatherId) {
-          const father = potentialFathers.find((r: Rabbit) => r.id === existingGenealogy.fatherId);
-          if (father) {
-            setSelectedFather(father);
-            setValue('fatherId', father.id);
-          }
-        }
-        if (existingGenealogy.motherId) {
-          const mother = potentialMothers.find((r: Rabbit) => r.id === existingGenealogy.motherId);
-          if (mother) {
-            setSelectedMother(mother);
-            setValue('motherId', mother.id);
-          }
-        }
+    }
+    if (existingGenealogy.motherId) {
+      const mother = potentialMothers.find((r: Rabbit) => r.id === existingGenealogy.motherId);
+      if (mother) {
+        setSelectedMother(mother);
+        setValue('motherId', mother.id);
       }
     }
   }, [loading, rabbitId, rabbits, potentialFathers, potentialMothers, existingGenealogy, setValue]);
+
+  const handleConsanguinityWarning = (warningStr: string) => {
+    const details: string[] = [];
+    let explanation = '';
+    
+    if (warningStr.includes('madre ya tiene hijos con otros padres')) {
+      details.push('⚠️ La madre seleccionada ya tiene hijos con otros padres.');
+      explanation = 'Consecuencias: Los hijos de una misma madre con diferentes padres pueden tener menor variabilidad genética, lo que aumenta el riesgo de enfermedades hereditarias, reducción de la fertilidad, menor crecimiento y mayor susceptibilidad a infecciones en las camadas futuras.';
+    }
+    if (warningStr.includes('padre ya tiene hijos con otras madres')) {
+      details.push('⚠️ El padre seleccionado ya tiene hijos con otras madres.');
+      explanation = 'Consecuencias: Los hijos de un mismo padre con diferentes madres pueden acumular genes recesivos dañinos, lo que aumenta el riesgo de malformaciones congénitas, problemas de desarrollo, menor supervivencia y debilidad del sistema inmunológico en las generaciones siguientes.';
+    }
+    if (warningStr.includes('emparentados')) {
+      details.push('⚠️ Los conejos seleccionados son emparentados (incesto directo o ancestros comunes).');
+      explanation = 'Consecuencias: El cruce de conejos emparentados aumenta significativamente la expresión de genes recesivos dañinos, causando mutaciones genéticas, malformaciones físicas, esterilidad, baja tasa de supervivencia, problemas de crecimiento y enfermedades hereditarias severas en los descendientes.';
+    }
+    
+    setWarningDetails(details);
+    setConsequenceExplanation(explanation);
+    setShowWarningModal(true);
+  };
 
   const onSubmit = async (values: FormValues) => {
 
@@ -146,65 +166,7 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: GenealogyFormPr
         };
         const result = await genealogyService.edit(editData.rabbitId, payload);
         if (result.consanguinityWarning) {
-          const details: string[] = [];
-          let explanation = '';
-          
-          if (result.consanguinityWarning.includes('madre ya tiene hijos con otros padres')) {
-            details.push(' La madre seleccionada ya tiene hijos con otros padres.');
-            explanation = 'Consecuencias: Los hijos de una misma madre con diferentes padres pueden tener menor variabilidad genética, lo que aumenta el riesgo de enfermedades hereditarias, reducción de la fertilidad, menor crecimiento y mayor susceptibilidad a infecciones en las camadas futuras.';
-          }
-          if (result.consanguinityWarning.includes('padre ya tiene hijos con otras madres')) {
-            details.push(' El padre seleccionado ya tiene hijos con otras madres.');
-            explanation = 'Consecuencias: Los hijos de un mismo padre con diferentes madres pueden acumular genes recesivos dañinos, lo que aumenta el riesgo de malformaciones congénitas, problemas de desarrollo, menor supervivencia y debilidad del sistema inmunológico en las generaciones siguientes.';
-          }
-          if (result.consanguinityWarning.includes('emparentados')) {
-            details.push(' Los conejos seleccionados son emparentados (incesto directo o ancestros comunes).');
-            explanation = 'Consecuencias: El cruce de conejos emparentados aumenta significativamente la expresión de genes recesivos dañinos, causando mutaciones genéticas, malformaciones físicas, esterilidad, baja tasa de supervivencia, problemas de crecimiento y enfermedades hereditarias severas en los descendientes.';
-          }
-          
-          setWarningDetails(details);
-          setConsequenceExplanation(explanation);
-          setPendingSubmit(values);
-          setShowWarningModal(true);
-          return;
-        }
-        showToast('Relación genealógica actualizada exitosamente.', 'success');
-        queryClient.invalidateQueries({ queryKey: ['genealogies'] });
-        onSuccess?.();
-        reset();
-        setSelectedRabbit(null);
-        setSelectedFather(null);
-        setSelectedMother(null);
-        setRabbitSearch('');
-        setFatherSearch('');
-        setMotherSearch('');
-      } else {
-        const result = await genealogyService.register({
-          rabbitId: values.rabbitId,
-          fatherId: values.fatherId || undefined,
-          motherId: values.motherId || undefined,
-        });
-        if (result.consanguinityWarning) {
-          const details: string[] = [];
-          let explanation = '';
-          
-          if (result.consanguinityWarning.includes('madre ya tiene hijos con otros padres')) {
-            details.push('⚠️ La madre seleccionada ya tiene hijos con otros padres.');
-            explanation = 'Consecuencias: Los hijos de una misma madre con diferentes padres pueden tener menor variabilidad genética, lo que aumenta el riesgo de enfermedades hereditarias, reducción de la fertilidad, menor crecimiento y mayor susceptibilidad a infecciones en las camadas futuras.';
-          }
-          if (result.consanguinityWarning.includes('padre ya tiene hijos con otras madres')) {
-            details.push('⚠️ El padre seleccionado ya tiene hijos con otras madres.');
-            explanation = 'Consecuencias: Los hijos de un mismo padre con diferentes madres pueden acumular genes recesivos dañinos, lo que aumenta el riesgo de malformaciones congénitas, problemas de desarrollo, menor supervivencia y debilidad del sistema inmunológico en las generaciones siguientes.';
-          }
-          if (result.consanguinityWarning.includes('emparentados')) {
-            details.push('⚠️ Los conejos seleccionados son emparentados (incesto directo o ancestros comunes).');
-            explanation = 'Consecuencias: El cruce de conejos emparentados aumenta significativamente la expresión de genes recesivos dañinos, causando mutaciones genéticas, malformaciones físicas, esterilidad, baja tasa de supervivencia, problemas de crecimiento y enfermedades hereditarias severas en los descendientes.';
-          }
-          
-          setWarningDetails(details);
-          setConsequenceExplanation(explanation);
-          setPendingSubmit(values);
-          setShowWarningModal(true);
+          handleConsanguinityWarning(result.consanguinityWarning);
           return;
         }
         showToast('Relación genealógica registrada exitosamente.', 'success');
@@ -235,18 +197,14 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: GenealogyFormPr
     setRabbitSearch('');
     setFatherSearch('');
     setMotherSearch('');
-    setWarningMessage('');
     setWarningDetails([]);
     setConsequenceExplanation('');
-    setPendingSubmit(null);
   };
 
   const handleCancelWarning = () => {
     setShowWarningModal(false);
-    setWarningMessage('');
     setWarningDetails([]);
     setConsequenceExplanation('');
-    setPendingSubmit(null);
   };
 
   const handleRabbitSelect = (rabbit: Rabbit) => {
@@ -427,8 +385,8 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: GenealogyFormPr
             <p className="text-sm font-semibold text-red-800 mb-2">⚠️ Advertencia de Consanguinidad</p>
             {warningDetails.length > 0 && (
               <ul className="text-sm text-red-700 space-y-1">
-                {warningDetails.map((detail, index) => (
-                  <li key={index}>{detail}</li>
+                {warningDetails.map((detail) => (
+                  <li key={detail}>{detail}</li>
                 ))}
               </ul>
             )}

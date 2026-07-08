@@ -5,7 +5,7 @@ import { cleaningService } from '../services/cleaning.service';
 import { assignmentService } from '@/modules/assignments/services/assignment.service';
 import { farmMemberService } from '@/modules/farmMember/services/farmMember.service';
 import { useActiveGalpon } from '@/modules/galpones/hooks/useActiveGalpon';
-import type { Cleaning, CreateCleaningDto } from '../types/cleaning.types';
+import type { CreateCleaningDto } from '../types/cleaning.types';
 import type { AssignedRabbit } from '@/modules/assignments/types/assignment.types';
 
 export function useCleaning() {
@@ -59,6 +59,7 @@ export function useCleaning() {
         }
         return { isWorker: false, assignedCageIds: [] };
       } catch (err) {
+        console.error(err);
         return { isWorker: false, assignedCageIds: [] };
       }
     },
@@ -69,7 +70,13 @@ export function useCleaning() {
   const assignedCageIds = membershipData?.assignedCageIds || [];
 
   const loading = loadingCleanings || loadingRabbits || loadingMembership;
-  const error = errorCleanings ? (errorCleanings as Error).message : (errorRabbits ? (errorRabbits as Error).message : null);
+  let errorStr = null;
+  if (errorCleanings) {
+    errorStr = (errorCleanings as Error).message;
+  } else if (errorRabbits) {
+    errorStr = (errorRabbits as Error).message;
+  }
+  const error = errorStr;
 
   // Mutation: Create Cleaning
   const createCleaningMutation = useMutation({

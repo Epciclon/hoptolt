@@ -9,14 +9,14 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { ToastProvider } from '@/shared/contexts/ToastContext';
 import { ToastContainer } from '@/shared/ui/ToastContainer';
-import { usePathname } from 'next/navigation';
+
 import { PermissionGuard } from '@/shared/guards/PermissionGuard';
 import { RealtimeSyncProvider } from '@/shared/contexts/RealtimeSyncProvider';
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const { user, loading } = useAuthContext();
   const router = useRouter();
-  const pathname = usePathname();
+
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -93,13 +93,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           {/* Overlay / Backdrop on mobile when sidebar is open */}
           {!sidebarCollapsed && (
-            <div 
-              role="button"
-              tabIndex={0}
+            <button 
+              type="button"
               onClick={toggleSidebar} 
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleSidebar(); }}
               aria-label="Cerrar menú lateral"
-              className="fixed inset-0 bg-black/40 z-30 lg:hidden transition-opacity duration-300"
+              className="fixed inset-0 bg-black/40 z-30 lg:hidden transition-opacity duration-300 w-full h-full border-none cursor-pointer outline-none"
             />
           )}
           

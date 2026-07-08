@@ -8,7 +8,7 @@ interface ZoomableViewerProps {
   children: React.ReactNode;
 }
 
-export function ZoomableViewer({ children }: ZoomableViewerProps) {
+export function ZoomableViewer({ children }: Readonly<ZoomableViewerProps>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -64,7 +64,6 @@ export function ZoomableViewer({ children }: ZoomableViewerProps) {
 
       {/* Visor interactivo */}
       <div 
-        role="presentation"
         className={`w-full h-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
         ref={containerRef}
         onMouseDown={handleMouseDown}

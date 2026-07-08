@@ -2,7 +2,6 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { farmMemberService } from '../services/farmMember.service';
-import type { FarmMember } from '../types/farmMember.types';
 import { useActiveGalpon } from '@/modules/galpones/hooks/useActiveGalpon';
 
 export function useFarmMember() {
@@ -32,6 +31,7 @@ export function useFarmMember() {
       await removeWorkerMutation.mutateAsync(id);
       return true;
     } catch (err) {
+      console.error(err);
       return false;
     }
   };
@@ -48,6 +48,7 @@ export function useFarmMember() {
       await updateWorkerMutation.mutateAsync({ id, data });
       return true;
     } catch (err) {
+      console.error(err);
       return false;
     }
   };

@@ -5,20 +5,18 @@ import type { Race } from '../types/race.types';
 import { Button, ConfirmDialog, Dialog, LoadingMessage, CatalogCard } from '@/shared/ui';
 import { FilterBar } from '@/shared/ui/FilterBar';
 import { Pagination } from '@/shared/ui/Pagination';
-import { ImagePlaceholder } from '@/shared/ui/ImagePlaceholder';
 import { useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
 import { RaceForm } from './RaceForm';
 import { useToast } from '@/shared/contexts/ToastContext';
-import Image from 'next/image';
 import { useSupabase } from '../../../hooks/useSupabase';
 
 interface RaceCatalogProps {
   onSuccess?: () => void;
 }
 
-export function RaceCatalog({ onSuccess }: RaceCatalogProps) {
-  const { races, pagination, loading, error, fetchRaces: loadRaces, deleteRace, setPage, setSearch, filters } = useRaces();
+export function RaceCatalog({ onSuccess }: Readonly<RaceCatalogProps>) {
+  const { races, pagination, loading, fetchRaces: loadRaces, deleteRace, setPage, setSearch, filters } = useRaces();
   const { showToast } = useToast();
   const [selectedRaceId, setSelectedRaceId] = useState<number | null>(null);
   const [toDelete, setToDelete] = useState<Race | null>(null);
@@ -32,7 +30,7 @@ export function RaceCatalog({ onSuccess }: RaceCatalogProps) {
   };
 
   const handleConfirmDelete = async () => {
-    if (!toDelete || !toDelete.id) return;
+    if (!toDelete?.id) return;
     setDeleting(true);
     const { success, error: deleteError } = await deleteRace(toDelete.id);
     
@@ -61,11 +59,13 @@ export function RaceCatalog({ onSuccess }: RaceCatalogProps) {
         searchPlaceholder="Buscar raza por nombre..."
       />
 
-      {loading ? (
+      {loading && (
         <LoadingMessage message="Cargando razas..." />
-      ) : races.length === 0 ? (
+      )}
+      {!loading && races.length === 0 && (
         <p className="text-sm text-slate-500">No hay razas registradas.</p>
-      ) : (
+      )}
+      {!loading && races.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {races.map((race) => {
             const isSelected = selectedRaceId === race.id;

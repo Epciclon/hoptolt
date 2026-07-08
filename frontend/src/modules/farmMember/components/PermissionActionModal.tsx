@@ -12,7 +12,7 @@ interface PermissionActionModalProps {
   existingPermissions?: { canCreate: boolean; canRead: boolean; canUpdate: boolean; canDelete: boolean };
 }
 
-export function PermissionActionModal({ open, onClose, onConfirm, moduleName, isSensitive = false, existingPermissions }: PermissionActionModalProps) {
+export function PermissionActionModal({ open, onClose, onConfirm, moduleName, isSensitive = false, existingPermissions }: Readonly<PermissionActionModalProps>) {
   const [permissions, setPermissions] = useState({
     canCreate: false,
     canRead: false,
@@ -66,14 +66,14 @@ export function PermissionActionModal({ open, onClose, onConfirm, moduleName, is
     const allSelected = availableActions.every(action => permissions[action]);
     
     if (allSelected) {
-      // Deseleccionar todo
+      // Quitar todas las selecciones
       const newPermissions = { ...permissions };
       availableActions.forEach(action => {
         newPermissions[action] = false;
       });
       setPermissions(newPermissions);
     } else {
-      // Seleccionar todo
+      // Marcar todas las selecciones
       const newPermissions = { ...permissions };
       availableActions.forEach(action => {
         newPermissions[action] = true;
@@ -136,9 +136,12 @@ export function PermissionActionModal({ open, onClose, onConfirm, moduleName, is
                 className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
               />
               <span className="text-sm text-slate-700">
-                {action === 'canCreate' ? 'Crear' : 
-                 action === 'canRead' ? 'Consultar' : 
-                 action === 'canUpdate' ? 'Editar' : 'Eliminar'}
+                {(() => {
+                  if (action === 'canCreate') return 'Crear';
+                  if (action === 'canRead') return 'Consultar';
+                  if (action === 'canUpdate') return 'Editar';
+                  return 'Eliminar';
+                })()}
               </span>
             </label>
           ))}

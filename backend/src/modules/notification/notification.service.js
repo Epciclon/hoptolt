@@ -14,47 +14,13 @@ class NotificationService {
 
         const promise = (async () => {
             try {
-                const memberships = await FarmMember.findAll({ where: { profileId, status: 'active' } });
-                const ownedGalpones = await Galpon.findAll({ where: { profileId } });
-
                 const todayStr = new Date().toLocaleDateString('sv', { timeZone: 'America/Guayaquil' });
                 const d = new Date(todayStr + 'T00:00:00-05:00');
                 d.setDate(d.getDate() + 3);
-                const y = d.getFullYear();
-                const m = String(d.getMonth() + 1).padStart(2, '0');
-                const dayStr = String(d.getDate()).padStart(2, '0');
-                const threeDaysFromNowStr = `${y}-${m}-${dayStr}`;
+                const threeDaysFromNowStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-                const { WorkerCage, Assignment } = require('../../domain/models');
-
-                const conditions = [];
-
-                // 1. Galpones donde es propietario directo
-                if (ownedGalpones.length > 0) {
-                    conditions.push({
-                        galponId: { [Op.in]: ownedGalpones.map(g => g.id) }
-                    });
-                }
-
-                // 2. Galpones donde participa como miembro
-                for (const m of memberships) {
-                    if (m.role === 'owner') {
-                        conditions.push({ galponId: m.galponId });
-                    } else if (m.role === 'worker') {
-                        // Si es trabajador, buscar sus jaulas asignadas
-                        const workerCages = await WorkerCage.findAll({
-                            where: { farmMemberId: m.id }
-                        });
-                        const cageIds = workerCages.map(wc => wc.cageId);
-
-                        conditions.push({
-                            galponId: m.galponId,
-                            // Filtrar por la jaula de la hembra
-                            '$female.assignments.cageId$': { [Op.in]: cageIds }
-                        });
-                    }
-                }
-
+                const { Assignment } = require('../../domain/models');
+                const conditions = await this._getReproductionConditions(profileId);
                 if (conditions.length === 0) return;
 
                 const upcomingReproductions = await Reproduction.findAll({
@@ -62,67 +28,28 @@ class NotificationService {
                         [Op.or]: conditions,
                         estimatedBirthDate: { [Op.between]: [todayStr, threeDaysFromNowStr] }
                     },
-                    include: [
-                        {
-                            model: Rabbit,
-                            as: 'female',
-                            attributes: ['code', 'name'],
-                            include: [
-                                {
-                                    model: Assignment,
-                                    as: 'assignments',
-                                    where: { status: 'asignado' },
-                                    required: true
-                                }
-                            ]
-                        }
-                    ]
+                    include: [{
+                        model: Rabbit, as: 'female', attributes: ['code', 'name'],
+                        include: [{ model: Assignment, as: 'assignments', where: { status: 'asignado' }, required: true }]
+                    }]
                 });
 
                 if (upcomingReproductions.length === 0) return;
 
-                const warnings = await Notification.findAll({
-                    where: { profileId, type: 'warning' }
-                });
-
-                // Cargar los IDs de reproducción que ya fueron notificados en un Set para búsquedas O(1) rápidas y seguras
-                const notifiedReproductionIds = new Set();
-                for (const w of warnings) {
-                    if (w.data) {
-                        let dataObj = w.data;
-                        if (typeof dataObj === 'string') {
-                            try {
-                                dataObj = JSON.parse(dataObj);
-                            } catch (e) {
-                                continue;
-                            }
-                        }
-                        if (dataObj && dataObj.reproductionId) {
-                            notifiedReproductionIds.add(Number(dataObj.reproductionId));
-                        }
-                    }
-                }
+                const notifiedReproductionIds = await this._getNotifiedIds(profileId, 'warning', 'birth');
 
                 for (const r of upcomingReproductions) {
                     const repId = Number(r.id);
                     if (!notifiedReproductionIds.has(repId)) {
-                        // Lo agregamos inmediatamente al Set para evitar duplicaciones en el mismo bucle
                         notifiedReproductionIds.add(repId);
-
-                        const birthDateStr = typeof r.estimatedBirthDate === 'string'
-                            ? r.estimatedBirthDate
-                            : r.estimatedBirthDate.toISOString().split('T')[0];
+                        const birthDateStr = typeof r.estimatedBirthDate === 'string' ? r.estimatedBirthDate : r.estimatedBirthDate.toISOString().split('T')[0];
                         const rabbitName = r.female?.name ? ` (${r.female.name})` : '';
                         await Notification.create({
                             profileId,
                             type: 'warning',
                             title: 'Alerta de Parto Próximo',
                             message: `La coneja con código ${r.female?.code || 'N/A'}${rabbitName} tiene un parto estimado para el ${birthDateStr}. ¡Por favor prepara la jaula con al menos 3 días de anticipación!`,
-                            data: {
-                                type: 'birth_warning',
-                                reproductionId: repId,
-                                estimatedBirthDate: birthDateStr
-                            }
+                            data: { type: 'birth_warning', reproductionId: repId, estimatedBirthDate: birthDateStr }
                         });
                     }
                 }
@@ -144,37 +71,13 @@ class NotificationService {
 
         const promise = (async () => {
             try {
-                const memberships = await FarmMember.findAll({ where: { profileId, status: 'active' } });
-                const ownedGalpones = await Galpon.findAll({ where: { profileId } });
-
                 const todayStr = new Date().toLocaleDateString('sv', { timeZone: 'America/Guayaquil' });
                 const d = new Date(todayStr + 'T00:00:00-05:00');
                 d.setDate(d.getDate() - 30);
-                const y = d.getFullYear();
-                const m = String(d.getMonth() + 1).padStart(2, '0');
-                const dayStr = String(d.getDate()).padStart(2, '0');
-                const thirtyDaysAgoStr = `${y}-${m}-${dayStr}`;
+                const thirtyDaysAgoStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-                const { WorkerCage, Assignment } = require('../../domain/models');
-                const conditions = [];
-
-                if (ownedGalpones.length > 0) {
-                    conditions.push({ galponId: { [Op.in]: ownedGalpones.map(g => g.id) } });
-                }
-
-                for (const m of memberships) {
-                    if (m.role === 'owner') {
-                        conditions.push({ galponId: m.galponId });
-                    } else if (m.role === 'worker') {
-                        const workerCages = await WorkerCage.findAll({ where: { farmMemberId: m.id } });
-                        const cageIds = workerCages.map(wc => wc.cageId);
-                        conditions.push({
-                            galponId: m.galponId,
-                            '$female.assignments.cageId$': { [Op.in]: cageIds }
-                        });
-                    }
-                }
-
+                const { Assignment } = require('../../domain/models');
+                const conditions = await this._getReproductionConditions(profileId);
                 if (conditions.length === 0) return;
 
                 const weaningReproductions = await Reproduction.findAll({
@@ -183,57 +86,27 @@ class NotificationService {
                         status: 'lactancia',
                         estimatedBirthDate: { [Op.lte]: thirtyDaysAgoStr }
                     },
-                    include: [
-                        {
-                            model: Rabbit,
-                            as: 'female',
-                            attributes: ['code', 'name'],
-                            include: [
-                                {
-                                    model: Assignment,
-                                    as: 'assignments',
-                                    where: { status: 'asignado' },
-                                    required: true
-                                }
-                            ]
-                        }
-                    ]
+                    include: [{
+                        model: Rabbit, as: 'female', attributes: ['code', 'name'],
+                        include: [{ model: Assignment, as: 'assignments', where: { status: 'asignado' }, required: true }]
+                    }]
                 });
 
                 if (weaningReproductions.length === 0) return;
 
-                const infoNotifications = await Notification.findAll({
-                    where: { profileId, type: 'info' }
-                });
-
-                const notifiedReproductionIds = new Set();
-                for (const w of infoNotifications) {
-                    if (w.data) {
-                        let dataObj = w.data;
-                        if (typeof dataObj === 'string') {
-                            try { dataObj = JSON.parse(dataObj); } catch (e) { continue; }
-                        }
-                        if (dataObj && dataObj.type === 'weaning_alert' && dataObj.reproductionId) {
-                            notifiedReproductionIds.add(Number(dataObj.reproductionId));
-                        }
-                    }
-                }
+                const notifiedReproductionIds = await this._getNotifiedIds(profileId, 'info', 'weaning');
 
                 for (const r of weaningReproductions) {
                     const repId = Number(r.id);
                     if (!notifiedReproductionIds.has(repId)) {
                         notifiedReproductionIds.add(repId);
-
                         const rabbitName = r.female?.name ? ` (${r.female.name})` : '';
                         await Notification.create({
                             profileId,
                             type: 'info',
                             title: 'Destete Pendiente',
                             message: `La coneja con código ${r.female?.code || 'N/A'}${rabbitName} ya cumplió el mes de lactancia. Por favor, finalice el proceso y registre las crías retenidas.`,
-                            data: {
-                                type: 'weaning_alert',
-                                reproductionId: repId
-                            }
+                            data: { type: 'weaning_alert', reproductionId: repId }
                         });
                     }
                 }
@@ -255,103 +128,28 @@ class NotificationService {
 
         const promise = (async () => {
             try {
-                const memberships = await FarmMember.findAll({ where: { profileId, status: 'active' } });
-                const ownedGalpones = await Galpon.findAll({ where: { profileId } });
-
-                const { Cage, Cleaning, WorkerCage, Assignment } = require('../../domain/models');
-
-                // Obtener los IDs de jaulas con asignación activa
-                const activeAssignments = await Assignment.findAll({
-                    where: { status: 'asignado' }
-                });
+                const { Cleaning, Assignment } = require('../../domain/models');
+                const activeAssignments = await Assignment.findAll({ where: { status: 'asignado' } });
                 const assignedCageIds = new Set(activeAssignments.map(a => Number(a.cageId)));
-
                 if (assignedCageIds.size === 0) return;
 
-                const cagesToCheck = [];
-
-                // 1. Propietario de galpones
-                if (ownedGalpones.length > 0) {
-                    const ownerCages = await Cage.findAll({
-                        where: {
-                            galponId: { [Op.in]: ownedGalpones.map(g => g.id) },
-                            id: { [Op.in]: Array.from(assignedCageIds) }
-                        }
-                    });
-                    cagesToCheck.push(...ownerCages);
-                }
-
-                // 2. Miembro de galpones
-                for (const m of memberships) {
-                    if (m.role === 'owner') {
-                        const ownerCages = await Cage.findAll({
-                            where: {
-                                galponId: m.galponId,
-                                id: { [Op.in]: Array.from(assignedCageIds) }
-                            }
-                        });
-                        for (const c of ownerCages) {
-                            if (!cagesToCheck.some(x => x.id === c.id)) {
-                                cagesToCheck.push(c);
-                            }
-                        }
-                    } else if (m.role === 'worker') {
-                        const workerCages = await WorkerCage.findAll({
-                            where: { farmMemberId: m.id }
-                        });
-                        const cageIds = workerCages.map(wc => wc.cageId).filter(id => assignedCageIds.has(Number(id)));
-                        const assignedCages = await Cage.findAll({
-                            where: { id: { [Op.in]: cageIds }, galponId: m.galponId }
-                        });
-                        for (const c of assignedCages) {
-                            if (!cagesToCheck.some(x => x.id === c.id)) {
-                                cagesToCheck.push(c);
-                            }
-                        }
-                    }
-                }
-
+                const cagesToCheck = await this._getCagesToCheckForCleaning(profileId, assignedCageIds);
                 if (cagesToCheck.length === 0) return;
 
-                const warnings = await Notification.findAll({
-                    where: { profileId, type: 'warning' }
-                });
-
-                // Cargar los IDs de jaula que ya tienen advertencia de limpieza en un Set
-                const notifiedCageIds = new Set();
-                for (const w of warnings) {
-                    if (w.data) {
-                        let dataObj = w.data;
-                        if (typeof dataObj === 'string') {
-                            try { dataObj = JSON.parse(dataObj); } catch (e) { continue; }
-                        }
-                        if (dataObj && dataObj.type === 'cleaning_warning' && dataObj.cageId) {
-                            notifiedCageIds.add(Number(dataObj.cageId));
-                        }
-                    }
-                }
-
+                const notifiedCageIds = await this._getNotifiedIds(profileId, 'warning', 'cleaning');
                 const today = new Date();
 
                 for (const cage of cagesToCheck) {
-                    if (notifiedCageIds.has(Number(cage.id))) {
-                        continue;
-                    }
+                    if (notifiedCageIds.has(Number(cage.id))) continue;
 
                     const lastCleaning = await Cleaning.findOne({
                         where: { cageId: cage.id },
                         order: [['cleaningDate', 'DESC']]
                     });
 
-                    // Si no tiene registros previos de limpieza, no se envía advertencia
-                    if (!lastCleaning) {
-                        continue;
-                    }
+                    if (!lastCleaning || !lastCleaning.cleaningDate) continue;
 
-                    const lastDateToCheck = lastCleaning.cleaningDate;
-                    if (!lastDateToCheck) continue;
-
-                    const diffTime = today.getTime() - new Date(lastDateToCheck).getTime();
+                    const diffTime = today.getTime() - new Date(lastCleaning.cleaningDate).getTime();
                     const daysWithoutCleaning = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
                     if (daysWithoutCleaning > 3) {
@@ -361,12 +159,7 @@ class NotificationService {
                             type: 'warning',
                             title: 'Alerta de Limpieza Requerida',
                             message: `La jaula #${cage.number} lleva ${daysWithoutCleaning} días sin ser limpiada. ¡Por favor realiza la limpieza lo antes posible!`,
-                            data: {
-                                type: 'cleaning_warning',
-                                cageId: cage.id,
-                                cageNumber: cage.number,
-                                daysWithoutCleaning
-                            }
+                            data: { type: 'cleaning_warning', cageId: cage.id, cageNumber: cage.number, daysWithoutCleaning }
                         });
                     }
                 }
@@ -422,6 +215,89 @@ class NotificationService {
 
     async deleteNotification(id) {
         return await notificationRepository.delete(id);
+    }
+
+    async _getReproductionConditions(profileId) {
+        const memberships = await FarmMember.findAll({ where: { profileId, status: 'active' } });
+        const ownedGalpones = await Galpon.findAll({ where: { profileId } });
+        const { WorkerCage } = require('../../domain/models');
+
+        const conditions = [];
+
+        if (ownedGalpones.length > 0) {
+            conditions.push({ galponId: { [Op.in]: ownedGalpones.map(g => g.id) } });
+        }
+
+        for (const m of memberships) {
+            if (m.role === 'owner') {
+                conditions.push({ galponId: m.galponId });
+            } else if (m.role === 'worker') {
+                const workerCages = await WorkerCage.findAll({ where: { farmMemberId: m.id } });
+                const cageIds = workerCages.map(wc => wc.cageId);
+                conditions.push({
+                    galponId: m.galponId,
+                    '$female.assignments.cageId$': { [Op.in]: cageIds }
+                });
+            }
+        }
+        return conditions;
+    }
+
+    async _getNotifiedIds(profileId, type, filterType) {
+        const warnings = await Notification.findAll({ where: { profileId, type } });
+        const notifiedIds = new Set();
+        for (const w of warnings) {
+            if (w.data) {
+                let dataObj = w.data;
+                if (typeof dataObj === 'string') {
+                    try { dataObj = JSON.parse(dataObj); } catch (e) { console.error("Error parsing notification data", e); continue; }
+                }
+                if (filterType === 'birth') {
+                    if (dataObj?.reproductionId) notifiedIds.add(Number(dataObj.reproductionId));
+                } else if (filterType === 'weaning') {
+                    if (dataObj?.type === 'weaning_alert' && dataObj?.reproductionId) notifiedIds.add(Number(dataObj.reproductionId));
+                } else if (filterType === 'cleaning') {
+                    if (dataObj?.type === 'cleaning_warning' && dataObj?.cageId) notifiedIds.add(Number(dataObj.cageId));
+                }
+            }
+        }
+        return notifiedIds;
+    }
+
+    async _getCagesToCheckForCleaning(profileId, assignedCageIds) {
+        const memberships = await FarmMember.findAll({ where: { profileId, status: 'active' } });
+        const ownedGalpones = await Galpon.findAll({ where: { profileId } });
+        const { Cage, WorkerCage } = require('../../domain/models');
+
+        const cagesToCheck = [];
+
+        if (ownedGalpones.length > 0) {
+            const ownerCages = await Cage.findAll({
+                where: { galponId: { [Op.in]: ownedGalpones.map(g => g.id) }, id: { [Op.in]: Array.from(assignedCageIds) } }
+            });
+            cagesToCheck.push(...ownerCages);
+        }
+
+        for (const m of memberships) {
+            if (m.role === 'owner') {
+                const ownerCages = await Cage.findAll({
+                    where: { galponId: m.galponId, id: { [Op.in]: Array.from(assignedCageIds) } }
+                });
+                for (const c of ownerCages) {
+                    if (!cagesToCheck.some(x => x.id === c.id)) cagesToCheck.push(c);
+                }
+            } else if (m.role === 'worker') {
+                const workerCages = await WorkerCage.findAll({ where: { farmMemberId: m.id } });
+                const cageIds = workerCages.map(wc => wc.cageId).filter(id => assignedCageIds.has(Number(id)));
+                const assignedCages = await Cage.findAll({
+                    where: { id: { [Op.in]: cageIds }, galponId: m.galponId }
+                });
+                for (const c of assignedCages) {
+                    if (!cagesToCheck.some(x => x.id === c.id)) cagesToCheck.push(c);
+                }
+            }
+        }
+        return cagesToCheck;
     }
 }
 

@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notificationService } from '../services/notification.service';
-import type { Notification, CreateNotificationDTO } from '../types/notification.types';
+import type { CreateNotificationDTO } from '../types/notification.types';
 import { createClient } from '@/utils/supabase/client';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 

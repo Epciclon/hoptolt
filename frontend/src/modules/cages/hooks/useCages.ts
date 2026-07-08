@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cageService, GetCagesParams } from '../services/cage.service';
-import type { Cage } from '../types/cage.types';
 
 export function useCages(initialParams?: GetCagesParams) {
   const queryClient = useQueryClient();

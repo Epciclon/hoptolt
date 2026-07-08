@@ -3,8 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dewormingService } from '../services/deworming.service';
 import { assignmentService } from '@/modules/assignments/services/assignment.service';
-import type { Deworming } from '../types/deworming.types';
-import type { AssignedRabbit } from '@/modules/assignments/types/assignment.types';
+
 
 export function useDeworming() {
   const queryClient = useQueryClient();
@@ -42,7 +41,13 @@ export function useDeworming() {
   const dewormingPeriod = dewormingPeriodData ?? 30;
 
   const loading = loadingDewormings || loadingRabbits || loadingPeriod;
-  const error = errorDewormings ? (errorDewormings as Error).message : (errorRabbits ? (errorRabbits as Error).message : null);
+  let errorStr = null;
+  if (errorDewormings) {
+    errorStr = (errorDewormings as Error).message;
+  } else if (errorRabbits) {
+    errorStr = (errorRabbits as Error).message;
+  }
+  const error = errorStr;
 
   // Mutation: Create Deworming
   const createDewormingMutation = useMutation({

@@ -144,8 +144,8 @@ export function FeedingTable() {
               <p className="text-xs text-slate-500 font-medium mb-3">Conejos en Jaula</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {selectedFeeding.rabbits && selectedFeeding.rabbits.length > 0 ? (
-                  selectedFeeding.rabbits.map((rabbit, idx) => (
-                    <div key={idx} className="flex items-center gap-3 bg-white border border-slate-100 rounded-lg p-2 shadow-sm">
+                  selectedFeeding.rabbits.map((rabbit) => (
+                    <div key={rabbit.code || rabbit.id} className="flex items-center gap-3 bg-white border border-slate-100 rounded-lg p-2 shadow-sm">
                       {rabbit.imageUrl ? (
                         <img 
                           src={rabbit.imageUrl} 

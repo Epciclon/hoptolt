@@ -15,8 +15,8 @@ interface GalponTableProps {
   onEdit?: (galpon: Galpon) => void;
 }
 
-export function GalponTable({ onEdit }: GalponTableProps) {
-  const { galpones, loading, error, refetch } = useGalpones();
+export function GalponTable({ onEdit }: Readonly<GalponTableProps>) {
+  const { galpones, loading, refetch } = useGalpones();
   const { activeGalpon, setActive } = useActiveGalpon();
   const { user } = useAuthContext();
   const { showToast } = useToast();

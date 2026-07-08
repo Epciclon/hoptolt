@@ -14,8 +14,8 @@ interface CageTableProps {
   onEdit?: (cage: Cage) => void;
 }
 
-export function CageTable({ onEdit }: CageTableProps) {
-  const { cages, pagination, loading, error, deleteCage, setPage, setSearch, setType, setStatus, filters } = useCages();
+export function CageTable({ onEdit }: Readonly<CageTableProps>) {
+  const { cages, pagination, loading, deleteCage, setPage, setSearch, setType, setStatus, filters } = useCages();
   const { showToast } = useToast();
   const [deleteTarget, setDeleteTarget] = useState<Cage | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -54,19 +54,25 @@ export function CageTable({ onEdit }: CageTableProps) {
         }
 
         let label = 'Operativa';
-        let variant: 'success' | 'info' | 'danger' | 'warning' | 'primary' | 'neutral' = 'success';
+        let variant: 'success' | 'info' | 'danger' | 'warning' | 'primary' | 'neutral';
 
-        if (row.occupancyStatus === 'disponible') {
-          label = 'Operativa (Libre)';
-          variant = 'success';
-        } else if (row.occupancyStatus === 'parcial') {
-          label = `Operativa (Parcial ${row.assignedCount}/${row.capacity})`;
-          variant = 'info';
-        } else if (row.occupancyStatus === 'llena') {
-          label = row.type === 'reproducción'
-            ? 'Operativa (Llena)'
-            : `Operativa (Llena ${row.assignedCount}/${row.capacity})`;
-          variant = 'danger';
+        switch (row.occupancyStatus) {
+          case 'disponible':
+            label = 'Operativa (Libre)';
+            variant = 'success';
+            break;
+          case 'parcial':
+            label = `Operativa (Parcial ${row.assignedCount}/${row.capacity})`;
+            variant = 'info';
+            break;
+          case 'llena':
+            label = row.type === 'reproducción'
+              ? 'Operativa (Llena)'
+              : `Operativa (Llena ${row.assignedCount}/${row.capacity})`;
+            variant = 'danger';
+            break;
+          default:
+            variant = 'success';
         }
 
         return <Badge variant={variant}>{label}</Badge>;

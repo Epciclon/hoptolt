@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { Deworming } from '../types/deworming.types';
 import { useDeworming } from '../hooks/useDeworming';
-import { LoadingMessage, Dialog, Badge } from '@/shared/ui';
+import { LoadingMessage, Dialog } from '@/shared/ui';
 import { Table, Column } from '@/shared/ui/Table';
 
 export function DewormingTable() {
@@ -33,7 +33,7 @@ export function DewormingTable() {
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const nextDateMid = new Date(nextDate.getTime());
+    const nextDateMid = new Date(nextDate);
     nextDateMid.setHours(0, 0, 0, 0);
 
     const diffTime = nextDateMid.getTime() - today.getTime();
@@ -173,19 +173,27 @@ export function DewormingTable() {
                       <span className="text-sm font-semibold text-slate-800 border-b border-slate-100 pb-2 mb-2">
                         {nextDeworm.nextDate.toLocaleDateString('es-EC')} a las {nextDeworm.nextDate.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', hour12: true })}
                       </span>
-                      {nextDeworm.diffDays > 0 ? (
-                        <span className="text-[12px] text-slate-600 font-medium">
-                          Faltan {nextDeworm.diffDays} día{nextDeworm.diffDays !== 1 ? 's' : ''}
-                        </span>
-                      ) : nextDeworm.diffDays === 0 ? (
-                        <span className="text-[12px] text-slate-700 font-bold">
-                          Toca hoy
-                        </span>
-                      ) : (
-                        <span className="text-[12px] text-slate-600 font-medium">
-                          Atrasada {Math.abs(nextDeworm.diffDays)} día{Math.abs(nextDeworm.diffDays) !== 1 ? 's' : ''}
-                        </span>
-                      )}
+                      {(() => {
+                        if (nextDeworm.diffDays > 0) {
+                          return (
+                            <span className="text-[12px] text-slate-600 font-medium">
+                              Faltan {nextDeworm.diffDays} día{nextDeworm.diffDays !== 1 ? 's' : ''}
+                            </span>
+                          );
+                        }
+                        if (nextDeworm.diffDays === 0) {
+                          return (
+                            <span className="text-[12px] text-slate-700 font-bold">
+                              Toca hoy
+                            </span>
+                          );
+                        }
+                        return (
+                          <span className="text-[12px] text-slate-600 font-medium">
+                            Atrasada {Math.abs(nextDeworm.diffDays)} día{Math.abs(nextDeworm.diffDays) !== 1 ? 's' : ''}
+                          </span>
+                        );
+                      })()}
                     </>
                   ) : (
                     <>

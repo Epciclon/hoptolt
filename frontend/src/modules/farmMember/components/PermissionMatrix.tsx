@@ -44,7 +44,7 @@ const ACTION_LABELS = {
   canDelete: 'Eliminar',
 };
 
-export function PermissionMatrix({ permissions, onChange, modules }: PermissionMatrixProps) {
+export function PermissionMatrix({ permissions, onChange, modules }: Readonly<PermissionMatrixProps>) {
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
 
   // Usar los módulos proporcionados o los por defecto

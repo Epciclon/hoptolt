@@ -2,7 +2,6 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { galponService } from '../services/galpon.service';
-import type { Galpon } from '../types/galpon.types';
 
 export function useGalpon() {
   const queryClient = useQueryClient();
@@ -31,6 +30,7 @@ export function useGalpon() {
       await deleteGalponMutation.mutateAsync(id);
       return true;
     } catch (err) {
+      console.error(err);
       return false;
     }
   };

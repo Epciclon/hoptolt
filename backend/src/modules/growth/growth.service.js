@@ -48,64 +48,8 @@ class GrowthService {
                 const updates = [];
 
                 for (const rabbit of rabbits) {
-                    const birthDate = new Date(rabbit.birthDate);
-                    
-                    let months = (today.getFullYear() - birthDate.getFullYear()) * 12;
-                    months -= birthDate.getMonth();
-                    months += today.getMonth();
-                    
-                    if (today.getDate() < birthDate.getDate()) {
-                        months--;
-                    }
-                    if (months < 0) months = 0;
-
-                    const maxAge = rabbit.purpose === 'Engorde' ? 8 : 12;
-
-                    // Only update if age just incremented
-                    if (rabbit.age !== months) {
-                        await rabbit.update({ age: months });
-                        await AuditLog.create({
-                            action: 'age_update_auto',
-                            entity: 'Rabbit',
-                            entityId: rabbit.id,
-                            details: { oldAge: rabbit.age, newAge: months, updatedBy: 'system' }
-                        });
-                        
-                        let msg = `${rabbit.code} - ${rabbit.name || 'Sin nombre'} cumplió ${months} meses`;
-
-                        // Only update weight if we haven't passed stabilization
-                        if (months <= maxAge) {
-                            const estimatedWeight = this.calculateEstimatedWeight(rabbit.purpose, months);
-                            
-                            // Check if weight actually differs to avoid duplicate useless records
-                            if (Number.parseFloat(rabbit.weight) !== estimatedWeight) {
-                                const oldWeight = Number.parseFloat(rabbit.weight);
-                                
-                                await Growth.create({
-                                    rabbitId: rabbit.id,
-                                    weight: estimatedWeight,
-                                    recordDate: new Date()
-                                });
-
-                                await rabbit.update({ weight: estimatedWeight });
-
-                                await AuditLog.create({
-                                    action: 'weight_update_auto',
-                                    entity: 'Rabbit',
-                                    entityId: rabbit.id,
-                                    details: { oldWeight, newWeight: estimatedWeight, source: 'system_estimation' }
-                                });
-                            }
-                            
-                            msg += ` y su peso estimado es ${estimatedWeight.toFixed(2)} kg.`;
-                            
-                            if (months === maxAge) {
-                                msg += ` (Este es el último peso estimado por el sistema. A partir de aquí se estabiliza el peso y quedará en manos del usuario si desea actualizarlo).`;
-                            }
-                        }
-
-                        updates.push(msg);
-                    }
+                    const msg = await this._processRabbitGrowth(rabbit, today);
+                    if (msg) updates.push(msg);
                 }
 
                 if (updates.length > 0) {
@@ -152,6 +96,48 @@ class GrowthService {
         });
 
         return history;
+    }
+
+    async _processRabbitGrowth(rabbit, today) {
+        const birthDate = new Date(rabbit.birthDate);
+        let months = (today.getFullYear() - birthDate.getFullYear()) * 12;
+        months -= birthDate.getMonth();
+        months += today.getMonth();
+        if (today.getDate() < birthDate.getDate()) months--;
+        if (months < 0) months = 0;
+
+        const maxAge = rabbit.purpose === 'Engorde' ? 8 : 12;
+        if (rabbit.age === months) return null;
+
+        await rabbit.update({ age: months });
+        await AuditLog.create({
+            action: 'age_update_auto',
+            entity: 'Rabbit',
+            entityId: rabbit.id,
+            details: { oldAge: rabbit.age, newAge: months, updatedBy: 'system' }
+        });
+        
+        let msg = `${rabbit.code} - ${rabbit.name || 'Sin nombre'} cumplió ${months} meses`;
+
+        if (months <= maxAge) {
+            const estimatedWeight = this.calculateEstimatedWeight(rabbit.purpose, months);
+            if (Number.parseFloat(rabbit.weight) !== estimatedWeight) {
+                const oldWeight = Number.parseFloat(rabbit.weight);
+                await Growth.create({ rabbitId: rabbit.id, weight: estimatedWeight, recordDate: new Date() });
+                await rabbit.update({ weight: estimatedWeight });
+                await AuditLog.create({
+                    action: 'weight_update_auto',
+                    entity: 'Rabbit',
+                    entityId: rabbit.id,
+                    details: { oldWeight, newWeight: estimatedWeight, source: 'system_estimation' }
+                });
+            }
+            msg += ` y su peso estimado es ${estimatedWeight.toFixed(2)} kg.`;
+            if (months === maxAge) {
+                msg += ` (Este es el último peso estimado por el sistema. A partir de aquí se estabiliza el peso y quedará en manos del usuario si desea actualizarlo).`;
+            }
+        }
+        return msg;
     }
 }
 

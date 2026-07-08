@@ -14,7 +14,7 @@ function RealtimeSyncHelper() {
  * hooks de React (useContext, useRouter, etc.) para que puedan ser
  * importados desde el Server Component RootLayout sin errores de SSR.
  */
-export default function ClientProviders({ children }: { children: React.ReactNode }) {
+export default function ClientProviders({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <QueryProvider>
       <AuthProvider>

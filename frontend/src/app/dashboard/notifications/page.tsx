@@ -1,32 +1,29 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Card, Button } from '@/shared/ui';
 import { useRouter } from 'next/navigation';
 import { useInvitation } from '@/modules/invitation/hooks/useInvitation';
-import { notificationService } from '@/modules/notification/services/notification.service';
-import { growthService } from '@/modules/growth/services/growth.service';
 import { useToast } from '@/shared/contexts/ToastContext';
-import { Bell, CheckCheck, Clock, Settings2, Trash2 } from 'lucide-react';
+import { Bell, CheckCheck, Clock, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Notification } from '@/modules/notification/types/notification.types';
 import { useNotifications } from '@/modules/notification/hooks/useNotification';
 
 export default function NotificationsPage() {
-  const { notifications, loading, markAsRead, markAllAsRead, deleteNotification, fetchNotifications } = useNotifications();
+  const { notifications, loading, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const [filter, setFilter] = useState<string>('all');
-  const [processing, setProcessing] = useState<number | null>(null);
   const { showToast } = useToast();
   const router = useRouter();
   const { acceptInvitation, revokeInvitation } = useInvitation();
   const [accepting, setAccepting] = useState<number | null>(null);
   const [rejecting, setRejecting] = useState<number | null>(null);
-  const [selectedRabbitForNotification, setSelectedRabbitForNotification] = useState<Record<number, number | null>>({});
   const handleMarkAllRead = async () => {
     try {
       await markAllAsRead();
       showToast('Notificaciones marcadas como leídas', 'success');
     } catch (error) {
+      console.error(error);
       showToast('Error al marcar notificaciones', 'error');
     }
   };
@@ -36,6 +33,7 @@ export default function NotificationsPage() {
       await deleteNotification(id);
       showToast('Notificación eliminada', 'success');
     } catch (error) {
+      console.error(error);
       showToast('Error al eliminar notificación', 'error');
     }
   };
@@ -53,6 +51,7 @@ export default function NotificationsPage() {
         await deleteNotification(notification.id);
       }
     } catch (error) {
+      console.error(error);
       showToast('Error al aceptar la invitación', 'error');
     } finally {
       setAccepting(null);
@@ -69,6 +68,7 @@ export default function NotificationsPage() {
       showToast('Invitación rechazada', 'success');
       await deleteNotification(notification.id);
     } catch (error) {
+      console.error(error);
       showToast('Error al rechazar la invitación', 'error');
     } finally {
       setRejecting(null);
@@ -184,109 +184,119 @@ export default function NotificationsPage() {
         </div>
 
         <div className="p-0">
-          {loading ? (
-            <div className="p-12 text-center text-slate-400">
-              <Clock className="w-8 h-8 animate-spin mx-auto mb-3" />
-              <p>Cargando notificaciones...</p>
-            </div>
-          ) : filteredNotifications.length === 0 ? (
-            <div className="p-16 text-center text-slate-500">
-              <Bell className="w-16 h-16 mx-auto mb-4 text-slate-300" />
-              <h3 className="text-lg font-medium text-slate-700">No hay notificaciones</h3>
-              <p className="mt-1">No tienes alertas pendientes en esta categoría.</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-100">
-              {filteredNotifications.map((notification) => (
-                <div 
-                  key={notification.id}
-                  role="button"
-                  tabIndex={0}
-                  className={cn(
-                    "p-6 flex items-start gap-4 hover:bg-slate-50 transition-colors group cursor-pointer",
-                    !notification.read && "bg-blue-50/30"
-                  )}
-                  onClick={() => handleNotificationClick(notification)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleNotificationClick(notification); }}
-                >
-                  <div className={cn('w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold shrink-0', getTypeColor(notification.type))}>
-                    {getIconByType(notification.type)}
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <h4 className="text-base font-semibold text-slate-800 flex items-center gap-2">
-                          {notification.title}
-                          {!notification.read && (
-                            <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
-                          )}
-                        </h4>
-                        <p className="text-slate-600 mt-1 whitespace-pre-wrap">{notification.message}</p>
-                      </div>
-                      <div className="text-sm text-slate-400 flex flex-col items-end gap-2 shrink-0">
-                        <span>{formatTime(notification.createdAt)}</span>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(notification.id);
-                          }}
-                          className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition-opacity p-2"
-                          title="Eliminar notificación"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
-
-                    {notification.data?.type === 'growth_summary' && (
-                      <div role="presentation" className="mt-4 p-4 rounded-lg bg-slate-50 border border-slate-100" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-                        <div className="flex gap-6">
-                          {notification.data.updatesCount > 0 && (
-                            <div className="w-full">
-                              <p className="text-sm font-semibold text-slate-700 mb-2">Conejos Actualizados ({notification.data.updatesCount})</p>
-                              <ul className="text-xs text-slate-600 list-disc list-inside space-y-1">
-                                {notification.data.details?.map((detail: string, i: number) => (
-                                  <li key={i}>{detail}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {notification.type === 'invitation' && (
-                      <div role="presentation" className="mt-4 p-4 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-between" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-                        <div>
-                          <p className="text-sm font-medium text-slate-700">Invitación a unirse a un galpón</p>
-                          <p className="text-xs text-slate-500 mt-1">Galpón: {notification.data?.galponName || 'Galpón'}</p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="primary"
-                            onClick={() => handleAcceptInvitation(notification)}
-                            disabled={accepting === notification.id || rejecting === notification.id}
-                          >
-                            {accepting === notification.id ? 'Aceptando...' : 'Aceptar'}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="danger"
-                            onClick={() => handleRejectInvitation(notification)}
-                            disabled={accepting === notification.id || rejecting === notification.id}
-                          >
-                            {rejecting === notification.id ? 'Rechazando...' : 'Rechazar'}
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+          {(() => {
+            if (loading) {
+              return (
+                <div className="p-12 text-center text-slate-400">
+                  <Clock className="w-8 h-8 animate-spin mx-auto mb-3" />
+                  <p>Cargando notificaciones...</p>
                 </div>
-              ))}
-            </div>
-          )}
+              );
+            }
+
+            if (filteredNotifications.length === 0) {
+              return (
+                <div className="p-16 text-center text-slate-500">
+                  <Bell className="w-16 h-16 mx-auto mb-4 text-slate-300" />
+                  <h3 className="text-lg font-medium text-slate-700">No hay notificaciones</h3>
+                  <p className="mt-1">No tienes alertas pendientes en esta categoría.</p>
+                </div>
+              );
+            }
+
+            return (
+              <div className="divide-y divide-slate-100">
+                {filteredNotifications.map((notification) => (
+                  <div 
+                    key={notification.id}
+                    className={cn(
+                      "p-6 flex items-start gap-4 hover:bg-slate-50 transition-colors group cursor-pointer",
+                      !notification.read && "bg-blue-50/30"
+                    )}
+                    onClick={() => handleNotificationClick(notification)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleNotificationClick(notification); }}
+                    tabIndex={0}
+                  >
+                    <div className={cn('w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold shrink-0', getTypeColor(notification.type))}>
+                      {getIconByType(notification.type)}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <h4 className="text-base font-semibold text-slate-800 flex items-center gap-2">
+                            {notification.title}
+                            {!notification.read && (
+                              <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
+                            )}
+                          </h4>
+                          <p className="text-slate-600 mt-1 whitespace-pre-wrap">{notification.message}</p>
+                        </div>
+                        <div className="text-sm text-slate-400 flex flex-col items-end gap-2 shrink-0">
+                          <span>{formatTime(notification.createdAt)}</span>
+                          <button 
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(notification.id);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition-opacity p-2"
+                            title="Eliminar notificación"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {notification.data?.type === 'growth_summary' && (
+                        <div className="mt-4 p-4 rounded-lg bg-slate-50 border border-slate-100" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                          <div className="flex gap-6">
+                            {notification.data.updatesCount > 0 && (
+                              <div className="w-full">
+                                <p className="text-sm font-semibold text-slate-700 mb-2">Conejos Actualizados ({notification.data.updatesCount})</p>
+                                <ul className="text-xs text-slate-600 list-disc list-inside space-y-1">
+                                  {notification.data.details?.map((detail: string, i: number) => (
+                                    <li key={`${detail}-${i}`}>{detail}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {notification.type === 'invitation' && (
+                        <div className="mt-4 p-4 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-between" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                          <div>
+                            <p className="text-sm font-medium text-slate-700">Invitación a unirse a un galpón</p>
+                            <p className="text-xs text-slate-500 mt-1">Galpón: {notification.data?.galponName || 'Galpón'}</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="primary"
+                              onClick={(e) => { e.stopPropagation(); handleAcceptInvitation(notification); }}
+                              disabled={accepting === notification.id || rejecting === notification.id}
+                            >
+                              {accepting === notification.id ? 'Aceptando...' : 'Aceptar'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="danger"
+                              onClick={(e) => { e.stopPropagation(); handleRejectInvitation(notification); }}
+                              disabled={accepting === notification.id || rejecting === notification.id}
+                            >
+                              {rejecting === notification.id ? 'Rechazando...' : 'Rechazar'}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </div>
       </Card>
     </div>

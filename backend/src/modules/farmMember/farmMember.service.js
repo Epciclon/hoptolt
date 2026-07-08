@@ -49,7 +49,7 @@ class FarmMemberService {
      */
     async createWorkerMembership(profileId, galponId) {
         const existing = await farmMemberRepository.findMembership(profileId, galponId);
-        if (existing && existing.status === 'active') {
+        if (existing?.status === 'active') {
             throw new AppError('Ya eres miembro de este galpón.', 400);
         }
         if (existing) {
@@ -119,45 +119,49 @@ class FarmMemberService {
 
         // Enviar notificaciones si hubo cambios
         if (addedCages.length > 0 || addedModules.length > 0 || removedCages.length > 0 || removedModules.length > 0) {
-            const ownerProfile = await Profile.findByPk(requestingProfileId);
-            const galpon = await galponRepository.findById(member.galponId);
-            
-            const MODULE_NAMES = {
-                feeding: 'alimentación', vaccination: 'vacunación', deworming: 'desparasitación',
-                cleaning: 'limpieza', mortality: 'mortalidad', reproduction: 'reproducción y parto',
-                reports: 'reportes', cages: 'jaulas', races: 'razas', rabbits: 'conejos',
-                assignments: 'asignaciones', genealogy: 'genealogía'
-            };
-            const translate = (m) => MODULE_NAMES[m] || m;
-
-            if (addedCages.length > 0 || addedModules.length > 0) {
-                let parts = [];
-                if (addedCages.length > 0) parts.push(`las jaulas ${addedCages.join(', ')}`);
-                if (addedModules.length > 0) parts.push(`los procesos de ${addedModules.map(translate).join(', ')}`);
-                
-                await notificationService.createNotification(member.profileId, {
-                    type: 'info',
-                    title: 'Nuevas asignaciones',
-                    message: `${ownerProfile.username} te asignó ${parts.join(' y ')} en el galpón "${galpon.name}".`,
-                    data: { galponId: galpon.id }
-                });
-            }
-
-            if (removedCages.length > 0 || removedModules.length > 0) {
-                let parts = [];
-                if (removedCages.length > 0) parts.push(`las jaulas ${removedCages.join(', ')}`);
-                if (removedModules.length > 0) parts.push(`los procesos de ${removedModules.map(translate).join(', ')}`);
-                
-                await notificationService.createNotification(member.profileId, {
-                    type: 'warning',
-                    title: 'Asignaciones removidas',
-                    message: `${ownerProfile.username} te quitó ${parts.join(' y ')} en el galpón "${galpon.name}".`,
-                    data: { galponId: galpon.id }
-                });
-            }
+            await this._sendUpdateNotifications(member, requestingProfileId, addedCages, addedModules, removedCages, removedModules);
         }
 
         return farmMemberRepository.findById(farmMemberId);
+    }
+
+    async _sendUpdateNotifications(member, requestingProfileId, addedCages, addedModules, removedCages, removedModules) {
+        const ownerProfile = await Profile.findByPk(requestingProfileId);
+        const galpon = await galponRepository.findById(member.galponId);
+        
+        const MODULE_NAMES = {
+            feeding: 'alimentación', vaccination: 'vacunación', deworming: 'desparasitación',
+            cleaning: 'limpieza', mortality: 'mortalidad', reproduction: 'reproducción y parto',
+            reports: 'reportes', cages: 'jaulas', races: 'razas', rabbits: 'conejos',
+            assignments: 'asignaciones', genealogy: 'genealogía'
+        };
+        const translate = (m) => MODULE_NAMES[m] || m;
+
+        if (addedCages.length > 0 || addedModules.length > 0) {
+            let parts = [];
+            if (addedCages.length > 0) parts.push(`las jaulas ${addedCages.join(', ')}`);
+            if (addedModules.length > 0) parts.push(`los procesos de ${addedModules.map(translate).join(', ')}`);
+            
+            await notificationService.createNotification(member.profileId, {
+                type: 'info',
+                title: 'Nuevas asignaciones',
+                message: `${ownerProfile.username} te asignó ${parts.join(' y ')} en el galpón "${galpon.name}".`,
+                data: { galponId: galpon.id }
+            });
+        }
+
+        if (removedCages.length > 0 || removedModules.length > 0) {
+            let parts = [];
+            if (removedCages.length > 0) parts.push(`las jaulas ${removedCages.join(', ')}`);
+            if (removedModules.length > 0) parts.push(`los procesos de ${removedModules.map(translate).join(', ')}`);
+            
+            await notificationService.createNotification(member.profileId, {
+                type: 'warning',
+                title: 'Asignaciones removidas',
+                message: `${ownerProfile.username} te quitó ${parts.join(' y ')} en el galpón "${galpon.name}".`,
+                data: { galponId: galpon.id }
+            });
+        }
     }
 
     /**
@@ -173,7 +177,6 @@ class FarmMemberService {
         
         // Obtener información para notificaciones
         const galpon = await galponRepository.findById(member.galponId);
-        const workerProfile = await Profile.findByPk(member.profileId);
         const ownerProfile = await Profile.findByPk(requestingProfileId);
 
         await farmMemberRepository.deactivate(member);
@@ -191,7 +194,7 @@ class FarmMemberService {
 
     async _assertOwner(galponId, profileId) {
         const membership = await farmMemberRepository.findMembership(profileId, galponId);
-        if (!membership || membership.role !== 'owner' || membership.status !== 'active') {
+        if (membership?.role !== 'owner' || membership?.status !== 'active') {
             throw new AppError('No tienes permisos de propietario en este galpón.', 403);
         }
     }

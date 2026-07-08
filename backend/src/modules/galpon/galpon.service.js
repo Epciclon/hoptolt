@@ -85,7 +85,7 @@ class GalponService {
             // Combinar ambos (evitar duplicados)
             const allGalpones = [...ownGalponesWithRole];
             workerGalpones.forEach(wg => {
-                if (!allGalpones.find(og => og.id === wg.id)) {
+                if (!allGalpones.some(og => og.id === wg.id)) {
                     allGalpones.push(wg);
                 }
             });
@@ -142,7 +142,7 @@ class GalponService {
     async getActiveGalpon(profileId) {
         const { Profile } = require('../../domain/models');
         const profile = await Profile.findByPk(profileId);
-        if (!profile || !profile.activeGalponId) return null;
+        if (!profile?.activeGalponId) return null;
         
         const galpon = await galponRepository.findById(profile.activeGalponId);
         if (!galpon) return null;

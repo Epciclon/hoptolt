@@ -18,61 +18,20 @@ class GenealogyService {
         }
 
         if (fatherId) {
-            const father = await Rabbit.findByPk(fatherId, { paranoid: false });
-            if (!father) throw new AppError('El padre no existe.', 404);
-            if (father.sex !== 'macho') throw new AppError('El padre debe ser macho.', 400);
-            if (father.age < 4) throw new AppError('El padre debe tener al menos 4 meses de edad.', 400);
-            if (father.race !== rabbit.race) throw new AppError('La raza del padre debe coincidir con la del conejo.', 400);
-            if (father.age <= rabbit.age) throw new AppError('El padre debe ser mayor que el hijo.', 400);
-        }
-
-        if (motherId) {
-            const mother = await Rabbit.findByPk(motherId, { paranoid: false });
-            if (!mother) throw new AppError('La madre no existe.', 404);
-            if (mother.sex !== 'hembra') throw new AppError('La madre debe ser hembra.', 400);
-            if (mother.age < 4) throw new AppError('La madre debe tener al menos 4 meses de edad.', 400);
-            if (mother.race !== rabbit.race) throw new AppError('La raza de la madre debe coincidir con la del conejo.', 400);
-            if (mother.age <= rabbit.age) throw new AppError('La madre debe ser mayor que el hijo.', 400);
-        }
-
-        if (fatherId) {
+            await this._validateParent(fatherId, rabbit, 'macho', 'padre');
             const fatherAncestors = await this.getAncestors(fatherId, 10);
-            if (fatherAncestors.includes(rabbitId)) {
-                throw new AppError('El padre no puede ser descendiente del hijo (ciclo genealógico).', 400);
-            }
+            if (fatherAncestors.includes(rabbitId)) throw new AppError('El padre no puede ser descendiente del hijo (ciclo genealógico).', 400);
         }
 
         if (motherId) {
+            await this._validateParent(motherId, rabbit, 'hembra', 'madre');
             const motherAncestors = await this.getAncestors(motherId, 10);
-            if (motherAncestors.includes(rabbitId)) {
-                throw new AppError('La madre no puede ser descendiente del hijo (ciclo genealógico).', 400);
-            }
+            if (motherAncestors.includes(rabbitId)) throw new AppError('La madre no puede ser descendiente del hijo (ciclo genealógico).', 400);
         }
 
         let consanguinityWarning = null;
         if (fatherId && motherId) {
-            const areRelated = await this.checkConsanguinity(fatherId, motherId);
-            if (areRelated) {
-                consanguinityWarning = 'ADVERTENCIA: Los conejos seleccionados son emparentados. El cruce de conejos consanguíneos puede causar mutaciones y problemas de salud en los descendientes.';
-            }
-
-            const motherHasMultiplePartners = await this.checkMotherMultiplePartners(motherId, fatherId);
-            if (motherHasMultiplePartners) {
-                if (consanguinityWarning) {
-                    consanguinityWarning += ' Además, esta madre ya tiene hijos con otros padres.';
-                } else {
-                    consanguinityWarning = 'ADVERTENCIA: Esta madre ya tiene hijos con otros padres. Esto puede causar problemas de salud en los descendientes.';
-                }
-            }
-
-            const fatherHasMultiplePartners = await this.checkFatherMultiplePartners(fatherId, motherId);
-            if (fatherHasMultiplePartners) {
-                if (consanguinityWarning) {
-                    consanguinityWarning += ' Además, este padre ya tiene hijos con otras madres.';
-                } else {
-                    consanguinityWarning = 'ADVERTENCIA: Este padre ya tiene hijos con otras madres. Esto puede causar problemas de salud en los descendientes.';
-                }
-            }
+            consanguinityWarning = await this._getConsanguinityWarning(fatherId, motherId, rabbitId);
         }
 
         const existing = await genealogyRepository.findByRabbitId(rabbitId);
@@ -189,59 +148,20 @@ class GenealogyService {
         }
 
         if (newFatherId) {
-            const father = await Rabbit.findByPk(newFatherId, { paranoid: false });
-            if (!father) throw new AppError('El padre no existe.', 404);
-            if (father.sex !== 'macho') throw new AppError('El padre debe ser macho.', 400);
-            if (father.age < 4) throw new AppError('El padre debe tener al menos 4 meses de edad.', 400);
-            if (father.age <= rabbit.age) throw new AppError('El padre debe ser mayor que el hijo.', 400);
-        }
-
-        if (newMotherId) {
-            const mother = await Rabbit.findByPk(newMotherId, { paranoid: false });
-            if (!mother) throw new AppError('La madre no existe.', 404);
-            if (mother.sex !== 'hembra') throw new AppError('La madre debe ser hembra.', 400);
-            if (mother.age < 4) throw new AppError('La madre debe tener al menos 4 meses de edad.', 400);
-            if (mother.age <= rabbit.age) throw new AppError('La madre debe ser mayor que el hijo.', 400);
-        }
-
-        if (newFatherId) {
+            await this._validateParent(newFatherId, rabbit, 'macho', 'padre', false);
             const fatherAncestors = await this.getAncestors(newFatherId, 10);
-            if (fatherAncestors.includes(rabbitId)) {
-                throw new AppError('El padre no puede ser descendiente del hijo (ciclo genealógico).', 400);
-            }
+            if (fatherAncestors.includes(rabbitId)) throw new AppError('El padre no puede ser descendiente del hijo (ciclo genealógico).', 400);
         }
 
         if (newMotherId) {
+            await this._validateParent(newMotherId, rabbit, 'hembra', 'madre', false);
             const motherAncestors = await this.getAncestors(newMotherId, 10);
-            if (motherAncestors.includes(rabbitId)) {
-                throw new AppError('La madre no puede ser descendiente del hijo (ciclo genealógico).', 400);
-            }
+            if (motherAncestors.includes(rabbitId)) throw new AppError('La madre no puede ser descendiente del hijo (ciclo genealógico).', 400);
         }
 
         let consanguinityWarning = null;
         if (newFatherId && newMotherId) {
-            const areRelated = await this.checkConsanguinity(newFatherId, newMotherId);
-            if (areRelated) {
-                consanguinityWarning = 'ADVERTENCIA: Los conejos seleccionados son emparentados. El cruce de conejos consanguíneos puede causar mutaciones y problemas de salud en los descendientes.';
-            }
-
-            const motherHasMultiplePartners = await this.checkMotherMultiplePartners(newMotherId, newFatherId, rabbitId);
-            if (motherHasMultiplePartners) {
-                if (consanguinityWarning) {
-                    consanguinityWarning += ' Además, esta madre ya tiene hijos con otros padres.';
-                } else {
-                    consanguinityWarning = 'ADVERTENCIA: Esta madre ya tiene hijos con otros padres. Esto puede causar problemas de salud en los descendientes.';
-                }
-            }
-
-            const fatherHasMultiplePartners = await this.checkFatherMultiplePartners(newFatherId, newMotherId, rabbitId);
-            if (fatherHasMultiplePartners) {
-                if (consanguinityWarning) {
-                    consanguinityWarning += ' Además, este padre ya tiene hijos con otras madres.';
-                } else {
-                    consanguinityWarning = 'ADVERTENCIA: Este padre ya tiene hijos con otras madres. Esto puede causar problemas de salud en los descendientes.';
-                }
-            }
+            consanguinityWarning = await this._getConsanguinityWarning(newFatherId, newMotherId, rabbitId);
         }
 
         genealogy.fatherId = newFatherId || null;
@@ -305,6 +225,37 @@ class GenealogyService {
         };
 
         return buildTree(rabbitId, levels);
+    }
+
+    async _validateParent(parentId, child, sex, label, checkRace = true) {
+        const parent = await Rabbit.findByPk(parentId, { paranoid: false });
+        if (!parent) throw new AppError(`El ${label} no existe.`, 404);
+        const Article = label === 'madre' ? 'La' : 'El';
+        if (parent.sex !== sex) throw new AppError(`${Article} ${label} debe ser ${sex}.`, 400);
+        if (parent.age < 4) throw new AppError(`${Article} ${label} debe tener al menos 4 meses de edad.`, 400);
+        if (checkRace && parent.race !== child.race) throw new AppError(`La raza de ${label} debe coincidir con la del conejo.`, 400);
+        if (parent.age <= child.age) throw new AppError(`${Article} ${label} debe ser mayor que el hijo.`, 400);
+    }
+
+    async _getConsanguinityWarning(fatherId, motherId, excludeRabbitId = null) {
+        let warning = null;
+        const areRelated = await this.checkConsanguinity(fatherId, motherId);
+        if (areRelated) {
+            warning = 'ADVERTENCIA: Los conejos seleccionados son emparentados. El cruce de conejos consanguíneos puede causar mutaciones y problemas de salud en los descendientes.';
+        }
+
+        const motherHasMultiplePartners = await this.checkMotherMultiplePartners(motherId, fatherId, excludeRabbitId);
+        if (motherHasMultiplePartners) {
+            if (warning) warning += ' Además, esta madre ya tiene hijos con otros padres.';
+            else warning = 'ADVERTENCIA: Esta madre ya tiene hijos con otros padres. Esto puede causar problemas de salud en los descendientes.';
+        }
+
+        const fatherHasMultiplePartners = await this.checkFatherMultiplePartners(fatherId, motherId, excludeRabbitId);
+        if (fatherHasMultiplePartners) {
+            if (warning) warning += ' Además, este padre ya tiene hijos con otras madres.';
+            else warning = 'ADVERTENCIA: Este padre ya tiene hijos con otras madres. Esto puede causar problemas de salud en los descendientes.';
+        }
+        return warning;
     }
 }
 

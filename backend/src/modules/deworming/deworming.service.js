@@ -14,41 +14,8 @@ class DewormingService {
 
         const dewormingErrors = [];
 
-        // Primero validar todos los conejos antes de registrar
         for (const rabbitId of rabbitIds) {
-            const rabbit = await Rabbit.findByPk(rabbitId);
-            if (!rabbit) {
-                dewormingErrors.push(`El conejo con ID ${rabbitId} no existe.`);
-                continue;
-            }
-            if (rabbit.galponId !== galponId) {
-                dewormingErrors.push(`El conejo ${rabbit.code}${rabbit.name ? ` — ${rabbit.name}` : ''} no pertenece al galpón activo.`);
-                continue;
-            }
-
-            const assignment = await Assignment.findOne({
-                where: { rabbitId, status: 'asignado' }
-            });
-            if (!assignment) {
-                dewormingErrors.push(`El conejo ${rabbit.code}${rabbit.name ? ` — ${rabbit.name}` : ''} no está asignado a una jaula.`);
-                continue;
-            }
-
-            const lastDeworming = await dewormingRepository.findLastDewormingByRabbit(rabbitId);
-            if (lastDeworming) {
-                const lastDate = new Date(lastDeworming.dewormingDate);
-                const currentDate = new Date();
-                const daysSinceLast = Math.floor((currentDate - lastDate) / (1000 * 60 * 60 * 24));
-                
-                if (daysSinceLast < dewormingPeriod) {
-                    const daysRemaining = dewormingPeriod - daysSinceLast;
-                    dewormingErrors.push(
-                        `El conejo ${rabbit.code}${rabbit.name ? ` — ${rabbit.name}` : ''} no puede recibir desparasitación aún. ` +
-                        `Última aplicación: ${lastDate.toLocaleDateString('es-EC')}. ` +
-                        `Faltan ${daysRemaining} días para cumplir el período de desparasitación.`
-                    );
-                }
-            }
+            await this._validateRabbitForDeworming(rabbitId, galponId, dewormingPeriod, dewormingErrors);
         }
 
         // Si hay errores, no registrar nada
@@ -69,6 +36,44 @@ class DewormingService {
         }
 
         return createdDewormings;
+    }
+
+    async _validateRabbitForDeworming(rabbitId, galponId, dewormingPeriod, dewormingErrors) {
+        const rabbit = await Rabbit.findByPk(rabbitId);
+        if (!rabbit) {
+            dewormingErrors.push(`El conejo con ID ${rabbitId} no existe.`);
+            return;
+        }
+        
+        const nameSuffix = rabbit.name ? ' — ' + rabbit.name : '';
+        if (rabbit.galponId !== galponId) {
+            dewormingErrors.push(`El conejo ${rabbit.code}${nameSuffix} no pertenece al galpón activo.`);
+            return;
+        }
+
+        const assignment = await Assignment.findOne({
+            where: { rabbitId, status: 'asignado' }
+        });
+        if (!assignment) {
+            dewormingErrors.push(`El conejo ${rabbit.code}${nameSuffix} no está asignado a una jaula.`);
+            return;
+        }
+
+        const lastDeworming = await dewormingRepository.findLastDewormingByRabbit(rabbitId);
+        if (lastDeworming) {
+            const lastDate = new Date(lastDeworming.dewormingDate);
+            const currentDate = new Date();
+            const daysSinceLast = Math.floor((currentDate - lastDate) / (1000 * 60 * 60 * 24));
+            
+            if (daysSinceLast < dewormingPeriod) {
+                const daysRemaining = dewormingPeriod - daysSinceLast;
+                dewormingErrors.push(
+                    `El conejo ${rabbit.code}${nameSuffix} no puede recibir desparasitación aún. ` +
+                    `Última aplicación: ${lastDate.toLocaleDateString('es-EC')}. ` +
+                    `Faltan ${daysRemaining} días para cumplir el período de desparasitación.`
+                );
+            }
+        }
     }
 
     async getDewormings(galponId, profileId, page = 1, limit = 10, filters = {}) {

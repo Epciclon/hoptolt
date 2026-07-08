@@ -5,7 +5,7 @@ const AppError = require('../../errors/AppError');
 const { getPaginationParams, createPaginatedResponse } = require('../../common/helpers/pagination.helper');
 const { generateRandomName } = require('../../common/helpers/names.helper');
 const { Op } = require('sequelize');
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 
 class RabbitService {
     async generateCode(raceName, galponId) {

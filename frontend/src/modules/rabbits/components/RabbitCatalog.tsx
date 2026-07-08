@@ -6,20 +6,18 @@ import type { Rabbit } from '../types/rabbit.types';
 import { Button, ConfirmDialog, Dialog, Badge, LoadingMessage, CatalogCard } from '@/shared/ui';
 import { FilterBar } from '@/shared/ui/FilterBar';
 import { Pagination } from '@/shared/ui/Pagination';
-import { ImagePlaceholder } from '@/shared/ui/ImagePlaceholder';
 import { useState } from 'react';
 import { Pencil, Trash2, Info } from 'lucide-react';
 import { RabbitForm } from './RabbitForm';
 import { RabbitDetailsModal } from './RabbitDetailsModal';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { useSupabase } from '../../../hooks/useSupabase';
-import Image from 'next/image';
 
 interface RabbitCatalogProps {
   onSuccess?: () => void;
 }
 
-export function RabbitCatalog({ onSuccess }: RabbitCatalogProps) {
+export function RabbitCatalog({ onSuccess }: Readonly<RabbitCatalogProps>) {
   const { rabbits, pagination, loading, fetchRabbits, deleteRabbit, setPage, setSearch, setRace, setSex, setPurpose, filters } = useRabbits();
   const { races } = useRaces();
   const { showToast } = useToast();
@@ -38,7 +36,7 @@ export function RabbitCatalog({ onSuccess }: RabbitCatalogProps) {
   };
 
   const handleConfirmDelete = async () => {
-    if (!toDelete || !toDelete.id) return;
+    if (!toDelete?.id) return;
     setDeleting(true);
     const { success, error: deleteError } = await deleteRabbit(toDelete.id);
     setDeleting(false);
@@ -69,6 +67,11 @@ export function RabbitCatalog({ onSuccess }: RabbitCatalogProps) {
     { label: 'Engorde', value: 'Engorde' }
   ];
 
+  const getRabbitAge = (age: number | null | undefined) => {
+    if (age === null || age === undefined) return '-';
+    return `${age} ${age === 1 ? 'mes' : 'meses'}`;
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <FilterBar
@@ -82,11 +85,13 @@ export function RabbitCatalog({ onSuccess }: RabbitCatalogProps) {
         ]}
       />
 
-      {loading ? (
+      {loading && (
         <LoadingMessage message="Cargando conejos..." />
-      ) : rabbits.length === 0 ? (
+      )}
+      {!loading && rabbits.length === 0 && (
         <p className="text-sm text-slate-500 text-center py-8 bg-slate-50 rounded-lg border border-slate-200">No hay conejos registrados con esos filtros.</p>
-      ) : (
+      )}
+      {!loading && rabbits.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
           {rabbits.map((rabbit) => {
             const isSelected = selectedRabbitId === rabbit.id;
@@ -126,7 +131,7 @@ export function RabbitCatalog({ onSuccess }: RabbitCatalogProps) {
                 }
                 details={
                   <>
-                    <div className="flex items-center gap-1"><span className="font-semibold text-slate-700">Edad:</span> {rabbit.age !== null && rabbit.age !== undefined ? `${rabbit.age} ${rabbit.age === 1 ? 'mes' : 'meses'}` : '-'}</div>
+                    <div className="flex items-center gap-1"><span className="font-semibold text-slate-700">Edad:</span> {getRabbitAge(rabbit.age)}</div>
                     {rabbit.weight !== undefined && rabbit.weight !== null && (
                       <>
                         <div className="w-px h-3 bg-slate-300"></div>

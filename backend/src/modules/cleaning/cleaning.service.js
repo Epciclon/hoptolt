@@ -36,62 +36,65 @@ class CleaningService {
         const createdCleanings = [];
 
         for (const cageId of cageIds) {
-            const cage = await Cage.findByPk(cageId);
-            if (!cage) throw new AppError(`La jaula con ID ${cageId} no existe.`, 404);
-            if (cage.galponId !== galponId) throw new AppError(`La jaula #${cage.number} no pertenece al galpón activo.`, 400);
-
-            // Si es trabajador, verificar asignación de jaula
-            if (membership.role === 'worker') {
-                const { WorkerCage } = require('../../domain/models');
-                const workerCage = await WorkerCage.findOne({
-                    where: { farmMemberId: membership.id, cageId }
-                });
-                if (!workerCage) {
-                    throw new AppError(`No tienes asignada la jaula #${cage.number} para registrar su limpieza.`, 403);
-                }
-            }
-
-            // Obtener los conejos actualmente asignados a la jaula para guardar la "foto" histórica
-            const { Assignment, Rabbit } = require('../../domain/models');
-            const assignments = await Assignment.findAll({
-                where: { cageId: cage.id, status: 'asignado' },
-                include: [{ model: Rabbit, as: 'rabbit', attributes: ['id', 'code', 'name', 'race', 'imageUrl'] }]
-            });
-            const rabbitsSnapshot = assignments.map(a => a.rabbit).filter(Boolean);
-
-            const cleaning = await cleaningRepository.create({
-                cageId,
-                cageNumber: cage.number,
-                cleaningDate: new Date(),
-                galponId,
-                profileId,
-                rabbitsSnapshot
-            });
-
-            const cleaningJson = cleaning.toJSON();
-            cleaningJson.responsible = responsibleName;
-            cleaningJson.rabbits = rabbitsSnapshot;
-            createdCleanings.push(cleaningJson);
-
-            // Eliminar notificaciones de advertencia de limpieza previas de forma segura y global
-            const { Notification } = require('../../domain/models');
-            const warnings = await Notification.findAll({
-                where: { type: 'warning' }
-            });
-            for (const w of warnings) {
-                if (w.data) {
-                    let dataObj = w.data;
-                    if (typeof dataObj === 'string') {
-                        try { dataObj = JSON.parse(dataObj); } catch (e) { continue; }
-                    }
-                    if (dataObj && dataObj.type === 'cleaning_warning' && Number(dataObj.cageId) === Number(cageId)) {
-                        await w.destroy();
-                    }
-                }
-            }
+            const cleaningJson = await this._processCageCleaning(cageId, galponId, membership, profileId, responsibleName);
+            if (cleaningJson) createdCleanings.push(cleaningJson);
         }
 
         return createdCleanings;
+    }
+
+    async _processCageCleaning(cageId, galponId, membership, profileId, responsibleName) {
+        const { Cage } = require('../../domain/models');
+        const cage = await Cage.findByPk(cageId);
+        if (!cage) throw new AppError(`La jaula con ID ${cageId} no existe.`, 404);
+        if (cage.galponId !== galponId) throw new AppError(`La jaula #${cage.number} no pertenece al galpón activo.`, 400);
+
+        if (membership.role === 'worker') {
+            const { WorkerCage } = require('../../domain/models');
+            const workerCage = await WorkerCage.findOne({
+                where: { farmMemberId: membership.id, cageId }
+            });
+            if (!workerCage) {
+                throw new AppError(`No tienes asignada la jaula #${cage.number} para registrar su limpieza.`, 403);
+            }
+        }
+
+        const { Assignment, Rabbit } = require('../../domain/models');
+        const assignments = await Assignment.findAll({
+            where: { cageId: cage.id, status: 'asignado' },
+            include: [{ model: Rabbit, as: 'rabbit', attributes: ['id', 'code', 'name', 'race', 'imageUrl'] }]
+        });
+        const rabbitsSnapshot = assignments.map(a => a.rabbit).filter(Boolean);
+
+        const cleaning = await cleaningRepository.create({
+            cageId,
+            cageNumber: cage.number,
+            cleaningDate: new Date(),
+            galponId,
+            profileId,
+            rabbitsSnapshot
+        });
+
+        const cleaningJson = cleaning.toJSON();
+        cleaningJson.responsible = responsibleName;
+        cleaningJson.rabbits = rabbitsSnapshot;
+
+        const { Notification } = require('../../domain/models');
+        const warnings = await Notification.findAll({
+            where: { type: 'warning' }
+        });
+        for (const w of warnings) {
+            if (w.data) {
+                let dataObj = w.data;
+                if (typeof dataObj === 'string') {
+                    try { dataObj = JSON.parse(dataObj); } catch (e) { console.error("Error parsing cleaning warning data", e); continue; }
+                }
+                if (dataObj?.type === 'cleaning_warning' && Number(dataObj.cageId) === Number(cageId)) {
+                    await w.destroy();
+                }
+            }
+        }
+        return cleaningJson;
     }
 
     async getCleanings(galponId, profileId, page = 1, limit = 10, filters = {}) {
@@ -134,7 +137,7 @@ class CleaningService {
             let rabbits = [];
             if (plain.rabbitsSnapshot && (Array.isArray(plain.rabbitsSnapshot) ? plain.rabbitsSnapshot.length > 0 : Object.keys(plain.rabbitsSnapshot).length > 0)) {
                 rabbits = typeof plain.rabbitsSnapshot === 'string' ? JSON.parse(plain.rabbitsSnapshot) : plain.rabbitsSnapshot;
-            } else if (plain.Cage && plain.Cage.assignments) {
+            } else if (plain.Cage?.assignments) {
                 rabbits = plain.Cage.assignments.map(a => a.rabbit).filter(Boolean);
             }
             delete plain.Cage; // Clean up just in case

@@ -3,7 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Input, Button, Alert } from '@/shared/ui';
+import { Input, Button } from '@/shared/ui';
 import { ImagePlaceholder } from '@/shared/ui/ImagePlaceholder';
 import { raceService } from '../services/race.service';
 import { useToast } from '@/shared/contexts/ToastContext';
@@ -29,7 +29,7 @@ interface RaceFormProps {
   onCancel?: () => void;
 }
 
-export function RaceForm({ mode, defaultValues, raceId, onSuccess, onCancel }: RaceFormProps) {
+export function RaceForm({ mode, defaultValues, raceId, onSuccess, onCancel }: Readonly<RaceFormProps>) {
 
   const { showToast } = useToast();
   const [imageUrl, setImageUrl] = useState<string | undefined>();

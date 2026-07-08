@@ -33,7 +33,7 @@ api.interceptors.request.use(async (config) => {
 
   // Asegurar que los campos null se envíen explícitamente en el body (para PUTs)
   if (config.data && config.method === 'put') {
-    config.data = JSON.parse(JSON.stringify(config.data));
+    config.data = structuredClone(config.data);
   }
 
   return config;
@@ -59,7 +59,7 @@ api.interceptors.response.use(
       }
     }
 
-    return Promise.reject(new Error(message));
+    throw new Error(message);
   }
 );
 

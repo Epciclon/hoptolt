@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Dialog, Alert, LoadingMessage } from '@/shared/ui';
 import { genealogyService } from '../services/genealogy.service';
@@ -13,7 +12,7 @@ interface GenealogyTreeModalProps {
   onClose: () => void;
 }
 
-export function GenealogyTreeModal({ rabbit, onClose }: GenealogyTreeModalProps) {
+export function GenealogyTreeModal({ rabbit, onClose }: Readonly<GenealogyTreeModalProps>) {
   const { data: tree, isLoading: loading, error } = useQuery({
     queryKey: ['genealogyTree', rabbit.id],
     queryFn: () => genealogyService.getTree(rabbit.id),
@@ -21,7 +20,12 @@ export function GenealogyTreeModal({ rabbit, onClose }: GenealogyTreeModalProps)
     retry: 1
   });
 
-  const errorMessage = error instanceof Error ? error.message : typeof error === 'string' && error ? error : '';
+  let errorMessage = '';
+  if (error instanceof Error) {
+    errorMessage = error.message;
+  } else if (typeof error === 'string' && error) {
+    errorMessage = error;
+  }
 
 
 
@@ -35,12 +39,10 @@ export function GenealogyTreeModal({ rabbit, onClose }: GenealogyTreeModalProps)
       const nextGen: (GenealogyTree | null)[] = [];
 
       currentGen.forEach(n => {
-        if (n && n.parents) {
-          nextGen.push(n.parents.father || null);
-          nextGen.push(n.parents.mother || null);
+        if (n?.parents) {
+          nextGen.push(n.parents.father || null, n.parents.mother || null);
         } else {
-          nextGen.push(null);
-          nextGen.push(null);
+          nextGen.push(null, null);
         }
       });
 
@@ -52,9 +54,9 @@ export function GenealogyTreeModal({ rabbit, onClose }: GenealogyTreeModalProps)
   };
 
   const renderGeneration = (generation: (GenealogyTree | null)[], level: number, nextGeneration?: (GenealogyTree | null)[]): JSX.Element => {
-    const bgColor = level === 0 ? 'bg-blue-100 border-blue-300' :
-      level === 1 ? 'bg-green-50 border-green-200' :
-        'bg-yellow-50 border-yellow-200';
+    let bgColor = 'bg-yellow-50 border-yellow-200';
+    if (level === 0) bgColor = 'bg-blue-100 border-blue-300';
+    else if (level === 1) bgColor = 'bg-green-50 border-green-200';
 
     const padding = 'p-2';
     const fontSize = 'text-xs';
@@ -69,7 +71,10 @@ export function GenealogyTreeModal({ rabbit, onClose }: GenealogyTreeModalProps)
             }
 
             const isFather = index % 2 === 0;
-            const label = level === 0 ? '' : (isFather ? 'Padre' : 'Madre');
+            let label = '';
+            if (level !== 0) {
+              label = isFather ? 'Padre' : 'Madre';
+            }
 
             return (
               <div key={node.id} className="flex flex-col items-center">
@@ -119,16 +124,20 @@ export function GenealogyTreeModal({ rabbit, onClose }: GenealogyTreeModalProps)
               const lines = [];
 
               if (parentCount === 2) {
-                lines.push(<line key={`v-${node.id}`} x1={`${nodeX}%`} y1="0" x2={`${nodeX}%`} y2="50%" stroke="#94a3b8" strokeWidth="2" />);
-                lines.push(<line key={`h-${node.id}`} x1={`${child1X}%`} y1="50%" x2={`${child2X}%`} y2="50%" stroke="#94a3b8" strokeWidth="2" />);
-                lines.push(<line key={`v1-${node.id}`} x1={`${child1X}%`} y1="50%" x2={`${child1X}%`} y2="100%" stroke="#94a3b8" strokeWidth="2" />);
-                lines.push(<line key={`v2-${node.id}`} x1={`${child2X}%`} y1="50%" x2={`${child2X}%`} y2="100%" stroke="#94a3b8" strokeWidth="2" />);
+                lines.push(
+                  <line key={`v-${node.id}`} x1={`${nodeX}%`} y1="0" x2={`${nodeX}%`} y2="50%" stroke="#94a3b8" strokeWidth="2" />,
+                  <line key={`h-${node.id}`} x1={`${child1X}%`} y1="50%" x2={`${child2X}%`} y2="50%" stroke="#94a3b8" strokeWidth="2" />,
+                  <line key={`v1-${node.id}`} x1={`${child1X}%`} y1="50%" x2={`${child1X}%`} y2="100%" stroke="#94a3b8" strokeWidth="2" />,
+                  <line key={`v2-${node.id}`} x1={`${child2X}%`} y1="50%" x2={`${child2X}%`} y2="100%" stroke="#94a3b8" strokeWidth="2" />
+                );
               } else if (parentCount === 1) {
                 const childX = child1X || child2X;
                 if (nodeX !== childX) {
-                  lines.push(<line key={`v-${node.id}`} x1={`${nodeX}%`} y1="0" x2={`${nodeX}%`} y2="50%" stroke="#94a3b8" strokeWidth="2" />);
-                  lines.push(<line key={`h-${node.id}`} x1={`${nodeX}%`} y1="50%" x2={`${childX}%`} y2="50%" stroke="#94a3b8" strokeWidth="2" />);
-                  lines.push(<line key={`v1-${node.id}`} x1={`${childX}%`} y1="50%" x2={`${childX}%`} y2="100%" stroke="#94a3b8" strokeWidth="2" />);
+                  lines.push(
+                    <line key={`v-${node.id}`} x1={`${nodeX}%`} y1="0" x2={`${nodeX}%`} y2="50%" stroke="#94a3b8" strokeWidth="2" />,
+                    <line key={`h-${node.id}`} x1={`${nodeX}%`} y1="50%" x2={`${childX}%`} y2="50%" stroke="#94a3b8" strokeWidth="2" />,
+                    <line key={`v1-${node.id}`} x1={`${childX}%`} y1="50%" x2={`${childX}%`} y2="100%" stroke="#94a3b8" strokeWidth="2" />
+                  );
                 } else {
                   lines.push(<line key={`v-${node.id}`} x1={`${nodeX}%`} y1="0" x2={`${nodeX}%`} y2="100%" stroke="#94a3b8" strokeWidth="2" />);
                 }
@@ -160,31 +169,35 @@ export function GenealogyTreeModal({ rabbit, onClose }: GenealogyTreeModalProps)
   // Cada nodo necesita unos 160px de espacio para que no haya colisiones.
   const minTreeWidth = actualLevels > 0 ? Math.pow(2, actualLevels - 1) * 160 : '100%';
 
+  const modalTitle = rabbit.name ? `Árbol Genealógico de ${rabbit.code} - ${rabbit.name}` : `Árbol Genealógico de ${rabbit.code}`;
+
   return (
     <Dialog
       open={true}
       onClose={onClose}
-      title={`Árbol Genealógico de ${rabbit.code}${rabbit.name ? ` - ${rabbit.name}` : ''}`}
+      title={modalTitle}
       size="3xl"
     >
       <div className="flex flex-col h-[70vh]">
         {errorMessage && <Alert variant="error" message={errorMessage} />}
-        {loading ? (
+        {loading && (
           <div className="flex items-center justify-center flex-1">
             <LoadingMessage message="Cargando árbol genealógico..." />
           </div>
-        ) : treeGenerations.length > 0 ? (
+        )}
+        {!loading && treeGenerations.length > 0 && (
           <ZoomableViewer>
             <div className="flex flex-col gap-0 p-8 pb-32 mx-auto" style={{ minWidth: typeof minTreeWidth === 'number' ? `${minTreeWidth}px` : minTreeWidth }}>
               {treeGenerations.map((generation, level) => (
-                <div key={level} className="w-full">
+                <div key={`gen-level-${level}`} className="w-full">
                   {renderGeneration(generation, level, treeGenerations[level + 1])}
                 </div>
               ))}
             </div>
           </ZoomableViewer>
-        ) : (
-          !errorMessage && <div className="text-center text-slate-500 py-10">No se encontró información genealógica.</div>
+        )}
+        {!loading && treeGenerations.length === 0 && !errorMessage && (
+          <div className="text-center text-slate-500 py-10">No se encontró información genealógica.</div>
         )}
       </div>
     </Dialog>

@@ -14,58 +14,48 @@ class ReproductionService {
         return `${y}-${m}-${d}`;
     }
 
+    _getFemaleNameStr(female) {
+        return female.name ? ' — ' + female.name : '';
+    }
+
+    async _validateFemaleForMating(female, galponId, mountDateObj) {
+        if (female.galponId !== galponId) throw new AppError(`La coneja ${female.code}${this._getFemaleNameStr(female)} no pertenece al galpón activo.`, 400);
+        if (female.sex !== 'hembra') throw new AppError(`El ID ${female.id} no corresponde a una hembra.`, 400);
+
+        const assignment = await Assignment.findOne({ where: { rabbitId: female.id, status: 'asignado' } });
+        if (!assignment) throw new AppError(`La coneja ${female.code}${this._getFemaleNameStr(female)} no tiene jaula asignada.`, 400);
+
+        const cage = await Cage.findByPk(assignment.cageId);
+        if (!cage) throw new AppError('Jaula no encontrada.', 404);
+        if (cage.type !== 'reproducción') throw new AppError(`La coneja ${female.code}${this._getFemaleNameStr(female)} está en una jaula de ${cage.type}, no de reproducción.`, 400);
+
+        const activeMount = await reproductionRepository.findActiveMountByFemaleId(female.id);
+        if (activeMount) {
+            const ed = activeMount.estimatedBirthDate;
+            const formattedDate = typeof ed === 'string' && ed.includes('-') ? ed.split('-').reverse().join('/') : new Date(ed).toLocaleDateString('es-EC');
+            throw new AppError(`La coneja ${female.code}${this._getFemaleNameStr(female)} ya tiene una monta activa con fecha estimada de parto: ${formattedDate}.`, 400);
+        }
+
+        const currentDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
+        currentDate.setHours(0, 0, 0, 0);
+
+        if (mountDateObj > currentDate) throw new AppError('La fecha de monta no puede ser futura. Solo se permite registrar montas del día actual o anteriores.', 400);
+
+        const birthDate = new Date(female.birthDate);
+        if (mountDateObj < birthDate) throw new AppError('La fecha de monta no puede ser anterior a la fecha de nacimiento de la coneja.', 400);
+
+        const femaleAge = (currentDate - birthDate) / (1000 * 60 * 60 * 24 * 30.44);
+        if (femaleAge < 4) throw new AppError('La hembra debe tener al menos 4 meses de edad.', 400);
+    }
+
     async registerReproduction(data, galponId) {
         const { femaleId, maleId, mountDate } = data;
 
         const female = await Rabbit.findByPk(femaleId);
         if (!female) throw new AppError(`La coneja con ID ${femaleId} no existe.`, 404);
-        if (female.galponId !== galponId) throw new AppError(`La coneja ${female.code}${female.name ? ` — ${female.name}` : ''} no pertenece al galpón activo.`, 400);
-
-        if (female.sex !== 'hembra') {
-            throw new AppError(`El ID ${femaleId} no corresponde a una hembra.`, 400);
-        }
-
-        const assignment = await Assignment.findOne({
-            where: { rabbitId: femaleId, status: 'asignado' }
-        });
-        if (!assignment) {
-            throw new AppError(`La coneja ${female.code}${female.name ? ` — ${female.name}` : ''} no tiene jaula asignada.`, 400);
-        }
-
-        const cage = await Cage.findByPk(assignment.cageId);
-        if (!cage) {
-            throw new AppError('Jaula no encontrada.', 404);
-        }
-        if (cage.type !== 'reproducción') {
-            throw new AppError(`La coneja ${female.code}${female.name ? ` — ${female.name}` : ''} está en una jaula de ${cage.type}, no de reproducción.`, 400);
-        }
-
-        const activeMount = await reproductionRepository.findActiveMountByFemaleId(femaleId);
-        if (activeMount) {
-            const ed = activeMount.estimatedBirthDate;
-            const formattedDate = typeof ed === 'string' && ed.includes('-') 
-                ? ed.split('-').reverse().join('/') 
-                : new Date(ed).toLocaleDateString('es-EC');
-            throw new AppError(`La coneja ${female.code}${female.name ? ` — ${female.name}` : ''} ya tiene una monta activa con fecha estimada de parto: ${formattedDate}.`, 400);
-        }
 
         const mountDateObj = new Date(mountDate);
-        const currentDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
-        // Normalizar a medianoche para comparar solo días
-        currentDate.setHours(0, 0, 0, 0);
-        if (mountDateObj > currentDate) {
-            throw new AppError('La fecha de monta no puede ser futura. Solo se permite registrar montas del día actual o anteriores.', 400);
-        }
-
-        const birthDate = new Date(female.birthDate);
-        if (mountDateObj < birthDate) {
-            throw new AppError('La fecha de monta no puede ser anterior a la fecha de nacimiento de la coneja.', 400);
-        }
-
-        const femaleAge = (currentDate - birthDate) / (1000 * 60 * 60 * 24 * 30.44);
-        if (femaleAge < 4) {
-            throw new AppError('La hembra debe tener al menos 4 meses de edad.', 400);
-        }
+        await this._validateFemaleForMating(female, galponId, mountDateObj);
 
         const estimatedBirthDate = this.calculateEstimatedBirthDate(mountDate);
 
@@ -154,105 +144,84 @@ class ReproductionService {
         await reproductionRepository.delete(reproduction);
     }
 
-    async getReproductionCalendar(galponId, year, month, type = 'births', cageIds = null) {
-        const { Op } = require('sequelize');
-
-        if (type === 'births') {
-            return reproductionRepository.findByMonthAndGalpon(galponId, year, month, cageIds);
-        }
-
-        if (type === 'weaning') {
-            // Obtener las reproducciones en lactancia para calcular destetes
-            const lactancia = await reproductionRepository.findAll()
-                .then(reps => reps.filter(r => Number(r.galponId) === Number(galponId) && r.status === 'lactancia'));
+    async _getWeaningCalendar(galponId, year, month) {
+        const lactancia = await reproductionRepository.findAll()
+            .then(reps => reps.filter(r => Number(r.galponId) === Number(galponId) && r.status === 'lactancia'));
+        
+        const results = [];
+        for (const r of lactancia) {
+            if (!r.estimatedBirthDate) continue;
+            const weaningDate = new Date(r.estimatedBirthDate + 'T00:00:00-05:00');
+            weaningDate.setDate(weaningDate.getDate() + 30);
             
-            const results = [];
-            for (const r of lactancia) {
-                if (!r.estimatedBirthDate) continue;
-                const weaningDate = new Date(r.estimatedBirthDate + 'T00:00:00-05:00');
-                weaningDate.setDate(weaningDate.getDate() + 30);
-                
+            const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guayaquil', year: 'numeric', month: '2-digit', day: '2-digit' });
+            const weaningDateStr = formatter.format(weaningDate);
+            const [wy, wm] = weaningDateStr.split('-');
+
+            if (Number(wy) === Number(year) && Number(wm) === Number(month)) {
+                const fullR = await reproductionRepository.findById(r.id);
+                fullR.estimatedWeaningDate = weaningDateStr;
+                results.push(fullR);
+            }
+        }
+        return results;
+    }
+
+    async _getReceptiveCalendar(galponId, year, month, cageIds) {
+        const { Op } = require('sequelize');
+        const busyReproductions = await reproductionRepository.findAll()
+            .then(reps => reps.filter(r => Number(r.galponId) === Number(galponId) && ['monta', 'gestacion', 'lactancia'].includes(r.status)));
+        const busyFemaleIds = busyReproductions.map(r => r.femaleId);
+
+        let includeOptions = [{
+            model: Assignment, as: 'assignments', where: { status: 'asignado' }, required: false,
+            include: [{ model: Cage, as: 'cage' }]
+        }];
+
+        if (cageIds !== null) {
+            includeOptions[0].where = { cageId: { [Op.in]: cageIds } };
+            includeOptions[0].required = true;
+        }
+
+        const availableFemales = await Rabbit.findAll({
+            where: { galponId, sex: 'hembra', id: { [Op.notIn]: busyFemaleIds.length ? busyFemaleIds : [0] } },
+            include: includeOptions
+        });
+
+        const pastReproductions = await reproductionRepository.findAll()
+            .then(reps => reps.filter(r => Number(r.galponId) === Number(galponId) && ['completado', 'fallido'].includes(r.status)));
+
+        return availableFemales.map(female => {
+            const femalePast = pastReproductions.filter(r => r.femaleId === female.id).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+            let receptiveDate;
+            if (femalePast.length > 0) {
+                receptiveDate = new Date(femalePast[0].updatedAt);
+            } else if (female.birthDate) {
+                const bdStr = female.birthDate instanceof Date ? female.birthDate.toISOString().split('T')[0] : String(female.birthDate).split('T')[0];
+                receptiveDate = new Date(bdStr + 'T00:00:00-05:00');
+                receptiveDate.setMonth(receptiveDate.getMonth() + 4);
+            } else return null;
+
+            if (receptiveDate) {
                 const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guayaquil', year: 'numeric', month: '2-digit', day: '2-digit' });
-                const weaningDateStr = formatter.format(weaningDate);
-                const [wy, wm] = weaningDateStr.split('-');
-
-                if (Number(wy) === Number(year) && Number(wm) === Number(month)) {
-                    const fullR = await reproductionRepository.findById(r.id);
-                    fullR.estimatedWeaningDate = weaningDateStr;
-                    results.push(fullR);
+                const receptiveDateStr = formatter.format(receptiveDate);
+                const [ry, rm] = receptiveDateStr.split('-');
+                if (Number(ry) === Number(year) && Number(rm) === Number(month)) {
+                    return {
+                        id: `receptive-${female.id}`, femaleId: female.id, femaleCode: female.code, femaleName: female.name,
+                        femaleImageUrl: female.imageUrl, receptiveDate: receptiveDateStr, cageNumber: female.assignments?.[0]?.cage?.number || null,
+                        cageType: female.assignments?.[0]?.cage?.type || null, type: 'receptive'
+                    };
                 }
             }
-            return results;
-        }
+            return null;
+        }).filter(Boolean);
+    }
 
-        if (type === 'receptive') {
-            // Buscar hembras ocupadas
-            const busyReproductions = await reproductionRepository.findAll()
-                .then(reps => reps.filter(r => Number(r.galponId) === Number(galponId) && ['monta', 'gestacion', 'lactancia'].includes(r.status)));
-            const busyFemaleIds = busyReproductions.map(r => r.femaleId);
-
-            let includeOptions = [{
-                model: Assignment,
-                as: 'assignments',
-                where: { status: 'asignado' },
-                required: false,
-                include: [{ model: Cage, as: 'cage' }]
-            }];
-
-            if (cageIds !== null) {
-                includeOptions[0].where = { cageId: { [Op.in]: cageIds } };
-                includeOptions[0].required = true;
-            }
-
-            const availableFemales = await Rabbit.findAll({
-                where: {
-                    galponId,
-                    sex: 'hembra',
-                    id: { [Op.notIn]: busyFemaleIds.length ? busyFemaleIds : [0] }
-                },
-                include: includeOptions
-            });
-
-            const pastReproductions = await reproductionRepository.findAll()
-                .then(reps => reps.filter(r => Number(r.galponId) === Number(galponId) && ['completado', 'fallido'].includes(r.status)));
-
-            const mappedFemales = availableFemales.map(female => {
-                const femalePast = pastReproductions.filter(r => r.femaleId === female.id).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-                let receptiveDate;
-                if (femalePast.length > 0) {
-                    receptiveDate = new Date(femalePast[0].updatedAt);
-                } else if (female.birthDate) {
-                    const bdStr = female.birthDate instanceof Date ? female.birthDate.toISOString().split('T')[0] : String(female.birthDate).split('T')[0];
-                    receptiveDate = new Date(bdStr + 'T00:00:00-05:00');
-                    receptiveDate.setMonth(receptiveDate.getMonth() + 4);
-                } else {
-                    return null;
-                }
-                let receptiveDateStr;
-                if (receptiveDate) {
-                    const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guayaquil', year: 'numeric', month: '2-digit', day: '2-digit' });
-                    receptiveDateStr = formatter.format(receptiveDate);
-                    const [ry, rm] = receptiveDateStr.split('-');
-                    if (Number(ry) === Number(year) && Number(rm) === Number(month)) {
-                        return {
-                            id: `receptive-${female.id}`,
-                            femaleId: female.id,
-                            femaleCode: female.code,
-                            femaleName: female.name,
-                            femaleImageUrl: female.imageUrl,
-                            receptiveDate: receptiveDateStr,
-                            cageNumber: female.assignments?.[0]?.cage?.number || null,
-                            cageType: female.assignments?.[0]?.cage?.type || null,
-                            type: 'receptive'
-                        };
-                    }
-                }
-                return null;
-            }).filter(Boolean);
-
-            return mappedFemales;
-        }
-
+    async getReproductionCalendar(galponId, year, month, type = 'births', cageIds = null) {
+        if (type === 'births') return reproductionRepository.findByMonthAndGalpon(galponId, year, month, cageIds);
+        if (type === 'weaning') return this._getWeaningCalendar(galponId, year, month);
+        if (type === 'receptive') return this._getReceptiveCalendar(galponId, year, month, cageIds);
         return [];
     }
 
@@ -261,7 +230,6 @@ class ReproductionService {
     }
 
     async getAvailableMalesForMating(galponId) {
-        const { Op } = require('sequelize');
 
         const males = await Rabbit.findAll({
             where: { 
@@ -280,7 +248,7 @@ class ReproductionService {
         return males.filter(male => {
             if (male.age) return male.age >= 4;
             if (male.birthDate) {
-                const ageInMonths = (new Date() - new Date(male.birthDate)) / (1000 * 60 * 60 * 24 * 30.44);
+                const ageInMonths = (Date.now() - new Date(male.birthDate)) / (1000 * 60 * 60 * 24 * 30.44);
                 return ageInMonths >= 4;
             }
             return false;
@@ -324,7 +292,7 @@ class ReproductionService {
             // Age >= 4 check
             if (female.age !== undefined && female.age !== null) return female.age >= 4;
             if (female.birthDate) {
-                const ageInMonths = (new Date() - new Date(female.birthDate)) / (1000 * 60 * 60 * 24 * 30.44);
+                const ageInMonths = (Date.now() - new Date(female.birthDate)) / (1000 * 60 * 60 * 24 * 30.44);
                 return ageInMonths >= 4;
             }
             return false;

@@ -2,7 +2,6 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { galponService } from '../services/galpon.service';
-import type { Galpon } from '../types/galpon.types';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 
 export function useActiveGalpon() {
@@ -38,11 +37,18 @@ export function useActiveGalpon() {
       await setActiveMutation.mutateAsync(galponId);
       return true;
     } catch (err) {
+      console.error(err);
       return false;
     }
   };
 
-  const error = queryError ? (queryError as Error).message : (setActiveMutation.error ? (setActiveMutation.error as Error).message : null);
+  let errorStr = null;
+  if (queryError) {
+    errorStr = (queryError as Error).message;
+  } else if (setActiveMutation.error) {
+    errorStr = (setActiveMutation.error as Error).message;
+  }
+  const error = errorStr;
 
   return { activeGalpon, loading, error, setActive };
 }

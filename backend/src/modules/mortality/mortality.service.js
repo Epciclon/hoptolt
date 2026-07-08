@@ -39,87 +39,67 @@ class MortalityService {
         }
 
         if (isKits) {
-            if (!numberOfKits || numberOfKits <= 0) throw new AppError('Debe especificar un número válido de gazapos.', 400);
-            
-            const { Reproduction, Mortality } = require('../../domain/models');
-            const { Op } = require('sequelize');
-
-            const activeLactation = await Reproduction.findOne({
-                where: { femaleId: rabbitId, status: 'lactancia' }
-            });
-
-            if (activeLactation && activeLactation.bornKits !== null && (activeLactation.bornKits - numberOfKits <= 0)) {
-                // If this mortality wipes out the entire litter, aggregate it all into a single "fallido" record
-                const previousMortalities = await Mortality.findAll({
-                    where: {
-                        rabbitId,
-                        isKits: true,
-                        createdAt: { [Op.gte]: activeLactation.mountDate }
-                    }
-                });
-                
-                const previousDeadKits = previousMortalities.reduce((acc, curr) => acc + curr.numberOfKits, 0);
-                const originalBornKits = activeLactation.bornKits + previousDeadKits;
-                
-                await Mortality.destroy({
-                    where: {
-                        rabbitId,
-                        isKits: true,
-                        createdAt: { [Op.gte]: activeLactation.mountDate }
-                    }
-                });
-
-                activeLactation.bornKits = originalBornKits;
-                activeLactation.status = 'fallido';
-                activeLactation.cancellationReason = `Mortalidad total de la camada (Causa: ${cause.trim()})`;
-                await activeLactation.save();
-                
-                return { id: 'merged_total_mortality', rabbitId, cause, observations, deathDate: dDate, isKits: true, numberOfKits: originalBornKits };
-            }
-
-            // Normal partial mortality
-            const mortality = await mortalityRepository.create({
-                rabbitId,
-                cause: cause.trim(),
-                observations: observations ? observations.trim() : null,
-                deathDate: dDate,
-                isKits: true,
-                numberOfKits,
-                galponId,
-                profileId
-            });
-
-            if (activeLactation && activeLactation.bornKits !== null) {
-                activeLactation.bornKits = Math.max(0, activeLactation.bornKits - numberOfKits);
-                await activeLactation.save();
-            }
-
-            return mortality;
+            return this._processKitsMortality(rabbitId, cause, observations, dDate, numberOfKits, galponId, profileId);
         }
 
-        // --- Lógica para adulto ---
-        // 1. Liberar jaula (desasignar conejo)
-        const assignment = await Assignment.findOne({
-            where: { rabbitId, status: 'asignado' }
+        return this._processAdultMortality(rabbit, rabbitId, cause, observations, dDate, galponId, profileId);
+    }
+
+    async _processKitsMortality(rabbitId, cause, observations, dDate, numberOfKits, galponId, profileId) {
+        if (!numberOfKits || numberOfKits <= 0) throw new AppError('Debe especificar un número válido de gazapos.', 400);
+        
+        const { Reproduction, Mortality } = require('../../domain/models');
+        const { Op } = require('sequelize');
+
+        const activeLactation = await Reproduction.findOne({
+            where: { femaleId: rabbitId, status: 'lactancia' }
         });
+
+        if (activeLactation && activeLactation.bornKits !== null && (activeLactation.bornKits - numberOfKits <= 0)) {
+            const previousMortalities = await Mortality.findAll({
+                where: { rabbitId, isKits: true, createdAt: { [Op.gte]: activeLactation.mountDate } }
+            });
+            const previousDeadKits = previousMortalities.reduce((acc, curr) => acc + curr.numberOfKits, 0);
+            const originalBornKits = activeLactation.bornKits + previousDeadKits;
+            
+            await Mortality.destroy({
+                where: { rabbitId, isKits: true, createdAt: { [Op.gte]: activeLactation.mountDate } }
+            });
+
+            activeLactation.bornKits = originalBornKits;
+            activeLactation.status = 'fallido';
+            activeLactation.cancellationReason = `Mortalidad total de la camada (Causa: ${cause.trim()})`;
+            await activeLactation.save();
+            
+            return { id: 'merged_total_mortality', rabbitId, cause, observations, deathDate: dDate, isKits: true, numberOfKits: originalBornKits };
+        }
+
+        const mortality = await mortalityRepository.create({
+            rabbitId, cause: cause.trim(), observations: observations ? observations.trim() : null,
+            deathDate: dDate, isKits: true, numberOfKits, galponId, profileId
+        });
+
+        if (activeLactation && activeLactation.bornKits !== null) {
+            activeLactation.bornKits = Math.max(0, activeLactation.bornKits - numberOfKits);
+            await activeLactation.save();
+        }
+
+        return mortality;
+    }
+
+    async _processAdultMortality(rabbit, rabbitId, cause, observations, dDate, galponId, profileId) {
+        const { Assignment } = require('../../domain/models');
+        const assignment = await Assignment.findOne({ where: { rabbitId, status: 'asignado' } });
         if (assignment) {
             await assignment.update({ status: 'liberado' });
         }
 
-        // 2. Registrar la mortalidad
         const mortality = await mortalityRepository.create({
-            rabbitId,
-            cause: cause.trim(),
-            observations: observations ? observations.trim() : null,
-            deathDate: dDate,
-            isKits: false,
-            galponId,
-            profileId
+            rabbitId, cause: cause.trim(), observations: observations ? observations.trim() : null,
+            deathDate: dDate, isKits: false, galponId, profileId
         });
 
-        // 3. Aplicar borrado lógico al adulto
         await rabbit.destroy();
-
         return mortality;
     }
 

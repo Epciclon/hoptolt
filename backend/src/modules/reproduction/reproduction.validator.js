@@ -1,6 +1,6 @@
 const validateCreateReproduction = (req, res, next) => {
     const errors = [];
-    const { femaleId, maleId, mountDate } = req.body;
+    const { femaleId, mountDate } = req.body;
 
     if (!femaleId) {
         errors.push('El ID de la coneja es obligatorio.');
@@ -16,7 +16,7 @@ const validateCreateReproduction = (req, res, next) => {
 
 const validateEditReproduction = (req, res, next) => {
     const errors = [];
-    const { maleId, mountDate } = req.body;
+    const { mountDate } = req.body;
 
     if (mountDate) {
         const md = new Date(mountDate);

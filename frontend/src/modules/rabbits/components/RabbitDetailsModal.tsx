@@ -16,7 +16,7 @@ export function RabbitDetailsModal({
   open,
   onClose,
   rabbit,
-}: RabbitDetailsModalProps) {
+}: Readonly<RabbitDetailsModalProps>) {
   const [activeTab, setActiveTab] = useState<'info' | 'medical'>('info');
 
   if (!rabbit) return null;
@@ -90,7 +90,7 @@ export function RabbitDetailsModal({
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between border-b border-slate-50 pb-2">
                       <span className="text-slate-500">Edad:</span>
-                      <span className="font-medium text-slate-800">{rabbit.age !== null && rabbit.age !== undefined ? rabbit.age : 0} meses</span>
+                      <span className="font-medium text-slate-800">{rabbit.age ?? 0} meses</span>
                     </div>
                     <div className="flex justify-between border-b border-slate-50 pb-2">
                       <span className="text-slate-500">Peso Actual:</span>

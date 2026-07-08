@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { useEffect, useState, useRef } from 'react';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Input, Select, Button, Alert } from '@/shared/ui';
+import { Input, Select, Button } from '@/shared/ui';
 import { Sparkles } from 'lucide-react';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { rabbitService } from '../services/rabbit.service';
@@ -15,7 +15,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useSupabase } from '@/hooks/useSupabase';
 import { ImagePlaceholder } from '@/shared/ui/ImagePlaceholder';
 import Image from 'next/image';
-import { useRef } from 'react';
+
 import { calculateEstimatedWeight, calculateAgeMonths } from '@/modules/growth/utils/growthEstimations';
 
 const schema = z.object({
@@ -42,7 +42,7 @@ interface RabbitFormProps {
 
 
 
-export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel, hideCancel, readOnlyRace }: RabbitFormProps) {
+export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel, hideCancel, readOnlyRace }: Readonly<RabbitFormProps>) {
 
   const [races, setRaces] = useState<Race[]>([]);
   const { showToast } = useToast();
@@ -155,10 +155,16 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
       const name = await rabbitService.suggestName(selectedSex);
       setValue('name', name, { shouldValidate: true });
     } catch (err) {
+      console.error(err);
       showToast('No se pudo generar el nombre.', 'error');
     } finally {
       setSuggestingName(false);
     }
+  };
+
+  const getSubmitLabel = () => {
+    if (isSubmitting) return 'Guardando...';
+    return mode === 'create' ? 'Registrar Conejo' : 'Guardar Cambios';
   };
 
   const raceOptions = races.map((r) => ({ value: r.name, label: r.name }));
@@ -316,7 +322,7 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
           variant="primary"
           disabled={isSubmitting || uploading}
         >
-          {isSubmitting ? 'Guardando...' : (mode === 'create' ? 'Registrar Conejo' : 'Guardar Cambios')}
+          {getSubmitLabel()}
         </Button>
       </div>
     </form>

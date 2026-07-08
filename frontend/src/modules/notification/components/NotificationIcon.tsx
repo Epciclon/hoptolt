@@ -1,14 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { Bell, X, CheckCheck, ChevronDown } from 'lucide-react';
+import { Bell, X, CheckCheck } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotification';
 import { useInvitation } from '@/modules/invitation/hooks/useInvitation';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { Button } from '@/shared/ui';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { growthService } from '@/modules/growth/services/growth.service';
+
 
 export function NotificationIcon() {
   const [limit, setLimit] = useState(10);
@@ -19,8 +19,6 @@ export function NotificationIcon() {
   const [isOpen, setIsOpen] = useState(false);
   const [accepting, setAccepting] = useState<number | null>(null);
   const [rejecting, setRejecting] = useState<number | null>(null);
-  const [processingWeight, setProcessingWeight] = useState<number | null>(null);
-  const [selectedRabbitForNotification, setSelectedRabbitForNotification] = useState<Record<number, number | null>>({});
   const getIconByType = (type: string) => {
     switch (type) {
       case 'success':
@@ -70,14 +68,6 @@ export function NotificationIcon() {
     return date.toLocaleDateString();
   };
 
-  const handleShowMore = () => {
-    const newLimit = limit + 10;
-    setLimit(newLimit);
-    // React Query will automatically refetch when the option (limit) changes if we pass limit to the hook,
-    // but useNotifications currently receives limit on initialization or via fetchNotifications.
-    // Let's assume useNotifications is updated to accept options as a dependency.
-  };
-
   const handleAcceptInvitation = async (notification: any) => {
     const token = notification.data?.invitationToken;
     if (!token) return;
@@ -91,6 +81,7 @@ export function NotificationIcon() {
         deleteNotification(notification.id);
       }
     } catch (error) {
+      console.error(error);
       showToast('Error al aceptar la invitación', 'error');
     } finally {
       setAccepting(null);
@@ -108,35 +99,10 @@ export function NotificationIcon() {
       markAsRead(notification.id);
       deleteNotification(notification.id);
     } catch (error) {
+      console.error(error);
       showToast('Error al rechazar la invitación', 'error');
     } finally {
       setRejecting(null);
-    }
-  };
-
-  const handleRespondToWeight = async (notification: any, action: 'accept' | 'reject' | 'revert') => {
-    setProcessingWeight(notification.id);
-    try {
-      // growthService.respondToEstimation has been deprecated/removed.
-      // Logic for responding to weights interactively is removed.
-      showToast('Funcionalidad deprecada', 'info');
-    } catch (error) {
-      showToast('Error al procesar', 'error');
-    } finally {
-      setProcessingWeight(null);
-    }
-  };
-
-  const handleRespondToWeightGrouped = async (notificationId: number, rabbitId: number, action: 'accept' | 'reject' | 'revert') => {
-    setProcessingWeight(notificationId);
-    try {
-      // growthService.respondToEstimation has been deprecated/removed.
-      // Logic for responding to weights interactively is removed.
-      showToast('Funcionalidad deprecada', 'info');
-    } catch (error) {
-      showToast('Error al procesar', 'error');
-    } finally {
-      setProcessingWeight(null);
     }
   };
 
@@ -162,7 +128,6 @@ export function NotificationIcon() {
   };
 
   const displayedNotifications = notifications.slice(0, limit);
-  const hasMore = notifications.length > limit;
 
   return (
     <div className="relative">
@@ -180,12 +145,10 @@ export function NotificationIcon() {
 
       {isOpen && (
         <>
-          <div 
-            role="button"
-            tabIndex={0}
-            className="fixed inset-0 z-40" 
+          <button 
+            type="button"
+            className="fixed inset-0 z-40 bg-transparent border-none w-full h-full cursor-default" 
             onClick={() => setIsOpen(false)} 
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsOpen(false); }}
             aria-label="Cerrar notificaciones"
           />
           <div className="fixed sm:absolute top-16 sm:top-full left-4 right-4 sm:left-auto sm:right-0 mt-2 w-auto sm:w-96 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-50">
@@ -220,16 +183,14 @@ export function NotificationIcon() {
               ) : (
                 <>
                   {displayedNotifications.map((notification) => (
-                    <div
+                    <button
                       key={notification.id}
-                      role="button"
-                      tabIndex={0}
+                      type="button"
                       className={cn(
-                        'p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer',
+                        'w-full text-left p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer block',
                         !notification.read && 'bg-blue-50/50'
                       )}
                       onClick={() => handleNotificationClick(notification)}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleNotificationClick(notification); }}
                     >
                       <div className="flex items-start gap-3">
                         <div className={cn('w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold', getTypeColor(notification.type))}>
@@ -282,8 +243,8 @@ export function NotificationIcon() {
                                 Actualizaciones ({notification.data.updatesCount || 0})
                               </p>
                               <ul className="text-xs text-slate-500 list-disc list-inside">
-                                {notification.data.details?.slice(0, 3).map((detail: string, i: number) => (
-                                  <li key={i} className="truncate">{detail}</li>
+                                {notification.data.details?.slice(0, 3).map((detail: string) => (
+                                  <li key={detail} className="truncate">{detail}</li>
                                 ))}
                                 {notification.data.details?.length > 3 && (
                                   <li className="italic text-slate-400">... y {notification.data.details.length - 3} más</li>
@@ -293,7 +254,7 @@ export function NotificationIcon() {
                           )}
                         </div>
                       </div>
-                    </div>
+                    </button>
                   ))}
                   <button
                     onClick={() => {
