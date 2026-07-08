@@ -80,11 +80,16 @@ class SwaggerAutoGenerator {
     parseModelDefinition(definition, modelName) {
         const fields = {};
 
-        const blockMatches = definition.matchAll(/(\w+):\s*\{([^}]*)\}/g);
-
-        for (const match of blockMatches) {
+        const fieldStartRegex = /([a-zA-Z0-9_]+):\s*\{/g;
+        let match;
+        while ((match = fieldStartRegex.exec(definition)) !== null) {
             const fieldName = match[1];
-            const blockContent = match[2];
+            const startIndex = match.index + match[0].length;
+            const endIndex = definition.indexOf('}', startIndex);
+            
+            if (endIndex === -1) continue;
+            
+            const blockContent = definition.substring(startIndex, endIndex);
             
             const typeMatch = blockContent.match(/type:\s*DataTypes\.(\w+)/);
             if (!typeMatch) continue;
