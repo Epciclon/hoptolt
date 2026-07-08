@@ -50,13 +50,8 @@ export function useInvitation() {
   });
 
   const createInvitation = async (galponId: number, email: string) => {
-    try {
-      await createInvitationMutation.mutateAsync({ galponId, email });
-      return true;
-    } catch (err) {
-      console.error(err);
-      return false;
-    }
+    await createInvitationMutation.mutateAsync({ galponId, email });
+    return true;
   };
 
   const acceptInvitationMutation = useMutation({
@@ -70,13 +65,8 @@ export function useInvitation() {
   });
 
   const acceptInvitation = async (token: string) => {
-    try {
-      await acceptInvitationMutation.mutateAsync(token);
-      return true;
-    } catch (err) {
-      console.error(err);
-      return false;
-    }
+    await acceptInvitationMutation.mutateAsync(token);
+    return true;
   };
 
   const revokeInvitationMutation = useMutation({
@@ -87,13 +77,8 @@ export function useInvitation() {
   });
 
   const revokeInvitation = async (token: string) => {
-    try {
-      await revokeInvitationMutation.mutateAsync(token);
-      return true;
-    } catch (err) {
-      console.error(err);
-      return false;
-    }
+    await revokeInvitationMutation.mutateAsync(token);
+    return true;
   };
 
   return {

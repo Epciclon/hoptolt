@@ -89,9 +89,9 @@ export const authService = {
         fullName: data.user.user_metadata.fullName || '',
         username: data.user.user_metadata.username || email.split('@')[0],
       });
-    } catch (syncError) {
-      console.error(syncError);
+    } catch (syncError: unknown) {
       // Silencioso: el perfil puede ya existir por el trigger
+      console.warn('Sincronización de perfil no requerida (posiblemente creada por trigger):', syncError instanceof Error ? syncError.message : String(syncError));
     }
 
     // 4. El AuthContext detectará el evento SIGNED_IN automáticamente

@@ -64,13 +64,24 @@ export function ZoomableViewer({ children }: Readonly<ZoomableViewerProps>) {
 
       {/* Visor interactivo */}
       <div 
-        role="presentation"
-        className={`w-full h-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+        role="application"
+        aria-label="Visor arrastrable y ampliable"
+        tabIndex={0}
+        className={`w-full h-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`}
         ref={containerRef}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
+        onKeyDown={(e) => {
+          const step = 40;
+          if (e.key === 'ArrowUp') { e.preventDefault(); setPosition(p => ({ ...p, y: p.y + step })); }
+          if (e.key === 'ArrowDown') { e.preventDefault(); setPosition(p => ({ ...p, y: p.y - step })); }
+          if (e.key === 'ArrowLeft') { e.preventDefault(); setPosition(p => ({ ...p, x: p.x + step })); }
+          if (e.key === 'ArrowRight') { e.preventDefault(); setPosition(p => ({ ...p, x: p.x - step })); }
+          if (e.key === '+') { e.preventDefault(); handleZoomIn(); }
+          if (e.key === '-') { e.preventDefault(); handleZoomOut(); }
+        }}
         style={{ touchAction: 'none' }} // Prevenir scroll en móviles al arrastrar
       >
         <div 

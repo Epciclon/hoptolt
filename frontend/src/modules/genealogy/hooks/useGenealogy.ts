@@ -30,18 +30,14 @@ export function useGenealogy() {
     try {
       await deleteGenealogyMutation.mutateAsync(rabbitId);
       return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err.message || 'Error al eliminar la genealogía' };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error al eliminar la genealogía';
+      return { success: false, error: message };
     }
   };
 
   const getTree = async (rabbitId: number, levels?: number): Promise<GenealogyTree | null> => {
-    try {
-      return await genealogyService.getTree(rabbitId, levels);
-    } catch (err) {
-      console.error(err);
-      return null;
-    }
+    return await genealogyService.getTree(rabbitId, levels);
   };
 
   // Mutation: Edit Genealogy
@@ -54,13 +50,8 @@ export function useGenealogy() {
   });
 
   const editGenealogy = async (rabbitId: number, data: { fatherId?: number; motherId?: number }): Promise<boolean> => {
-    try {
-      await editGenealogyMutation.mutateAsync({ rabbitId, data });
-      return true;
-    } catch (err) {
-      console.error(err);
-      return false;
-    }
+    await editGenealogyMutation.mutateAsync({ rabbitId, data });
+    return true;
   };
 
   return {

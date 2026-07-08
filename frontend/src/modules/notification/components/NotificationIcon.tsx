@@ -11,8 +11,8 @@ import { cn } from '@/lib/utils';
 
 
 export function NotificationIcon() {
-  const [limit] = useState(10);
-  const { notifications, markAsRead, markAllAsRead, deleteNotification, unreadCount } = useNotifications({ limit });
+  const NOTIFICATION_LIMIT = 10;
+  const { notifications, markAsRead, markAllAsRead, deleteNotification, unreadCount } = useNotifications({ limit: NOTIFICATION_LIMIT });
   const { acceptInvitation, revokeInvitation } = useInvitation();
   const { showToast } = useToast();
   const router = useRouter();
@@ -127,7 +127,7 @@ export function NotificationIcon() {
     setIsOpen(false);
   };
 
-  const displayedNotifications = notifications.slice(0, limit);
+  const displayedNotifications = notifications.slice(0, NOTIFICATION_LIMIT);
 
   return (
     <div className="relative">

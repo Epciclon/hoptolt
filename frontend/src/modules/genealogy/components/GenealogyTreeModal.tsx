@@ -29,31 +29,42 @@ export function GenealogyTreeModal({ rabbit, onClose }: Readonly<GenealogyTreeMo
 
 
 
-  const buildGenerations = (node: GenealogyTree | null, maxLevels: number): (GenealogyTree | null)[][] => {
+  interface GenSlot {
+    node: GenealogyTree | null;
+    uid: string;
+  }
+
+  const buildGenerations = (node: GenealogyTree | null, maxLevels: number): GenSlot[][] => {
     if (!node) return [];
-    const generations: (GenealogyTree | null)[][] = [[node]];
+    const generations: GenSlot[][] = [[{ node, uid: 'root' }]];
 
     for (let level = 0; level < maxLevels; level++) {
       const currentGen = generations[level];
       if (!currentGen) break;
-      const nextGen: (GenealogyTree | null)[] = [];
+      const nextGen: GenSlot[] = [];
 
-      currentGen.forEach(n => {
-        if (n?.parents) {
-          nextGen.push(n.parents.father || null, n.parents.mother || null);
+      currentGen.forEach(slot => {
+        if (slot.node?.parents) {
+          nextGen.push(
+            { node: slot.node.parents.father || null, uid: `${slot.uid}-F` },
+            { node: slot.node.parents.mother || null, uid: `${slot.uid}-M` }
+          );
         } else {
-          nextGen.push(null, null);
+          nextGen.push(
+            { node: null, uid: `${slot.uid}-F` },
+            { node: null, uid: `${slot.uid}-M` }
+          );
         }
       });
 
-      if (nextGen.some(n => n !== null)) {
+      if (nextGen.some(slot => slot.node !== null)) {
         generations.push(nextGen);
       }
     }
     return generations;
   };
 
-  const renderGeneration = (generation: (GenealogyTree | null)[], level: number, nextGeneration?: (GenealogyTree | null)[]): JSX.Element => {
+  const renderGeneration = (generation: GenSlot[], level: number, nextGeneration?: GenSlot[]): JSX.Element => {
     let bgColor = 'bg-yellow-50 border-yellow-200';
     if (level === 0) bgColor = 'bg-blue-100 border-blue-300';
     else if (level === 1) bgColor = 'bg-green-50 border-green-200';
@@ -65,19 +76,21 @@ export function GenealogyTreeModal({ rabbit, onClose }: Readonly<GenealogyTreeMo
     return (
       <div className="flex flex-col items-center w-full">
         <div className="grid w-full gap-x-2" style={{ gridTemplateColumns: `repeat(${generation.length}, minmax(0, 1fr))` }}>
-          {generation.map((node, index) => {
+          {generation.map((slot) => {
+            const { node, uid } = slot;
+            
             if (!node) {
-              return <div key={`null-${level}-${index}`} className={`${minW}`}></div>;
+              return <div key={uid} className={`${minW}`}></div>;
             }
 
-            const isFather = index % 2 === 0;
+            const isFather = uid.endsWith('-F');
             let label = '';
             if (level !== 0) {
               label = isFather ? 'Padre' : 'Madre';
             }
 
             return (
-              <div key={node.id} className="flex flex-col items-center">
+              <div key={uid} className="flex flex-col items-center">
                 <div className={`${padding} border-2 rounded-lg ${fontSize} ${bgColor} ${minW} text-center shadow-sm`}>
                   <div className="flex justify-center mb-2">
                     {node.imageUrl ? (
@@ -104,9 +117,10 @@ export function GenealogyTreeModal({ rabbit, onClose }: Readonly<GenealogyTreeMo
           })}
         </div>
 
-        {nextGeneration && nextGeneration.some(n => n !== null) && (
+        {nextGeneration && nextGeneration.some(slot => slot.node !== null) && (
           <svg className="w-full h-16" style={{ minHeight: '64px' }}>
-            {generation.map((node, index) => {
+            {generation.map((slot, index) => {
+              const { node, uid } = slot;
               if (!node) return null;
 
               const childIndex1 = index * 2;
@@ -125,21 +139,21 @@ export function GenealogyTreeModal({ rabbit, onClose }: Readonly<GenealogyTreeMo
 
               if (parentCount === 2) {
                 lines.push(
-                  <line key={`v-${node.id}`} x1={`${nodeX}%`} y1="0" x2={`${nodeX}%`} y2="50%" stroke="#94a3b8" strokeWidth="2" />,
-                  <line key={`h-${node.id}`} x1={`${child1X}%`} y1="50%" x2={`${child2X}%`} y2="50%" stroke="#94a3b8" strokeWidth="2" />,
-                  <line key={`v1-${node.id}`} x1={`${child1X}%`} y1="50%" x2={`${child1X}%`} y2="100%" stroke="#94a3b8" strokeWidth="2" />,
-                  <line key={`v2-${node.id}`} x1={`${child2X}%`} y1="50%" x2={`${child2X}%`} y2="100%" stroke="#94a3b8" strokeWidth="2" />
+                  <line key={`v-${uid}`} x1={`${nodeX}%`} y1="0" x2={`${nodeX}%`} y2="50%" stroke="#94a3b8" strokeWidth="2" />,
+                  <line key={`h-${uid}`} x1={`${child1X}%`} y1="50%" x2={`${child2X}%`} y2="50%" stroke="#94a3b8" strokeWidth="2" />,
+                  <line key={`v1-${uid}`} x1={`${child1X}%`} y1="50%" x2={`${child1X}%`} y2="100%" stroke="#94a3b8" strokeWidth="2" />,
+                  <line key={`v2-${uid}`} x1={`${child2X}%`} y1="50%" x2={`${child2X}%`} y2="100%" stroke="#94a3b8" strokeWidth="2" />
                 );
               } else if (parentCount === 1) {
                 const childX = child1X || child2X;
                 if (nodeX !== childX) {
                   lines.push(
-                    <line key={`v-${node.id}`} x1={`${nodeX}%`} y1="0" x2={`${nodeX}%`} y2="50%" stroke="#94a3b8" strokeWidth="2" />,
-                    <line key={`h-${node.id}`} x1={`${nodeX}%`} y1="50%" x2={`${childX}%`} y2="50%" stroke="#94a3b8" strokeWidth="2" />,
-                    <line key={`v1-${node.id}`} x1={`${childX}%`} y1="50%" x2={`${childX}%`} y2="100%" stroke="#94a3b8" strokeWidth="2" />
+                    <line key={`v-${uid}`} x1={`${nodeX}%`} y1="0" x2={`${nodeX}%`} y2="50%" stroke="#94a3b8" strokeWidth="2" />,
+                    <line key={`h-${uid}`} x1={`${nodeX}%`} y1="50%" x2={`${childX}%`} y2="50%" stroke="#94a3b8" strokeWidth="2" />,
+                    <line key={`v1-${uid}`} x1={`${childX}%`} y1="50%" x2={`${childX}%`} y2="100%" stroke="#94a3b8" strokeWidth="2" />
                   );
                 } else {
-                  lines.push(<line key={`v-${node.id}`} x1={`${nodeX}%`} y1="0" x2={`${nodeX}%`} y2="100%" stroke="#94a3b8" strokeWidth="2" />);
+                  lines.push(<line key={`v-${uid}`} x1={`${nodeX}%`} y1="0" x2={`${nodeX}%`} y2="100%" stroke="#94a3b8" strokeWidth="2" />);
                 }
               }
 
@@ -189,7 +203,7 @@ export function GenealogyTreeModal({ rabbit, onClose }: Readonly<GenealogyTreeMo
           <ZoomableViewer>
             <div className="flex flex-col gap-0 p-8 pb-32 mx-auto" style={{ minWidth: typeof minTreeWidth === 'number' ? `${minTreeWidth}px` : minTreeWidth }}>
               {treeGenerations.map((generation, level) => (
-                <div key={generation.map(n => n?.id || 'none').join('-')} className="w-full">
+                <div key={generation.map(s => s.uid).join('-')} className="w-full">
                   {renderGeneration(generation, level, treeGenerations[level + 1])}
                 </div>
               ))}
