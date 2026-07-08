@@ -7,7 +7,7 @@ class MortalityService {
     async registerMortality(data, galponId, profileId) {
         const { rabbitId, cause, observations, deathDate, isKits, numberOfKits } = data;
 
-        const { Rabbit, Assignment, Profile } = require('../../domain/models');
+        const { Profile } = require('../../domain/models');
 
         const profile = await Profile.findByPk(profileId);
         if (!profile) throw new AppError('Usuario no encontrado.', 404);

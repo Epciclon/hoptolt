@@ -128,7 +128,7 @@ class NotificationService {
 
         const promise = (async () => {
             try {
-                const { Cleaning, Assignment } = require('../../domain/models');
+                const { Assignment } = require('../../domain/models');
                 const activeAssignments = await Assignment.findAll({ where: { status: 'asignado' } });
                 const assignedCageIds = new Set(activeAssignments.map(a => Number(a.cageId)));
                 if (assignedCageIds.size === 0) return;
@@ -137,32 +137,8 @@ class NotificationService {
                 if (cagesToCheck.length === 0) return;
 
                 const notifiedCageIds = await this._getNotifiedIds(profileId, 'warning', 'cleaning');
-                const today = new Date();
-
-                for (const cage of cagesToCheck) {
-                    if (notifiedCageIds.has(Number(cage.id))) continue;
-
-                    const lastCleaning = await Cleaning.findOne({
-                        where: { cageId: cage.id },
-                        order: [['cleaningDate', 'DESC']]
-                    });
-
-                    if (!lastCleaning?.cleaningDate) continue;
-
-                    const diffTime = today.getTime() - new Date(lastCleaning.cleaningDate).getTime();
-                    const daysWithoutCleaning = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-                    if (daysWithoutCleaning > 3) {
-                        notifiedCageIds.add(Number(cage.id));
-                        await Notification.create({
-                            profileId,
-                            type: 'warning',
-                            title: 'Alerta de Limpieza Requerida',
-                            message: `La jaula #${cage.number} lleva ${daysWithoutCleaning} días sin ser limpiada. ¡Por favor realiza la limpieza lo antes posible!`,
-                            data: { type: 'cleaning_warning', cageId: cage.id, cageNumber: cage.number, daysWithoutCleaning }
-                        });
-                    }
-                }
+                
+                await this._processCleaningNotifications(profileId, cagesToCheck, notifiedCageIds);
             } catch (error) {
                 console.error('Error checking/creating cleaning notifications:', error);
             } finally {
@@ -172,6 +148,36 @@ class NotificationService {
 
         ongoingChecks.set(`${profileId}_cleaning`, promise);
         return promise;
+    }
+
+    async _processCleaningNotifications(profileId, cagesToCheck, notifiedCageIds) {
+        const { Cleaning, Notification } = require('../../domain/models');
+        const today = new Date();
+
+        for (const cage of cagesToCheck) {
+            if (notifiedCageIds.has(Number(cage.id))) continue;
+
+            const lastCleaning = await Cleaning.findOne({
+                where: { cageId: cage.id },
+                order: [['cleaningDate', 'DESC']]
+            });
+
+            if (!lastCleaning?.cleaningDate) continue;
+
+            const diffTime = today.getTime() - new Date(lastCleaning.cleaningDate).getTime();
+            const daysWithoutCleaning = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+            if (daysWithoutCleaning > 3) {
+                notifiedCageIds.add(Number(cage.id));
+                await Notification.create({
+                    profileId,
+                    type: 'warning',
+                    title: 'Alerta de Limpieza Requerida',
+                    message: `La jaula #${cage.number} lleva ${daysWithoutCleaning} días sin ser limpiada. ¡Por favor realiza la limpieza lo antes posible!`,
+                    data: { type: 'cleaning_warning', cageId: cage.id, cageNumber: cage.number, daysWithoutCleaning }
+                });
+            }
+        }
     }
 
     async createNotification(profileId, data) {

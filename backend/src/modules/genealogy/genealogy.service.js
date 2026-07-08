@@ -18,15 +18,11 @@ class GenealogyService {
         }
 
         if (fatherId) {
-            await this._validateParent(fatherId, rabbit, 'macho', 'padre');
-            const fatherAncestors = await this.getAncestors(fatherId, 10);
-            if (fatherAncestors.includes(rabbitId)) throw new AppError('El padre no puede ser descendiente del hijo (ciclo genealógico).', 400);
+            await this._validateParentUpdate(fatherId, rabbit, 'macho', 'padre');
         }
 
         if (motherId) {
-            await this._validateParent(motherId, rabbit, 'hembra', 'madre');
-            const motherAncestors = await this.getAncestors(motherId, 10);
-            if (motherAncestors.includes(rabbitId)) throw new AppError('La madre no puede ser descendiente del hijo (ciclo genealógico).', 400);
+            await this._validateParentUpdate(motherId, rabbit, 'hembra', 'madre');
         }
 
         let consanguinityWarning = null;

@@ -55,6 +55,57 @@ exports.getReproductionByFemaleId = catchAsync(async (req, res) => {
     res.status(200).json({ success: true, reproductions });
 });
 
+const formatReproduction = (reproduction) => {
+    const assignment = reproduction.female?.assignments?.[0] || null;
+    const cage = assignment?.cage || null;
+    const male = reproduction.male || null;
+
+    let profileName = 'N/A';
+    if (reproduction.updatedBySystem) {
+        profileName = 'Sistema Hoptolt';
+    } else if (reproduction.profile) {
+        profileName = reproduction.profile.fullName || reproduction.profile.username || reproduction.profile.email || 'N/A';
+    }
+
+    let profileObj = null;
+    if (reproduction.profile) {
+        profileObj = {
+            username: reproduction.profile.username,
+            fullName: reproduction.profile.fullName,
+            email: reproduction.profile.email
+        };
+    }
+
+    return {
+        id: reproduction.id,
+        femaleId: reproduction.femaleId,
+        femaleCode: reproduction.female?.code || 'N/A',
+        femaleName: reproduction.female?.name || '',
+        femaleRace: reproduction.female?.race || '',
+        femaleAge: reproduction.female?.age,
+        femaleWeight: reproduction.female?.weight,
+        maleId: reproduction.maleId,
+        maleCode: male?.code || null,
+        maleName: male?.name || '',
+        maleRace: male?.race || '',
+        maleImageUrl: male?.imageUrl || null,
+        isMaleDeleted: !!male?.deletedAt,
+        mountDate: reproduction.mountDate,
+        estimatedBirthDate: reproduction.estimatedBirthDate,
+        bornKits: reproduction.bornKits,
+        cancellationReason: reproduction.cancellationReason,
+        status: reproduction.status,
+        createdAt: reproduction.createdAt,
+        updatedAt: reproduction.updatedAt,
+        imageUrl: reproduction.female?.imageUrl || null,
+        cageNumber: cage?.number || null,
+        cageType: cage?.type || null,
+        galponId: reproduction.galponId,
+        profileName: profileName,
+        profile: profileObj
+    };
+};
+
 exports.getAllReproductions = catchAsync(async (req, res) => {
     const page = Number.parseInt(req.query.page) || 1;
     const limit = Number.parseInt(req.query.limit) || 10;
@@ -65,52 +116,7 @@ exports.getAllReproductions = catchAsync(async (req, res) => {
     try {
         const result = await reproductionService.getAllReproductions(req.galponId, req.user.id, page, limit, filters);
         
-        // Los datos ya vienen con includes, no necesitamos consultas adicionales
-        const enrichedReproductions = result.data.map(reproduction => {
-            const assignment = reproduction.female?.assignments?.[0] || null;
-            const cage = assignment?.cage || null;
-            const male = reproduction.male || null;
-
-            let profileName = 'N/A';
-            if (reproduction.updatedBySystem) {
-                profileName = 'Sistema Hoptolt';
-            } else if (reproduction.profile) {
-                profileName = reproduction.profile.fullName || reproduction.profile.username || reproduction.profile.email;
-            }
-
-            return {
-                id: reproduction.id,
-                femaleId: reproduction.femaleId,
-                femaleCode: reproduction.female?.code || 'N/A',
-                femaleName: reproduction.female?.name || '',
-                femaleRace: reproduction.female?.race || '',
-                femaleAge: reproduction.female?.age,
-                femaleWeight: reproduction.female?.weight,
-                maleId: reproduction.maleId,
-                maleCode: male?.code || null,
-                maleName: male?.name || '',
-                maleRace: male?.race || '',
-                maleImageUrl: male?.imageUrl || null,
-                isMaleDeleted: !!male?.deletedAt,
-                mountDate: reproduction.mountDate,
-                estimatedBirthDate: reproduction.estimatedBirthDate,
-                bornKits: reproduction.bornKits,
-                cancellationReason: reproduction.cancellationReason,
-                status: reproduction.status,
-                createdAt: reproduction.createdAt,
-                updatedAt: reproduction.updatedAt,
-                imageUrl: reproduction.female?.imageUrl || null,
-                cageNumber: cage?.number || null,
-                cageType: cage?.type || null,
-                galponId: reproduction.galponId,
-                profileName: profileName,
-                profile: reproduction.profile ? {
-                    username: reproduction.profile.username,
-                    fullName: reproduction.profile.fullName,
-                    email: reproduction.profile.email
-                } : null
-            };
-        });
+        const enrichedReproductions = result.data.map(formatReproduction);
         
         res.status(200).json({
             success: true,
@@ -248,7 +254,9 @@ exports.getReproductionCalendar = catchAsync(async (req, res) => {
 
     const records = await reproductionService.getReproductionCalendar(galponId, year, month, type, cageIds);
 
-    const _getDateKey = (val, formatEcuador) => {
+    const formatEcuador = (d) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guayaquil', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+    
+    const _getDateKey = (val) => {
         if (!val) return null;
         if (val instanceof Date) return formatEcuador(val);
         if (typeof val === 'string') return val.split('T')[0];
@@ -283,7 +291,6 @@ exports.getReproductionCalendar = catchAsync(async (req, res) => {
     // Group by date string (YYYY-MM-DD)
     const grouped = {};
     for (const r of records) {
-        const formatEcuador = (d) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guayaquil', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
         let valToFormat;
         if (type === 'births') {
             valToFormat = r.estimatedBirthDate;
@@ -292,11 +299,15 @@ exports.getReproductionCalendar = catchAsync(async (req, res) => {
         } else {
             valToFormat = r.receptiveDate;
         }
-        const dateKey = _getDateKey(valToFormat, formatEcuador);
+        const dateKey = _getDateKey(valToFormat);
 
         if (!dateKey) continue;
 
-        const assignment = r.type === 'receptive' ? null : (r.female?.assignments?.[0] || null);
+        let assignment = null;
+        if (r.type !== 'receptive') {
+            assignment = r.female?.assignments?.[0] || null;
+        }
+        
         const cage = assignment?.cage || null;
 
         if (!grouped[dateKey]) grouped[dateKey] = [];
