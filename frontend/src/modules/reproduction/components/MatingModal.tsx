@@ -13,7 +13,7 @@ interface MatingModalProps {
   onSuccess: () => void;
 }
 
-export function MatingModal({ male, onClose, onSuccess }: MatingModalProps) {
+export function MatingModal({ male, onClose, onSuccess }: Readonly<MatingModalProps>) {
   const [females, setFemales] = useState<MatingRabbit[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -81,6 +81,77 @@ export function MatingModal({ male, onClose, onSuccess }: MatingModalProps) {
     return safeCode.includes(safeSearch) || safeName.includes(safeSearch) || safeCage.includes(safeSearch);
   });
 
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="py-12 flex justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+        </div>
+      );
+    }
+    
+    if (females.length === 0) {
+      return (
+        <Alert 
+          variant="warning" 
+          message={`No se encontraron hembras de raza ${male.race} receptivas para monta (mayores de 4 meses con jaula).`}
+          className="my-4"
+        />
+      );
+    }
+
+    return (
+      <>
+        <div className="mb-4">
+          <FilterBar
+            searchValue={search}
+            onSearchChange={setSearch}
+            searchPlaceholder="Buscar hembra por código, nombre o jaula..."
+          />
+        </div>
+
+        {filteredFemales.length === 0 ? (
+          <p className="text-sm text-center text-slate-500 py-8 bg-slate-50 rounded-lg border border-slate-100">
+            No se encontraron hembras que coincidan con la búsqueda.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto p-1 pr-2">
+            {filteredFemales.map(female => (
+              <div key={female.id} className="border border-slate-200 bg-white rounded-lg p-3 hover:border-primary-300 transition-colors flex items-center justify-between shadow-sm">
+            <div className="flex items-center gap-3">
+              {female.imageUrl ? (
+                <img src={female.imageUrl} alt={female.code} className="w-10 h-10 flex-shrink-0 rounded-full object-cover" />
+              ) : (
+                <div className="w-10 h-10 flex-shrink-0 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-[10px] text-center leading-tight px-1">
+                  Sin foto
+                </div>
+              )}
+              <div>
+                <h5 className="font-medium text-slate-800">
+                  {female.name ? `${female.name} — ${female.code}` : female.code}
+                </h5>
+                <p className="text-xs text-slate-500">Jaula #{female.cageNumber}</p>
+              </div>
+            </div>
+            
+            <Button 
+              variant="primary" 
+              size="sm"
+              icon={<HeartHandshake size={14} />}
+              loading={processingId === female.id}
+              disabled={processingId !== null}
+              onClick={() => setConfirmFemale(female)}
+            >
+              Vincular
+            </Button>
+          </div>
+          ))}
+        </div>
+      )}
+    </>
+    );
+  };
+
   return (
     <Dialog open={true} onClose={onClose} title="Seleccionar Hembra para Monta" size="3xl">
       <div className="mb-6 bg-slate-50 border border-slate-200 rounded-lg p-4 flex gap-4 items-center">
@@ -98,66 +169,7 @@ export function MatingModal({ male, onClose, onSuccess }: MatingModalProps) {
         </div>
       </div>
 
-      {loading ? (
-        <div className="py-12 flex justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
-        </div>
-      ) : females.length === 0 ? (
-        <Alert 
-          variant="warning" 
-          message={`No se encontraron hembras de raza ${male.race} receptivas para monta (mayores de 4 meses con jaula).`}
-          className="my-4"
-        />
-      ) : (
-        <>
-          <div className="mb-4">
-            <FilterBar
-              searchValue={search}
-              onSearchChange={setSearch}
-              searchPlaceholder="Buscar hembra por código, nombre o jaula..."
-            />
-          </div>
-
-          {filteredFemales.length === 0 ? (
-            <p className="text-sm text-center text-slate-500 py-8 bg-slate-50 rounded-lg border border-slate-100">
-              No se encontraron hembras que coincidan con la búsqueda.
-            </p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto p-1 pr-2">
-              {filteredFemales.map(female => (
-                <div key={female.id} className="border border-slate-200 bg-white rounded-lg p-3 hover:border-primary-300 transition-colors flex items-center justify-between shadow-sm">
-              <div className="flex items-center gap-3">
-                {female.imageUrl ? (
-                  <img src={female.imageUrl} alt={female.code} className="w-10 h-10 flex-shrink-0 rounded-full object-cover" />
-                ) : (
-                  <div className="w-10 h-10 flex-shrink-0 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-[10px] text-center leading-tight px-1">
-                    Sin foto
-                  </div>
-                )}
-                <div>
-                  <h5 className="font-medium text-slate-800">
-                    {female.name ? `${female.name} — ${female.code}` : female.code}
-                  </h5>
-                  <p className="text-xs text-slate-500">Jaula #{female.cageNumber}</p>
-                </div>
-              </div>
-              
-              <Button 
-                variant="primary" 
-                size="sm"
-                icon={<HeartHandshake size={14} />}
-                loading={processingId === female.id}
-                disabled={processingId !== null}
-                onClick={() => setConfirmFemale(female)}
-              >
-                Vincular
-              </Button>
-            </div>
-            ))}
-          </div>
-        )}
-      </>
-    )}
+      {renderContent()}
       {confirmFemale && !showConsanguinityWarning && (
         <ConfirmDialog
           open={!!confirmFemale && !showConsanguinityWarning}

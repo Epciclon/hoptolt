@@ -63,11 +63,10 @@ export function ZoomableViewer({ children }: Readonly<ZoomableViewerProps>) {
       </div>
 
       {/* Visor interactivo — role="application" is an interactive ARIA landmark (WAI-ARIA spec) */}
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-tabindex */}
       <div
         role="application"
         aria-label="Visor arrastrable y ampliable"
-        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex */}
         tabIndex={0}
         className={`w-full h-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`}
         ref={containerRef}
