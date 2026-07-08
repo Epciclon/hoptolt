@@ -4,7 +4,7 @@ import type { Reproduction } from '../types/reproduction.types';
 import { FilterBar } from '@/shared/ui/FilterBar';
 import { Table, Column } from '@/shared/ui/Table';
 import { Dialog } from '@/shared/ui';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { mortalityService } from '@/modules/mortality/services/mortality.service';
 import type { Mortality } from '@/modules/mortality/types/mortality.types';
@@ -164,6 +164,48 @@ const historyColumns: Column<HistoryRecord>[] = [
   }
 ];
 
+function getFilteredReproductions(reproductions: Reproduction[], searchTerm: string, filterStatus: string) {
+  return reproductions.filter(r => {
+    if (r.status !== 'completado' && r.status !== 'fallido') return false;
+
+    const matchesSearch =
+      r.femaleName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      r.femaleCode.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus = filterStatus ? r.status === filterStatus : true;
+
+    return matchesSearch && matchesStatus;
+  });
+}
+
+function getFilteredMortalities(mortalities: any[], reproductions: Reproduction[], searchTerm: string, filterStatus: string) {
+  return mortalities.filter(m => {
+    const search = searchTerm.toLowerCase();
+    const matchesSearch =
+      m.rabbitName?.toLowerCase().includes(search) ||
+      m.rabbitCode?.toLowerCase().includes(search);
+    const matchesStatus = filterStatus ? filterStatus === 'baja' : true;
+    return matchesSearch && matchesStatus;
+  }).map(m => {
+    const lastRep = reproductions
+      .filter(r => r.femaleId === m.rabbitId)
+      .sort((a, b) => new Date(b.mountDate).getTime() - new Date(a.mountDate).getTime())[0];
+      
+    return {
+      ...m,
+      type: 'mortality' as const,
+      maleName: lastRep?.maleName,
+      maleCode: lastRep?.maleCode,
+      maleRace: lastRep?.maleRace,
+      profile: {
+        fullName: m.responsible,
+        username: m.profileUsername,
+        email: m.profileEmail
+      }
+    };
+  });
+}
+
 export function ReproductionHistoryView({ reproductions }: Readonly<ReproductionHistoryViewProps>) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('');
@@ -175,50 +217,20 @@ export function ReproductionHistoryView({ reproductions }: Readonly<Reproduction
   });
   const kitMortalities = kitMortalitiesData || [];
 
-  const historico = reproductions.filter(r => {
-    if (r.status !== 'completado' && r.status !== 'fallido') return false;
+  const historico = useMemo(() => getFilteredReproductions(reproductions, searchTerm, filterStatus), [reproductions, searchTerm, filterStatus]);
 
-    const matchesSearch =
-      r.femaleName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.femaleCode.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesStatus = filterStatus ? r.status === filterStatus : true;
-
-    return matchesSearch && matchesStatus;
-  });
-
-  const combinedHistory: HistoryRecord[] = [
-    ...historico.map(r => ({ ...r, type: 'reproduction' as const })),
-    ...kitMortalities.filter(m => {
-      const search = searchTerm.toLowerCase();
-      const matchesSearch =
-        m.rabbitName?.toLowerCase().includes(search) ||
-        m.rabbitCode?.toLowerCase().includes(search);
-      const matchesStatus = filterStatus ? filterStatus === 'baja' : true;
-      return matchesSearch && matchesStatus;
-    }).map(m => {
-      const lastRep = reproductions
-        .filter(r => r.femaleId === m.rabbitId)
-        .sort((a, b) => new Date(b.mountDate).getTime() - new Date(a.mountDate).getTime())[0];
-        
-      return {
-        ...m,
-        type: 'mortality' as const,
-        maleName: lastRep?.maleName,
-        maleCode: lastRep?.maleCode,
-        maleRace: lastRep?.maleRace,
-        profile: {
-          fullName: m.responsible,
-          username: m.profileUsername,
-          email: m.profileEmail
-        }
-      };
-    })
-  ].sort((a, b) => {
-    const dateA = a.type === 'reproduction' ? new Date((a as any).updatedAt || (a as any).mountDate).getTime() : new Date((a as any).deathDate).getTime();
-    const dateB = b.type === 'reproduction' ? new Date((b as any).updatedAt || (b as any).mountDate).getTime() : new Date((b as any).deathDate).getTime();
-    return dateB - dateA;
-  });
+  const combinedHistory = useMemo(() => {
+    const mortalities = getFilteredMortalities(kitMortalities, reproductions, searchTerm, filterStatus);
+    
+    return [
+      ...historico.map((r: Reproduction) => ({ ...r, type: 'reproduction' as const })),
+      ...mortalities
+    ].sort((a, b) => {
+      const dateA = a.type === 'reproduction' ? new Date((a as any).updatedAt || (a as any).mountDate).getTime() : new Date((a as any).deathDate).getTime();
+      const dateB = b.type === 'reproduction' ? new Date((b as any).updatedAt || (b as any).mountDate).getTime() : new Date((b as any).deathDate).getTime();
+      return dateB - dateA;
+    });
+  }, [historico, kitMortalities, reproductions, searchTerm, filterStatus]);
 
   return (
     <div className="space-y-4">

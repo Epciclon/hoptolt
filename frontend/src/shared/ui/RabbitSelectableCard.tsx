@@ -16,28 +16,23 @@ export function RabbitSelectableCard({
   onClick,
   extras,
   children
-}: RabbitSelectableCardProps) {
+}: Readonly<RabbitSelectableCardProps>) {
   const isSelectable = !!onClick;
 
+  const Component = isSelectable ? 'button' : 'div';
+
   return (
-    <div
-      role={isSelectable ? "button" : undefined}
-      tabIndex={isSelectable ? 0 : undefined}
+    <Component
+      type={isSelectable ? "button" : undefined}
       onClick={isSelectable ? onClick : undefined}
-      onKeyDown={(e) => {
-        if (isSelectable && (e.key === 'Enter' || e.key === ' ')) {
-          e.preventDefault();
-          onClick?.();
-        }
-      }}
       className={cn(
-        'border rounded-lg p-3 transition-all duration-150 bg-white',
-        isSelectable ? 'cursor-pointer' : '',
-        isSelected
-          ? 'border-primary-500 ring-1 ring-primary-500 shadow-sm'
-          : isSelectable
-            ? 'border-slate-300 shadow-sm hover:border-primary-400'
-            : 'border-slate-300 shadow-sm'
+        'border rounded-lg p-3 transition-all duration-150 bg-white text-left w-full block',
+        isSelectable && 'cursor-pointer',
+        (() => {
+          if (isSelected) return 'border-primary-500 ring-1 ring-primary-500 shadow-sm';
+          if (isSelectable) return 'border-slate-300 shadow-sm hover:border-primary-400';
+          return 'border-slate-300 shadow-sm';
+        })()
       )}
     >
       <div className="flex justify-between items-start mb-2">
@@ -85,6 +80,6 @@ export function RabbitSelectableCard({
           {children}
         </div>
       )}
-    </div>
+    </Component>
   );
 }

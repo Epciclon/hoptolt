@@ -18,7 +18,7 @@ interface ToastProps {
   onClose: (id: string) => void;
 }
 
-export function ToastItem({ toast, onClose }: ToastProps) {
+export function ToastItem({ toast, onClose }: Readonly<ToastProps>) {
   useEffect(() => {
     const duration = toast.duration || 5000;
     const timer = setTimeout(() => {

@@ -1,5 +1,6 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import { useReproduction } from '../hooks/useReproduction';
 import type { Reproduction } from '../types/reproduction.types';
 import { Button, Dialog, Input, Select, RabbitSelectableCard, CageGroupCard } from '@/shared/ui';
@@ -138,7 +139,7 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
   };
 
   const handleConfirmFinish = async () => {
-    if (!toFinish || !toFinish.id) return;
+    if (!toFinish?.id) return;
     setFinishing(true);
     try {
       await finishLactation(toFinish.id);
@@ -333,12 +334,15 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
                 <div className="grid grid-cols-2 gap-2 text-xs mb-4">
                   <button
                     type="button"
-                    className={`border p-2 rounded relative transition-colors text-left ${
-                      !isExpanded ? 'bg-white/60 border-slate-100' :
-                      hasKits
-                        ? 'bg-white/60 border-slate-100 cursor-pointer hover:bg-emerald-50 group'
-                        : 'bg-white/60 border-slate-100 cursor-pointer hover:bg-slate-50 group'
-                    }`}
+                    className={cn(
+                      'border p-2 rounded relative transition-colors text-left',
+                      (() => {
+                        if (!isExpanded) return 'bg-white/60 border-slate-100';
+                        return hasKits
+                          ? 'bg-white/60 border-slate-100 cursor-pointer hover:bg-emerald-50 group'
+                          : 'bg-white/60 border-slate-100 cursor-pointer hover:bg-slate-50 group';
+                      })()
+                    )}
                     onClick={(e) => { 
                       if (!isExpanded) return;
                       e.stopPropagation();
@@ -392,6 +396,7 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
                     className="mt-4 flex flex-col gap-2 animate-in fade-in slide-in-from-top-1 duration-150"
                     onClick={(e) => e.stopPropagation()}
                     onKeyDown={(e) => e.stopPropagation()}
+                    role="presentation"
                   >
                     <Button
                       type="button"

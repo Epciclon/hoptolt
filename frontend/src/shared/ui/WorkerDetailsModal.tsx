@@ -69,7 +69,7 @@ export function WorkerDetailsModal({
   fetchWorkerById,
   onEdit,
   onDelete,
-}: WorkerDetailsModalProps) {
+}: Readonly<WorkerDetailsModalProps>) {
   const { data: fullWorkerData, isLoading: queryLoading } = useQuery({
     queryKey: ['worker', worker?.id],
     queryFn: () => fetchWorkerById(worker!.id),

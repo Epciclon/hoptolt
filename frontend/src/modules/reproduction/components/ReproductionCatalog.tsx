@@ -301,6 +301,7 @@ export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<Repro
                     className="mt-4 flex flex-col gap-2 animate-in fade-in slide-in-from-top-1 duration-150"
                     onClick={(e) => e.stopPropagation()}
                     onKeyDown={(e) => e.stopPropagation()}
+                    role="presentation"
                   >
                     <Button
                       type="button"

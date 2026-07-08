@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { Dialog, Button, Input } from '@/shared/ui';
 import { RabbitForm } from '@/modules/rabbits/components/RabbitForm';
@@ -24,6 +24,7 @@ export function WeaningWizard({ open, onClose, onFinish, reproduction, finishing
   const [step, setStep] = useState<WizardStep>('ask');
   const [keepCountStr, setKeepCountStr] = useState<string>('1');
   const keepCount = Math.max(1, Number.parseInt(keepCountStr) || 1);
+  const stepKeys = useMemo(() => Array.from({ length: keepCount }, () => crypto.randomUUID()), [keepCount]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const [willKeepKits, setWillKeepKits] = useState<boolean | null>(null);
@@ -214,14 +215,14 @@ export function WeaningWizard({ open, onClose, onFinish, reproduction, finishing
           <div className="flex flex-col gap-4">
             {keepCount > 1 && (
               <div className="flex items-center gap-1.5">
-                {Array.from({ length: keepCount }).map((_, i) => {
+                {stepKeys.map((key, i) => {
                   let colorClass = 'bg-slate-200';
                   if (i < currentIndex) colorClass = 'bg-green-400';
                   else if (i === currentIndex) colorClass = 'bg-primary-500';
                   
                   return (
                     <div
-                      key={`step-${i}`}
+                      key={key}
                       className={`h-2 flex-1 rounded-full transition-colors duration-300 ${colorClass}`}
                     />
                   );

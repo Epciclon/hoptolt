@@ -16,7 +16,7 @@ export function Pagination({
   totalPages,
   onPageChange,
   className
-}: PaginationProps) {
+}: Readonly<PaginationProps>) {
   if (totalPages <= 1) return null;
 
   return (

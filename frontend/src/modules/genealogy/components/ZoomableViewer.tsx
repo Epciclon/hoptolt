@@ -67,7 +67,6 @@ export function ZoomableViewer({ children }: Readonly<ZoomableViewerProps>) {
       <div
         role="application"
         aria-label="Visor arrastrable y ampliable"
-        tabIndex={0}
         className={`w-full h-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`}
         ref={containerRef}
         onMouseDown={handleMouseDown}
