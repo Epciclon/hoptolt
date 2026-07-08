@@ -53,7 +53,7 @@ export function Header() {
 
           {dropdownOpen && (
             <>
-              <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
+              <div role="button" tabIndex={0} aria-label="Cerrar menú" className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setDropdownOpen(false); }} />
               <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-50">
                 <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
                   <p className="text-sm font-semibold text-slate-700">{user?.fullName || 'Usuario'}</p>

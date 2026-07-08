@@ -31,7 +31,15 @@ export function CatalogCard({
 }: CatalogCardProps) {
   return (
     <div
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onClick();
+        }
+      }}
       className={`group flex flex-col border rounded-lg overflow-hidden transition-all duration-200 cursor-pointer ${
         isSelected 
           ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-500 ring-opacity-50' 

@@ -4,7 +4,7 @@
  * seguridad (sin palabras ofensivas).
  */
 
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 
 const prefixes = [
     'Lu', 'Pe', 'Co', 'Mi', 'Bo', 'Ni', 'Pa', 'Ti', 'Ro', 'Pru', 

@@ -78,8 +78,8 @@ class GrowthService {
                             const estimatedWeight = this.calculateEstimatedWeight(rabbit.purpose, months);
                             
                             // Check if weight actually differs to avoid duplicate useless records
-                            if (parseFloat(rabbit.weight) !== estimatedWeight) {
-                                const oldWeight = parseFloat(rabbit.weight);
+                            if (Number.parseFloat(rabbit.weight) !== estimatedWeight) {
+                                const oldWeight = Number.parseFloat(rabbit.weight);
                                 
                                 await Growth.create({
                                     rabbitId: rabbit.id,

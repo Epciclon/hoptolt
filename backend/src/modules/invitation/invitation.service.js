@@ -84,7 +84,7 @@ class InvitationService {
      */
     async getPendingInvitationsForMe(userEmail) {
         try {
-            return invitationRepository.findPendingByEmail(userEmail);
+            return await invitationRepository.findPendingByEmail(userEmail);
         } catch (error) {
             console.error('Error en getPendingInvitationsForMe:', error);
             throw error;

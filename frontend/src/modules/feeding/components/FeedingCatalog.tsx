@@ -74,7 +74,7 @@ export function FeedingCatalog({ onSuccess }: FeedingCatalogProps) {
   };
 
   const currentEcuadorShift = (() => {
-    const hour = parseInt(ecuadorHourFormatter.format(new Date()), 10);
+    const hour = Number.parseInt(ecuadorHourFormatter.format(new Date()), 10);
     return hour < 12 ? 'mañana' : 'tarde';
   })();
   const currentEcuadorDateStr = getEcuadorDateString(new Date());
@@ -295,7 +295,7 @@ export function FeedingCatalog({ onSuccess }: FeedingCatalogProps) {
         </div>
 
         <div className="w-full relative" ref={foodDropdownRef}>
-          <label className="block text-sm font-medium text-slate-600 mb-2">Tipos de Alimento</label>
+          <span className="block text-sm font-medium text-slate-600 mb-2">Tipos de Alimento</span>
           <Input
             placeholder="Busca y selecciona tipos de alimento"
             value={foodSearch}
@@ -424,8 +424,9 @@ export function FeedingCatalog({ onSuccess }: FeedingCatalogProps) {
           Por favor, explica el motivo de la alimentación adicional.
         </p>
         <div className="mb-4">
-          <label className="block text-sm font-medium text-slate-600 mb-2">Justificación</label>
+          <label htmlFor="justificationInput" className="block text-sm font-medium text-slate-600 mb-2">Justificación</label>
           <textarea
+            id="justificationInput"
             value={justification}
             onChange={(e) => setJustification(e.target.value)}
             placeholder="Explica el motivo de la alimentación adicional..."

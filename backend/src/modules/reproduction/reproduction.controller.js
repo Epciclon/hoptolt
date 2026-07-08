@@ -56,8 +56,8 @@ exports.getReproductionByFemaleId = catchAsync(async (req, res) => {
 });
 
 exports.getAllReproductions = catchAsync(async (req, res) => {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const page = Number.parseInt(req.query.page) || 1;
+    const limit = Number.parseInt(req.query.limit) || 10;
     const { startDate, endDate, races, status, profileId, all } = req.query;
 
     const filters = { startDate, endDate, races, status, profileId, all: all === 'true' };
@@ -220,8 +220,8 @@ exports.deleteReproduction = catchAsync(async (req, res) => {
 
 exports.getReproductionCalendar = catchAsync(async (req, res) => {
     const galponId = req.galponId;
-    const year  = parseInt(req.query.year)  || new Date().getFullYear();
-    const month = parseInt(req.query.month) || (new Date().getMonth() + 1); // 1-12
+    const year  = Number.parseInt(req.query.year)  || new Date().getFullYear();
+    const month = Number.parseInt(req.query.month) || (new Date().getMonth() + 1); // 1-12
     const type  = req.query.type || 'births';
 
     // Obtener cageIds del trabajador si no es owner
@@ -347,9 +347,9 @@ exports.getReproductionCalendar = catchAsync(async (req, res) => {
 
 exports.getReproductionByDay = catchAsync(async (req, res) => {
     const galponId = req.galponId;
-    const year  = parseInt(req.query.year)  || new Date().getFullYear();
-    const month = parseInt(req.query.month) || (new Date().getMonth() + 1); // 1-12
-    const day   = parseInt(req.query.day)   || new Date().getDate();
+    const year  = Number.parseInt(req.query.year)  || new Date().getFullYear();
+    const month = Number.parseInt(req.query.month) || (new Date().getMonth() + 1); // 1-12
+    const day   = Number.parseInt(req.query.day)   || new Date().getDate();
 
     let cageIds = null;
     const { FarmMember, Galpon } = require('../../domain/models');

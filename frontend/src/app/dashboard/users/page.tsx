@@ -151,8 +151,11 @@ export default function UsersPage() {
                     workers.map(worker => (
                       <div 
                         key={worker.id} 
+                        role="button"
+                        tabIndex={0}
                         className="p-4 flex justify-between items-center hover:bg-slate-100 cursor-pointer transition-colors group"
                         onClick={() => setWorkerToView(worker)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setWorkerToView(worker); }}
                       >
                         <div>
                           <div className="font-medium text-slate-800">{worker.profile?.fullName}</div>

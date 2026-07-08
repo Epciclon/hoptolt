@@ -80,7 +80,7 @@ class SwaggerAutoGenerator {
     parseModelDefinition(definition, modelName) {
         const fields = {};
 
-        const fieldMatches = definition.matchAll(/(\w+):\s*{[\s\S]*?type:\s*DataTypes\.(\w+)[\s\S]*?}/g);
+        const fieldMatches = definition.matchAll(/(\w+):\s*{[^}]*type:\s*DataTypes\.(\w+)[\s\S]*?}/g);
 
         for (const match of fieldMatches) {
             const [, fieldName, dataType] = match;
@@ -98,10 +98,10 @@ class SwaggerAutoGenerator {
             }
 
             const minMatch = fieldSection.match(/min:\s*(\d+)/);
-            if (minMatch) fields[fieldName].minimum = parseInt(minMatch[1]);
+            if (minMatch) fields[fieldName].minimum = Number.parseInt(minMatch[1]);
 
             const maxMatch = fieldSection.match(/max:\s*(\d+)/);
-            if (maxMatch) fields[fieldName].maximum = parseInt(maxMatch[1]);
+            if (maxMatch) fields[fieldName].maximum = Number.parseInt(maxMatch[1]);
 
             const allowNullMatch = fieldSection.match(/allowNull:\s*(false|true)/);
             if (allowNullMatch && allowNullMatch[1] === 'false') {

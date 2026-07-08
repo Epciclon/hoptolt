@@ -9,7 +9,7 @@ import type { Rabbit } from '@/modules/rabbits/types/rabbit.types';
 
 export default function RabbitEditPage() {
   const { id } = useParams<{ id: string }>();
-  const rabbitId = parseInt(id);
+  const rabbitId = Number.parseInt(id);
   const [rabbit, setRabbit] = useState<Rabbit | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

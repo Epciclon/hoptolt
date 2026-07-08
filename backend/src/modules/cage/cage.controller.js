@@ -13,8 +13,8 @@ exports.getCage = catchAsync(async (req, res) => {
 });
 
 exports.getAllCages = catchAsync(async (req, res) => {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const page = Number.parseInt(req.query.page) || 1;
+    const limit = Number.parseInt(req.query.limit) || 10;
     const filters = {
         search: req.query.search,
         type: req.query.type,

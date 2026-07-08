@@ -33,8 +33,8 @@ exports.getGenealogyTree = catchAsync(async (req, res) => {
 });
 
 exports.checkConsanguinity = catchAsync(async (req, res) => {
-    const id1 = parseInt(req.params.id1, 10);
-    const id2 = parseInt(req.params.id2, 10);
+    const id1 = Number.parseInt(req.params.id1, 10);
+    const id2 = Number.parseInt(req.params.id2, 10);
     const areRelated = await genealogyService.checkConsanguinity(id1, id2);
     res.status(200).json({ success: true, areRelated });
 });

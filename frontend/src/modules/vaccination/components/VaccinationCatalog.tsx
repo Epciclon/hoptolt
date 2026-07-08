@@ -162,7 +162,7 @@ export function VaccinationCatalog({ onSuccess }: VaccinationCatalogProps) {
 
 
       <div>
-        <label className="block text-sm font-medium mb-2">Vacunas</label>
+        <span className="block text-sm font-medium mb-2">Vacunas</span>
         <div className="relative" ref={vaccineDropdownRef}>
           <Input
             placeholder="Busca o selecciona vacunas..."

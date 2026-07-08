@@ -8,8 +8,8 @@ exports.registerCleaning = catchAsync(async (req, res) => {
 });
 
 exports.getCleanings = catchAsync(async (req, res) => {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const page = Number.parseInt(req.query.page) || 1;
+    const limit = Number.parseInt(req.query.limit) || 10;
     const { startDate, endDate, profileId, cageType, all } = req.query;
     
     const filters = { startDate, endDate, responsibleId: profileId, cageType, all: all === 'true' };

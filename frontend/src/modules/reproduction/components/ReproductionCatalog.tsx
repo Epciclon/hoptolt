@@ -119,7 +119,7 @@ export function ReproductionCatalog({ reproductions, onSuccess }: ReproductionCa
   const isBirthDateReached = (dateString: string) => {
       const parts = dateString.split('-');
       if (parts.length !== 3) return false;
-      const birthDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      const birthDate = new Date(Number.parseInt(parts[0]), Number.parseInt(parts[1]) - 1, Number.parseInt(parts[2]));
       
       const ecuadorDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
       ecuadorDate.setHours(0, 0, 0, 0);
@@ -131,7 +131,7 @@ export function ReproductionCatalog({ reproductions, onSuccess }: ReproductionCa
   const getDaysInGestation = (estimatedBirthDate: string) => {
     const parts = estimatedBirthDate.split('-');
     if (parts.length !== 3) return { days: 0, daysLeft: 0 };
-    const birthDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    const birthDate = new Date(Number.parseInt(parts[0]), Number.parseInt(parts[1]) - 1, Number.parseInt(parts[2]));
     const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
     today.setHours(0, 0, 0, 0);
     birthDate.setHours(0, 0, 0, 0);
@@ -260,6 +260,8 @@ export function ReproductionCatalog({ reproductions, onSuccess }: ReproductionCa
                     <p className="font-medium text-slate-700">{formatDateTime(reproduction.mountDate)}</p>
                   </div>
                   <div 
+                    role="button"
+                    tabIndex={0}
                     className={`bg-slate-50/50 border border-slate-100 p-2 rounded flex justify-between items-center ${
                       isExpanded 
                         ? 'cursor-pointer hover:bg-primary-50 hover:border-primary-200 transition-colors group' 
@@ -271,6 +273,15 @@ export function ReproductionCatalog({ reproductions, onSuccess }: ReproductionCa
                       setEditingReproduction(reproduction);
                       setShowEditModal(true);
                     }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        if (!isExpanded) return;
+                        e.stopPropagation();
+                        setEditingReproduction(reproduction);
+                        setShowEditModal(true);
+                      }
+                    }}
+
                     title={isExpanded ? "Clic para editar fechas" : ""}
                   >
                     <div className="flex items-center gap-1.5">
@@ -303,8 +314,10 @@ export function ReproductionCatalog({ reproductions, onSuccess }: ReproductionCa
 
                 {isExpanded && (
                   <div 
+                    role="presentation"
                     className="mt-4 flex flex-col gap-2 animate-in fade-in slide-in-from-top-1 duration-150"
                     onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
                   >
                     <Button
                       type="button"
@@ -375,8 +388,9 @@ export function ReproductionCatalog({ reproductions, onSuccess }: ReproductionCa
 
             {cancelReason === 'otro' && (
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Especifique el problema</label>
+                <label htmlFor="cancelReasonInput" className="block text-sm font-medium text-slate-700 mb-1">Especifique el problema</label>
                 <input
+                  id="cancelReasonInput"
                   type="text"
                   required
                   value={cancelReasonOther}

@@ -63,7 +63,7 @@ export function DewormingForm({ onSuccess, onCancel }: DewormingFormProps) {
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
 
       <div>
-        <label className="block text-sm font-medium text-slate-600 mb-2">Conejos</label>
+        <span className="block text-sm font-medium text-slate-600 mb-2">Conejos</span>
         <div className="flex gap-2 mb-2">
           <Input
             placeholder="Código del conejo (ej: R001)"

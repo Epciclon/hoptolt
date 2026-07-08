@@ -107,7 +107,7 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
           name: values.name,
           sex: values.sex,
           birthDate: values.birthDate,
-          weight: parseFloat(String(values.weight)),
+          weight: Number.parseFloat(String(values.weight)),
           purpose: values.purpose,
           imageUrl: imageUrl || undefined,
         };
@@ -176,13 +176,13 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
       {mode === 'edit' ? (
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1">Código</label>
+            <span className="block text-sm font-medium text-slate-600 mb-1">Código</span>
             <div className="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-semibold">
               {defaultValues?.code}
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1">Raza</label>
+            <span className="block text-sm font-medium text-slate-600 mb-1">Raza</span>
             <div className="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700">
               {defaultValues?.race}
             </div>
@@ -266,7 +266,7 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
       />
 
       <div className="border-t border-slate-100 pt-3 mt-1">
-        <label className="block text-sm font-medium text-slate-600 mb-2">Fotografía del conejo</label>
+        <span className="block text-sm font-medium text-slate-600 mb-2">Fotografía del conejo</span>
         {imageUrl ? (
           <div className="mb-2 relative w-full h-32 bg-slate-50 border border-slate-200 rounded-lg overflow-hidden">
             <Image

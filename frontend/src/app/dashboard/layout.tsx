@@ -94,7 +94,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Overlay / Backdrop on mobile when sidebar is open */}
           {!sidebarCollapsed && (
             <div 
+              role="button"
+              tabIndex={0}
               onClick={toggleSidebar} 
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleSidebar(); }}
+              aria-label="Cerrar menú lateral"
               className="fixed inset-0 bg-black/40 z-30 lg:hidden transition-opacity duration-300"
             />
           )}

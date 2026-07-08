@@ -93,7 +93,7 @@ export function CageForm({ defaultValues, cageId, mode, onSuccess, onCancel }: C
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
       {mode === 'edit' ? (
         <div>
-          <label className="block text-sm font-medium text-slate-600 mb-1">Número de Jaula</label>
+          <span className="block text-sm font-medium text-slate-600 mb-1">Número de Jaula</span>
           <div className="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-semibold text-base">
             #{defaultValues?.number}
           </div>

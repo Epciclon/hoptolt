@@ -8,8 +8,8 @@ exports.registerMortality = catchAsync(async (req, res) => {
 });
 
 exports.getMortalities = catchAsync(async (req, res) => {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const page = Number.parseInt(req.query.page) || 1;
+    const limit = Number.parseInt(req.query.limit) || 10;
     const isKits = req.query.isKits !== undefined ? req.query.isKits === 'true' : null;
     const { startDate, endDate, races, causes, profileId, all } = req.query;
 

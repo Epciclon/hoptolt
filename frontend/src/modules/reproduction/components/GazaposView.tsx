@@ -102,7 +102,7 @@ export function GazaposView({ reproductions, onSuccess }: GazaposViewProps) {
     const parts = birthDateString.split('-');
     if (parts.length !== 3) return 0;
     
-    const birthDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    const birthDate = new Date(Number.parseInt(parts[0]), Number.parseInt(parts[1]) - 1, Number.parseInt(parts[2]));
     const ecuadorDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
     
     ecuadorDate.setHours(0, 0, 0, 0);
@@ -332,6 +332,8 @@ export function GazaposView({ reproductions, onSuccess }: GazaposViewProps) {
               >
                 <div className="grid grid-cols-2 gap-2 text-xs mb-4">
                   <div 
+                    role="button"
+                    tabIndex={0}
                     className={`border p-2 rounded relative transition-colors ${
                       isExpanded 
                         ? hasKits
@@ -347,6 +349,18 @@ export function GazaposView({ reproductions, onSuccess }: GazaposViewProps) {
                       } else {
                         setToRegisterKits(reproduction);
                         setBornKits('');
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        if (!isExpanded) return;
+                        e.stopPropagation();
+                        if (hasKits) {
+                          setToRegisterMortality(reproduction);
+                        } else {
+                          setToRegisterKits(reproduction);
+                          setBornKits('');
+                        }
                       }
                     }}
                     title={hasKits ? (isExpanded ? 'Clic para registrar una baja de gazapos' : '') : (isExpanded ? 'Toca para registrar la cantidad de gazapos nacidos' : '')}
@@ -386,8 +400,10 @@ export function GazaposView({ reproductions, onSuccess }: GazaposViewProps) {
 
                 {isExpanded && (
                   <div 
+                    role="presentation"
                     className="mt-4 flex flex-col gap-2 animate-in fade-in slide-in-from-top-1 duration-150"
                     onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
                   >
                     <Button
                       type="button"
@@ -557,10 +573,11 @@ export function GazaposView({ reproductions, onSuccess }: GazaposViewProps) {
           </div>
 
           <div className="relative flex flex-col gap-1.5" ref={mortalityCauseDropdownRef}>
-            <label className="text-sm font-medium text-slate-700">
+            <label htmlFor="mortalityCauseInput" className="text-sm font-medium text-slate-700">
               Causa <span className="text-red-500">*</span>
             </label>
             <Input
+              id="mortalityCauseInput"
               placeholder="Escribe para buscar o selecciona..."
               value={mortalityCauseSearch}
               onChange={(e) => {
@@ -601,10 +618,11 @@ export function GazaposView({ reproductions, onSuccess }: GazaposViewProps) {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-slate-700">
+            <label htmlFor="mortalityObsInput" className="text-sm font-medium text-slate-700">
               Observaciones (¿Qué pasó?) <span className="text-red-500">*</span>
             </label>
             <textarea
+              id="mortalityObsInput"
               className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500"
               rows={3}
               value={mortalityObs}

@@ -64,6 +64,7 @@ export function ZoomableViewer({ children }: ZoomableViewerProps) {
 
       {/* Visor interactivo */}
       <div 
+        role="presentation"
         className={`w-full h-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
         ref={containerRef}
         onMouseDown={handleMouseDown}

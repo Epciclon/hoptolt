@@ -125,7 +125,7 @@ export default function RegisterPage() {
               {/* Nombre completo + Username */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Nombre Completo</label>
+                  <label htmlFor="fullName" className="block text-sm font-semibold text-slate-700 mb-2">Nombre Completo</label>
                   <input
                     {...register('fullName')}
                     id="fullName"
@@ -137,7 +137,7 @@ export default function RegisterPage() {
                   {errors.fullName && <p className="text-red-500 text-sm mt-1">{errors.fullName.message}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Nombre de Usuario</label>
+                  <label htmlFor="username" className="block text-sm font-semibold text-slate-700 mb-2">Nombre de Usuario</label>
                   <input
                     {...register('username')}
                     id="username"
@@ -152,7 +152,7 @@ export default function RegisterPage() {
 
               {/* Email */}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Correo Electrónico</label>
+                <label htmlFor="email" className="block text-sm font-semibold text-slate-700 mb-2">Correo Electrónico</label>
                 <input
                   {...register('email')}
                   id="email"
@@ -168,7 +168,7 @@ export default function RegisterPage() {
               {/* Contraseña + Confirmación */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Contraseña</label>
+                  <label htmlFor="password" className="block text-sm font-semibold text-slate-700 mb-2">Contraseña</label>
                   <div className="relative">
                     <input
                       {...register('password')}
@@ -190,7 +190,7 @@ export default function RegisterPage() {
                   {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Confirmar Contraseña</label>
+                  <label htmlFor="confirmPassword" className="block text-sm font-semibold text-slate-700 mb-2">Confirmar Contraseña</label>
                   <div className="relative">
                     <input
                       {...register('confirmPassword')}

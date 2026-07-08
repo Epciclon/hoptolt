@@ -18,11 +18,11 @@ class RabbitService {
         let prefix = '';
         if (existingRabbits && existingRabbits.length > 0) {
             // Reutilizar el prefijo de la misma raza
-            prefix = existingRabbits[0].code.replace(/[0-9]+$/, '').toUpperCase();
+            prefix = existingRabbits[0].code.replace(/\d+$/, '').toUpperCase();
         } else {
             // Generar nuevo prefijo verificando colisiones en el galpón
             const allRabbits = await rabbitRepository.findByGalpon(galponId, { attributes: ['code'] });
-            const takenPrefixes = new Set(allRabbits.map(r => r.code.replace(/[0-9]+$/, '').toUpperCase()));
+            const takenPrefixes = new Set(allRabbits.map(r => r.code.replace(/\d+$/, '').toUpperCase()));
             
             const words = raceName.trim().split(/\s+/);
             if (words.length > 1) {
@@ -167,8 +167,8 @@ class RabbitService {
             data.age = this.calculateAge(data.birthDate);
         }
 
-        const oldWeight = parseFloat(rabbit.weight);
-        const newWeight = data.weight !== undefined ? parseFloat(data.weight) : oldWeight;
+        const oldWeight = Number.parseFloat(rabbit.weight);
+        const newWeight = data.weight !== undefined ? Number.parseFloat(data.weight) : oldWeight;
 
         const updatedRabbit = await rabbitRepository.update(rabbit, data);
 

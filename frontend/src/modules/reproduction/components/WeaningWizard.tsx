@@ -23,7 +23,7 @@ export function WeaningWizard({ open, onClose, onFinish, reproduction, finishing
   const { showToast } = useToast();
   const [step, setStep] = useState<WizardStep>('ask');
   const [keepCountStr, setKeepCountStr] = useState<string>('1');
-  const keepCount = Math.max(1, parseInt(keepCountStr) || 1);
+  const keepCount = Math.max(1, Number.parseInt(keepCountStr) || 1);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [linkingGenealogy, setLinkingGenealogy] = useState(false);
   const [willKeepKits, setWillKeepKits] = useState<boolean | null>(null);
@@ -177,8 +177,8 @@ export function WeaningWizard({ open, onClose, onFinish, reproduction, finishing
                     setKeepCountStr('');
                     return;
                   }
-                  const num = parseInt(val);
-                  if (!isNaN(num)) {
+                  const num = Number.parseInt(val);
+                  if (!Number.isNaN(num) && num >= 1) {
                     const maxAllowed = reproduction.bornKits || 20;
                     if (num > maxAllowed) {
                       setKeepCountStr(maxAllowed.toString());

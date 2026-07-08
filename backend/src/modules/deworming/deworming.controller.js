@@ -9,8 +9,8 @@ exports.registerDeworming = catchAsync(async (req, res) => {
 });
 
 exports.getDewormings = catchAsync(async (req, res) => {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const page = Number.parseInt(req.query.page) || 1;
+    const limit = Number.parseInt(req.query.limit) || 10;
     const { startDate, endDate, races, profileId, all } = req.query;
     
     const filters = { startDate, endDate, races, profileId, all: all === 'true' };

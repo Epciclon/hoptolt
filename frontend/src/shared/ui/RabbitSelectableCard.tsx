@@ -21,7 +21,15 @@ export function RabbitSelectableCard({
 
   return (
     <div
+      role={isSelectable ? "button" : undefined}
+      tabIndex={isSelectable ? 0 : undefined}
       onClick={isSelectable ? onClick : undefined}
+      onKeyDown={(e) => {
+        if (isSelectable && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
       className={cn(
         'border rounded-lg p-3 transition-all duration-150 bg-white',
         isSelectable ? 'cursor-pointer' : '',

@@ -116,7 +116,7 @@ export default function LoginPage() {
 
               {/* Usuario o Email */}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                <label htmlFor="identifier" className="block text-sm font-semibold text-slate-700 mb-2">
                   Usuario o Correo Electrónico
                 </label>
                 <input
@@ -137,7 +137,7 @@ export default function LoginPage() {
 
               {/* Contraseña */}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Contraseña</label>
+                <label htmlFor="password" className="block text-sm font-semibold text-slate-700 mb-2">Contraseña</label>
                 <div className="relative">
                   <input
                     {...register('password')}

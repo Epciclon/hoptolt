@@ -183,10 +183,11 @@ export function MortalityForm({ selectedRabbits, onSuccess, onCancel }: Mortalit
 
         {/* Selector de Causa Search & Select */}
         <div className="relative flex flex-col gap-1.5" ref={causeDropdownRef}>
-          <label className="text-sm font-medium text-slate-700">
+          <label htmlFor="causeInput" className="text-sm font-medium text-slate-700">
             Causa <span className="text-red-500">*</span>
           </label>
           <Input
+            id="causeInput"
             placeholder="Escribe para buscar o selecciona..."
             value={causeSearch}
             onChange={(e) => {
@@ -229,10 +230,11 @@ export function MortalityForm({ selectedRabbits, onSuccess, onCancel }: Mortalit
 
       {/* Observaciones obligatorias */}
       <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-slate-700">
+        <label htmlFor="observationsInput" className="text-sm font-medium text-slate-700">
           Observaciones (¿Qué pasó?) <span className="text-red-500">*</span>
         </label>
         <textarea
+          id="observationsInput"
           className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500"
           rows={3}
           value={observations}

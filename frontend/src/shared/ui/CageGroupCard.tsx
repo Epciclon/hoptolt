@@ -24,7 +24,15 @@ export function CageGroupCard({
 
   return (
     <div
+      role={isSelectable ? "button" : undefined}
+      tabIndex={isSelectable ? 0 : undefined}
       onClick={isSelectable ? onCageClick : undefined}
+      onKeyDown={(e) => {
+        if (isSelectable && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onCageClick?.();
+        }
+      }}
       className={cn(
         'border shadow-sm rounded-xl p-4 transition-all duration-150 flex flex-col',
         isSelectable ? 'cursor-pointer' : '',

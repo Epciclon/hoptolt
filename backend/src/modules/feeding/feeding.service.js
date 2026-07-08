@@ -21,7 +21,7 @@ class FeedingService {
             hour: 'numeric',
             hour12: false
         });
-        const currentHourEcuador = parseInt(formatter.format(now), 10);
+        const currentHourEcuador = Number.parseInt(formatter.format(now), 10);
         
         // Si no mandan turno explícito, deducirlo de la hora de Ecuador
         let finalShift = shift;

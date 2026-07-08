@@ -132,7 +132,7 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
 
   const addCustomVaccine = () => {
     if (customVaccine.trim() && customVaccinePeriod && !selectedVaccines.some(v => v.name === customVaccine.trim())) {
-      const newVaccines = [...selectedVaccines, { name: customVaccine.trim(), period: parseInt(customVaccinePeriod) }];
+      const newVaccines = [...selectedVaccines, { name: customVaccine.trim(), period: Number.parseInt(customVaccinePeriod) }];
       setSelectedVaccines(newVaccines);
       setValue('vaccines', newVaccines);
       setCustomVaccine('');
@@ -196,7 +196,7 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
       />
 
       <div>
-        <label className="block text-sm font-medium text-slate-600 mb-2">Provincia *</label>
+        <span className="block text-sm font-medium text-slate-600 mb-2">Provincia *</span>
         <div className="relative">
           <Input
             placeholder="Buscar provincia..."
@@ -240,7 +240,7 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
       />
 
       <div>
-        <label className="block text-sm font-medium text-slate-600 mb-2">Tipos de Alimento *</label>
+        <span className="block text-sm font-medium text-slate-600 mb-2">Tipos de Alimento *</span>
         <div className="relative mb-2">
           <Input
             placeholder="Buscar tipo de alimento..."
@@ -307,7 +307,7 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-600 mb-2">Vacunas *</label>
+        <span className="block text-sm font-medium text-slate-600 mb-2">Vacunas *</span>
         <div className="relative mb-2">
           <Input
             placeholder="Buscar vacuna..."

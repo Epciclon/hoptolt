@@ -180,13 +180,28 @@ export function NotificationIcon() {
 
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          <div 
+            role="button"
+            tabIndex={0}
+            className="fixed inset-0 z-40" 
+            onClick={() => setIsOpen(false)} 
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsOpen(false); }}
+            aria-label="Cerrar notificaciones"
+          />
           <div className="fixed sm:absolute top-16 sm:top-full left-4 right-4 sm:left-auto sm:right-0 mt-2 w-auto sm:w-96 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-50">
             <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
               <h3 
+                 role="button"
+                 tabIndex={0}
                  onClick={() => {
                    router.push('/dashboard/notifications');
                    setIsOpen(false);
+                 }}
+                 onKeyDown={(e) => {
+                   if (e.key === 'Enter' || e.key === ' ') {
+                     router.push('/dashboard/notifications');
+                     setIsOpen(false);
+                   }
                  }}
                  className="font-semibold text-slate-700 cursor-pointer hover:text-primary-600 transition-colors"
                >
@@ -214,11 +229,14 @@ export function NotificationIcon() {
                   {displayedNotifications.map((notification) => (
                     <div
                       key={notification.id}
+                      role="button"
+                      tabIndex={0}
                       className={cn(
-                        'p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors',
+                        'p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer',
                         !notification.read && 'bg-blue-50/50'
                       )}
                       onClick={() => handleNotificationClick(notification)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleNotificationClick(notification); }}
                     >
                       <div className="flex items-start gap-3">
                         <div className={cn('w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold', getTypeColor(notification.type))}>

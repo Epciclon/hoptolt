@@ -20,8 +20,8 @@ exports.getGalponByName = catchAsync(async (req, res) => {
 });
 
 exports.getAllGalpones = catchAsync(async (req, res) => {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const page = Number.parseInt(req.query.page) || 1;
+    const limit = Number.parseInt(req.query.limit) || 10;
     const result = await galponService.getAllGalpones(req.user.id, page, limit);
     // Cada item ya tiene memberRole adjunto
     res.status(200).json({
@@ -52,7 +52,7 @@ exports.setActiveGalpon = catchAsync(async (req, res) => {
 });
 
 exports.getGalponStats = catchAsync(async (req, res) => {
-    const galponId = parseInt(req.params.id);
+    const galponId = Number.parseInt(req.params.id);
     const galpon = await Galpon.findByPk(galponId);
     if (!galpon) throw new AppError('Galpón no encontrado', 404);
 

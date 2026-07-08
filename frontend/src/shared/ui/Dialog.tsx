@@ -51,8 +51,12 @@ export function Dialog({ open, onClose, title, description, children, size = 'md
       role="dialog"
     >
       <div
+        role="button"
+        tabIndex={0}
+        aria-label="Cerrar diálogo"
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClose(); }}
       />
       <div
         className={cn(

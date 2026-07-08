@@ -13,8 +13,8 @@ exports.getRabbit = catchAsync(async (req, res) => {
 });
 
 exports.getAllRabbits = catchAsync(async (req, res) => {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 12;
+    const page = Number.parseInt(req.query.page) || 1;
+    const limit = Number.parseInt(req.query.limit) || 12;
     const filters = {
         search: req.query.search,
         race: req.query.race,

@@ -5,8 +5,8 @@
  * @returns {object} Objeto con offset y límite para Sequelize
  */
 function getPaginationParams(page = 1, limit = 10) {
-    const parsedPage = parseInt(page) || 1;
-    const parsedLimit = parseInt(limit) || 10;
+    const parsedPage = Number.parseInt(page) || 1;
+    const parsedLimit = Number.parseInt(limit) || 10;
     const offset = (parsedPage - 1) * parsedLimit;
     
     return {

@@ -571,7 +571,10 @@ export function ReportGenerator({ galponId, galpon, onToast }: ReportGeneratorPr
                                             {selectedRaces.map(race => (
                                                 <div
                                                     key={race}
+                                                    role="button"
+                                                    tabIndex={0}
                                                     onClick={() => setSelectedRaces(selectedRaces.filter(r => r !== race))}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedRaces(selectedRaces.filter(r => r !== race)); }}
                                                     className="cursor-pointer"
                                                 >
                                                     <Badge
@@ -611,7 +614,10 @@ export function ReportGenerator({ galponId, galpon, onToast }: ReportGeneratorPr
                                             {selectedCageTypes.map(type => (
                                                 <div
                                                     key={type}
+                                                    role="button"
+                                                    tabIndex={0}
                                                     onClick={() => setSelectedCageTypes(selectedCageTypes.filter(t => t !== type))}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedCageTypes(selectedCageTypes.filter(t => t !== type)); }}
                                                     className="cursor-pointer"
                                                 >
                                                     <Badge
@@ -656,7 +662,10 @@ export function ReportGenerator({ galponId, galpon, onToast }: ReportGeneratorPr
                                             return (
                                                 <div
                                                     key={profileId}
+                                                    role="button"
+                                                    tabIndex={0}
                                                     onClick={() => setSelectedProfileIds(selectedProfileIds.filter(id => id !== profileId))}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedProfileIds(selectedProfileIds.filter(id => id !== profileId)); }}
                                                     className="cursor-pointer"
                                                 >
                                                     <Badge
@@ -710,7 +719,10 @@ export function ReportGenerator({ galponId, galpon, onToast }: ReportGeneratorPr
                                                 return (
                                                     <div
                                                         key={st}
+                                                        role="button"
+                                                        tabIndex={0}
                                                         onClick={() => setSelectedStatuses(selectedStatuses.filter(s => s !== st))}
+                                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedStatuses(selectedStatuses.filter(s => s !== st)); }}
                                                         className="cursor-pointer"
                                                     >
                                                         <Badge

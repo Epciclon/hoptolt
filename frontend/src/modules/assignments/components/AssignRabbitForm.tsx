@@ -171,9 +171,10 @@ export function AssignRabbitForm({ onSuccess, onCancel }: AssignRabbitFormProps)
 
       <div className="grid grid-cols-2 gap-6">
         <div>
-          <label className="block text-sm font-medium mb-2 text-slate-700">Jaula de destino <span className="text-red-500">*</span></label>
+          <label htmlFor="cageSelect" className="block text-sm font-medium mb-2 text-slate-700">Jaula de destino <span className="text-red-500">*</span></label>
           <div className="relative" ref={cageDropdownRef}>
             <Input
+              id="cageSelect"
               placeholder="Busca por número o tipo de jaula"
               value={cageSearch}
               onChange={(e) => {
@@ -222,9 +223,10 @@ export function AssignRabbitForm({ onSuccess, onCancel }: AssignRabbitFormProps)
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2 text-slate-700">Conejos a asignar <span className="text-red-500">*</span></label>
+          <label htmlFor="rabbitSelect" className="block text-sm font-medium mb-2 text-slate-700">Conejos a asignar <span className="text-red-500">*</span></label>
           <div className="relative" ref={rabbitDropdownRef}>
             <Input
+              id="rabbitSelect"
               placeholder="Busca por código o nombre"
               value={rabbitSearch}
               onChange={(e) => {

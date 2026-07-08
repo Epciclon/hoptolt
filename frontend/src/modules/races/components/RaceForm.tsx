@@ -104,7 +104,7 @@ export function RaceForm({ mode, defaultValues, raceId, onSuccess, onCancel }: R
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
       {mode === 'edit' ? (
         <div>
-          <label className="block text-sm font-medium text-slate-600 mb-1">Nombre de la raza</label>
+          <span className="block text-sm font-medium text-slate-600 mb-1">Nombre de la raza</span>
           <div className="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-semibold text-base">
             {defaultValues?.name}
           </div>
@@ -128,7 +128,7 @@ export function RaceForm({ mode, defaultValues, raceId, onSuccess, onCancel }: R
       />
 
       <div>
-        <label className="block text-sm font-medium text-slate-600 mb-2">Imagen de la raza</label>
+        <span className="block text-sm font-medium text-slate-600 mb-2">Imagen de la raza</span>
         {imageUrl ? (
           <div className="mb-3 relative w-full h-64">
             <Image

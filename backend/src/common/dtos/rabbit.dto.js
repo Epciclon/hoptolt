@@ -6,7 +6,7 @@ const toRabbitDTO = (rabbit) => ({
     sex: rabbit.sex,
     birthDate: rabbit.birthDate,
     age: rabbit.age,
-    weight: parseFloat(rabbit.weight),
+    weight: Number.parseFloat(rabbit.weight),
     purpose: rabbit.purpose,
     imageUrl: rabbit.imageUrl
 });

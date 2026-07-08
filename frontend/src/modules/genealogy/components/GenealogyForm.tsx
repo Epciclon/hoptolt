@@ -310,7 +310,7 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: GenealogyFormPr
         </p>
 
         <div>
-          <label className="block text-sm font-medium text-slate-600 mb-2">Conejo *</label>
+          <span className="block text-sm font-medium text-slate-600 mb-2">Conejo *</span>
           {selectedRabbit ? (
             <RabbitSelectableCard 
               rabbit={selectedRabbit} 
@@ -343,7 +343,7 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: GenealogyFormPr
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-600 mb-2">Padre</label>
+          <span className="block text-sm font-medium text-slate-600 mb-2">Padre</span>
           {selectedFather ? (
             <RabbitSelectableCard 
               rabbit={selectedFather} 
@@ -375,7 +375,7 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: GenealogyFormPr
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-600 mb-2">Madre</label>
+          <span className="block text-sm font-medium text-slate-600 mb-2">Madre</span>
           {selectedMother ? (
             <RabbitSelectableCard 
               rabbit={selectedMother} 

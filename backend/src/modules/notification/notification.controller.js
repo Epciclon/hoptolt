@@ -25,8 +25,8 @@ class NotificationController {
         const notifications = await notificationService.getNotificationsByProfile(
             req.user.id,
             {
-                limit: parseInt(limit),
-                offset: parseInt(offset),
+                limit: Number.parseInt(limit),
+                offset: Number.parseInt(offset),
                 unreadOnly: unreadOnly === 'true'
             }
         );

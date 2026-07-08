@@ -414,8 +414,11 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: EditWorkerMod
                 return (
                   <div key={moduleName} className="border border-slate-200 rounded-lg overflow-hidden">
                     <div 
+                      role="button"
+                      tabIndex={0}
                       className="flex justify-between items-center p-3 bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors"
                       onClick={() => handleEditPermission(moduleName, permissionName)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleEditPermission(moduleName, permissionName); }}
                     >
                       <div>
                         <span className="font-medium text-slate-700">{permissionName}</span>
