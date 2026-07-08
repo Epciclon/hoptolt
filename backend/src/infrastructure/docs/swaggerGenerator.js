@@ -80,30 +80,33 @@ class SwaggerAutoGenerator {
     parseModelDefinition(definition, modelName) {
         const fields = {};
 
-        const fieldMatches = definition.matchAll(/(\w+):\s*\{[^}]*type:\s*DataTypes\.(\w+)[^}]*\}/g);
+        const blockMatches = definition.matchAll(/(\w+):\s*\{([^}]*)\}/g);
 
-        for (const match of fieldMatches) {
-            const [, fieldName, dataType] = match;
+        for (const match of blockMatches) {
+            const fieldName = match[1];
+            const blockContent = match[2];
+            
+            const typeMatch = blockContent.match(/type:\s*DataTypes\.(\w+)/);
+            if (!typeMatch) continue;
+
+            const dataType = typeMatch[1];
             fields[fieldName] = {
                 type: this.mapDataTypeToSwagger(dataType),
                 description: this.generateFieldDescription(fieldName, modelName)
             };
 
-            const fieldSection = match[0];
-
-            const enumMatch = fieldSection.match(/values:\s*\[([^\]]+)\]/);
+            const enumMatch = blockContent.match(/values:\s*\[([^\]]+)\]/);
             if (enumMatch) {
-                const enumValues = enumMatch[1].split(',').map(v => v.trim().replace(/['"]/g, ''));
-                fields[fieldName].enum = enumValues;
+                fields[fieldName].enum = enumMatch[1].split(',').map(v => v.replace(/['"\s]/g, ''));
             }
 
-            const minMatch = fieldSection.match(/min:\s*(\d+)/);
+            const minMatch = blockContent.match(/min:\s*(\d+)/);
             if (minMatch) fields[fieldName].minimum = Number.parseInt(minMatch[1]);
 
-            const maxMatch = fieldSection.match(/max:\s*(\d+)/);
+            const maxMatch = blockContent.match(/max:\s*(\d+)/);
             if (maxMatch) fields[fieldName].maximum = Number.parseInt(maxMatch[1]);
 
-            const allowNullMatch = fieldSection.match(/allowNull:\s*(false|true)/);
+            const allowNullMatch = blockContent.match(/allowNull:\s*(false|true)/);
             if (allowNullMatch && allowNullMatch[1] === 'false') {
                 fields[fieldName].required = true;
             }
