@@ -1,6 +1,6 @@
-const { Deworming, Rabbit } = require('../../domain/models');
+const { Deworming } = require('../../domain/models');
 const { Op } = require('sequelize');
-const { buildCommonFilters } = require('../../common/helpers/repository.helper');
+const { buildCommonFilters, buildRabbitProfileIncludes, buildRabbitCountInclude } = require('../../common/helpers/repository.helper');
 
 class DewormingRepository {
     async findByGalponId(galponId, options = {}, filters = {}) {
@@ -9,26 +9,7 @@ class DewormingRepository {
 
         return Deworming.findAll({
             where: whereClause,
-            include: [
-                { 
-                    model: Rabbit, 
-                    as: 'rabbit',
-                    where: Object.keys(rabbitWhere).length > 0 ? rabbitWhere : undefined,
-                    required: true,
-                    include: [{
-                        model: require('../../domain/models').Assignment,
-                        as: 'assignments',
-                        where: { status: 'asignado' },
-                        required: true,
-                        include: [{
-                            model: require('../../domain/models').Cage,
-                            as: 'cage',
-                            attributes: ['id', 'number']
-                        }]
-                    }]
-                },
-                { model: require('../../domain/models').Profile, as: 'profile', attributes: ['username', 'fullName', 'email'] }
-            ],
+            include: buildRabbitProfileIncludes(rabbitWhere),
             order: [['dewormingDate', 'DESC']],
             ...options
         });
@@ -41,12 +22,7 @@ class DewormingRepository {
         if (filters.races) {
             return Deworming.count({
                 where: whereClause,
-                include: [{
-                    model: Rabbit,
-                    as: 'rabbit',
-                    where: rabbitWhere,
-                    required: true
-                }]
+                include: buildRabbitCountInclude(rabbitWhere)
             });
         }
 

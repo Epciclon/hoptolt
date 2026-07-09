@@ -1,41 +1,79 @@
 const { Op } = require('sequelize');
 
+const parseArrayFilter = (filterValue) => {
+    if (!filterValue) return null;
+    return Array.isArray(filterValue) ? filterValue : filterValue.split(',');
+};
+
+const applyDateFilter = (whereClause, filters, dateFieldName) => {
+    if (!dateFieldName) return;
+    
+    if (filters.startDate && filters.endDate) {
+        whereClause[dateFieldName] = { [Op.between]: [new Date(filters.startDate), new Date(filters.endDate)] };
+    } else if (filters.startDate) {
+        whereClause[dateFieldName] = { [Op.gte]: new Date(filters.startDate) };
+    } else if (filters.endDate) {
+        whereClause[dateFieldName] = { [Op.lte]: new Date(filters.endDate) };
+    }
+};
+
+const applyProfileFilter = (whereClause, filters) => {
+    const profileIdFilter = filters.profileId || filters.responsibleId;
+    if (profileIdFilter) {
+        whereClause.profileId = { [Op.in]: parseArrayFilter(profileIdFilter) };
+    }
+};
+
 const buildCommonFilters = (filters, dateFieldName = null) => {
     const whereClause = {};
-
-    if (dateFieldName) {
-        if (filters.startDate && filters.endDate) {
-            whereClause[dateFieldName] = {
-                [Op.between]: [new Date(filters.startDate), new Date(filters.endDate)]
-            };
-        } else if (filters.startDate) {
-            whereClause[dateFieldName] = { [Op.gte]: new Date(filters.startDate) };
-        } else if (filters.endDate) {
-            whereClause[dateFieldName] = { [Op.lte]: new Date(filters.endDate) };
-        }
-    }
-
-    if (filters.profileId) {
-        const profileIds = Array.isArray(filters.profileId) ? filters.profileId : filters.profileId.split(',');
-        whereClause.profileId = { [Op.in]: profileIds };
-    } else if (filters.responsibleId) {
-        const responsibleIds = Array.isArray(filters.responsibleId) ? filters.responsibleId : filters.responsibleId.split(',');
-        whereClause.profileId = { [Op.in]: responsibleIds };
-    }
+    applyDateFilter(whereClause, filters, dateFieldName);
+    applyProfileFilter(whereClause, filters);
 
     const rabbitWhere = {};
     if (filters.races) {
-        const racesArray = Array.isArray(filters.races) ? filters.races : filters.races.split(',');
-        rabbitWhere.race = { [Op.in]: racesArray };
+        rabbitWhere.race = { [Op.in]: parseArrayFilter(filters.races) };
     }
 
     const cageWhere = {};
     if (filters.cageType) {
-        const cageTypes = Array.isArray(filters.cageType) ? filters.cageType : filters.cageType.split(',');
-        cageWhere.type = { [Op.in]: cageTypes };
+        cageWhere.type = { [Op.in]: parseArrayFilter(filters.cageType) };
     }
 
     return { whereClause, rabbitWhere, cageWhere };
 };
 
-module.exports = { buildCommonFilters };
+const buildRabbitProfileIncludes = (rabbitWhere) => {
+    const { Rabbit, Assignment, Cage, Profile } = require('../../domain/models');
+    return [
+        { 
+            model: Rabbit, 
+            as: 'rabbit',
+            where: Object.keys(rabbitWhere).length > 0 ? rabbitWhere : undefined,
+            required: true,
+            include: [{
+                model: Assignment,
+                as: 'assignments',
+                where: { status: 'asignado' },
+                required: true,
+                include: [{
+                    model: Cage,
+                    as: 'cage',
+                    attributes: ['id', 'number']
+                }]
+            }]
+        },
+        { model: Profile, as: 'profile', attributes: ['username', 'fullName', 'email'] }
+    ];
+};
+
+const buildRabbitCountInclude = (rabbitWhere) => {
+    const { Rabbit } = require('../../domain/models');
+    return [{
+        model: Rabbit,
+        as: 'rabbit',
+        where: rabbitWhere,
+        required: true
+    }];
+};
+
+module.exports = { buildCommonFilters, buildRabbitProfileIncludes, buildRabbitCountInclude };

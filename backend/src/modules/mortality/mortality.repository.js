@@ -48,7 +48,6 @@ class MortalityRepository {
         }
 
         if (filters.races) {
-            const racesArray = Array.isArray(filters.races) ? filters.races : filters.races.split(',');
             return Mortality.count({
                 where,
                 include: [{
