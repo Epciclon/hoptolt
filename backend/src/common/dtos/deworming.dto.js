@@ -10,7 +10,13 @@ const toDewormingDTO = (deworming) => ({
         code: deworming.rabbit.code,
         name: deworming.rabbit.name,
         race: deworming.rabbit.race,
-        imageUrl: deworming.rabbit.imageUrl
+        imageUrl: deworming.rabbit.imageUrl,
+        assignments: deworming.rabbit.assignments ? deworming.rabbit.assignments.map(a => ({
+            cage: a.cage ? {
+                id: a.cage.id,
+                number: a.cage.number
+            } : null
+        })) : []
     } : null,
     profile: deworming.profile ? {
         username: deworming.profile.username,

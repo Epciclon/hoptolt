@@ -24,24 +24,25 @@ export function RabbitSelectableCard({
 
   return (
     <div
+      onClick={isSelectable ? onClick : undefined}
+      role={isSelectable ? "button" : undefined}
+      tabIndex={isSelectable ? 0 : undefined}
       className={cn(
         'border rounded-lg p-3 transition-all duration-150 bg-white text-left w-full block relative',
-        isSelectable && 'focus-within:ring-2 focus-within:ring-primary-500 focus-within:ring-offset-1',
+        isSelectable && 'cursor-pointer focus-within:ring-2 focus-within:ring-primary-500 focus-within:ring-offset-1',
         (() => {
           if (isSelected) return 'border-primary-500 ring-1 ring-primary-500 shadow-sm';
           if (isSelectable) return 'border-slate-300 shadow-sm hover:border-primary-400';
           return 'border-slate-300 shadow-sm';
         })()
       )}
+      onKeyDown={(e) => {
+        if (isSelectable && onClick && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onClick();
+        }
+      }}
     >
-      {isSelectable && (
-        <button
-          type="button"
-          onClick={onClick}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 focus:outline-none rounded-lg"
-          aria-label={`Seleccionar conejo ${rabbit.code}`}
-        />
-      )}
 
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-center gap-3 relative z-0">

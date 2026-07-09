@@ -255,7 +255,7 @@ export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<Repro
                     </div>
                   )}
                   <div className="bg-slate-50/50 border border-slate-100 p-2 rounded flex justify-between items-center">
-                    <p className="text-slate-500 mb-1">Fecha de monta</p>
+                    <p className="text-slate-500">Fecha de monta</p>
                     <p className="font-medium text-slate-700">{formatDateTime(reproduction.mountDate)}</p>
                   </div>
                   <button 
@@ -272,11 +272,11 @@ export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<Repro
                       setShowEditModal(true);
                     }}
                   >
-                    <p className="text-slate-500 mb-1 flex items-center gap-1">
+                    <p className="text-slate-500 flex items-center gap-1">
                       <Calendar size={12} className="opacity-70" />
-                      Fecha est. de parto
+                      Fecha estimada
                     </p>
-                    <p className={`font-bold text-sm ${canGiveBirth ? 'text-amber-600' : 'text-slate-700'}`}>{formatDateTime(reproduction.estimatedBirthDate)}</p>
+                    <p className={`font-medium ${canGiveBirth ? 'text-amber-600' : 'text-slate-700'}`}>{formatDateTime(reproduction.estimatedBirthDate)}</p>
                   </button>
                   <div className={`p-2 rounded flex justify-between items-center border ${
                     nearBirth
@@ -285,7 +285,7 @@ export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<Repro
                   }`}>
                     <p className={`${nearBirth ? 'text-orange-600' : 'text-slate-500'}`}>Días de gestación</p>
                     <div className="text-right">
-                      <p className={`font-bold text-sm ${nearBirth ? 'text-orange-600' : 'text-slate-700'}`}>
+                      <p className={`font-bold ${nearBirth ? 'text-orange-600' : 'text-slate-700'}`}>
                         {31 - Math.max(0, daysLeft)} / 31
                       </p>
                       {nearBirth && daysLeft > 0 && (

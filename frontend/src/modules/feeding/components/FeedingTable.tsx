@@ -40,9 +40,12 @@ export function FeedingTable() {
     }
   ];
 
-  const profile = selectedFeeding?.profile 
-    ? selectedFeeding.profile 
-    : (selectedFeeding?.profileName ? { fullName: selectedFeeding.profileName } : null);
+  let profile = null;
+  if (selectedFeeding?.profile) {
+    profile = selectedFeeding.profile;
+  } else if (selectedFeeding?.profileName) {
+    profile = { fullName: selectedFeeding.profileName };
+  }
 
   return (
     <>

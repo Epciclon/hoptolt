@@ -367,13 +367,13 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
                       {(!hasKits && isExpanded) && <Pencil size={12} className="text-slate-400 group-hover:text-primary-500 transition-colors" />}
                       {(hasKits && isExpanded) && <AlertTriangle size={12} className="text-slate-400 group-hover:text-emerald-500 transition-colors" />}
                     </p>
-                    <p className={`font-bold text-sm ${hasKits ? 'text-slate-700' : 'text-slate-400 font-normal italic'}`}>
+                    <p className={`font-bold ${hasKits ? 'text-slate-700' : 'text-slate-400 font-normal italic'}`}>
                       {hasKits ? reproduction.bornKits : 'Toca para registrar'}
                     </p>
                   </button>
                   <div className="border p-2 rounded bg-white/60 border-slate-100">
                     <p className="text-slate-500 mb-1">Días en Lactancia</p>
-                    <p className="font-bold text-sm text-slate-700">{daysInLactation} / 30</p>
+                    <p className="font-bold text-slate-700">{daysInLactation} / 30</p>
                     {daysInLactation >= 27 && daysInLactation < 30 && (
                       <p className="text-[10px] text-amber-600 mt-1 font-medium">Próximo al destete</p>
                     )}

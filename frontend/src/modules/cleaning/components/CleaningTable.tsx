@@ -18,7 +18,7 @@ export function CleaningTable() {
       key: 'cage',
       header: 'Jaula',
       className: 'font-medium text-slate-900',
-      render: (row) => row.cageNumber.toString()
+      render: (row) => row.cageNumber?.toString() || '-'
     },
     {
       key: 'responsible',

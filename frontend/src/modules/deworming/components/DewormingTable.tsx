@@ -14,7 +14,7 @@ interface NextDewormingData {
   period: number;
 }
 
-function DewormingCustomDetails({ nextDeworm }: { nextDeworm: NextDewormingData | null }) {
+function DewormingCustomDetails({ nextDeworm }: Readonly<{ nextDeworm: NextDewormingData | null }>) {
   return (
     <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 col-span-2">
       <p className="text-xs text-slate-500 font-medium mb-3">Seguimiento de Desparasitación</p>

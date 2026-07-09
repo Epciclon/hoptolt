@@ -11,7 +11,13 @@ const toVaccinationDTO = (vaccination) => ({
         code: vaccination.rabbit.code,
         name: vaccination.rabbit.name,
         race: vaccination.rabbit.race,
-        imageUrl: vaccination.rabbit.imageUrl
+        imageUrl: vaccination.rabbit.imageUrl,
+        assignments: vaccination.rabbit.assignments ? vaccination.rabbit.assignments.map(a => ({
+            cage: a.cage ? {
+                id: a.cage.id,
+                number: a.cage.number
+            } : null
+        })) : []
     } : null,
     profile: vaccination.profile ? {
         username: vaccination.profile.username,
