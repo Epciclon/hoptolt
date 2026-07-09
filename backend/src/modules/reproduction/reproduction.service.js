@@ -106,7 +106,7 @@ class ReproductionService {
         return createPaginatedResponse(reproductions, filters.all ? 1 : pageValue, filters.all ? reproductions.length : limitValue, total);
     }
 
-    async editReproduction(id, data) {
+    async editReproduction(id, data, profileId) {
         const reproduction = await reproductionRepository.findById(id);
         if (!reproduction) throw new AppError('Registro de reproducción no encontrado.', 404);
 
@@ -133,7 +133,36 @@ class ReproductionService {
             const originalMountDate = new Date(reproduction.mountDate);
             const finalMountDate = new Date(Number(y), Number(m) - 1, Number(d), originalMountDate.getHours() || 0, originalMountDate.getMinutes() || 0, originalMountDate.getSeconds() || 0);
             data.mountDate = finalMountDate;
+
+            // Transición automática de estado basada en la nueva fecha de monta (similar al cron)
+            const now = new Date();
+            const threshold1 = new Date(now.getTime() - (24 * 60 * 60 * 1000)); // 24 horas
+            const threshold2 = new Date(now.getTime() - (31 * 24 * 60 * 60 * 1000)); // 31 días
+
+            if (['monta', 'gestacion', 'lactancia'].includes(reproduction.status)) {
+                let newStatus = reproduction.status;
+                
+                if (finalMountDate <= threshold2) {
+                    newStatus = 'lactancia';
+                } else if (finalMountDate <= threshold1) {
+                    newStatus = 'gestacion';
+                } else {
+                    newStatus = 'monta';
+                }
+
+                // Evitar retroceso si el parto ya fue registrado oficialmente por el usuario
+                if (reproduction.bornKits !== null && reproduction.bornKits !== undefined) {
+                    newStatus = 'lactancia';
+                }
+
+                if (newStatus !== reproduction.status) {
+                    data.status = newStatus;
+                }
+            }
         }
+
+        if (profileId) data.profileId = profileId;
+        data.updatedBySystem = false;
 
         return reproductionRepository.update(reproduction, data);
     }
@@ -338,16 +367,16 @@ class ReproductionService {
         });
     }
 
-    async finishMating(reproductionId, galponId) {
+    async finishMating(reproductionId, galponId, profileId) {
         const rep = await reproductionRepository.findById(reproductionId);
         if (!rep) throw new AppError('Registro de monta no encontrado.', 404);
         if (rep.galponId !== galponId) throw new AppError('No tienes permisos.', 403);
         if (rep.status !== 'monta') throw new AppError('Esta monta ya fue finalizada.', 400);
 
-        return await reproductionRepository.update(rep, { status: 'gestacion' });
+        return await reproductionRepository.update(rep, { status: 'gestacion', profileId, updatedBySystem: false });
     }
 
-    async registerBirth(reproductionId, galponId, data) {
+    async registerBirth(reproductionId, galponId, data, profileId) {
         const rep = await reproductionRepository.findById(reproductionId);
         if (!rep) throw new AppError('Registro de reproducción no encontrado.', 404);
         if (rep.galponId !== galponId) throw new AppError('No tienes permisos.', 403);
@@ -368,6 +397,8 @@ class ReproductionService {
 
         const updateData = {
             status: 'lactancia',
+            profileId,
+            updatedBySystem: false,
             estimatedBirthDate: actualBirthDate || rep.estimatedBirthDate || todayStr
         };
 
@@ -394,7 +425,8 @@ class ReproductionService {
             return await reproductionRepository.update(rep, { 
                 status: 'fallido',
                 cancellationReason: reason,
-                profileId
+                profileId,
+                updatedBySystem: false
             });
         }
     }
@@ -405,7 +437,7 @@ class ReproductionService {
         if (rep.galponId !== galponId) throw new AppError('No tienes permisos.', 403);
         if (rep.status !== 'lactancia') throw new AppError('Estado inválido para destetar.', 400);
 
-        return await reproductionRepository.update(rep, { status: 'completado', profileId });
+        return await reproductionRepository.update(rep, { status: 'completado', profileId, updatedBySystem: false });
     }
 
     async getReproductionById(id) {

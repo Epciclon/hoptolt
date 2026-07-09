@@ -10,6 +10,7 @@ import { AlertTriangle, Trash2, Pencil } from 'lucide-react';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { mortalityService } from '@/modules/mortality/services/mortality.service';
 import { WeaningWizard } from './WeaningWizard';
+import { ReproductionForm } from './ReproductionForm';
 
 interface GazaposViewProps {
   reproductions: Reproduction[];
@@ -23,6 +24,9 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
   const [filterRace, setFilterRace] = useState<string>('');
   
   const [expandedId, setExpandedId] = useState<number | null>(null);
+
+  const [editingReproduction, setEditingReproduction] = useState<Reproduction | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Modals state
   const [toCancel, setToCancel] = useState<Reproduction | null>(null);
@@ -380,10 +384,28 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
                 </div>
 
                 <div className="space-y-2 mt-2 text-xs">
-                  <div className="bg-slate-50/50 border border-slate-100 p-2 rounded flex justify-between items-center">
-                    <p className="text-slate-500">Fecha de Parto</p>
-                    <p className="font-medium text-slate-700">{formatDateTime(reproduction.estimatedBirthDate)}</p>
-                  </div>
+                  {isExpanded && !hasKits ? (
+                    <button
+                      type="button"
+                      className="bg-slate-50/50 border border-slate-100 p-2 rounded flex justify-between items-center w-full text-left cursor-pointer hover:bg-primary-50 hover:border-primary-200 transition-colors group"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingReproduction(reproduction);
+                        setShowEditModal(true);
+                      }}
+                      title="Editar fecha"
+                    >
+                      <p className="text-slate-500 mb-1 flex items-center gap-1">
+                        Fecha de Parto
+                      </p>
+                      <p className="font-medium text-slate-700">{formatDateTime(reproduction.estimatedBirthDate)}</p>
+                    </button>
+                  ) : (
+                    <div className="bg-slate-50/50 border border-slate-100 p-2 rounded flex justify-between items-center">
+                      <p className="text-slate-500">Fecha de Parto</p>
+                      <p className="font-medium text-slate-700">{formatDateTime(reproduction.estimatedBirthDate)}</p>
+                    </div>
+                  )}
 
                   <div className="bg-slate-50/50 border border-slate-100 p-2 rounded flex justify-between items-center">
                     <p className="text-slate-500">Fecha est. de destete</p>
@@ -730,6 +752,34 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
             </Button>
           </div>
         </form>
+      </Dialog>
+
+      <Dialog
+        open={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingReproduction(null);
+        }}
+        title={(() => {
+          const name = editingReproduction?.femaleName ? ` — ${editingReproduction.femaleName}` : '';
+          return `Editar fechas de ${editingReproduction?.femaleCode ?? ''}${name}`;
+        })()}
+        size="xl"
+      >
+        {editingReproduction && (
+          <ReproductionForm
+            editingReproduction={editingReproduction}
+            onSuccess={() => {
+              setShowEditModal(false);
+              setEditingReproduction(null);
+              onSuccess?.();
+            }}
+            onCancel={() => {
+              setShowEditModal(false);
+              setEditingReproduction(null);
+            }}
+          />
+        )}
       </Dialog>
     </div>
   );

@@ -46,7 +46,7 @@ exports.startMating = catchAsync(async (req, res) => {
 });
 
 exports.finishMating = catchAsync(async (req, res) => {
-    const reproduction = await reproductionService.finishMating(req.params.id, req.galponId);
+    const reproduction = await reproductionService.finishMating(req.params.id, req.galponId, req.user.id);
     res.status(200).json({ success: true, message: 'Monta finalizada. La hembra ha regresado a gestación.', reproduction });
 });
 
@@ -61,7 +61,10 @@ const formatReproduction = (reproduction) => {
     const male = reproduction.male || null;
 
     let profileName = 'N/A';
-    if (reproduction.updatedBySystem) {
+    // El cron solo mueve a 'gestacion' o 'lactancia'
+    const systemCanDoThis = ['gestacion', 'lactancia'].includes(reproduction.status);
+    
+    if (reproduction.updatedBySystem && systemCanDoThis) {
         profileName = 'Sistema Hoptolt';
     } else if (reproduction.profile) {
         profileName = reproduction.profile.fullName || reproduction.profile.username || reproduction.profile.email || 'N/A';
@@ -215,7 +218,7 @@ exports.getReproductionMales = catchAsync(async (req, res) => {
 });
 
 exports.editReproduction = catchAsync(async (req, res) => {
-    const reproduction = await reproductionService.editReproduction(req.params.id, req.body);
+    const reproduction = await reproductionService.editReproduction(req.params.id, req.body, req.user.id);
     res.status(200).json({ success: true, message: 'Monta actualizada exitosamente.', reproduction });
 });
 
@@ -388,7 +391,7 @@ exports.getReproductionById = catchAsync(async (req, res) => {
 });
 
 exports.registerBirth = catchAsync(async (req, res) => {
-    const reproduction = await reproductionService.registerBirth(req.params.id, req.galponId, req.body);
+    const reproduction = await reproductionService.registerBirth(req.params.id, req.galponId, req.body, req.user.id);
     res.status(200).json({ success: true, message: 'Parto registrado exitosamente.', reproduction });
 });
 

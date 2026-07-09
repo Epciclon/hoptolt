@@ -69,6 +69,8 @@ class MortalityService {
             activeLactation.bornKits = originalBornKits;
             activeLactation.status = 'fallido';
             activeLactation.cancellationReason = `Mortalidad total de la camada (Causa: ${cause.trim()})`;
+            activeLactation.updatedBySystem = false;
+            activeLactation.profileId = profileId;
             await activeLactation.save();
             
             return { id: 'merged_total_mortality', rabbitId, cause, observations, deathDate: dDate, isKits: true, numberOfKits: originalBornKits };
