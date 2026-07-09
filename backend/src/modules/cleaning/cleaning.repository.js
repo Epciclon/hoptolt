@@ -1,37 +1,15 @@
 const { Cleaning, Profile } = require('../../domain/models');
+const { buildCommonFilters } = require('../../common/helpers/repository.helper');
 
 class CleaningRepository {
     async findByGalponId(galponId, options = {}, cageIds = null, filters = {}) {
         const { Op } = require('sequelize');
         const { Cage, Assignment, Rabbit } = require('../../domain/models');
-        const where = { galponId };
+        const { whereClause: filtersWhere, cageWhere } = buildCommonFilters(filters, 'cleaningDate');
+        const where = { galponId, ...filtersWhere };
         
         if (cageIds !== null) {
             where.cageId = { [Op.in]: cageIds };
-        }
-
-        if (filters.startDate && filters.endDate) {
-            where.cleaningDate = {
-                [Op.between]: [new Date(filters.startDate), new Date(filters.endDate)]
-            };
-        } else if (filters.startDate) {
-            where.cleaningDate = { [Op.gte]: new Date(filters.startDate) };
-        } else if (filters.endDate) {
-            where.cleaningDate = { [Op.lte]: new Date(filters.endDate) };
-        }
-
-        if (filters.profileId) {
-            const profileIds = Array.isArray(filters.profileId) ? filters.profileId : filters.profileId.split(',');
-            where.profileId = { [Op.in]: profileIds };
-        } else if (filters.responsibleId) {
-            const responsibleIds = Array.isArray(filters.responsibleId) ? filters.responsibleId : filters.responsibleId.split(',');
-            where.profileId = { [Op.in]: responsibleIds };
-        }
-
-        const cageWhere = {};
-        if (filters.cageType) {
-            const cageTypes = Array.isArray(filters.cageType) ? filters.cageType : filters.cageType.split(',');
-            cageWhere.type = { [Op.in]: cageTypes };
         }
 
         return Cleaning.findAll({
@@ -69,33 +47,11 @@ class CleaningRepository {
 
     async countByGalponId(galponId, cageIds = null, filters = {}) {
         const { Op } = require('sequelize');
-        const where = { galponId };
+        const { whereClause: filtersWhere, cageWhere } = buildCommonFilters(filters, 'cleaningDate');
+        const where = { galponId, ...filtersWhere };
+
         if (cageIds !== null) {
             where.cageId = { [Op.in]: cageIds };
-        }
-
-        if (filters.startDate && filters.endDate) {
-            where.cleaningDate = {
-                [Op.between]: [new Date(filters.startDate), new Date(filters.endDate)]
-            };
-        } else if (filters.startDate) {
-            where.cleaningDate = { [Op.gte]: new Date(filters.startDate) };
-        } else if (filters.endDate) {
-            where.cleaningDate = { [Op.lte]: new Date(filters.endDate) };
-        }
-
-        if (filters.profileId) {
-            const profileIds = Array.isArray(filters.profileId) ? filters.profileId : filters.profileId.split(',');
-            where.profileId = { [Op.in]: profileIds };
-        } else if (filters.responsibleId) {
-            const responsibleIds = Array.isArray(filters.responsibleId) ? filters.responsibleId : filters.responsibleId.split(',');
-            where.profileId = { [Op.in]: responsibleIds };
-        }
-
-        const cageWhere = {};
-        if (filters.cageType) {
-            const cageTypes = Array.isArray(filters.cageType) ? filters.cageType : filters.cageType.split(',');
-            cageWhere.type = { [Op.in]: cageTypes };
         }
 
         if (filters.cageType) {

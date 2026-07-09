@@ -1,11 +1,12 @@
 const catchAsync = require('../../common/middlewares/catchAsync');
 const dewormingService = require('./deworming.service');
 const { Galpon } = require('../../domain/models');
+const { toDewormingDTO } = require('../../common/dtos/deworming.dto');
 
 exports.registerDeworming = catchAsync(async (req, res) => {
     const galponId = req.galponId;
     const dewormings = await dewormingService.registerDeworming(req.body, galponId, req.user.id);
-    res.status(201).json({ success: true, message: 'Desparasitación registrada exitosamente.', dewormings });
+    res.status(201).json({ success: true, message: 'Desparasitación registrada exitosamente.', dewormings: dewormings.map(toDewormingDTO) });
 });
 
 exports.getDewormings = catchAsync(async (req, res) => {
@@ -18,7 +19,7 @@ exports.getDewormings = catchAsync(async (req, res) => {
     const result = await dewormingService.getDewormings(req.galponId, req.user.id, page, limit, filters);
     res.status(200).json({
         success: true,
-        dewormings: result.data,
+        dewormings: result.data.map(toDewormingDTO),
         pagination: result.pagination
     });
 });

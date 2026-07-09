@@ -1,36 +1,17 @@
 const { Mortality, Rabbit, Profile } = require('../../domain/models');
 const { Op } = require('sequelize');
+const { buildCommonFilters } = require('../../common/helpers/repository.helper');
 
 class MortalityRepository {
     async findByGalponId(galponId, options = {}, filterProfileId = null, isKits = null, filters = {}) {
-        const where = { galponId };
+        const { whereClause: filtersWhere, rabbitWhere } = buildCommonFilters(filters, 'deathDate');
+        const where = { galponId, ...filtersWhere };
+
         if (filterProfileId) {
             where.profileId = filterProfileId;
         }
         if (isKits !== null) {
             where.isKits = isKits;
-        }
-
-        if (filters.startDate && filters.endDate) {
-            where.deathDate = {
-                [Op.between]: [new Date(filters.startDate), new Date(filters.endDate)]
-            };
-        } else if (filters.startDate) {
-            where.deathDate = { [Op.gte]: new Date(filters.startDate) };
-        } else if (filters.endDate) {
-            where.deathDate = { [Op.lte]: new Date(filters.endDate) };
-        }
-
-
-        if (filters.profileId) {
-            const profileIds = Array.isArray(filters.profileId) ? filters.profileId : filters.profileId.split(',');
-            where.profileId = { [Op.in]: profileIds };
-        }
-
-        const rabbitWhere = {};
-        if (filters.races) {
-            const racesArray = Array.isArray(filters.races) ? filters.races : filters.races.split(',');
-            rabbitWhere.race = { [Op.in]: racesArray };
         }
 
         return Mortality.findAll({
@@ -56,28 +37,14 @@ class MortalityRepository {
     }
 
     async countByGalponId(galponId, filterProfileId = null, isKits = null, filters = {}) {
-        const where = { galponId };
+        const { whereClause: filtersWhere, rabbitWhere } = buildCommonFilters(filters, 'deathDate');
+        const where = { galponId, ...filtersWhere };
+
         if (filterProfileId) {
             where.profileId = filterProfileId;
         }
         if (isKits !== null) {
             where.isKits = isKits;
-        }
-
-        if (filters.startDate && filters.endDate) {
-            where.deathDate = {
-                [Op.between]: [new Date(filters.startDate), new Date(filters.endDate)]
-            };
-        } else if (filters.startDate) {
-            where.deathDate = { [Op.gte]: new Date(filters.startDate) };
-        } else if (filters.endDate) {
-            where.deathDate = { [Op.lte]: new Date(filters.endDate) };
-        }
-
-
-        if (filters.profileId) {
-            const profileIds = Array.isArray(filters.profileId) ? filters.profileId : filters.profileId.split(',');
-            where.profileId = { [Op.in]: profileIds };
         }
 
         if (filters.races) {
@@ -87,7 +54,7 @@ class MortalityRepository {
                 include: [{
                     model: Rabbit,
                     as: 'rabbit',
-                    where: { race: { [Op.in]: racesArray } },
+                    where: rabbitWhere,
                     paranoid: false,
                     required: true
                 }]

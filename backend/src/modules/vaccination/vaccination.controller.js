@@ -1,11 +1,12 @@
 const catchAsync = require('../../common/middlewares/catchAsync');
 const vaccinationService = require('./vaccination.service');
 const galponRepository = require('../galpon/galpon.repository');
+const { toVaccinationDTO } = require('../../common/dtos/vaccination.dto');
 
 exports.registerVaccination = catchAsync(async (req, res) => {
     const galponId = req.galponId;
     const vaccinations = await vaccinationService.registerVaccination(req.body, galponId, req.user.id);
-    res.status(201).json({ success: true, message: 'Vacunación registrada exitosamente.', vaccinations });
+    res.status(201).json({ success: true, message: 'Vacunación registrada exitosamente.', vaccinations: vaccinations.map(toVaccinationDTO) });
 });
 
 exports.getVaccinations = catchAsync(async (req, res) => {
@@ -18,7 +19,7 @@ exports.getVaccinations = catchAsync(async (req, res) => {
     const result = await vaccinationService.getVaccinations(req.galponId, req.user.id, page, limit, filters);
     res.status(200).json({
         success: true,
-        vaccinations: result.data,
+        vaccinations: result.data.map(toVaccinationDTO),
         pagination: result.pagination
     });
 });

@@ -1,3 +1,16 @@
+const validateDescription = (description, errors) => {
+    if (!description || description.trim() === '') {
+        errors.push('La descripción de la raza es obligatoria.');
+    } else {
+        const descRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+        if (!descRegex.test(description.trim())) {
+            errors.push('La descripción solo puede contener solo letras y espacios.');
+        } else if (description.trim().length > 150) {
+            errors.push('La descripción tiene un límite máximo de 150 caracteres.');
+        }
+    }
+};
+
 const validateCreateRace = (req, res, next) => {
     const errors = [];
     const { name, description } = req.body;
@@ -11,16 +24,7 @@ const validateCreateRace = (req, res, next) => {
         }
     }
 
-    if (!description || description.trim() === '') {
-        errors.push('La descripción de la raza es obligatoria.');
-    } else {
-        const descRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
-        if (!descRegex.test(description.trim())) {
-            errors.push('La descripción solo puede contener solo letras y espacios.');
-        } else if (description.trim().length > 150) {
-            errors.push('La descripción tiene un límite máximo de 150 caracteres.');
-        }
-    }
+    validateDescription(description, errors);
 
     if (errors.length > 0) return res.status(400).json({ success: false, errors });
     next();
@@ -30,16 +34,7 @@ const validateEditRace = (req, res, next) => {
     const errors = [];
     const { description } = req.body;
 
-    if (!description || description.trim() === '') {
-        errors.push('La descripción de la raza es obligatoria.');
-    } else {
-        const descRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
-        if (!descRegex.test(description.trim())) {
-            errors.push('La descripción solo puede contener solo letras y espacios.');
-        } else if (description.trim().length > 150) {
-            errors.push('La descripción tiene un límite máximo de 150 caracteres.');
-        }
-    }
+    validateDescription(description, errors);
 
     if (errors.length > 0) return res.status(400).json({ success: false, errors });
     next();

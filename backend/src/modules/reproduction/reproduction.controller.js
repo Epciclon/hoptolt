@@ -2,112 +2,40 @@ const catchAsync = require('../../common/middlewares/catchAsync');
 const reproductionService = require('./reproduction.service');
 const { Rabbit, Assignment, Cage, Reproduction } = require('../../domain/models');
 const { Op } = require('sequelize');
+const { toAvailableRabbitDTO, toReproductionDTO, toCalendarEntryDTO } = require('../../common/dtos/reproduction.dto');
 
 exports.registerReproduction = catchAsync(async (req, res) => {
     const galponId = req.galponId;
     const reproduction = await reproductionService.registerReproduction(req.body, galponId);
-    res.status(201).json({ success: true, message: 'Monta registrada exitosamente.', reproduction });
+    res.status(201).json({ success: true, message: 'Monta registrada exitosamente.', reproduction: toReproductionDTO(reproduction) });
 });
 
 exports.getAvailableMalesForMating = catchAsync(async (req, res) => {
     const males = await reproductionService.getAvailableMalesForMating(req.galponId);
-    // Formatear para frontend
-    const formatted = males.map(m => ({
-        id: m.id,
-        code: m.code,
-        name: m.name,
-        race: m.race,
-        age: m.age,
-        weight: m.weight,
-        imageUrl: m.imageUrl,
-        cageNumber: m.assignments?.[0]?.cage?.number
-    }));
-    res.status(200).json({ success: true, males: formatted });
+    res.status(200).json({ success: true, males: males.map(toAvailableRabbitDTO) });
 });
 
 exports.getAvailableFemalesForMating = catchAsync(async (req, res) => {
     const females = await reproductionService.getAvailableFemalesForMating(req.galponId, req.params.maleId);
-    const formatted = females.map(f => ({
-        id: f.id,
-        code: f.code,
-        name: f.name,
-        race: f.race,
-        age: f.age,
-        weight: f.weight,
-        imageUrl: f.imageUrl,
-        cageNumber: f.assignments?.[0]?.cage?.number
-    }));
-    res.status(200).json({ success: true, females: formatted });
+    res.status(200).json({ success: true, females: females.map(toAvailableRabbitDTO) });
 });
 
 exports.startMating = catchAsync(async (req, res) => {
     const reproduction = await reproductionService.startMating(req.body, req.galponId, req.user.id);
-    res.status(201).json({ success: true, message: 'Monta iniciada exitosamente.', reproduction });
+    res.status(201).json({ success: true, message: 'Monta iniciada exitosamente.', reproduction: toReproductionDTO(reproduction) });
 });
 
 exports.finishMating = catchAsync(async (req, res) => {
     const reproduction = await reproductionService.finishMating(req.params.id, req.galponId, req.user.id);
-    res.status(200).json({ success: true, message: 'Monta finalizada. La hembra ha regresado a gestación.', reproduction });
+    res.status(200).json({ success: true, message: 'Monta finalizada. La hembra ha regresado a gestación.', reproduction: toReproductionDTO(reproduction) });
 });
 
 exports.getReproductionByFemaleId = catchAsync(async (req, res) => {
     const reproductions = await reproductionService.getReproductionByFemaleId(req.params.femaleId);
-    res.status(200).json({ success: true, reproductions });
+    res.status(200).json({ success: true, reproductions: reproductions.map(toReproductionDTO) });
 });
 
-const formatReproduction = (reproduction) => {
-    const assignment = reproduction.female?.assignments?.[0] || null;
-    const cage = assignment?.cage || null;
-    const male = reproduction.male || null;
-
-    let profileName = 'N/A';
-    // El cron solo mueve a 'gestacion' o 'lactancia'
-    const systemCanDoThis = ['gestacion', 'lactancia'].includes(reproduction.status);
-    
-    if (reproduction.updatedBySystem && systemCanDoThis) {
-        profileName = 'Sistema Hoptolt';
-    } else if (reproduction.profile) {
-        profileName = reproduction.profile.fullName || reproduction.profile.username || reproduction.profile.email || 'N/A';
-    }
-
-    let profileObj = null;
-    if (reproduction.profile) {
-        profileObj = {
-            username: reproduction.profile.username,
-            fullName: reproduction.profile.fullName,
-            email: reproduction.profile.email
-        };
-    }
-
-    return {
-        id: reproduction.id,
-        femaleId: reproduction.femaleId,
-        femaleCode: reproduction.female?.code || 'N/A',
-        femaleName: reproduction.female?.name || '',
-        femaleRace: reproduction.female?.race || '',
-        femaleAge: reproduction.female?.age,
-        femaleWeight: reproduction.female?.weight,
-        maleId: reproduction.maleId,
-        maleCode: male?.code || null,
-        maleName: male?.name || '',
-        maleRace: male?.race || '',
-        maleImageUrl: male?.imageUrl || null,
-        isMaleDeleted: !!male?.deletedAt,
-        mountDate: reproduction.mountDate,
-        estimatedBirthDate: reproduction.estimatedBirthDate,
-        bornKits: reproduction.bornKits,
-        cancellationReason: reproduction.cancellationReason,
-        status: reproduction.status,
-        createdAt: reproduction.createdAt,
-        updatedAt: reproduction.updatedAt,
-        imageUrl: reproduction.female?.imageUrl || null,
-        cageNumber: cage?.number || null,
-        cageType: cage?.type || null,
-        galponId: reproduction.galponId,
-        profileName: profileName,
-        profile: profileObj
-    };
-};
+// formatReproduction movido a reproduction.dto.js
 
 exports.getAllReproductions = catchAsync(async (req, res) => {
     const page = Number.parseInt(req.query.page) || 1;
@@ -119,7 +47,7 @@ exports.getAllReproductions = catchAsync(async (req, res) => {
     try {
         const result = await reproductionService.getAllReproductions(req.galponId, req.user.id, page, limit, filters);
         
-        const enrichedReproductions = result.data.map(formatReproduction);
+        const enrichedReproductions = result.data.map(toReproductionDTO);
         
         res.status(200).json({
             success: true,
@@ -219,7 +147,7 @@ exports.getReproductionMales = catchAsync(async (req, res) => {
 
 exports.editReproduction = catchAsync(async (req, res) => {
     const reproduction = await reproductionService.editReproduction(req.params.id, req.body, req.user.id);
-    res.status(200).json({ success: true, message: 'Monta actualizada exitosamente.', reproduction });
+    res.status(200).json({ success: true, message: 'Monta actualizada exitosamente.', reproduction: toReproductionDTO(reproduction) });
 });
 
 exports.deleteReproduction = catchAsync(async (req, res) => {
@@ -266,30 +194,7 @@ exports.getReproductionCalendar = catchAsync(async (req, res) => {
         return String(val);
     };
 
-    const _buildCalendarEntry = (r, type, cage) => {
-        if (type === 'receptive') {
-            return {
-                id: r.id, femaleId: r.femaleId, femaleCode: r.femaleCode, femaleName: r.femaleName,
-                femaleImageUrl: r.femaleImageUrl || null, receptiveDate: r.receptiveDate,
-                cageNumber: r.cageNumber, cageType: r.cageType, type: 'receptive'
-            };
-        } else if (type === 'weaning') {
-            return {
-                id: r.id, femaleId: r.femaleId, femaleCode: r.female?.code || 'N/A', femaleName: r.female?.name || '',
-                femaleImageUrl: r.female?.imageUrl || null, maleId: r.maleId, maleCode: r.male?.code || null,
-                maleName: r.male?.name || null, maleImageUrl: r.male?.imageUrl || null, mountDate: r.mountDate,
-                estimatedBirthDate: r.estimatedBirthDate, estimatedWeaningDate: r.estimatedWeaningDate,
-                cageNumber: cage?.number || null, cageType: cage?.type || null, type: 'weaning'
-            };
-        }
-        return {
-            id: r.id, femaleId: r.femaleId, femaleCode: r.female?.code || 'N/A', femaleName: r.female?.name || '',
-            femaleImageUrl: r.female?.imageUrl || null, maleId: r.maleId, maleCode: r.male?.code || null,
-            maleName: r.male?.name || null, maleImageUrl: r.male?.imageUrl || null, mountDate: r.mountDate,
-            estimatedBirthDate: r.estimatedBirthDate, cageNumber: cage?.number || null, cageType: cage?.type || null,
-            type: 'births'
-        };
-    };
+    // _buildCalendarEntry movido a reproduction.dto.js
 
     // Group by date string (YYYY-MM-DD)
     const grouped = {};
@@ -314,7 +219,7 @@ exports.getReproductionCalendar = catchAsync(async (req, res) => {
         const cage = assignment?.cage || null;
 
         if (!grouped[dateKey]) grouped[dateKey] = [];
-        grouped[dateKey].push(_buildCalendarEntry(r, type, cage));
+        grouped[dateKey].push(toCalendarEntryDTO(r, type, cage));
     }
 
     res.status(200).json({ success: true, calendar: grouped });
@@ -330,24 +235,7 @@ exports.getReproductionByDay = catchAsync(async (req, res) => {
 
     const records = await reproductionService.getReproductionByDay(galponId, year, month, day, cageIds);
 
-    const reproductions = records.map(r => {
-        const assignment = r.female?.assignments?.[0] || null;
-        const cage = assignment?.cage || null;
-
-        return {
-            id: r.id,
-            femaleId: r.femaleId,
-            femaleCode: r.female?.code || 'N/A',
-            femaleName: r.female?.name || '',
-            maleId: r.maleId,
-            maleCode: r.male?.code || null,
-            maleName: r.male?.name || '',
-            mountDate: r.mountDate,
-            estimatedBirthDate: r.estimatedBirthDate,
-            cageNumber: cage?.number || null,
-            cageType: cage?.type || null,
-        };
-    });
+    const reproductions = records.map(toReproductionDTO);
 
     res.status(200).json({ success: true, reproductions });
 });
@@ -359,40 +247,14 @@ exports.getReproductionById = catchAsync(async (req, res) => {
         return res.status(404).json({ success: false, message: 'Monta no encontrada.' });
     }
 
-    const assignment = reproduction.female?.assignments?.[0] || null;
-    const cage = assignment?.cage || null;
-
-    const response = {
-        id: reproduction.id,
-        femaleId: reproduction.femaleId,
-        femaleCode: reproduction.female?.code || 'N/A',
-        femaleName: reproduction.female?.name || '',
-        femaleSex: reproduction.female?.sex || '',
-        femaleBirthDate: reproduction.female?.birthDate || null,
-        femaleWeight: reproduction.female?.weight || null,
-        femalePurpose: reproduction.female?.purpose || '',
-        maleId: reproduction.maleId,
-        maleCode: reproduction.male?.code || null,
-        maleName: reproduction.male?.name || '',
-        maleSex: reproduction.male?.sex || '',
-        maleBirthDate: reproduction.male?.birthDate || null,
-        maleWeight: reproduction.male?.weight || null,
-        malePurpose: reproduction.male?.purpose || '',
-        mountDate: reproduction.mountDate,
-        estimatedBirthDate: reproduction.estimatedBirthDate,
-        bornKits: reproduction.bornKits,
-        cancellationReason: reproduction.cancellationReason,
-        status: reproduction.status,
-        cageNumber: cage?.number || null,
-        cageType: cage?.type || null,
-    };
+    const response = toReproductionDTO(reproduction);
 
     res.status(200).json({ success: true, reproduction: response });
 });
 
 exports.registerBirth = catchAsync(async (req, res) => {
     const reproduction = await reproductionService.registerBirth(req.params.id, req.galponId, req.body, req.user.id);
-    res.status(200).json({ success: true, message: 'Parto registrado exitosamente.', reproduction });
+    res.status(200).json({ success: true, message: 'Parto registrado exitosamente.', reproduction: toReproductionDTO(reproduction) });
 });
 
 exports.cancelReproduction = catchAsync(async (req, res) => {
@@ -402,5 +264,5 @@ exports.cancelReproduction = catchAsync(async (req, res) => {
 
 exports.finishLactation = catchAsync(async (req, res) => {
     const reproduction = await reproductionService.finishLactation(req.params.id, req.galponId, req.user.id);
-    res.status(200).json({ success: true, message: 'Lactancia finalizada. Los gazapos han sido destetados.', reproduction });
+    res.status(200).json({ success: true, message: 'Lactancia finalizada. Los gazapos han sido destetados.', reproduction: toReproductionDTO(reproduction) });
 });

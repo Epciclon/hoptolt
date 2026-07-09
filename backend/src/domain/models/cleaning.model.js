@@ -1,12 +1,9 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../../infrastructure/database/connection');
+const { getCommonFields } = require('./commonFields');
 
 const Cleaning = sequelize.define('Cleaning', {
-    id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true
-    },
+    ...getCommonFields(DataTypes),
     cageId: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -28,33 +25,9 @@ const Cleaning = sequelize.define('Cleaning', {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW
     },
-    galponId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        references: {
-            model: 'galpones',
-            key: 'id'
-        }
-    },
-    profileId: {
-        type: DataTypes.UUID,
-        allowNull: true,
-        references: {
-            model: 'profiles',
-            key: 'id'
-        }
-    },
     rabbitsSnapshot: {
         type: DataTypes.JSON,
         allowNull: true
-    },
-    createdAt: {
-        type: DataTypes.DATE,
-        defaultValue: DataTypes.NOW
-    },
-    updatedAt: {
-        type: DataTypes.DATE,
-        defaultValue: DataTypes.NOW
     }
 }, {
     tableName: 'cleanings',

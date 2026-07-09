@@ -1,5 +1,6 @@
 const { Reproduction, Rabbit, Assignment, Cage, Profile } = require('../../domain/models');
 const { Op } = require('sequelize');
+const { buildCommonFilters } = require('../../common/helpers/repository.helper');
 
 class ReproductionRepository {
     async findByFemaleId(femaleId) {
@@ -20,30 +21,10 @@ class ReproductionRepository {
     }
 
     async findByGalponId(galponId, options = {}, filters = {}) {
-        const whereClause = { galponId };
+        const { whereClause: filtersWhere, rabbitWhere } = buildCommonFilters(filters, 'createdAt');
+        const whereClause = { galponId, ...filtersWhere };
         if (options.status) {
             whereClause.status = options.status.includes(',') ? { [Op.in]: options.status.split(',') } : options.status;
-        }
-
-        if (filters.startDate && filters.endDate) {
-            whereClause.createdAt = {
-                [Op.between]: [new Date(filters.startDate), new Date(filters.endDate)]
-            };
-        } else if (filters.startDate) {
-            whereClause.createdAt = { [Op.gte]: new Date(filters.startDate) };
-        } else if (filters.endDate) {
-            whereClause.createdAt = { [Op.lte]: new Date(filters.endDate) };
-        }
-
-        if (filters.profileId) {
-            const profileIds = Array.isArray(filters.profileId) ? filters.profileId : filters.profileId.split(',');
-            whereClause.profileId = { [Op.in]: profileIds };
-        }
-
-        const rabbitWhere = {};
-        if (filters.races) {
-            const racesArray = Array.isArray(filters.races) ? filters.races : filters.races.split(',');
-            rabbitWhere.race = { [Op.in]: racesArray };
         }
 
         const includeFemale = {
@@ -107,33 +88,13 @@ class ReproductionRepository {
     }
 
     async countByGalponId(galponId, options = {}, filters = {}) {
-        const whereClause = { galponId };
+        const { whereClause: filtersWhere, rabbitWhere } = buildCommonFilters(filters, 'createdAt');
+        const whereClause = { galponId, ...filtersWhere };
         if (options.status) {
             whereClause.status = options.status.includes(',') ? { [Op.in]: options.status.split(',') } : options.status;
         }
         
-        if (filters.startDate && filters.endDate) {
-            whereClause.createdAt = {
-                [Op.between]: [new Date(filters.startDate), new Date(filters.endDate)]
-            };
-        } else if (filters.startDate) {
-            whereClause.createdAt = { [Op.gte]: new Date(filters.startDate) };
-        } else if (filters.endDate) {
-            whereClause.createdAt = { [Op.lte]: new Date(filters.endDate) };
-        }
-
-        if (filters.profileId) {
-            const profileIds = Array.isArray(filters.profileId) ? filters.profileId : filters.profileId.split(',');
-            whereClause.profileId = { [Op.in]: profileIds };
-        }
-
         const countOptions = { where: whereClause };
-
-        const rabbitWhere = {};
-        if (filters.races) {
-            const racesArray = Array.isArray(filters.races) ? filters.races : filters.races.split(',');
-            rabbitWhere.race = { [Op.in]: racesArray };
-        }
         
         if (options.search) {
             const search = `%${options.search}%`;

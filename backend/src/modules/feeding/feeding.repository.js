@@ -1,5 +1,6 @@
 const { Feeding, Cage } = require('../../domain/models');
 const { Op } = require('sequelize');
+const { buildCommonFilters } = require('../../common/helpers/repository.helper');
 
 class FeedingRepository {
     _getEcuadorDayBounds(date) {
@@ -51,28 +52,8 @@ class FeedingRepository {
 
     async findByGalponId(galponId, options = {}, filters = {}) {
         const { Assignment, Rabbit } = require('../../domain/models');
-        const whereClause = { galponId };
-
-        if (filters.startDate && filters.endDate) {
-            whereClause.feedingDate = {
-                [Op.between]: [new Date(filters.startDate), new Date(filters.endDate)]
-            };
-        } else if (filters.startDate) {
-            whereClause.feedingDate = { [Op.gte]: new Date(filters.startDate) };
-        } else if (filters.endDate) {
-            whereClause.feedingDate = { [Op.lte]: new Date(filters.endDate) };
-        }
-
-        if (filters.profileId) {
-            const profileIds = Array.isArray(filters.profileId) ? filters.profileId : filters.profileId.split(',');
-            whereClause.profileId = { [Op.in]: profileIds };
-        }
-
-        const cageWhere = {};
-        if (filters.cageType) {
-            const cageTypes = Array.isArray(filters.cageType) ? filters.cageType : filters.cageType.split(',');
-            cageWhere.type = { [Op.in]: cageTypes };
-        }
+        const { whereClause: filtersWhere, cageWhere } = buildCommonFilters(filters, 'feedingDate');
+        const whereClause = { galponId, ...filtersWhere };
 
         return Feeding.findAll({
             where: whereClause,
@@ -109,28 +90,8 @@ class FeedingRepository {
     }
 
     async countByGalponId(galponId, filters = {}) {
-        const whereClause = { galponId };
-
-        if (filters.startDate && filters.endDate) {
-            whereClause.feedingDate = {
-                [Op.between]: [new Date(filters.startDate), new Date(filters.endDate)]
-            };
-        } else if (filters.startDate) {
-            whereClause.feedingDate = { [Op.gte]: new Date(filters.startDate) };
-        } else if (filters.endDate) {
-            whereClause.feedingDate = { [Op.lte]: new Date(filters.endDate) };
-        }
-
-        if (filters.profileId) {
-            const profileIds = Array.isArray(filters.profileId) ? filters.profileId : filters.profileId.split(',');
-            whereClause.profileId = { [Op.in]: profileIds };
-        }
-
-        const cageWhere = {};
-        if (filters.cageType) {
-            const cageTypes = Array.isArray(filters.cageType) ? filters.cageType : filters.cageType.split(',');
-            cageWhere.type = { [Op.in]: cageTypes };
-        }
+        const { whereClause: filtersWhere, cageWhere } = buildCommonFilters(filters, 'feedingDate');
+        const whereClause = { galponId, ...filtersWhere };
 
         // Si hay filtro de tipo de jaula, necesitamos hacer el include para el count
         if (filters.cageType) {
