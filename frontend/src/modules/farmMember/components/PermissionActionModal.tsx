@@ -45,6 +45,9 @@ export function PermissionActionModal({ open, onClose, onConfirm, moduleName, is
     // Módulos que soportan Crear, Consultar y Eliminar (Desasignar)
     const threeActionsModules = ['Asignar'];
     
+    // Módulo Genealogía: Crear, Consultar y Editar (sin Eliminar)
+    const genealogyModule = ['Genealogía'];
+    
     if (twoActionsModules.includes(moduleName)) {
       return allActions.filter(action => action === 'canCreate' || action === 'canRead');
     }
@@ -53,7 +56,11 @@ export function PermissionActionModal({ open, onClose, onConfirm, moduleName, is
       return allActions.filter(action => action !== 'canUpdate');
     }
     
-    // El resto (Jaulas, Razas, Conejos, Genealogía, Reproducción) soporta las 4 acciones
+    if (genealogyModule.includes(moduleName)) {
+      return allActions.filter(action => action !== 'canDelete');
+    }
+    
+    // El resto (Jaulas, Razas, Conejos, Reproducción) soporta las 4 acciones
     return allActions;
   };
 

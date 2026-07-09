@@ -18,23 +18,6 @@ export function useGenealogy() {
     queryFn: () => genealogyService.getAll(),
   });
 
-  // Mutation: Delete Genealogy
-  const deleteGenealogyMutation = useMutation({
-    mutationFn: (rabbitId: number) => genealogyService.delete(rabbitId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['genealogies'] });
-    },
-  });
-
-  const deleteGenealogy = async (rabbitId: number): Promise<{ success: boolean; error?: string }> => {
-    try {
-      await deleteGenealogyMutation.mutateAsync(rabbitId);
-      return { success: true };
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Error al eliminar la genealogía';
-      return { success: false, error: message };
-    }
-  };
 
   const getTree = async (rabbitId: number, levels?: number): Promise<GenealogyTree | null> => {
     return await genealogyService.getTree(rabbitId, levels);
@@ -59,7 +42,6 @@ export function useGenealogy() {
     loading,
     error: queryError ? (queryError as Error).message : null,
     fetchGenealogies,
-    deleteGenealogy,
     getTree,
     editGenealogy,
   };
