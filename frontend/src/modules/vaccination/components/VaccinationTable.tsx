@@ -15,7 +15,7 @@ interface NextVaccinationData {
   period: number | null;
 }
 
-function VaccinationCustomDetails({ nextVacs }: { nextVacs: NextVaccinationData[] }) {
+function VaccinationCustomDetails({ nextVacs }: Readonly<{ nextVacs: NextVaccinationData[] }>) {
   return (
     <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 col-span-2">
       <p className="text-xs text-slate-500 font-medium mb-3">Seguimiento de Vacuna Aplicada</p>

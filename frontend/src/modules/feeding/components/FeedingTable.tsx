@@ -40,6 +40,10 @@ export function FeedingTable() {
     }
   ];
 
+  const profile = selectedFeeding?.profile 
+    ? selectedFeeding.profile 
+    : (selectedFeeding?.profileName ? { fullName: selectedFeeding.profileName } : null);
+
   return (
     <>
       {error && <div className="text-red-600 py-4">{error}</div>}
@@ -52,50 +56,42 @@ export function FeedingTable() {
         onRowClick={(row) => setSelectedFeeding(row)}
       />
 
-      {(() => {
-        const profile = selectedFeeding?.profile 
-          ? selectedFeeding.profile 
-          : (selectedFeeding?.profileName ? { fullName: selectedFeeding.profileName } : null);
-
-        return (
-          <EventDetailsModal
-            open={!!selectedFeeding}
-            onClose={() => setSelectedFeeding(null)}
-            title="Detalles de Alimentación"
-            description="Información detallada sobre el registro de alimentación"
-            primaryDateString={selectedFeeding?.feedingDate}
-            primaryDateLabel="Fecha y Hora"
-            profile={profile}
-            rabbits={selectedFeeding?.rabbits}
-            rabbitsLabel="Conejos en Jaula"
-            cageNumber={selectedFeeding?.cageNumber}
-            customDetails={
-              selectedFeeding && (
-                <>
-                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                    <p className="text-xs text-slate-500 font-medium mb-1">Alimentos suministrados</p>
-                    <div className="flex flex-col leading-tight mt-1">
-                      <span className="text-sm font-semibold text-slate-800">
-                        {selectedFeeding.foodTypes.join(', ')}
-                      </span>
-                    </div>
+      <EventDetailsModal
+        open={!!selectedFeeding}
+        onClose={() => setSelectedFeeding(null)}
+        title="Detalles de Alimentación"
+        description="Información detallada sobre el registro de alimentación"
+        primaryDateString={selectedFeeding?.feedingDate}
+        primaryDateLabel="Fecha y Hora"
+        profile={profile}
+        rabbits={selectedFeeding?.rabbits}
+        rabbitsLabel="Conejos en Jaula"
+        cageNumber={selectedFeeding?.cageNumber}
+        customDetails={
+          selectedFeeding && (
+            <>
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                <p className="text-xs text-slate-500 font-medium mb-1">Alimentos suministrados</p>
+                <div className="flex flex-col leading-tight mt-1">
+                  <span className="text-sm font-semibold text-slate-800">
+                    {selectedFeeding.foodTypes.join(', ')}
+                  </span>
+                </div>
+              </div>
+              {selectedFeeding.justification && (
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 col-span-2">
+                  <p className="text-xs text-slate-500 font-medium mb-1">Justificación</p>
+                  <div className="flex flex-col leading-tight mt-1">
+                    <span className="text-sm text-slate-800">
+                      {selectedFeeding.justification}
+                    </span>
                   </div>
-                  {selectedFeeding.justification && (
-                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 col-span-2">
-                      <p className="text-xs text-slate-500 font-medium mb-1">Justificación</p>
-                      <div className="flex flex-col leading-tight mt-1">
-                        <span className="text-sm text-slate-800">
-                          {selectedFeeding.justification}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )
-            }
-          />
-        );
-      })()}
+                </div>
+              )}
+            </>
+          )
+        }
+      />
     </>
   );
 }
