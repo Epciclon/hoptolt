@@ -4,7 +4,9 @@ import { useState } from 'react';
 import type { Vaccination } from '../types/vaccination.types';
 import { useVaccination } from '../hooks/useVaccination';
 import { LoadingMessage, DateTimeBadge, EventDetailsModal } from '@/shared/ui';
-import { Table, Column } from '@/shared/ui/Table';
+import { Table } from '@/shared/ui/Table';
+import type { Column } from '@/shared/ui/Table';
+import { getRabbitEventBaseColumns } from '@/shared/utils/tableUtils';
 
 export function VaccinationTable() {
   const { vaccinations, loading, error, galponVaccines } = useVaccination();
@@ -37,39 +39,12 @@ export function VaccinationTable() {
   if (error) return <div className="text-red-600 py-8 text-center">{(error as any) instanceof Error ? (error as any).message : String(error)}</div>;
 
   const columns: Column<Vaccination>[] = [
-    {
-      key: 'rabbit',
-      header: 'Conejo',
-      className: 'font-medium text-slate-900',
-      render: (row) => row.rabbit ? (
-        <div className="flex flex-col">
-          <span className="text-slate-900 font-medium">{row.rabbit.name || 'Sin nombre'}</span>
-          <span className="text-[11px] text-slate-500">{row.rabbit.code}</span>
-        </div>
-      ) : row.rabbitCode
-    },
-    {
-      key: 'race',
-      header: 'Raza',
-      className: 'text-slate-600',
-      render: (row) => row.rabbit?.race || 'N/A'
-    },
+    ...getRabbitEventBaseColumns<Vaccination>('vaccinationDate'),
     {
       key: 'vaccines',
       header: 'Vacunas',
       className: 'text-slate-600',
       render: (row) => row.vaccines.join(', ')
-    },
-    {
-      key: 'responsible',
-      header: 'Reportado por',
-      className: 'text-slate-600',
-      render: (row) => row.profile?.fullName || row.profile?.username || 'N/A'
-    },
-    {
-      key: 'date',
-      header: 'Fecha y Hora',
-      render: (row) => <DateTimeBadge dateString={row.vaccinationDate} />
     }
   ];
 

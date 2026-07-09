@@ -7,6 +7,7 @@ import { useGalpones } from '../hooks/useGalpones';
 import { useActiveGalpon } from '../hooks/useActiveGalpon';
 import { useToast } from '@/shared/contexts/ToastContext';
 import type { Galpon } from '../types/galpon.types';
+import { getGalponBaseColumns } from '../utils/galponUtils';
 
 export function SelectActiveGalpon() {
   const { galpones, loading } = useGalpones();
@@ -24,9 +25,7 @@ export function SelectActiveGalpon() {
   };
 
   const columns: Column<Galpon>[] = [
-    { key: 'name', header: 'Nombre' },
-    { key: 'location', header: 'Ubicación' },
-    { key: 'totalCapacity', header: 'Capacidad' },
+    ...getGalponBaseColumns(),
     {
       key: 'active',
       header: 'Estado',

@@ -4,7 +4,9 @@ import { useState } from 'react';
 import type { Deworming } from '../types/deworming.types';
 import { useDeworming } from '../hooks/useDeworming';
 import { LoadingMessage, DateTimeBadge, EventDetailsModal } from '@/shared/ui';
-import { Table, Column } from '@/shared/ui/Table';
+import { Table } from '@/shared/ui/Table';
+import type { Column } from '@/shared/ui/Table';
+import { getRabbitEventBaseColumns } from '@/shared/utils/tableUtils';
 
 export function DewormingTable() {
   const { dewormings, loading, error, dewormingPeriod } = useDeworming();
@@ -32,34 +34,7 @@ export function DewormingTable() {
   if (error) return <div className="text-red-600 py-8 text-center">{error}</div>;
 
   const columns: Column<Deworming>[] = [
-    {
-      key: 'rabbit',
-      header: 'Conejo',
-      className: 'font-medium text-slate-900',
-      render: (row) => row.rabbit ? (
-        <div className="flex flex-col">
-          <span className="text-slate-900 font-medium">{row.rabbit.name || 'Sin nombre'}</span>
-          <span className="text-[11px] text-slate-500">{row.rabbit.code}</span>
-        </div>
-      ) : row.rabbitCode
-    },
-    {
-      key: 'race',
-      header: 'Raza',
-      className: 'text-slate-600',
-      render: (row) => row.rabbit?.race || 'N/A'
-    },
-    {
-      key: 'responsible',
-      header: 'Reportado por',
-      className: 'text-slate-600',
-      render: (row) => row.profile?.fullName || row.profile?.username || 'N/A'
-    },
-    {
-      key: 'date',
-      header: 'Fecha y Hora',
-      render: (row) => <DateTimeBadge dateString={row.dewormingDate} />
-    }
+    ...getRabbitEventBaseColumns<Deworming>('dewormingDate')
   ];
 
   return (

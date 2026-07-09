@@ -10,6 +10,7 @@ import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 import { useToast } from '@/shared/contexts/ToastContext';
 import type { Galpon } from '../types/galpon.types';
 import { galponService } from '../services/galpon.service';
+import { getGalponBaseColumns } from '../utils/galponUtils';
 
 interface GalponTableProps {
   onEdit?: (galpon: Galpon) => void;
@@ -49,10 +50,7 @@ export function GalponTable({ onEdit }: Readonly<GalponTableProps>) {
   };
 
   const columns: Column<Galpon>[] = [
-    { key: 'name', header: 'Nombre' },
-    { key: 'province', header: 'Provincia' },
-    { key: 'location', header: 'Ubicación' },
-    { key: 'totalCapacity', header: 'Capacidad Total' },
+    ...getGalponBaseColumns(),
     {
       key: 'actions',
       header: 'Acciones',
