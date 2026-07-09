@@ -10,7 +10,6 @@ import { genealogyService } from '../services/genealogy.service';
 import { rabbitService } from '@/modules/rabbits/services/rabbit.service';
 import type { Rabbit } from '@/modules/rabbits/types/rabbit.types';
 import type { UpdateGenealogyDto } from '../types/genealogy.types';
-import { X } from 'lucide-react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 
 const schema = z.object({

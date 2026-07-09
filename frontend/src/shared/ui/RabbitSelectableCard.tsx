@@ -24,7 +24,7 @@ export function RabbitSelectableCard({
 
   return (
     <div
-      role={isSelectable ? 'button' : undefined}
+      role={isSelectable ? 'button' : undefined} // NOSONAR: Usamos div con role=button para evitar errores de hidratación de React al anidar botones.
       tabIndex={isSelectable ? 0 : undefined}
       onClick={isSelectable ? onClick : undefined}
       onKeyDown={(e) => {

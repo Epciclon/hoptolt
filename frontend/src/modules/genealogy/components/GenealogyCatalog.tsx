@@ -6,7 +6,7 @@ import { FilterBar } from '@/shared/ui/FilterBar';
 import { Pagination } from '@/shared/ui/Pagination';
 import { Badge, Button, LoadingMessage, CatalogCard } from '@/shared/ui';
 import { useState } from 'react';
-import { Network, Edit2, Trash2 } from 'lucide-react';
+import { Network, Edit2 } from 'lucide-react';
 import type { Rabbit } from '@/modules/rabbits/types/rabbit.types';
 
 interface GenealogyCatalogProps {
@@ -85,21 +85,19 @@ export function GenealogyCatalog({ onViewTree, onEditRelation }: Readonly<Geneal
               </>
             }
             actions={
-              <>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 min-w-[80px]"
-                  icon={<Edit2 size={14} />}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEditRelation(rabbit);
-                  }}
-                >
-                  Editar Padres
-                </Button>
-              </>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="flex-1 min-w-[80px]"
+                icon={<Edit2 size={14} />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEditRelation(rabbit);
+                }}
+              >
+                Editar Padres
+              </Button>
             }
           />
           );
