@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useFeeding } from '../hooks/useFeeding';
-import { Table, LoadingMessage, DateTimeBadge, EventDetailsModal } from '@/shared/ui';
+import { Table, DateTimeBadge, EventDetailsModal } from '@/shared/ui';
 import type { Column } from '@/shared/ui/Table';
 import type { Feeding } from '../types/feeding.types';
 
@@ -52,42 +52,50 @@ export function FeedingTable() {
         onRowClick={(row) => setSelectedFeeding(row)}
       />
 
-      <EventDetailsModal
-        open={!!selectedFeeding}
-        onClose={() => setSelectedFeeding(null)}
-        title="Detalles de Alimentación"
-        description="Información detallada sobre el registro de alimentación"
-        primaryDateString={selectedFeeding?.feedingDate}
-        primaryDateLabel="Fecha y Hora"
-        profile={selectedFeeding?.profile ? selectedFeeding.profile : (selectedFeeding?.profileName ? { fullName: selectedFeeding.profileName } : null)}
-        rabbits={selectedFeeding?.rabbits}
-        rabbitsLabel="Conejos en Jaula"
-        cageNumber={selectedFeeding?.cageNumber}
-        customDetails={
-          selectedFeeding && (
-            <>
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                <p className="text-xs text-slate-500 font-medium mb-1">Alimentos suministrados</p>
-                <div className="flex flex-col leading-tight mt-1">
-                  <span className="text-sm font-semibold text-slate-800">
-                    {selectedFeeding.foodTypes.join(', ')}
-                  </span>
-                </div>
-              </div>
-              {selectedFeeding.justification && (
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 col-span-2">
-                  <p className="text-xs text-slate-500 font-medium mb-1">Justificación</p>
-                  <div className="flex flex-col leading-tight mt-1">
-                    <span className="text-sm text-slate-800">
-                      {selectedFeeding.justification}
-                    </span>
+      {(() => {
+        const profile = selectedFeeding?.profile 
+          ? selectedFeeding.profile 
+          : (selectedFeeding?.profileName ? { fullName: selectedFeeding.profileName } : null);
+
+        return (
+          <EventDetailsModal
+            open={!!selectedFeeding}
+            onClose={() => setSelectedFeeding(null)}
+            title="Detalles de Alimentación"
+            description="Información detallada sobre el registro de alimentación"
+            primaryDateString={selectedFeeding?.feedingDate}
+            primaryDateLabel="Fecha y Hora"
+            profile={profile}
+            rabbits={selectedFeeding?.rabbits}
+            rabbitsLabel="Conejos en Jaula"
+            cageNumber={selectedFeeding?.cageNumber}
+            customDetails={
+              selectedFeeding && (
+                <>
+                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                    <p className="text-xs text-slate-500 font-medium mb-1">Alimentos suministrados</p>
+                    <div className="flex flex-col leading-tight mt-1">
+                      <span className="text-sm font-semibold text-slate-800">
+                        {selectedFeeding.foodTypes.join(', ')}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              )}
-            </>
-          )
-        }
-      />
+                  {selectedFeeding.justification && (
+                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 col-span-2">
+                      <p className="text-xs text-slate-500 font-medium mb-1">Justificación</p>
+                      <div className="flex flex-col leading-tight mt-1">
+                        <span className="text-sm text-slate-800">
+                          {selectedFeeding.justification}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )
+            }
+          />
+        );
+      })()}
     </>
   );
 }

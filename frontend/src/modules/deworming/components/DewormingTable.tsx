@@ -3,10 +3,63 @@
 import { useState } from 'react';
 import type { Deworming } from '../types/deworming.types';
 import { useDeworming } from '../hooks/useDeworming';
-import { LoadingMessage, DateTimeBadge, EventDetailsModal } from '@/shared/ui';
+import { LoadingMessage, EventDetailsModal } from '@/shared/ui';
 import { Table } from '@/shared/ui/Table';
 import type { Column } from '@/shared/ui/Table';
 import { getRabbitEventBaseColumns } from '@/shared/utils/tableUtils';
+
+interface NextDewormingData {
+  nextDate: Date;
+  diffDays: number;
+  period: number;
+}
+
+function DewormingCustomDetails({ nextDeworm }: { nextDeworm: NextDewormingData | null }) {
+  return (
+    <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 col-span-2">
+      <p className="text-xs text-slate-500 font-medium mb-3">Seguimiento de Desparasitación</p>
+      <div className="flex flex-col leading-tight border border-slate-100 rounded bg-white p-3 justify-center">
+        {nextDeworm ? (
+          <>
+            <span className="text-sm font-semibold text-slate-800 border-b border-slate-100 pb-2 mb-2">
+              {nextDeworm.nextDate.toLocaleDateString('es-EC')} a las {nextDeworm.nextDate.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', hour12: true })}
+            </span>
+            {(() => {
+              if (nextDeworm.diffDays > 0) {
+                return (
+                  <span className="text-[12px] text-slate-600 font-medium">
+                    Faltan {nextDeworm.diffDays} día{nextDeworm.diffDays !== 1 ? 's' : ''}
+                  </span>
+                );
+              }
+              if (nextDeworm.diffDays === 0) {
+                return (
+                  <span className="text-[12px] text-slate-700 font-bold">
+                    Toca hoy
+                  </span>
+                );
+              }
+              return (
+                <span className="text-[12px] text-slate-600 font-medium">
+                  Atrasada {Math.abs(nextDeworm.diffDays)} día{Math.abs(nextDeworm.diffDays) !== 1 ? 's' : ''}
+                </span>
+              );
+            })()}
+          </>
+        ) : (
+          <>
+            <span className="text-sm font-semibold text-slate-400 border-b border-slate-100 pb-2 mb-2">
+              Sin fecha
+            </span>
+            <span className="text-[12px] text-slate-500 font-medium">
+              Sin período configurado
+            </span>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function DewormingTable() {
   const { dewormings, loading, error, dewormingPeriod } = useDeworming();
@@ -66,53 +119,7 @@ export function DewormingTable() {
         ] : null}
         rabbitsLabel="Conejo"
         customDetails={
-          selectedDeworming && (() => {
-            const nextDeworm = calculateNextDeworming(selectedDeworming);
-            return (
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 col-span-2">
-                <p className="text-xs text-slate-500 font-medium mb-3">Seguimiento de Desparasitación</p>
-                <div className="flex flex-col leading-tight border border-slate-100 rounded bg-white p-3 justify-center">
-                  {nextDeworm ? (
-                    <>
-                      <span className="text-sm font-semibold text-slate-800 border-b border-slate-100 pb-2 mb-2">
-                        {nextDeworm.nextDate.toLocaleDateString('es-EC')} a las {nextDeworm.nextDate.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', hour12: true })}
-                      </span>
-                      {(() => {
-                        if (nextDeworm.diffDays > 0) {
-                          return (
-                            <span className="text-[12px] text-slate-600 font-medium">
-                              Faltan {nextDeworm.diffDays} día{nextDeworm.diffDays !== 1 ? 's' : ''}
-                            </span>
-                          );
-                        }
-                        if (nextDeworm.diffDays === 0) {
-                          return (
-                            <span className="text-[12px] text-slate-700 font-bold">
-                              Toca hoy
-                            </span>
-                          );
-                        }
-                        return (
-                          <span className="text-[12px] text-slate-600 font-medium">
-                            Atrasada {Math.abs(nextDeworm.diffDays)} día{Math.abs(nextDeworm.diffDays) !== 1 ? 's' : ''}
-                          </span>
-                        );
-                      })()}
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-sm font-semibold text-slate-400 border-b border-slate-100 pb-2 mb-2">
-                        Sin fecha
-                      </span>
-                      <span className="text-[12px] text-slate-500 font-medium">
-                        Sin período configurado
-                      </span>
-                    </>
-                  )}
-                </div>
-              </div>
-            );
-          })()
+          selectedDeworming && <DewormingCustomDetails nextDeworm={calculateNextDeworming(selectedDeworming)} />
         }
       />
     </>

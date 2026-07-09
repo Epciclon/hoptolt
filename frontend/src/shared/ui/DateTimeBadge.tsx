@@ -1,4 +1,3 @@
-import { ReactNode } from 'react';
 
 export interface DateTimeBadgeProps {
   dateString: string | null | undefined;

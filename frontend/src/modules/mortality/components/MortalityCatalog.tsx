@@ -5,7 +5,6 @@ import { Button, Dialog, LoadingMessage, CageGroupCard, RabbitSelectableCard } f
 import { groupRabbitsByCage } from '@/shared/utils/rabbitUtils';
 import { useMortality } from '../hooks/useMortality';
 import { MortalityForm } from './MortalityForm';
-import type { AssignedRabbit } from '@/modules/assignments/types/assignment.types';
 
 interface MortalityCatalogProps {
   onSuccess?: () => void;

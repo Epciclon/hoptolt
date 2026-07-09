@@ -33,12 +33,14 @@ export function useRealtimeSync() {
       mortalities: ['mortalities']
     };
 
-    Object.entries(tableMappings).forEach(([table, queryKeys]) => {
-      channel = channel.on('postgres_changes', { event: '*', schema: 'public', table }, () => {
-        queryKeys.forEach(queryKey => {
-          queryClient.invalidateQueries({ queryKey: [queryKey] });
-        });
+    const handleChanges = (queryKeys: string[]) => {
+      queryKeys.forEach(queryKey => {
+        queryClient.invalidateQueries({ queryKey: [queryKey] });
       });
+    };
+
+    Object.entries(tableMappings).forEach(([table, queryKeys]) => {
+      channel = channel.on('postgres_changes', { event: '*', schema: 'public', table }, () => handleChanges(queryKeys));
     });
 
     channel.subscribe();
