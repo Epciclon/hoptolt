@@ -22,15 +22,20 @@ export function RabbitSelectableCard({
 }: Readonly<RabbitSelectableCardProps>) {
   const isSelectable = !!onClick;
 
-  const Component = isSelectable ? 'button' : 'div';
-
   return (
-    <Component
-      type={isSelectable ? "button" : undefined}
+    <div
+      role={isSelectable ? 'button' : undefined}
+      tabIndex={isSelectable ? 0 : undefined}
       onClick={isSelectable ? onClick : undefined}
+      onKeyDown={(e) => {
+        if (isSelectable && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
       className={cn(
         'border rounded-lg p-3 transition-all duration-150 bg-white text-left w-full block relative',
-        isSelectable && 'cursor-pointer',
+        isSelectable && 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1',
         (() => {
           if (isSelected) return 'border-primary-500 ring-1 ring-primary-500 shadow-sm';
           if (isSelectable) return 'border-slate-300 shadow-sm hover:border-primary-400';
@@ -95,6 +100,6 @@ export function RabbitSelectableCard({
           {children}
         </div>
       )}
-    </Component>
+    </div>
   );
 }
