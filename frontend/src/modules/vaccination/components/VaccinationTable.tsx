@@ -3,26 +3,12 @@
 import { useState } from 'react';
 import type { Vaccination } from '../types/vaccination.types';
 import { useVaccination } from '../hooks/useVaccination';
-import { LoadingMessage, Dialog } from '@/shared/ui';
+import { LoadingMessage, DateTimeBadge, EventDetailsModal } from '@/shared/ui';
 import { Table, Column } from '@/shared/ui/Table';
 
 export function VaccinationTable() {
   const { vaccinations, loading, error, galponVaccines } = useVaccination();
   const [selectedVaccination, setSelectedVaccination] = useState<Vaccination | null>(null);
-
-  const formatDateTime = (dateString: string) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    const ecuadorDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
-    const formattedDate = ecuadorDate.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    const formattedTime = ecuadorDate.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', hour12: true });
-    return (
-      <div className="flex flex-col">
-        <span className="text-slate-800">{formattedDate}</span>
-        <span className="text-[11px] text-slate-500">{formattedTime}</span>
-      </div>
-    );
-  };
 
   const calculateNextVaccinations = (vaccination: Vaccination) => {
     if (!vaccination.vaccines.length || !galponVaccines.length) return [];
@@ -83,7 +69,7 @@ export function VaccinationTable() {
     {
       key: 'date',
       header: 'Fecha y Hora',
-      render: (row) => formatDateTime(row.vaccinationDate)
+      render: (row) => <DateTimeBadge dateString={row.vaccinationDate} />
     }
   ];
 
@@ -97,86 +83,29 @@ export function VaccinationTable() {
         onRowClick={(row) => setSelectedVaccination(row)}
       />
 
-      <Dialog
+      <EventDetailsModal
         open={!!selectedVaccination}
         onClose={() => setSelectedVaccination(null)}
         title="Detalles de la Vacunación"
         description="Información detallada sobre el registro de vacunación"
-        size="md"
-      >
-        {selectedVaccination && (() => {
-          const nextVacs = calculateNextVaccinations(selectedVaccination);
-          
-          return (
-            <div className="space-y-4 pt-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                  <p className="text-xs text-slate-500 font-medium mb-1">Conejo</p>
-                  <div className="flex items-center gap-3">
-                    {selectedVaccination.rabbit?.imageUrl ? (
-                      <img 
-                        src={selectedVaccination.rabbit.imageUrl} 
-                        alt="Conejo" 
-                        className="w-10 h-10 flex-shrink-0 rounded-full object-cover shadow-sm border border-slate-200"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 flex-shrink-0 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 border border-slate-200 text-[9px] text-center leading-tight px-1">
-                        Sin foto
-                      </div>
-                    )}
-                    <div className="flex flex-col leading-tight">
-                      <span className="font-semibold text-slate-800 text-sm">
-                        {selectedVaccination.rabbit?.name || 'Sin nombre'}
-                      </span>
-                      <span className="text-[11px] text-slate-500 font-medium mt-0.5">
-                        {selectedVaccination.rabbit?.code || selectedVaccination.rabbitCode}
-                      </span>
-                      <span className="text-[10px] text-slate-400 mt-0.5">
-                        {selectedVaccination.rabbit?.race || 'Raza N/A'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                  <p className="text-xs text-slate-500 font-medium mb-1">Fecha y Hora de Aplicación</p>
-                  <div className="flex flex-col leading-tight mt-1">
-                    {(() => {
-                      const date = new Date(selectedVaccination.vaccinationDate);
-                      const ecuadorDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
-                      const formattedDate = ecuadorDate.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                      const formattedTime = ecuadorDate.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', hour12: true });
-                      return (
-                        <>
-                          <span className="text-sm font-semibold text-slate-800">{formattedDate}</span>
-                          <span className="text-[11px] text-slate-500 font-medium mt-0.5">{formattedTime}</span>
-                        </>
-                      );
-                    })()}
-                  </div>
-                </div>
-
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 col-span-2">
-                  <p className="text-xs text-slate-500 font-medium mb-1">Reportado por</p>
-                  <div className="flex flex-col leading-tight">
-                    <span className="text-sm font-semibold text-slate-800">
-                      {selectedVaccination.profile?.fullName || selectedVaccination.profile?.username || 'Sistema'}
-                    </span>
-                    {selectedVaccination.profile?.username && (
-                      <span className="text-[11px] text-slate-500 font-medium mt-0.5">
-                        @{selectedVaccination.profile.username}
-                      </span>
-                    )}
-                    {selectedVaccination.profile?.email && (
-                      <span className="text-[10px] text-slate-400 mt-0.5 break-all">
-                        {selectedVaccination.profile.email}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 mt-4">
+        primaryDateString={selectedVaccination?.vaccinationDate}
+        primaryDateLabel="Fecha y Hora de Aplicación"
+        profile={selectedVaccination?.profile}
+        rabbits={selectedVaccination ? [
+          {
+            id: selectedVaccination.rabbitId,
+            name: selectedVaccination.rabbit?.name,
+            code: selectedVaccination.rabbit?.code || selectedVaccination.rabbitCode,
+            race: selectedVaccination.rabbit?.race,
+            imageUrl: selectedVaccination.rabbit?.imageUrl
+          }
+        ] : null}
+        rabbitsLabel="Conejo"
+        customDetails={
+          selectedVaccination && (() => {
+            const nextVacs = calculateNextVaccinations(selectedVaccination);
+            return (
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 col-span-2">
                 <p className="text-xs text-slate-500 font-medium mb-3">Seguimiento de Vacuna Aplicada</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {nextVacs.length > 0 ? nextVacs.map((vac) => (
@@ -212,10 +141,10 @@ export function VaccinationTable() {
                   )}
                 </div>
               </div>
-            </div>
-          );
-        })()}
-      </Dialog>
+            );
+          })()
+        }
+      />
     </>
   );
 }

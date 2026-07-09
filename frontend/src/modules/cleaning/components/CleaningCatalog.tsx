@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button, Alert, CageCatalog, LoadingMessage } from '@/shared/ui';
 import type { CageItem } from '@/shared/ui';
+import { groupRabbitsByCage } from '@/shared/utils/rabbitUtils';
 import { useCleaning } from '../hooks/useCleaning';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { formatDateTime } from '@/shared/utils/dateUtils';
@@ -17,7 +18,6 @@ export function CleaningCatalog({ onSuccess }: Readonly<CleaningCatalogProps>) {
   const { showToast } = useToast();
   const [selectedCageNumbers, setSelectedCageNumbers] = useState<number[]>([]);
 
-
   const [submitting, setSubmitting] = useState(false);
 
   const getCageLastCleaning = (cageId: number) => {
@@ -26,22 +26,12 @@ export function CleaningCatalog({ onSuccess }: Readonly<CleaningCatalogProps>) {
     return cageCleanings.sort((a, b) => new Date(b.cleaningDate).getTime() - new Date(a.cleaningDate).getTime())[0];
   };
 
-  const groupedByCage = assignedRabbits.reduce((acc, rabbit) => {
-    const cageNumber = rabbit.cageNumber || 0;
-    const cageId = rabbit.cageId;
-    if (!acc[cageNumber]) {
-      acc[cageNumber] = {
-        cageNumber,
-        cageType: rabbit.cageType || 'desconocido',
-        cageId: cageId || 0,
-        rabbits: []
-      };
-    }
-    acc[cageNumber].rabbits.push(rabbit);
-    return acc;
-  }, {} as Record<number, CageItem>);
+  const cageGroups = useMemo<CageItem[]>(() => {
+    const groupedByCage = groupRabbitsByCage(assignedRabbits);
 
-  const cageGroups: CageItem[] = Object.values(groupedByCage).sort((a, b) => a.cageNumber - b.cageNumber);
+    return Object.values(groupedByCage)
+      .sort((a, b) => a.cageNumber - b.cageNumber);
+  }, [assignedRabbits]);
 
   const toggleCage = (cageNumber: number) => {
     setSelectedCageNumbers(prev =>

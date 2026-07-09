@@ -31,6 +31,12 @@ export type { RabbitMultiSelectFieldProps } from './RabbitMultiSelectField';
 export { CageGroupGrid } from './CageGroupGrid';
 export type { CageGroupGridProps } from './CageGroupGrid';
 
+export { DateTimeBadge, formatDateTimeText } from './DateTimeBadge';
+export type { DateTimeBadgeProps } from './DateTimeBadge';
+
+export { EventDetailsModal } from './EventDetailsModal';
+export type { EventDetailsModalProps, ProfileInfo, RabbitInfo } from './EventDetailsModal';
+
 export { FilterBar } from './FilterBar';
 export { Pagination } from './Pagination';
 export * from './LoadingMessage';

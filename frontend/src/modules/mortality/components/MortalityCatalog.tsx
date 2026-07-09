@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button, Dialog, LoadingMessage, CageGroupCard, RabbitSelectableCard } from '@/shared/ui';
+import { groupRabbitsByCage } from '@/shared/utils/rabbitUtils';
 import { useMortality } from '../hooks/useMortality';
 import { MortalityForm } from './MortalityForm';
 import type { AssignedRabbit } from '@/modules/assignments/types/assignment.types';
@@ -42,22 +43,10 @@ export function MortalityCatalog({ onSuccess }: Readonly<MortalityCatalogProps>)
     onSuccess?.();
   };
 
-  const groupedByCage = assignedRabbits.reduce((acc, rabbit) => {
-    const cageNumber = rabbit.cageNumber || 0;
-    const cageId = rabbit.cageId;
-    if (!acc[cageNumber]) {
-      acc[cageNumber] = {
-        cageNumber,
-        cageType: rabbit.cageType || 'desconocido',
-        cageId: cageId || 0,
-        rabbits: []
-      };
-    }
-    acc[cageNumber].rabbits.push(rabbit);
-    return acc;
-  }, {} as Record<number, { cageNumber: number; cageType: string; cageId: number; rabbits: AssignedRabbit[] }>);
-
-  const cageGroups = Object.values(groupedByCage).sort((a, b) => a.cageNumber - b.cageNumber);
+  const cageGroups = useMemo(() => {
+    const grouped = groupRabbitsByCage(assignedRabbits);
+    return Object.values(grouped).sort((a, b) => a.cageNumber - b.cageNumber);
+  }, [assignedRabbits]);
 
   if (loading) {
     return <LoadingMessage message="Cargando mortalidades..." />;

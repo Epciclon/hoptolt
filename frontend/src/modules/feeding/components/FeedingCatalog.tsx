@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Input, Button, CageCatalog, LoadingMessage, Dialog } from '@/shared/ui';
 import type { CageItem } from '@/shared/ui';
+import { groupRabbitsByCage } from '@/shared/utils/rabbitUtils';
 import { useFeeding } from '../hooks/useFeeding';
 import { useAuth } from '@/modules/auth/hooks/useAuth';
 import { useToast } from '@/shared/contexts/ToastContext';
@@ -92,22 +93,12 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
     return cageFeedings.sort((a, b) => new Date(b.feedingDate).getTime() - new Date(a.feedingDate).getTime())[0];
   };
 
-  const groupedByCage = assignedRabbits.reduce((acc, rabbit) => {
-    const cageNumber = rabbit.cageNumber || 0;
-    const cageId = rabbit.cageId;
-    if (!acc[cageNumber]) {
-      acc[cageNumber] = {
-        cageNumber,
-        cageType: rabbit.cageType || 'desconocido',
-        cageId: cageId || 0,
-        rabbits: []
-      };
-    }
-    acc[cageNumber].rabbits.push(rabbit);
-    return acc;
-  }, {} as Record<number, CageItem>);
+  const cageGroups = useMemo<CageItem[]>(() => {
+    const groupedByCage = groupRabbitsByCage(assignedRabbits);
 
-  const cageGroups: CageItem[] = Object.values(groupedByCage).sort((a, b) => a.cageNumber - b.cageNumber);
+    return Object.values(groupedByCage)
+      .sort((a, b) => a.cageNumber - b.cageNumber);
+  }, [assignedRabbits]);
 
   const toggleCage = (cageNumber: number) => {
     setSelectedCageNumbers(prev => 

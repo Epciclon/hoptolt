@@ -3,7 +3,7 @@
 import type { Reproduction } from '../types/reproduction.types';
 import { FilterBar } from '@/shared/ui/FilterBar';
 import { Table, Column } from '@/shared/ui/Table';
-import { Dialog } from '@/shared/ui';
+import { Dialog, DateTimeBadge } from '@/shared/ui';
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { mortalityService } from '@/modules/mortality/services/mortality.service';
@@ -22,32 +22,7 @@ type HistoryRecord =
       maleRace?: string | null;
     });
 
-const formatDateTime = (dateString: string | null | undefined) => {
-  if (!dateString) return <span className="text-slate-400">N/A</span>;
-  let formattedDate = '';
-  let formattedTime = '';
 
-  if (dateString.includes('T')) {
-    const date = new Date(dateString);
-    const ecuadorDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
-    formattedDate = ecuadorDate.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    formattedTime = ecuadorDate.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', hour12: true });
-  } else {
-    const parts = dateString.split('-');
-    if (parts.length === 3) {
-      formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
-    } else {
-      formattedDate = dateString;
-    }
-  }
-
-  return (
-    <div className="flex flex-col leading-tight">
-      <span className="text-sm font-medium text-slate-800">{formattedDate}</span>
-      {formattedTime && <span className="text-[11px] text-slate-500 font-medium mt-0.5">{formattedTime}</span>}
-    </div>
-  );
-};
 
 const renderKits = (row: HistoryRecord) => {
   if (row.type === 'mortality') {
@@ -120,9 +95,9 @@ const historyColumns: Column<HistoryRecord>[] = [
     headerClassName: 'w-[16%]',
     render: (row) => {
       if (row.type === 'reproduction') {
-        return formatDateTime((row as any).updatedAt || row.mountDate);
+        return <DateTimeBadge dateString={(row as any).updatedAt || row.mountDate} />;
       }
-      return formatDateTime(row.deathDate);
+      return <DateTimeBadge dateString={row.deathDate} />;
     }
   },
   {
