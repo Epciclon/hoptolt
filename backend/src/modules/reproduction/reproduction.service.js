@@ -106,59 +106,55 @@ class ReproductionService {
         return createPaginatedResponse(reproductions, filters.all ? 1 : pageValue, filters.all ? reproductions.length : limitValue, total);
     }
 
+    async _processMountDateUpdate(data, reproduction) {
+        const mountDateObj = new Date(data.mountDate);
+        const currentDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
+        currentDate.setHours(0, 0, 0, 0);
+
+        if (mountDateObj > currentDate) {
+            throw new AppError('La fecha de monta no puede ser futura. Solo se permite registrar montas del día actual o anteriores.', 400);
+        }
+
+        const female = await Rabbit.findByPk(reproduction.femaleId);
+        if (female && mountDateObj < new Date(female.birthDate)) {
+            throw new AppError('La fecha de monta no puede ser anterior a la fecha de nacimiento de la coneja.', 400);
+        }
+
+        data.estimatedBirthDate = this.calculateEstimatedBirthDate(data.mountDate);
+
+        const [y, m, d] = data.mountDate.split('-');
+        const originalMountDate = new Date(reproduction.mountDate);
+        const finalMountDate = new Date(Number(y), Number(m) - 1, Number(d), originalMountDate.getHours() || 0, originalMountDate.getMinutes() || 0, originalMountDate.getSeconds() || 0);
+        data.mountDate = finalMountDate;
+
+        if (['monta', 'gestacion', 'lactancia'].includes(reproduction.status)) {
+            const now = new Date();
+            const threshold1 = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+            const threshold2 = new Date(now.getTime() - (31 * 24 * 60 * 60 * 1000));
+            
+            let newStatus;
+            if (reproduction.bornKits !== null && reproduction.bornKits !== undefined) {
+                newStatus = 'lactancia';
+            } else if (finalMountDate <= threshold2) {
+                newStatus = 'lactancia';
+            } else if (finalMountDate <= threshold1) {
+                newStatus = 'gestacion';
+            } else {
+                newStatus = 'monta';
+            }
+
+            if (newStatus !== reproduction.status) {
+                data.status = newStatus;
+            }
+        }
+    }
+
     async editReproduction(id, data, profileId) {
         const reproduction = await reproductionRepository.findById(id);
         if (!reproduction) throw new AppError('Registro de reproducción no encontrado.', 404);
 
         if (data.mountDate) {
-            const mountDateObj = new Date(data.mountDate);
-            const currentDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
-            // Normalizar a medianoche para comparar solo días
-            currentDate.setHours(0, 0, 0, 0);
-            if (mountDateObj > currentDate) {
-                throw new AppError('La fecha de monta no puede ser futura. Solo se permite registrar montas del día actual o anteriores.', 400);
-            }
-
-            const female = await Rabbit.findByPk(reproduction.femaleId);
-            if (female) {
-                const birthDate = new Date(female.birthDate);
-                if (mountDateObj < birthDate) {
-                    throw new AppError('La fecha de monta no puede ser anterior a la fecha de nacimiento de la coneja.', 400);
-                }
-            }
-            data.estimatedBirthDate = this.calculateEstimatedBirthDate(data.mountDate);
-
-            // Mantener la hora del mountDate original
-            const [y, m, d] = data.mountDate.split('-');
-            const originalMountDate = new Date(reproduction.mountDate);
-            const finalMountDate = new Date(Number(y), Number(m) - 1, Number(d), originalMountDate.getHours() || 0, originalMountDate.getMinutes() || 0, originalMountDate.getSeconds() || 0);
-            data.mountDate = finalMountDate;
-
-            // Transición automática de estado basada en la nueva fecha de monta (similar al cron)
-            const now = new Date();
-            const threshold1 = new Date(now.getTime() - (24 * 60 * 60 * 1000)); // 24 horas
-            const threshold2 = new Date(now.getTime() - (31 * 24 * 60 * 60 * 1000)); // 31 días
-
-            if (['monta', 'gestacion', 'lactancia'].includes(reproduction.status)) {
-                let newStatus = reproduction.status;
-                
-                if (finalMountDate <= threshold2) {
-                    newStatus = 'lactancia';
-                } else if (finalMountDate <= threshold1) {
-                    newStatus = 'gestacion';
-                } else {
-                    newStatus = 'monta';
-                }
-
-                // Evitar retroceso si el parto ya fue registrado oficialmente por el usuario
-                if (reproduction.bornKits !== null && reproduction.bornKits !== undefined) {
-                    newStatus = 'lactancia';
-                }
-
-                if (newStatus !== reproduction.status) {
-                    data.status = newStatus;
-                }
-            }
+            await this._processMountDateUpdate(data, reproduction);
         }
 
         if (profileId) data.profileId = profileId;

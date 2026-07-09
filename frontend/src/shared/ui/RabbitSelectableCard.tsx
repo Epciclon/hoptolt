@@ -24,18 +24,9 @@ export function RabbitSelectableCard({
 
   return (
     <div
-      role={isSelectable ? 'button' : undefined} // NOSONAR: Usamos div con role=button para evitar errores de hidratación de React al anidar botones.
-      tabIndex={isSelectable ? 0 : undefined}
-      onClick={isSelectable ? onClick : undefined}
-      onKeyDown={(e) => {
-        if (isSelectable && (e.key === 'Enter' || e.key === ' ')) {
-          e.preventDefault();
-          onClick?.();
-        }
-      }}
       className={cn(
         'border rounded-lg p-3 transition-all duration-150 bg-white text-left w-full block relative',
-        isSelectable && 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1',
+        isSelectable && 'focus-within:ring-2 focus-within:ring-primary-500 focus-within:ring-offset-1',
         (() => {
           if (isSelected) return 'border-primary-500 ring-1 ring-primary-500 shadow-sm';
           if (isSelectable) return 'border-slate-300 shadow-sm hover:border-primary-400';
@@ -43,8 +34,17 @@ export function RabbitSelectableCard({
         })()
       )}
     >
+      {isSelectable && (
+        <button
+          type="button"
+          onClick={onClick}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 focus:outline-none rounded-lg"
+          aria-label={`Seleccionar conejo ${rabbit.code}`}
+        />
+      )}
+
       <div className="flex justify-between items-start mb-2">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 relative z-0">
           {rabbit.imageUrl ? (
             <img src={rabbit.imageUrl} alt={rabbit.code} className="w-10 h-10 flex-shrink-0 rounded-full object-cover shadow-sm border border-slate-200" />
           ) : (
@@ -65,7 +65,7 @@ export function RabbitSelectableCard({
         </div>
         <div className="flex items-center gap-1">
           {rabbit.race && (
-            <span className="px-2 py-0.5 bg-slate-50 text-slate-600 text-[10px] font-medium rounded-full shrink-0 capitalize border border-slate-200">
+            <span className="px-2 py-0.5 bg-slate-50 text-slate-600 text-[10px] font-medium rounded-full shrink-0 capitalize border border-slate-200 relative z-0">
               {rabbit.race}
             </span>
           )}
@@ -73,7 +73,7 @@ export function RabbitSelectableCard({
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onRemove(); }}
-              className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full p-1 transition-colors -mt-1 -mr-1"
+              className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full p-1 transition-colors -mt-1 -mr-1 relative z-20"
               title="Quitar"
             >
               <X size={14} />
@@ -83,20 +83,20 @@ export function RabbitSelectableCard({
       </div>
 
       {(rabbit.age !== undefined || rabbit.weight !== undefined) && (
-        <div className="flex justify-between text-xs text-slate-600 px-1">
+        <div className="flex justify-between text-xs text-slate-600 px-1 relative z-0">
           <span>{rabbit.age !== undefined ? <><span className="font-medium text-slate-700">{rabbit.age}</span> {rabbit.age === 1 ? 'mes' : 'meses'}</> : null}</span>
           <span>{rabbit.weight !== undefined ? <><span className="font-medium text-slate-700">{rabbit.weight}</span> kg</> : null}</span>
         </div>
       )}
 
       {isSelected && extras && (
-        <div className="pt-2 border-t border-slate-200/60 mt-2">
+        <div className="pt-2 border-t border-slate-200/60 mt-2 relative z-20">
           {extras}
         </div>
       )}
 
       {children && (
-        <div className="mt-3 border-t border-slate-100 pt-3">
+        <div className="mt-3 border-t border-slate-100 pt-3 relative z-20">
           {children}
         </div>
       )}
