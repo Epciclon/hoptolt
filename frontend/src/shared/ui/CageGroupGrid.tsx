@@ -1,0 +1,52 @@
+import { CageGroupCard } from './CageGroupCard';
+import { RabbitSelectableCard } from './RabbitSelectableCard';
+import type { AssignedRabbit } from '@/modules/assignments/types/assignment.types';
+import { ReactNode } from 'react';
+
+export interface CageGroupGridProps {
+  cageGroups: Array<{
+    cageNumber: number;
+    cageType: string;
+    cageId: number;
+    rabbits: AssignedRabbit[];
+  }>;
+  selectedRabbitIds: number[];
+  onToggleRabbit: (rabbitId: number) => void;
+  renderExtras?: (rabbit: AssignedRabbit) => ReactNode;
+}
+
+export function CageGroupGrid({
+  cageGroups,
+  selectedRabbitIds,
+  onToggleRabbit,
+  renderExtras
+}: Readonly<CageGroupGridProps>) {
+  if (cageGroups.length === 0) {
+    return <p className="text-sm text-slate-500">No hay conejos con jaula asignada en el galpón activo.</p>;
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 items-start">
+      {cageGroups.map(group => (
+        <CageGroupCard
+          key={group.cageNumber}
+          cageNumber={group.cageNumber}
+          cageType={group.cageType}
+        >
+          {group.rabbits.map(rabbit => {
+            const isSelected = selectedRabbitIds.includes(rabbit.id);
+            return (
+              <RabbitSelectableCard
+                key={rabbit.id}
+                rabbit={rabbit}
+                isSelected={isSelected}
+                onClick={() => onToggleRabbit(rabbit.id)}
+                extras={renderExtras ? renderExtras(rabbit) : undefined}
+              />
+            );
+          })}
+        </CageGroupCard>
+      ))}
+    </div>
+  );
+}

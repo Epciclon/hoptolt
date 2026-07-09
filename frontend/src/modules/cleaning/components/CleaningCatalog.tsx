@@ -5,6 +5,7 @@ import { Button, Alert, CageCatalog, LoadingMessage } from '@/shared/ui';
 import type { CageItem } from '@/shared/ui';
 import { useCleaning } from '../hooks/useCleaning';
 import { useToast } from '@/shared/contexts/ToastContext';
+import { formatDateTime } from '@/shared/utils/dateUtils';
 
 interface CleaningCatalogProps {
   onSuccess?: () => void;
@@ -15,23 +16,9 @@ export function CleaningCatalog({ onSuccess }: Readonly<CleaningCatalogProps>) {
 
   const { showToast } = useToast();
   const [selectedCageNumbers, setSelectedCageNumbers] = useState<number[]>([]);
-  const [submitting, setSubmitting] = useState(false);
 
-  const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const ecuadorDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
-    const formattedDate = ecuadorDate.toLocaleDateString('es-EC', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
-    const formattedTime = ecuadorDate.toLocaleTimeString('es-EC', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
-    return `${formattedDate} ${formattedTime}`;
-  };
+
+  const [submitting, setSubmitting] = useState(false);
 
   const getCageLastCleaning = (cageId: number) => {
     const cageCleanings = cleanings.filter(c => c.cageId === cageId);

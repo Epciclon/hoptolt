@@ -25,6 +25,12 @@ export type { Toast, ToastType } from './Toast';
 export { WorkerDetailsModal } from './WorkerDetailsModal';
 export type { WorkerDetailsModalProps, WorkerDetailsData } from './WorkerDetailsModal';
 
+export { RabbitMultiSelectField } from './RabbitMultiSelectField';
+export type { RabbitMultiSelectFieldProps } from './RabbitMultiSelectField';
+
+export { CageGroupGrid } from './CageGroupGrid';
+export type { CageGroupGridProps } from './CageGroupGrid';
+
 export { FilterBar } from './FilterBar';
 export { Pagination } from './Pagination';
 export * from './LoadingMessage';
