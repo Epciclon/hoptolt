@@ -87,7 +87,7 @@ export function EventDetailsModal({
           )}
 
           {profile && (
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 col-span-2">
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
               <p className="text-xs text-slate-500 font-medium mb-1">Reportado por</p>
               <div className="flex flex-col leading-tight">
                 <span className="text-sm font-semibold text-slate-800">

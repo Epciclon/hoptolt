@@ -20,12 +20,7 @@ export function getRabbitEventBaseColumns<T extends { rabbit?: { name?: string |
       className: 'text-slate-600',
       render: (row) => row.rabbit?.race || 'N/A'
     },
-    {
-      key: 'responsible',
-      header: 'Reportado por',
-      className: 'text-slate-600',
-      render: (row) => row.profile?.fullName || row.profile?.username || 'N/A'
-    },
+
     {
       key: 'date',
       header: 'Fecha y Hora',

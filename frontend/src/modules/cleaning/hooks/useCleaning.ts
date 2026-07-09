@@ -8,7 +8,7 @@ import { useActiveGalpon } from '@/modules/galpones/hooks/useActiveGalpon';
 import type { CreateCleaningDto } from '../types/cleaning.types';
 import type { AssignedRabbit } from '@/modules/assignments/types/assignment.types';
 
-export function useCleaning() {
+export function useCleaning(filters?: { profileId?: string; date?: string }) {
   const queryClient = useQueryClient();
   const { activeGalpon } = useActiveGalpon();
 
@@ -19,11 +19,18 @@ export function useCleaning() {
     error: errorCleanings,
     refetch: fetchCleanings,
   } = useQuery({
-    queryKey: ['cleanings', activeGalpon?.id],
-    queryFn: () => cleaningService.getAll().catch(err => {
-      if (err instanceof Error && err.message.includes('403')) return [];
-      throw err;
-    }),
+    queryKey: ['cleanings', activeGalpon?.id, filters?.profileId, filters?.date],
+    queryFn: () => {
+      let startDate, endDate;
+      if (filters?.date) {
+        startDate = `${filters.date}T00:00:00-05:00`;
+        endDate = `${filters.date}T23:59:59-05:00`;
+      }
+      return cleaningService.getAll({ profileId: filters?.profileId, startDate, endDate }).catch(err => {
+        if (err instanceof Error && err.message.includes('403')) return [];
+        throw err;
+      });
+    },
     enabled: !!activeGalpon,
   });
 
@@ -83,6 +90,7 @@ export function useCleaning() {
     mutationFn: (payload: CreateCleaningDto) => cleaningService.create(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cleanings'] });
+      queryClient.invalidateQueries({ queryKey: ['active-dates'] });
     },
   });
 

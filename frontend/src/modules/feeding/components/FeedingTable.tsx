@@ -6,8 +6,13 @@ import { Table, DateTimeBadge, EventDetailsModal } from '@/shared/ui';
 import type { Column } from '@/shared/ui/Table';
 import type { Feeding } from '../types/feeding.types';
 
-export function FeedingTable() {
-  const { feedings, loading, error } = useFeeding();
+interface FeedingTableProps {
+  profileId?: string;
+  date?: string;
+}
+
+export function FeedingTable({ profileId, date }: FeedingTableProps) {
+  const { feedings, loading, error } = useFeeding({ profileId, date });
   const [selectedFeeding, setSelectedFeeding] = useState<Feeding | null>(null);
 
   const columns: Column<any>[] = [
@@ -16,12 +21,6 @@ export function FeedingTable() {
       header: 'Jaula',
       className: 'font-medium text-slate-900',
       render: (row) => row.cageNumber?.toString() || '-'
-    },
-    {
-      key: 'profileName',
-      header: 'Reportado por',
-      className: 'text-slate-600',
-      render: (row) => row.profileName || 'Desconocido'
     },
     { 
       key: 'feedingDate', 

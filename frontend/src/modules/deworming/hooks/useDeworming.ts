@@ -5,7 +5,7 @@ import { dewormingService } from '../services/deworming.service';
 import { assignmentService } from '@/modules/assignments/services/assignment.service';
 
 
-export function useDeworming() {
+export function useDeworming(filters?: { profileId?: string; date?: string }) {
   const queryClient = useQueryClient();
 
   // Query: Fetch Dewormings
@@ -15,8 +15,15 @@ export function useDeworming() {
     error: errorDewormings,
     refetch: fetchDewormings,
   } = useQuery({
-    queryKey: ['dewormings'],
-    queryFn: () => dewormingService.getAll(),
+    queryKey: ['dewormings', filters?.profileId, filters?.date],
+    queryFn: () => {
+      let startDate, endDate;
+      if (filters?.date) {
+        startDate = `${filters.date}T00:00:00-05:00`;
+        endDate = `${filters.date}T23:59:59-05:00`;
+      }
+      return dewormingService.getAll({ profileId: filters?.profileId, startDate, endDate });
+    },
   });
 
   // Query: Fetch Assigned Rabbits
@@ -54,6 +61,7 @@ export function useDeworming() {
     mutationFn: (payload: { rabbitIds: number[] }) => dewormingService.create(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dewormings'] });
+      queryClient.invalidateQueries({ queryKey: ['active-dates'] });
     },
   });
 

@@ -30,7 +30,8 @@ class ReproductionRepository {
         const includeFemale = {
             model: Rabbit,
             as: 'female',
-            attributes: ['id', 'code', 'name', 'race', 'imageUrl', 'age', 'weight'],
+            attributes: ['id', 'code', 'name', 'race', 'imageUrl', 'age', 'weight', 'deletedAt'],
+            paranoid: false,
             include: [
                 {
                     model: Assignment,
@@ -147,12 +148,13 @@ class ReproductionRepository {
                 model: Rabbit,
                 as: 'female',
                 attributes: ['id', 'code', 'name', 'imageUrl'],
+                required: true,
                 include: [
                     {
                         model: Assignment,
                         as: 'assignments',
                         where: { status: 'asignado' },
-                        required: true,
+                        required: false,
                         include: [
                             {
                                 model: Cage,
@@ -179,11 +181,14 @@ class ReproductionRepository {
             includeOptions[0].include[0].include[0].required = true;
         }
 
-        return Reproduction.findAll({
+        const results = await Reproduction.findAll({
             where: whereClause,
             include: includeOptions,
             order: [['estimatedBirthDate', 'ASC']]
         });
+        
+        // Filter out records that have already given birth (lactancia, completado) or failed
+        return results.filter(r => ['monta', 'gestacion'].includes(r.status));
     }
 
     async findByDayAndGalpon(galponId, year, month, day, cageIds = null) {
@@ -199,13 +204,13 @@ class ReproductionRepository {
                 model: Rabbit,
                 as: 'female',
                 attributes: ['id', 'code', 'name', 'imageUrl'],
-                paranoid: false,
+                required: true,
                 include: [
                     {
                         model: Assignment,
                         as: 'assignments',
                         where: { status: 'asignado' },
-                        required: true,
+                        required: false,
                         include: [
                             {
                                 model: Cage,
@@ -233,11 +238,13 @@ class ReproductionRepository {
             includeOptions[0].include[0].include[0].required = true;
         }
 
-        return Reproduction.findAll({
+        const results = await Reproduction.findAll({
             where: whereClause,
             include: includeOptions,
             order: [['estimatedBirthDate', 'ASC']]
         });
+        
+        return results.filter(r => ['monta', 'gestacion'].includes(r.status));
     }
 
     async findByIdWithDetails(id) {
@@ -246,13 +253,14 @@ class ReproductionRepository {
                 {
                     model: Rabbit,
                     as: 'female',
-                    attributes: ['id', 'code', 'name', 'sex', 'birthDate', 'weight', 'purpose', 'imageUrl'],
+                    attributes: ['id', 'code', 'name', 'sex', 'birthDate', 'weight', 'purpose', 'imageUrl', 'deletedAt'],
+                    paranoid: false,
                     include: [
                         {
                             model: Assignment,
                             as: 'assignments',
                             where: { status: 'asignado' },
-                            required: true,
+                            required: false,
                             include: [
                                 {
                                     model: Cage,

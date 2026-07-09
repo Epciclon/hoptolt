@@ -12,6 +12,7 @@ export interface Reproduction {
   maleRace?: string;
   maleImageUrl?: string | null;
   isMaleDeleted?: boolean;
+  isFemaleDeleted?: boolean;
   mountDate: string;
   estimatedBirthDate: string;
   bornKits?: number | null;

@@ -7,7 +7,7 @@ import { farmMemberService } from '@/modules/farmMember/services/farmMember.serv
 import { useActiveGalpon } from '@/modules/galpones/hooks/useActiveGalpon';
 import type { AssignedRabbit } from '@/modules/assignments/types/assignment.types';
 
-export function useFeeding() {
+export function useFeeding(filters?: { profileId?: string; date?: string }) {
   const queryClient = useQueryClient();
   const { activeGalpon } = useActiveGalpon();
 
@@ -18,11 +18,18 @@ export function useFeeding() {
     error: errorFeedings,
     refetch: fetchFeedings,
   } = useQuery({
-    queryKey: ['feedings', activeGalpon?.id],
-    queryFn: () => feedingService.getAll().catch((err) => {
-      if (err instanceof Error && err.message.includes('403')) return [];
-      throw err;
-    }),
+    queryKey: ['feedings', activeGalpon?.id, filters?.profileId, filters?.date],
+    queryFn: () => {
+      let startDate, endDate;
+      if (filters?.date) {
+        startDate = `${filters.date}T00:00:00-05:00`;
+        endDate = `${filters.date}T23:59:59-05:00`;
+      }
+      return feedingService.getAll({ profileId: filters?.profileId, startDate, endDate }).catch((err) => {
+        if (err instanceof Error && err.message.includes('403')) return [];
+        throw err;
+      });
+    },
     enabled: !!activeGalpon,
   });
 

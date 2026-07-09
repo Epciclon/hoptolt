@@ -4,6 +4,8 @@ import { DashboardTabs } from '@/shared/ui/DashboardTabs';
 import { SectionMessage } from '@/shared/ui/SectionMessage';
 import { Sparkles, Archive } from 'lucide-react';
 import { CleaningTable } from './CleaningTable';
+import { AuditHistoryView } from '@/shared/ui';
+import { cleaningService } from '../services/cleaning.service';
 import { CleaningCatalog } from './CleaningCatalog';
 import { Card, CardHeader } from '@/shared/ui';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
@@ -36,8 +38,16 @@ export function CleaningDashboard() {
         ) : null}
         {isOwner && activeTab === 'historial' && (
           <>
-            <SectionMessage message="En esta fase se puede revisar el historial de limpiezas." />
-            <CleaningTable />
+            <SectionMessage message="En esta fase se puede revisar el historial diario de limpiezas registradas en la granja por trabajador. Selecciona un trabajador para revisar su registro de actividades diarias." />
+            <AuditHistoryView 
+              moduleName="cleaning"
+              renderTable={(profileId, date) => <CleaningTable profileId={profileId} date={date} />}
+              fetchActiveDates={async (profileId) => {
+                const data = await cleaningService.getAll({ profileId });
+                const dates = data.map(c => c.cleaningDate.split('T')[0]);
+                return Array.from(new Set(dates)).sort().reverse();
+              }}
+            />
           </>
         )}
       </div>

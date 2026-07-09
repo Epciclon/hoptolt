@@ -31,6 +31,8 @@ export function useRabbits(initialParams?: GetRabbitsParams) {
     mutationFn: (id: number) => rabbitService.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rabbits'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
+      queryClient.invalidateQueries({ queryKey: ['birthCalendar'] });
     },
   });
 

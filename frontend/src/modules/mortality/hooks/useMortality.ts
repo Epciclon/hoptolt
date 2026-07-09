@@ -8,7 +8,7 @@ import { useActiveGalpon } from '@/modules/galpones/hooks/useActiveGalpon';
 import type { CreateMortalityDto } from '../types/mortality.types';
 import type { AssignedRabbit } from '@/modules/assignments/types/assignment.types';
 
-export function useMortality() {
+export function useMortality(filters?: { profileId?: string; date?: string; isKits?: boolean }) {
   const queryClient = useQueryClient();
   const { activeGalpon } = useActiveGalpon();
 
@@ -19,11 +19,23 @@ export function useMortality() {
     error: errorMortalities,
     refetch: fetchMortalities,
   } = useQuery({
-    queryKey: ['mortalities', activeGalpon?.id],
-    queryFn: () => mortalityService.getAll(undefined, false).catch(err => {
-      if (err instanceof Error && err.message.includes('403')) return [];
-      throw err;
-    }),
+    queryKey: ['mortalities', activeGalpon?.id, filters?.profileId, filters?.date, filters?.isKits],
+    queryFn: () => {
+      let startDate, endDate;
+      if (filters?.date) {
+        startDate = `${filters.date}T00:00:00-05:00`;
+        endDate = `${filters.date}T23:59:59-05:00`;
+      }
+      return mortalityService.getAll({ 
+        profileId: filters?.profileId, 
+        startDate, 
+        endDate, 
+        isKits: filters?.isKits 
+      }).catch(err => {
+        if (err instanceof Error && err.message.includes('403')) return [];
+        throw err;
+      });
+    },
     enabled: !!activeGalpon,
   });
 
@@ -81,6 +93,9 @@ export function useMortality() {
       queryClient.invalidateQueries({ queryKey: ['assignedRabbits'] });
       queryClient.invalidateQueries({ queryKey: ['reproductions'] });
       queryClient.invalidateQueries({ queryKey: ['kitMortalitiesHistory'] });
+      queryClient.invalidateQueries({ queryKey: ['active-dates'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
+      queryClient.invalidateQueries({ queryKey: ['birthCalendar'] });
     },
   });
 

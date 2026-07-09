@@ -4,6 +4,8 @@ import { DashboardTabs } from '@/shared/ui/DashboardTabs';
 import { SectionMessage } from '@/shared/ui/SectionMessage';
 import { Pill, Archive } from 'lucide-react';
 import { DewormingTable } from './DewormingTable';
+import { AuditHistoryView } from '@/shared/ui';
+import { dewormingService } from '../services/deworming.service';
 import { DewormingCatalog } from './DewormingCatalog';
 import { Card, CardHeader } from '@/shared/ui';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
@@ -36,8 +38,16 @@ export function DewormingDashboard() {
         ) : null}
         {isOwner && activeTab === 'historial' && (
           <>
-            <SectionMessage message="En esta fase se puede revisar el historial de desparasitaciones." />
-            <DewormingTable />
+            <SectionMessage message="En esta fase se puede revisar el historial diario de desparasitaciones registradas en la granja por trabajador. Selecciona un trabajador para revisar su registro de actividades diarias." />
+            <AuditHistoryView 
+              moduleName="deworming"
+              renderTable={(profileId, date) => <DewormingTable profileId={profileId} date={date} />}
+              fetchActiveDates={async (profileId) => {
+                const data = await dewormingService.getAll({ profileId });
+                const dates = data.map(d => d.dewormingDate.split('T')[0]);
+                return Array.from(new Set(dates)).sort().reverse();
+              }}
+            />
           </>
         )}
       </div>

@@ -18,33 +18,35 @@ function DewormingCustomDetails({ nextDeworm }: Readonly<{ nextDeworm: NextDewor
   return (
     <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 col-span-2">
       <p className="text-xs text-slate-500 font-medium mb-3">Seguimiento de Desparasitación</p>
-      <div className="flex flex-col leading-tight border border-slate-100 rounded bg-white p-3 justify-center">
+      <div className={`flex flex-col leading-tight border rounded p-3 justify-center ${
+        nextDeworm ? (nextDeworm.diffDays === 0 ? 'bg-emerald-50 border-emerald-100' : nextDeworm.diffDays < 0 ? 'bg-amber-50 border-amber-100' : 'bg-white border-slate-100') : 'bg-white border-slate-100'
+      }`}>
         {nextDeworm ? (
           <>
-            <span className="text-sm font-semibold text-slate-800 border-b border-slate-100 pb-2 mb-2">
-              {nextDeworm.nextDate.toLocaleDateString('es-EC')} a las {nextDeworm.nextDate.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', hour12: true })}
-            </span>
             {(() => {
               if (nextDeworm.diffDays > 0) {
                 return (
-                  <span className="text-[12px] text-slate-600 font-medium">
+                  <span className="text-sm font-semibold text-slate-800 border-b border-black/5 pb-2 mb-2">
                     Faltan {nextDeworm.diffDays} día{nextDeworm.diffDays !== 1 ? 's' : ''}
                   </span>
                 );
               }
               if (nextDeworm.diffDays === 0) {
                 return (
-                  <span className="text-[12px] text-slate-700 font-bold">
+                  <span className="text-sm font-bold text-slate-800 border-b border-black/5 pb-2 mb-2">
                     Toca hoy
                   </span>
                 );
               }
               return (
-                <span className="text-[12px] text-slate-600 font-medium">
+                <span className="text-sm font-semibold text-slate-800 border-b border-black/5 pb-2 mb-2">
                   Atrasada {Math.abs(nextDeworm.diffDays)} día{Math.abs(nextDeworm.diffDays) !== 1 ? 's' : ''}
                 </span>
               );
             })()}
+            <span className="text-[12px] text-slate-500 font-medium">
+              Próxima desparasitación: {nextDeworm.nextDate.toLocaleDateString('es-EC')}
+            </span>
           </>
         ) : (
           <>
@@ -61,8 +63,13 @@ function DewormingCustomDetails({ nextDeworm }: Readonly<{ nextDeworm: NextDewor
   );
 }
 
-export function DewormingTable() {
-  const { dewormings, loading, error, dewormingPeriod } = useDeworming();
+interface DewormingTableProps {
+  profileId?: string;
+  date?: string;
+}
+
+export function DewormingTable({ profileId, date }: DewormingTableProps) {
+  const { dewormings, loading, error, dewormingPeriod } = useDeworming({ profileId, date });
   const [selectedDeworming, setSelectedDeworming] = useState<Deworming | null>(null);
 
   const calculateNextDeworming = (deworming: Deworming) => {

@@ -5,11 +5,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { reproductionService } from '../services/reproduction.service';
 
 
-export function useReproduction() {
+export function useReproduction(filters?: { profileId?: string; date?: string; status?: string | null }) {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(12);
-  const [status, setStatus] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(filters?.status || null);
 
   // Query: Fetch Reproductions
   const {
@@ -18,8 +18,22 @@ export function useReproduction() {
     error: errorReproductions,
     refetch: fetchReproductions,
   } = useQuery({
-    queryKey: ['reproductions', page, limit, status],
-    queryFn: () => reproductionService.getAll(page, limit, status),
+    queryKey: ['reproductions', page, limit, status, filters?.profileId, filters?.date],
+    queryFn: () => {
+      let startDate, endDate;
+      if (filters?.date) {
+        startDate = `${filters.date}T00:00:00-05:00`;
+        endDate = `${filters.date}T23:59:59-05:00`;
+      }
+      return reproductionService.getAll({ 
+        page, 
+        limit, 
+        status, 
+        profileId: filters?.profileId, 
+        startDate, 
+        endDate 
+      });
+    },
     refetchInterval: 15000,
   });
 
@@ -51,6 +65,7 @@ export function useReproduction() {
       queryClient.invalidateQueries({ queryKey: ['reproductions'] });
       queryClient.invalidateQueries({ queryKey: ['birthCalendar'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
+      queryClient.invalidateQueries({ queryKey: ['active-dates'] });
     },
   });
 
@@ -62,6 +77,7 @@ export function useReproduction() {
       queryClient.invalidateQueries({ queryKey: ['reproductions'] });
       queryClient.invalidateQueries({ queryKey: ['birthCalendar'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
+      queryClient.invalidateQueries({ queryKey: ['active-dates'] });
     },
   });
 
@@ -72,6 +88,7 @@ export function useReproduction() {
       queryClient.invalidateQueries({ queryKey: ['reproductions'] });
       queryClient.invalidateQueries({ queryKey: ['birthCalendar'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
+      queryClient.invalidateQueries({ queryKey: ['active-dates'] });
     },
   });
 
@@ -99,6 +116,7 @@ export function useReproduction() {
       queryClient.invalidateQueries({ queryKey: ['reproductions'] });
       queryClient.invalidateQueries({ queryKey: ['birthCalendar'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
+      queryClient.invalidateQueries({ queryKey: ['active-dates'] });
     },
   });
 
@@ -108,6 +126,7 @@ export function useReproduction() {
       queryClient.invalidateQueries({ queryKey: ['reproductions'] });
       queryClient.invalidateQueries({ queryKey: ['birthCalendar'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
+      queryClient.invalidateQueries({ queryKey: ['active-dates'] });
     },
   });
 
@@ -116,6 +135,7 @@ export function useReproduction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reproductions'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
+      queryClient.invalidateQueries({ queryKey: ['active-dates'] });
     },
   });
 

@@ -56,7 +56,7 @@ export function MontasView({ reproductions, onSuccess }: Readonly<MontasViewProp
   const [expandedMaleId, setExpandedMaleId] = useState<number | null>(null);
   const [processing, setProcessing] = useState(false);
 
-  const activeMontas = reproductions.filter(r => r.status === 'monta');
+  const activeMontas = reproductions.filter(r => r.status === 'monta' && !r.isFemaleDeleted);
 
   const handleFinishMating = async () => {
     if (!finishingReproduction) return;

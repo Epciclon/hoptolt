@@ -4,6 +4,7 @@ import { DashboardTabs } from '@/shared/ui/DashboardTabs';
 import { SectionMessage } from '@/shared/ui/SectionMessage';
 import { Utensils, Archive } from 'lucide-react';
 import { FeedingTable } from './FeedingTable';
+import { AuditHistoryView } from '@/shared/ui';
 import { FeedingCatalog } from './FeedingCatalog';
 import { Card, CardHeader } from '@/shared/ui';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
@@ -36,8 +37,11 @@ export function FeedingDashboard() {
         ) : null}
         {isOwner && activeTab === 'historial' && (
           <>
-            <SectionMessage message="En esta fase se puede revisar el historial de alimentaciones registradas en la granja." />
-            <FeedingTable />
+            <SectionMessage message="En esta fase se puede revisar el historial diario de alimentaciones registradas en la granja por trabajador. Selecciona un trabajador para revisar su registro de actividades diarias." />
+            <AuditHistoryView 
+              moduleName="feeding"
+              renderTable={(profileId, date) => <FeedingTable profileId={profileId} date={date} />} 
+            />
           </>
         )}
       </div>

@@ -6,8 +6,13 @@ import { useCleaning } from '../hooks/useCleaning';
 import { LoadingMessage, DateTimeBadge, EventDetailsModal } from '@/shared/ui';
 import { Table, Column } from '@/shared/ui/Table';
 
-export function CleaningTable() {
-  const { cleanings, loading, error } = useCleaning();
+interface CleaningTableProps {
+  profileId?: string;
+  date?: string;
+}
+
+export function CleaningTable({ profileId, date }: CleaningTableProps) {
+  const { cleanings, loading, error } = useCleaning({ profileId, date });
   const [selectedCleaning, setSelectedCleaning] = useState<Cleaning | null>(null);
 
   if (loading) return <LoadingMessage message="Cargando limpiezas..." />;
@@ -20,12 +25,7 @@ export function CleaningTable() {
       className: 'font-medium text-slate-900',
       render: (row) => row.cageNumber?.toString() || '-'
     },
-    {
-      key: 'responsible',
-      header: 'Reportado por',
-      className: 'text-slate-600',
-      render: (row) => row.profile?.fullName || row.profile?.username || 'N/A'
-    },
+
     {
       key: 'date',
       header: 'Fecha y Hora',

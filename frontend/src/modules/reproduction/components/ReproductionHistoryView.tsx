@@ -7,10 +7,12 @@ import { Dialog, DateTimeBadge } from '@/shared/ui';
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { mortalityService } from '@/modules/mortality/services/mortality.service';
+import { reproductionService } from '../services/reproduction.service';
 import type { Mortality } from '@/modules/mortality/types/mortality.types';
 
 interface ReproductionHistoryViewProps {
-  reproductions: Reproduction[];
+  profileId?: string;
+  date?: string;
 }
 
 type HistoryRecord = 
@@ -123,20 +125,7 @@ const historyColumns: Column<HistoryRecord>[] = [
       }
     }
   },
-  {
-    key: 'reporter',
-    header: 'Reportado por',
-    className: 'w-[16%]',
-    headerClassName: 'w-[16%]',
-    render: (row) => {
-      let text = row.profile?.fullName || row.profile?.username || (row as any).profileName || 'Sistema';
-      return (
-        <div className="max-w-[200px] truncate text-slate-600" title={text}>
-          {text}
-        </div>
-      );
-    }
-  }
+
 ];
 
 function getFilteredReproductions(reproductions: Reproduction[], searchTerm: string, filterStatus: string) {
@@ -297,7 +286,7 @@ function MortalityDetails({ record: selectedRecord }: Readonly<{ record: Mortali
         </div>
       </div>
 
-      <ReporterProfileCard profile={selectedRecord.profile} />
+
 
       <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
         <p className="text-xs text-slate-500 font-medium mb-1">Causa de Muerte</p>
@@ -369,7 +358,7 @@ function ReproductionDetails({ record: selectedRecord }: Readonly<{ record: Repr
         </>
       )}
 
-      <ReporterProfileCard profile={selectedRecord.profile} />
+
 
       <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 w-full">
         <p className="text-xs text-slate-500 font-medium mb-1">Estado</p>
@@ -406,14 +395,36 @@ function ReproductionDetails({ record: selectedRecord }: Readonly<{ record: Repr
   );
 }
 
-export function ReproductionHistoryView({ reproductions }: Readonly<ReproductionHistoryViewProps>) {
+export function ReproductionHistoryView({ profileId, date }: Readonly<ReproductionHistoryViewProps>) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [selectedRecord, setSelectedRecord] = useState<HistoryRecord | null>(null);
   
+  const { data: historyReproductions, isLoading: loadingReps } = useQuery({
+    queryKey: ['reproductionsHistory', profileId, date],
+    queryFn: async () => {
+      const res = await reproductionService.getAll({ profileId, limit: 1000 });
+      return res.reproductions.filter((r: any) => {
+        if (r.status !== 'completado' && r.status !== 'fallido') return false;
+        if (!date) return true;
+        const d = r.updatedAt || r.mountDate;
+        return d && d.split('T')[0] === date;
+      });
+    },
+  });
+  
+  const reproductions = historyReproductions || [];
+
   const { data: kitMortalitiesData, isLoading: loadingMortalities } = useQuery({
-    queryKey: ['kitMortalitiesHistory'],
-    queryFn: () => mortalityService.getAll(100, true),
+    queryKey: ['kitMortalitiesHistory', profileId, date],
+    queryFn: () => {
+      let startDate, endDate;
+      if (date) {
+        startDate = `${date}T00:00:00-05:00`;
+        endDate = `${date}T23:59:59-05:00`;
+      }
+      return mortalityService.getAll({ isKits: true, profileId, startDate, endDate });
+    },
   });
   const kitMortalities = kitMortalitiesData || [];
 
@@ -459,7 +470,7 @@ export function ReproductionHistoryView({ reproductions }: Readonly<Reproduction
       <Table
         columns={historyColumns}
         data={combinedHistory}
-        loading={loadingMortalities}
+        loading={loadingReps || loadingMortalities}
         emptyMessage="No hay registros en el historial que coincidan con los filtros."
         rowKey={(row) => `${row.type}-${row.id}`}
         onRowClick={setSelectedRecord}

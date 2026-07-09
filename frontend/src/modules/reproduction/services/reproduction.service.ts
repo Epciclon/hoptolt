@@ -2,12 +2,16 @@ import api from '@/lib/api';
 import type { Reproduction, CreateReproductionDto, StartMatingDto, MatingRabbit, ReproductionFemale, ReproductionMale } from '../types/reproduction.types';
 
 export const reproductionService = {
-  async getAll(page: number = 1, limit: number = 10, status: string | null = null): Promise<{ reproductions: Reproduction[]; pagination: any }> {
+  async getAll(options?: { page?: number, limit?: number, status?: string | null, profileId?: string, startDate?: string, endDate?: string }): Promise<{ reproductions: Reproduction[]; pagination: any }> {
     const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-      ...(status && { status })
+      page: (options?.page || 1).toString(),
+      limit: (options?.limit || 10).toString(),
     });
+    if (options?.status) params.append('status', options.status);
+    if (options?.profileId) params.append('profileId', options.profileId);
+    if (options?.startDate) params.append('startDate', options.startDate);
+    if (options?.endDate) params.append('endDate', options.endDate);
+
     const { data } = await api.get<{ success: boolean; reproductions: Reproduction[]; pagination: any }>(`/reproductions?${params}`);
     return { reproductions: data.reproductions, pagination: data.pagination };
   },

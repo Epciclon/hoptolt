@@ -56,6 +56,7 @@ const toReproductionDTO = (reproduction) => {
         malePurpose: male?.purpose || '',
         maleImageUrl: male?.imageUrl || null,
         isMaleDeleted: !!male?.deletedAt,
+        isFemaleDeleted: !reproduction.female || !!reproduction.female.deletedAt,
         mountDate: reproduction.mountDate,
         estimatedBirthDate: reproduction.estimatedBirthDate,
         bornKits: reproduction.bornKits,

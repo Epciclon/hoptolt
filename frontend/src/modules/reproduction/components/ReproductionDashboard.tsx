@@ -6,7 +6,10 @@ import { MontasView } from './MontasView';
 import { ReproductionCatalog } from './ReproductionCatalog';
 import { GazaposView } from './GazaposView';
 import { ReproductionHistoryView } from './ReproductionHistoryView';
+import { AuditHistoryView } from '@/shared/ui';
 import { useReproduction } from '../hooks/useReproduction';
+import { reproductionService } from '../services/reproduction.service';
+import { mortalityService } from '@/modules/mortality/services/mortality.service';
 import { Card, CardHeader } from '@/shared/ui';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 
@@ -45,7 +48,27 @@ export function ReproductionDashboard() {
           <GazaposView reproductions={reproductions} onSuccess={fetchReproductions} />
         )}
         {isOwner && currentTab === 'history' && (
-          <ReproductionHistoryView reproductions={reproductions} />
+          <AuditHistoryView
+            moduleName="reproduction"
+            renderTable={(profileId, date) => <ReproductionHistoryView profileId={profileId} date={date} />}
+            fetchActiveDates={async (profileId) => {
+              const [repsData, mortsData] = await Promise.all([
+                reproductionService.getAll({ profileId, limit: 1000 }),
+                mortalityService.getAll({ profileId, isKits: true })
+              ]);
+              const dates = new Set<string>();
+              repsData.reproductions.forEach((r: any) => {
+                if (r.status === 'completado' || r.status === 'fallido') {
+                  const d = r.updatedAt || r.mountDate;
+                  if (d) dates.add(d.split('T')[0]);
+                }
+              });
+              mortsData.forEach(m => {
+                if (m.deathDate) dates.add(m.deathDate.split('T')[0]);
+              });
+              return Array.from(dates).sort().reverse();
+            }}
+          />
         )}
       </div>
     </Card>

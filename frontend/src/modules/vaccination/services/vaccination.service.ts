@@ -2,8 +2,14 @@ import api from '@/lib/api';
 import type { Vaccination, CreateVaccinationDto, GalponVaccine } from '../types/vaccination.types';
 
 export const vaccinationService = {
-  async getAll(): Promise<Vaccination[]> {
-    const { data } = await api.get<{ success: boolean; vaccinations: Vaccination[] }>('/vaccinations');
+  async getAll(filters?: { profileId?: string, startDate?: string, endDate?: string }): Promise<Vaccination[]> {
+    const params = new URLSearchParams();
+    params.append('limit', '1000');
+    if (filters?.profileId) params.append('profileId', filters.profileId);
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+
+    const { data } = await api.get<{ success: boolean; vaccinations: Vaccination[] }>(`/vaccinations?${params.toString()}`);
     return data.vaccinations;
   },
 

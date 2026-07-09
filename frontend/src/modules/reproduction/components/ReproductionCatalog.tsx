@@ -141,6 +141,7 @@ export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<Repro
 
   const gestaciones = reproductions.filter(r => {
       if (r.status !== 'gestacion') return false;
+      if (r.isFemaleDeleted) return false;
       
       const matchesSearch = 
         r.femaleName?.toLowerCase().includes(searchTerm.toLowerCase()) ||

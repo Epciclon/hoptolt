@@ -76,6 +76,7 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
 
   const lactancias = reproductions.filter(r => {
     if (r.status !== 'lactancia') return false;
+    if (r.isFemaleDeleted) return false;
     const matchesSearch = 
       r.femaleName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       r.femaleCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -335,7 +336,65 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
                 isSelected={isExpanded}
                 onClick={() => setExpandedId(isExpanded ? null : reproduction.id)}
               >
-                <div className="grid grid-cols-2 gap-2 text-xs mb-4">
+                {reproduction.maleCode && (
+                  <div className="bg-slate-50/50 border border-slate-100 p-2 rounded mt-2 mb-2 text-xs">
+                    <p className="text-slate-500 mb-2">Última pareja</p>
+                    <div className="flex items-center gap-2">
+                      {reproduction.maleImageUrl ? (
+                        <img
+                          src={reproduction.maleImageUrl}
+                          alt={reproduction.maleCode ?? ''}
+                          className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0 shadow-sm"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 shrink-0 flex items-center justify-center text-slate-400 text-[8px] text-center leading-tight px-0.5">
+                          Sin foto
+                        </div>
+                      )}
+                      <div>
+                        {reproduction.maleName ? (
+                          <>
+                            <h4 className="font-bold text-sm text-slate-800 leading-tight">{reproduction.maleName}</h4>
+                            <p className="text-xs text-slate-500">{reproduction.maleCode}</p>
+                          </>
+                        ) : (
+                          <h4 className="font-bold text-sm text-slate-800 leading-tight">{reproduction.maleCode}</h4>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div className="space-y-2 mt-2 text-xs">
+                  {isExpanded && !hasKits ? (
+                    <button
+                      type="button"
+                      className="bg-slate-50/50 border border-slate-100 p-2 rounded flex justify-between items-center w-full text-left cursor-pointer hover:bg-primary-50 hover:border-primary-200 transition-colors group"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingReproduction(reproduction);
+                        setShowEditModal(true);
+                      }}
+                      title="Editar fecha"
+                    >
+                      <p className="text-slate-500 mb-1 flex items-center gap-1">
+                        Fecha de Parto
+                      </p>
+                      <p className="font-medium text-slate-700">{formatDateTime(reproduction.estimatedBirthDate)}</p>
+                    </button>
+                  ) : (
+                    <div className="bg-slate-50/50 border border-slate-100 p-2 rounded flex justify-between items-center">
+                      <p className="text-slate-500">Fecha de Parto</p>
+                      <p className="font-medium text-slate-700">{formatDateTime(reproduction.estimatedBirthDate)}</p>
+                    </div>
+                  )}
+
+                  <div className="bg-slate-50/50 border border-slate-100 p-2 rounded flex justify-between items-center">
+                    <p className="text-slate-500">Fecha est. de destete</p>
+                    <p className={`font-medium ${readyToWean ? 'text-amber-600' : 'text-slate-700'}`}>{estimatedWeaningDate}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs mt-4">
                   <button
                     type="button"
                     className={cn(
@@ -380,36 +439,6 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
                     {daysInLactation >= 30 && (
                       <p className="text-xs text-slate-800 font-bold mt-1">Listo para destetar</p>
                     )}
-                  </div>
-                </div>
-
-                <div className="space-y-2 mt-2 text-xs">
-                  {isExpanded && !hasKits ? (
-                    <button
-                      type="button"
-                      className="bg-slate-50/50 border border-slate-100 p-2 rounded flex justify-between items-center w-full text-left cursor-pointer hover:bg-primary-50 hover:border-primary-200 transition-colors group"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingReproduction(reproduction);
-                        setShowEditModal(true);
-                      }}
-                      title="Editar fecha"
-                    >
-                      <p className="text-slate-500 mb-1 flex items-center gap-1">
-                        Fecha de Parto
-                      </p>
-                      <p className="font-medium text-slate-700">{formatDateTime(reproduction.estimatedBirthDate)}</p>
-                    </button>
-                  ) : (
-                    <div className="bg-slate-50/50 border border-slate-100 p-2 rounded flex justify-between items-center">
-                      <p className="text-slate-500">Fecha de Parto</p>
-                      <p className="font-medium text-slate-700">{formatDateTime(reproduction.estimatedBirthDate)}</p>
-                    </div>
-                  )}
-
-                  <div className="bg-slate-50/50 border border-slate-100 p-2 rounded flex justify-between items-center">
-                    <p className="text-slate-500">Fecha est. de destete</p>
-                    <p className={`font-medium ${readyToWean ? 'text-amber-600' : 'text-slate-700'}`}>{estimatedWeaningDate}</p>
                   </div>
                 </div>
 

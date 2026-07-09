@@ -21,32 +21,41 @@ function VaccinationCustomDetails({ nextVacs }: Readonly<{ nextVacs: NextVaccina
       <p className="text-xs text-slate-500 font-medium mb-3">Seguimiento de Vacuna Aplicada</p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {nextVacs.length > 0 ? nextVacs.map((vac) => (
-          <div key={vac.name} className="flex flex-col leading-tight border border-slate-100 rounded bg-white p-2 justify-center">
-            <span className="text-xs font-semibold text-slate-700">{vac.name}</span>
+          <div key={vac.name} className={`flex flex-col leading-tight border rounded p-2 justify-center ${
+            vac.diffDays === 0 ? 'bg-emerald-50 border-emerald-100' :
+            vac.diffDays !== null && vac.diffDays < 0 ? 'bg-amber-50 border-amber-100' :
+            'bg-white border-slate-100'
+          }`}>
+            <span className="text-xs font-semibold text-slate-700 mb-1">{vac.name}</span>
             {(() => {
               if (!vac.nextDate) {
-                return <span className="text-[11px] text-slate-500 font-medium mt-1">Sin período</span>;
+                return <span className="text-sm font-semibold text-slate-800 border-b border-black/5 pb-1 mb-1">Sin período configurado</span>;
               }
               if (vac.diffDays! > 0) {
                 return (
-                  <span className="text-[11px] text-slate-500 font-medium mt-1">
+                  <span className="text-sm font-semibold text-slate-800 border-b border-black/5 pb-1 mb-1">
                     Faltan {vac.diffDays} día{vac.diffDays !== 1 ? 's' : ''}
                   </span>
                 );
               }
               if (vac.diffDays === 0) {
                 return (
-                  <span className="text-[11px] text-slate-600 font-medium mt-1">
+                  <span className="text-sm font-bold text-slate-800 border-b border-black/5 pb-1 mb-1">
                     Toca hoy
                   </span>
                 );
               }
               return (
-                <span className="text-[11px] text-slate-500 font-medium mt-1">
+                <span className="text-sm font-semibold text-slate-800 border-b border-black/5 pb-1 mb-1">
                   Atrasada {Math.abs(vac.diffDays!)} día{Math.abs(vac.diffDays!) !== 1 ? 's' : ''}
                 </span>
               );
             })()}
+            {vac.nextDate && (
+              <span className="text-[11px] text-slate-500 font-medium">
+                Próxima vacuna: {vac.nextDate.toLocaleDateString('es-EC')}
+              </span>
+            )}
           </div>
         )) : (
           <p className="text-sm text-slate-500">No hay datos de período configurados</p>
@@ -56,8 +65,13 @@ function VaccinationCustomDetails({ nextVacs }: Readonly<{ nextVacs: NextVaccina
   );
 }
 
-export function VaccinationTable() {
-  const { vaccinations, loading, error, galponVaccines } = useVaccination();
+interface VaccinationTableProps {
+  profileId?: string;
+  date?: string;
+}
+
+export function VaccinationTable({ profileId, date }: VaccinationTableProps) {
+  const { vaccinations, loading, error, galponVaccines } = useVaccination({ profileId, date });
   const [selectedVaccination, setSelectedVaccination] = useState<Vaccination | null>(null);
 
   const calculateNextVaccinations = (vaccination: Vaccination) => {

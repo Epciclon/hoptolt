@@ -39,4 +39,4 @@ export type { EventDetailsModalProps, ProfileInfo, RabbitInfo } from './EventDet
 
 export { FilterBar } from './FilterBar';
 export { Pagination } from './Pagination';
-export * from './LoadingMessage';
+export * from './LoadingMessage';export * from './AuditHistoryView';

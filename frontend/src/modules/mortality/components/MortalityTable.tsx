@@ -6,8 +6,13 @@ import type { Column } from '@/shared/ui/Table';
 import type { Mortality } from '../types/mortality.types';
 import { useMortality } from '../hooks/useMortality';
 
-export function MortalityTable() {
-  const { mortalities, loading, error } = useMortality();
+interface MortalityTableProps {
+  profileId?: string;
+  date?: string;
+}
+
+export function MortalityTable({ profileId, date }: MortalityTableProps) {
+  const { mortalities, loading, error } = useMortality({ profileId, date });
   const [selectedMortality, setSelectedMortality] = useState<Mortality | null>(null);
 
   if (loading) return <LoadingMessage message="Cargando mortalidades..." />;
@@ -34,11 +39,7 @@ export function MortalityTable() {
         <span className="text-slate-600 capitalize">{row.cause}</span>
       ),
     },
-    {
-      key: 'responsible',
-      header: 'Reportado por',
-      render: (row) => row.responsible,
-    },
+
     {
       key: 'date',
       header: 'Fecha de Baja',
@@ -98,24 +99,7 @@ export function MortalityTable() {
                   {selectedMortality.cause}
                 </p>
               </div>
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                <p className="text-xs text-slate-500 font-medium mb-1">Reportado por</p>
-                <div className="flex flex-col leading-tight">
-                  <span className="text-sm font-semibold text-slate-800">
-                    {selectedMortality.responsible}
-                  </span>
-                  {selectedMortality.profileUsername && (
-                    <span className="text-[11px] text-slate-500 font-medium mt-0.5">
-                      @{selectedMortality.profileUsername}
-                    </span>
-                  )}
-                  {selectedMortality.profileEmail && (
-                    <span className="text-[10px] text-slate-400 mt-0.5 break-all">
-                      {selectedMortality.profileEmail}
-                    </span>
-                  )}
-                </div>
-              </div>
+
               <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
                 <p className="text-xs text-slate-500 font-medium mb-1">Fecha</p>
                 <div className="flex flex-col leading-tight mt-1">

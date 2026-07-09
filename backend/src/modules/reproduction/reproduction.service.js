@@ -184,9 +184,11 @@ class ReproductionService {
             const [wy, wm] = weaningDateStr.split('-');
 
             if (Number(wy) === Number(year) && Number(wm) === Number(month)) {
-                const fullR = await reproductionRepository.findById(r.id);
-                fullR.estimatedWeaningDate = weaningDateStr;
-                results.push(fullR);
+                const fullR = await reproductionRepository.findByIdWithDetails(r.id);
+                if (fullR && fullR.female && !fullR.female.deletedAt) {
+                    fullR.estimatedWeaningDate = weaningDateStr;
+                    results.push(fullR);
+                }
             }
         }
         return results;
