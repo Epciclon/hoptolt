@@ -40,6 +40,9 @@ class CleaningService {
             if (cleaningJson) createdCleanings.push(cleaningJson);
         }
 
+        const { notifyOwnerOnWorkerAction } = require('../../common/helpers/notification.helper');
+        await notifyOwnerOnWorkerAction(profileId, galponId, 'cleaning', 'Limpieza');
+
         return createdCleanings;
     }
 

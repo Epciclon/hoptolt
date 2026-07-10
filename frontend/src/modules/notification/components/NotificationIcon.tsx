@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Bell, X, CheckCheck } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotification';
 import { useInvitation } from '@/modules/invitation/hooks/useInvitation';
@@ -19,12 +19,59 @@ export function NotificationIcon() {
   const [isOpen, setIsOpen] = useState(false);
   const [accepting, setAccepting] = useState<number | null>(null);
   const [rejecting, setRejecting] = useState<number | null>(null);
+  
+  const previousUnreadCountRef = useRef(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  useEffect(() => {
+    if (unreadCount > previousUnreadCountRef.current) {
+      // New notification arrived!
+      setIsAnimating(true);
+      
+      // Play sound
+      try {
+        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioContext) {
+          const ctx = new AudioContext();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1);
+          
+          gain.gain.setValueAtTime(0, ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+          
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          
+          osc.start();
+          osc.stop(ctx.currentTime + 0.3);
+        }
+      } catch (e) {
+        console.error('Error playing notification sound:', e);
+      }
+
+      // Stop animation after 2s
+      setTimeout(() => {
+        setIsAnimating(false);
+      }, 2000);
+    }
+    previousUnreadCountRef.current = unreadCount;
+  }, [unreadCount]);
+
+  useEffect(() => {
+    const handleCloseNotifications = () => {
+      setIsOpen(false);
+    };
+    window.addEventListener('close-notifications', handleCloseNotifications);
+    return () => window.removeEventListener('close-notifications', handleCloseNotifications);
+  }, []);
+
   const getIconByType = (type: string) => {
     switch (type) {
-      case 'success':
-        return '✓';
-      case 'error':
-        return '✕';
       case 'warning':
         return '⚠';
       case 'info':
@@ -38,10 +85,6 @@ export function NotificationIcon() {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'success':
-        return 'bg-green-50 border-green-200 text-green-800';
-      case 'error':
-        return 'bg-red-50 border-red-200 text-red-800';
       case 'warning':
         return 'bg-yellow-50 border-yellow-200 text-yellow-800';
       case 'info':
@@ -115,29 +158,50 @@ export function NotificationIcon() {
       }
     }
     
-    if (notification.data?.type === 'birth_warning' && notification.data?.estimatedBirthDate) {
-      router.push(`/dashboard?date=${notification.data.estimatedBirthDate}&reproductionId=${notification.data.reproductionId}`);
-    } else if (notification.data?.type === 'cleaning_warning') {
+    const type = notification.data?.type;
+
+    if (type === 'worker_action' && notification.data?.module) {
+      router.push(`/dashboard/${notification.data.module}?tab=historial`);
+    } else if (type === 'reproduction_automated' || type === 'reproduction_manual') {
+      const phase = notification.data?.phase;
+      if (phase === 2) router.push('/dashboard/reproduction/gestacion');
+      else if (phase === 3) router.push('/dashboard/reproduction/lactancia');
+      else router.push('/dashboard/reproduction');
+    } else if (type === 'birth_warning') {
+      router.push('/dashboard/reproduction/gestacion');
+    } else if (type === 'weaning_alert') {
+      router.push('/dashboard/reproduction/lactancia');
+    } else if (type === 'cleaning_warning') {
       router.push('/dashboard/cleaning');
-    } else if (notification.data?.galponId && (notification.type === 'success' || notification.type === 'invitation')) {
+    } else if (notification.data?.galponId && (notification.type === 'info' || notification.type === 'invitation')) {
       router.push('/dashboard/galpones');
-    } else if (notification.data?.type === 'weight_estimation' || notification.data?.type === 'age_update') {
-      router.push('/dashboard/notifications');
     }
     setIsOpen(false);
   };
 
   const displayedNotifications = notifications.slice(0, NOTIFICATION_LIMIT);
+  const hasUnreadWarnings = notifications.some(n => !n.read && n.type === 'warning');
 
   return (
     <div className="relative">
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          const newState = !isOpen;
+          setIsOpen(newState);
+          if (newState && window.innerWidth < 1024) {
+            window.dispatchEvent(new CustomEvent('close-sidebar'));
+          }
+        }}
         className="relative p-2 rounded-lg hover:bg-slate-100 transition-colors"
       >
-        <Bell className="w-5 h-5 text-slate-600" />
+        <Bell className={cn("w-5 h-5 text-slate-600 transition-colors", 
+          isAnimating && "animate-bounce text-primary-500"
+        )} />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+          <span className={cn(
+            "absolute top-0 right-0 flex min-w-[16px] h-[16px] px-1 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm pointer-events-none",
+            hasUnreadWarnings ? "animate-bounce" : "animate-pulse"
+          )}>
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -151,7 +215,7 @@ export function NotificationIcon() {
             onClick={() => setIsOpen(false)} 
             aria-label="Cerrar notificaciones"
           />
-          <div className="fixed sm:absolute top-16 sm:top-full left-4 right-4 sm:left-auto sm:right-0 mt-2 w-auto sm:w-96 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-50">
+          <div className="fixed sm:absolute top-16 sm:top-full right-4 sm:right-0 left-4 sm:left-auto mt-2 w-auto sm:w-96 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-50">
             <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
               <button 
                  type="button"
@@ -183,9 +247,8 @@ export function NotificationIcon() {
               ) : (
                 <>
                   {displayedNotifications.map((notification) => (
-                    <button
+                    <div
                       key={notification.id}
-                      type="button"
                       className={cn(
                         'w-full text-left p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer block',
                         !notification.read && 'bg-blue-50/50'
@@ -199,15 +262,23 @@ export function NotificationIcon() {
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-start gap-2">
                             <h4 className="font-medium text-slate-800 text-sm">{notification.title}</h4>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteNotification(notification.id);
-                              }}
-                              className="text-slate-400 hover:text-slate-600"
-                            >
-                              <X size={14} />
-                            </button>
+                            {!(notification.type === 'warning' || notification.type === 'invitation') && (
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  try {
+                                    await deleteNotification(notification.id);
+                                    showToast('Notificación eliminada', 'success');
+                                  } catch (error) {
+                                    console.error(error);
+                                    showToast('Error al eliminar notificación', 'error');
+                                  }
+                                }}
+                                className="text-slate-400 hover:text-slate-600"
+                              >
+                                <X size={14} />
+                              </button>
+                            )}
                           </div>
                           <p className="text-sm text-slate-600 mt-1">{notification.message}</p>
                           <p className="text-xs text-slate-400 mt-2">{formatTime(notification.createdAt)}</p>
@@ -254,7 +325,7 @@ export function NotificationIcon() {
                           )}
                         </div>
                       </div>
-                    </button>
+                    </div>
                   ))}
                   <button
                     onClick={() => {

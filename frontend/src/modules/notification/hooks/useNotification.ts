@@ -9,7 +9,7 @@ import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 
 export function useNotifications(options?: { limit?: number; offset?: number; unreadOnly?: boolean }) {
   const queryClient = useQueryClient();
-  const { user } = useAuthContext();
+  const { user, refetchUser } = useAuthContext();
   const supabase = createClient();
 
   // Query: Fetch Notifications
@@ -48,8 +48,27 @@ export function useNotifications(options?: { limit?: number; offset?: number; un
           filter: `profileId=eq.${user.id}`,
         },
         () => {
-          // Invalidate queries so React Query fetches the new data automatically
-          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+          // Invalidate all queries globally so modules (Vaccination, Reproduction, etc.)
+          // fetch newly assigned cages or updated data automatically without page reload.
+          queryClient.invalidateQueries();
+          
+          // Also refetch the user profile silently to update permissions in realtime
+          if (refetchUser) {
+            refetchUser(true);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'assign_rabbits',
+        },
+        () => {
+          // When a rabbit is assigned or unassigned from a cage by ANY user, 
+          // we invalidate the cache so everyone sees the rabbit appear/disappear instantly.
+          queryClient.invalidateQueries();
         }
       )
       .subscribe();
@@ -57,24 +76,72 @@ export function useNotifications(options?: { limit?: number; offset?: number; un
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, queryClient, supabase]);
+  }, [user, queryClient, supabase, refetchUser]);
 
   // Mutation: Mark as Read
   const markAsReadMutation = useMutation({
     mutationFn: (id: number) => notificationService.markAsRead(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+    onMutate: async (id: number) => {
+      await queryClient.cancelQueries({ queryKey: ['notifications'] });
+      const previousNotifications = queryClient.getQueryData(['notifications']);
+      queryClient.setQueryData(['notifications'], (old: any) => {
+        if (!old) return old;
+        return old.map((n: any) => n.id === id ? { ...n, read: true } : n);
+      });
+      return { previousNotifications };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousNotifications) {
+        queryClient.setQueryData(['notifications'], context.previousNotifications);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
   });
 
   // Mutation: Mark all as Read
   const markAllAsReadMutation = useMutation({
     mutationFn: () => notificationService.markAllAsRead(),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ['notifications'] });
+      const previousNotifications = queryClient.getQueryData(['notifications']);
+      queryClient.setQueryData(['notifications'], (old: any) => {
+        if (!old) return old;
+        return old.map((n: any) => ({ ...n, read: true }));
+      });
+      return { previousNotifications };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousNotifications) {
+        queryClient.setQueryData(['notifications'], context.previousNotifications);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
   });
 
   // Mutation: Delete
   const deleteNotificationMutation = useMutation({
     mutationFn: (id: number) => notificationService.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+    onMutate: async (id: number) => {
+      await queryClient.cancelQueries({ queryKey: ['notifications'] });
+      const previousNotifications = queryClient.getQueryData(['notifications']);
+      queryClient.setQueryData(['notifications'], (old: any) => {
+        if (!old) return old;
+        return old.filter((n: any) => n.id !== id);
+      });
+      return { previousNotifications };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousNotifications) {
+        queryClient.setQueryData(['notifications'], context.previousNotifications);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
   });
 
   // Mutation: Add

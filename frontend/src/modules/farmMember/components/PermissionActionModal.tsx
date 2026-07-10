@@ -65,7 +65,21 @@ export function PermissionActionModal({ open, onClose, onConfirm, moduleName, is
   };
 
   const handleToggle = (action: keyof typeof permissions) => {
-    setPermissions({ ...permissions, [action]: !permissions[action] });
+    const newPermissions = { ...permissions };
+    const newValue = !newPermissions[action];
+    newPermissions[action] = newValue;
+
+    if (action !== 'canRead') {
+      if (newValue) {
+        newPermissions.canRead = true;
+      } else {
+        const hasOtherAction = newPermissions.canCreate || newPermissions.canUpdate || newPermissions.canDelete;
+        if (!hasOtherAction) {
+          newPermissions.canRead = false;
+        }
+      }
+    }
+    setPermissions(newPermissions);
   };
 
   const handleToggleAll = () => {
@@ -134,24 +148,29 @@ export function PermissionActionModal({ open, onClose, onConfirm, moduleName, is
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          {getAvailableActions().map(action => (
-            <label key={action} className="flex items-center gap-2 p-3 border border-slate-200 rounded hover:bg-slate-50 cursor-pointer transition-colors">
-              <input
-                type="checkbox"
-                checked={permissions[action]}
-                onChange={() => handleToggle(action)}
-                className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
-              />
-              <span className="text-sm text-slate-700">
-                {(() => {
-                  if (action === 'canCreate') return 'Crear';
-                  if (action === 'canRead') return 'Consultar';
-                  if (action === 'canUpdate') return 'Editar';
-                  return 'Eliminar';
-                })()}
-              </span>
-            </label>
-          ))}
+          {getAvailableActions().map(action => {
+            const isDisabled = action === 'canRead' && (permissions.canCreate || permissions.canUpdate || permissions.canDelete);
+
+            return (
+              <label key={action} className={`flex items-center gap-2 p-3 border border-slate-200 rounded transition-colors ${isDisabled ? 'bg-slate-100 opacity-70 cursor-not-allowed' : 'hover:bg-slate-50 cursor-pointer'}`}>
+                <input
+                  type="checkbox"
+                  checked={permissions[action]}
+                  onChange={() => handleToggle(action)}
+                  disabled={isDisabled}
+                  className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500 disabled:cursor-not-allowed"
+                />
+                <span className="text-sm text-slate-700">
+                  {(() => {
+                    if (action === 'canCreate') return 'Crear';
+                    if (action === 'canRead') return 'Consultar';
+                    if (action === 'canUpdate') return 'Editar';
+                    return 'Eliminar';
+                  })()}
+                </span>
+              </label>
+            );
+          })}
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t border-slate-200">

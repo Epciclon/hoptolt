@@ -140,7 +140,7 @@ export function WorkerDetailsModal({
                     className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-700 text-sm font-medium px-3 py-1.5 rounded-lg border border-slate-200"
                   >
                     <Box size={13} className="text-slate-500" />
-                    Jaula #{wc.cage?.number ?? wc.cageId}
+                    #{wc.cage?.number ?? wc.cageId}
                     {wc.cage?.type && (
                       <span className="text-xs text-slate-400 ml-0.5">({wc.cage.type})</span>
                     )}

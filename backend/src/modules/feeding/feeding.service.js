@@ -69,6 +69,9 @@ class FeedingService {
             createdFeedings.push(feeding);
         }
 
+        const { notifyOwnerOnWorkerAction } = require('../../common/helpers/notification.helper');
+        await notifyOwnerOnWorkerAction(profileId, galponId, 'feeding', 'Alimentación');
+
         return createdFeedings;
     }
 

@@ -104,6 +104,7 @@ class AssignmentService {
         const warnings = this.validateCompatibility(cage, rabbits, existingRabbits);
 
         const assignments = [];
+        const notificationService = require('../notification/notification.service');
         for (const id of rabbitIds) {
             const assignment = await assignmentRepository.create({
                 cageId,
@@ -113,6 +114,12 @@ class AssignmentService {
                 assignedAt: new Date()
             });
             assignments.push(assignment);
+            
+            const rabbit = rabbits.find(r => r.id === id);
+            if (rabbit) {
+                const rabbitIdentifier = rabbit.name ? `${rabbit.code} - ${rabbit.name}` : rabbit.code;
+                await notificationService.createRabbitAssignmentNotification(cageId, rabbitIdentifier, true);
+            }
         }
 
         return { assignments, warnings };
@@ -190,6 +197,17 @@ class AssignmentService {
         const assignment = await assignmentRepository.findById(id);
         if (!assignment) throw new AppError('La asignación no existe.', 404);
         await assignmentRepository.update(assignment, { status: 'liberado' });
+        
+        try {
+            const rabbit = await rabbitRepository.findById(assignment.rabbitId);
+            if (rabbit) {
+                const notificationService = require('../notification/notification.service');
+                const rabbitIdentifier = rabbit.name ? `${rabbit.code} - ${rabbit.name}` : rabbit.code;
+                await notificationService.createRabbitAssignmentNotification(assignment.cageId, rabbitIdentifier, false);
+            }
+        } catch(e) {
+            console.error('Error notifying unassignment', e);
+        }
     }
 }
 

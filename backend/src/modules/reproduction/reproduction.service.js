@@ -371,7 +371,12 @@ class ReproductionService {
         if (rep.galponId !== galponId) throw new AppError('No tienes permisos.', 403);
         if (rep.status !== 'monta') throw new AppError('Esta monta ya fue finalizada.', 400);
 
-        return await reproductionRepository.update(rep, { status: 'gestacion', profileId, updatedBySystem: false });
+        const result = await reproductionRepository.update(rep, { status: 'gestacion', profileId, updatedBySystem: false });
+
+        const { notifyOwnerOnManualPhaseChange } = require('../../common/helpers/reproductionNotification.helper');
+        await notifyOwnerOnManualPhaseChange(profileId, galponId, reproductionId, 2, 'Gestación');
+
+        return result;
     }
 
     async registerBirth(reproductionId, galponId, data, profileId) {
@@ -404,7 +409,12 @@ class ReproductionService {
             updateData.bornKits = bornKits;
         }
 
-        return await reproductionRepository.update(rep, updateData);
+        const result = await reproductionRepository.update(rep, updateData);
+
+        const { notifyOwnerOnManualPhaseChange } = require('../../common/helpers/reproductionNotification.helper');
+        await notifyOwnerOnManualPhaseChange(profileId, galponId, reproductionId, 3, 'Lactancia');
+
+        return result;
     }
 
     async cancelReproduction(reproductionId, galponId, data, profileId) {

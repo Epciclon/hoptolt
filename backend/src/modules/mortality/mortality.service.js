@@ -38,11 +38,17 @@ class MortalityService {
             throw new AppError('Las observaciones son obligatorias cuando la causa es "otra".', 400);
         }
 
+        let result;
         if (isKits) {
-            return this._processKitsMortality(rabbitId, cause, observations, dDate, numberOfKits, galponId, profileId);
+            result = await this._processKitsMortality(rabbitId, cause, observations, dDate, numberOfKits, galponId, profileId);
+        } else {
+            result = await this._processAdultMortality(rabbit, rabbitId, cause, observations, dDate, galponId, profileId);
         }
 
-        return this._processAdultMortality(rabbit, rabbitId, cause, observations, dDate, galponId, profileId);
+        const { notifyOwnerOnWorkerAction } = require('../../common/helpers/notification.helper');
+        await notifyOwnerOnWorkerAction(profileId, galponId, 'mortality', 'Mortalidad');
+
+        return result;
     }
 
     async _processKitsMortality(rabbitId, cause, observations, dDate, numberOfKits, galponId, profileId) {

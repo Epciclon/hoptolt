@@ -35,6 +35,9 @@ class DewormingService {
             createdDewormings.push(deworming);
         }
 
+        const { notifyOwnerOnWorkerAction } = require('../../common/helpers/notification.helper');
+        await notifyOwnerOnWorkerAction(profileId, galponId, 'deworming', 'Desparasitación');
+
         return createdDewormings;
     }
 

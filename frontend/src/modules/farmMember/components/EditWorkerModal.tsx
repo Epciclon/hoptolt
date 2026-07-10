@@ -287,7 +287,7 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
     <Dialog open={open} onClose={onClose} title={`Editar Trabajador: ${worker?.profile?.fullName}`} size="xl">
       <div className="space-y-6">
         <Alert
-          variant="info"
+          variant="neutral"
           message="Configura los permisos y jaulas asignadas para este trabajador"
         />
 
@@ -320,7 +320,7 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
                       onClick={() => handleCageSelect(cage)}
                       className="w-full text-left px-3 py-2 hover:bg-gray-100 border-b last:border-b-0 text-sm"
                     >
-                      Jaula #{cage.number} — {cage.type.charAt(0).toUpperCase() + cage.type.slice(1)}
+                      {cage.number} — {cage.type.charAt(0).toUpperCase() + cage.type.slice(1)}
                     </button>
                   ));
                 })()}
@@ -333,12 +333,12 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
                 const cage = occupiedCages.find(c => c.id === id);
                 if (!cage) return null;
                 return (
-                  <div key={`cage-${id}`} className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
-                    <span>Jaula #{cage.number}</span>
+                  <div key={`cage-${id}`} className="flex items-center gap-1 bg-sky-100 text-sky-800 px-2 py-1 rounded text-sm">
+                    <span>{cage.number}</span>
                     <button
                       type="button"
                       onClick={() => handleCageRemove(id)}
-                      className="text-blue-600 hover:text-blue-800 font-bold"
+                      className="text-sky-600 hover:text-sky-800 font-bold"
                     >
                       ×
                     </button>

@@ -57,9 +57,26 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
     setSidebarCollapsed(prev => {
       const next = !prev;
       localStorage.setItem('sidebarCollapsed', String(next));
+      
+      // If we are opening the sidebar on mobile, close notifications
+      if (!next && window.innerWidth < 1024) {
+        window.dispatchEvent(new CustomEvent('close-notifications'));
+      }
+      
       return next;
     });
   };
+
+  useEffect(() => {
+    const handleCloseSidebar = () => {
+      if (window.innerWidth < 1024) {
+        setSidebarCollapsed(true);
+        localStorage.setItem('sidebarCollapsed', 'true');
+      }
+    };
+    window.addEventListener('close-sidebar', handleCloseSidebar);
+    return () => window.removeEventListener('close-sidebar', handleCloseSidebar);
+  }, []);
 
   if (loading || !mounted) {
     return (

@@ -94,6 +94,9 @@ class VaccinationService {
             createdVaccinations.push(vaccination);
         }
 
+        const { notifyOwnerOnWorkerAction } = require('../../common/helpers/notification.helper');
+        await notifyOwnerOnWorkerAction(profileId, galponId, 'vaccination', 'Vacunación');
+
         return createdVaccinations;
     }
 

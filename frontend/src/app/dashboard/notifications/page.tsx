@@ -9,6 +9,7 @@ import { Bell, CheckCheck, Clock, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Notification } from '@/modules/notification/types/notification.types';
 import { useNotifications } from '@/modules/notification/hooks/useNotification';
+import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 
 export default function NotificationsPage() {
   const { notifications, loading, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
@@ -16,6 +17,7 @@ export default function NotificationsPage() {
   const { showToast } = useToast();
   const router = useRouter();
   const { acceptInvitation, revokeInvitation } = useInvitation();
+  const { refetchUser } = useAuthContext();
   const [accepting, setAccepting] = useState<number | null>(null);
   const [rejecting, setRejecting] = useState<number | null>(null);
   const handleMarkAllRead = async () => {
@@ -49,6 +51,7 @@ export default function NotificationsPage() {
       if (success) {
         showToast('¡Te has unido al galpón!', 'success');
         await deleteNotification(notification.id);
+        await refetchUser(true);
       }
     } catch (error) {
       console.error(error);
@@ -83,10 +86,20 @@ export default function NotificationsPage() {
         console.error('Error al marcar como leída:', error);
       }
     }
-    
-    if (notification.data?.type === 'birth_warning' && notification.data?.estimatedBirthDate) {
-      router.push(`/dashboard?date=${notification.data.estimatedBirthDate}&reproductionId=${notification.data.reproductionId}`);
-    } else if (notification.data?.type === 'cleaning_warning') {
+    const type = notification.data?.type;
+
+    if (type === 'worker_action' && notification.data?.module) {
+      router.push(`/dashboard/${notification.data.module}?tab=historial`);
+    } else if (type === 'reproduction_automated' || type === 'reproduction_manual') {
+      const phase = notification.data?.phase;
+      if (phase === 2) router.push('/dashboard/reproduction/gestacion');
+      else if (phase === 3) router.push('/dashboard/reproduction/lactancia');
+      else router.push('/dashboard/reproduction');
+    } else if (type === 'birth_warning') {
+      router.push('/dashboard/reproduction/gestacion');
+    } else if (type === 'weaning_alert') {
+      router.push('/dashboard/reproduction/lactancia');
+    } else if (type === 'cleaning_warning') {
       router.push('/dashboard/cleaning');
     } else if (notification.data?.galponId && (notification.type === 'success' || notification.type === 'invitation')) {
       router.push('/dashboard/galpones');
@@ -95,8 +108,6 @@ export default function NotificationsPage() {
 
   const getIconByType = (type: string) => {
     switch (type) {
-      case 'success': return '✓';
-      case 'error': return '✕';
       case 'warning': return '⚠';
       case 'info': return 'ℹ';
       case 'invitation': return '📨';
@@ -106,8 +117,6 @@ export default function NotificationsPage() {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'success': return 'bg-green-50 border-green-200 text-green-800';
-      case 'error': return 'bg-red-50 border-red-200 text-red-800';
       case 'warning': return 'bg-yellow-50 border-yellow-200 text-yellow-800';
       case 'info': return 'bg-blue-50 border-blue-200 text-blue-800';
       case 'invitation': return 'bg-purple-50 border-purple-200 text-purple-800';
@@ -207,9 +216,8 @@ export default function NotificationsPage() {
             return (
               <div className="divide-y divide-slate-100">
                 {filteredNotifications.map((notification) => (
-                  <button 
+                  <div 
                     key={notification.id}
-                    type="button"
                     className={cn(
                       "w-full text-left p-6 flex items-start gap-4 hover:bg-slate-50 transition-colors group cursor-pointer",
                       !notification.read && "bg-blue-50/30"
@@ -233,17 +241,19 @@ export default function NotificationsPage() {
                         </div>
                         <div className="text-sm text-slate-400 flex flex-col items-end gap-2 shrink-0">
                           <span>{formatTime(notification.createdAt)}</span>
-                          <button 
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(notification.id);
-                            }}
-                            className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition-opacity p-2"
-                            title="Eliminar notificación"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          {!(notification.type === 'warning' || notification.type === 'invitation') && (
+                            <button 
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(notification.id);
+                              }}
+                              className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition-opacity p-2"
+                              title="Eliminar notificación"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
                         </div>
                       </div>
 
@@ -291,7 +301,7 @@ export default function NotificationsPage() {
                         </div>
                       )}
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             );

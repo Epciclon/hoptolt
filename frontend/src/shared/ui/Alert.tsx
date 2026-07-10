@@ -4,7 +4,7 @@ import { ReactNode } from 'react';
 import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type AlertVariant = 'success' | 'error' | 'warning' | 'info';
+type AlertVariant = 'success' | 'error' | 'warning' | 'info' | 'neutral';
 
 interface AlertProps {
   variant: AlertVariant;
@@ -29,6 +29,10 @@ const config: Record<AlertVariant, { icon: ReactNode; styles: string }> = {
   info: {
     icon: <Info size={16} />,
     styles: 'bg-blue-50 text-blue-800 border-blue-200',
+  },
+  neutral: {
+    icon: <Info size={16} />,
+    styles: 'bg-slate-100 text-slate-800 border-slate-200',
   },
 };
 

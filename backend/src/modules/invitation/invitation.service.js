@@ -126,7 +126,7 @@ class InvitationService {
             const workerName = workerProfile ? workerProfile.username : profileEmail;
 
             await notificationService.createNotification(galpon.profileId, {
-                type: 'success',
+                type: 'info',
                 title: '¡Nuevo trabajador en tu galpón!',
                 message: `${workerName} ha aceptado tu invitación para unirse al galpón "${galpon.name}".`,
                 data: { galponId: galpon.id, galponName: galpon.name, workerEmail: profileEmail, workerName }
@@ -135,7 +135,7 @@ class InvitationService {
 
         // Crear notificación al trabajador
         await notificationService.createNotification(profileId, {
-            type: 'success',
+            type: 'info',
             title: '¡Te has unido al galpón!',
             message: `El galpón "${galpon.name}" ha sido agregado a tu lista de galpones y está activo.`,
             data: { galponId: galpon.id, galponName: galpon.name }

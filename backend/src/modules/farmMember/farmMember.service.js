@@ -139,8 +139,17 @@ class FarmMemberService {
 
         if (addedCages.length > 0 || addedModules.length > 0) {
             let parts = [];
-            if (addedCages.length > 0) parts.push(`las jaulas ${addedCages.join(', ')}`);
-            if (addedModules.length > 0) parts.push(`los procesos de ${addedModules.map(translate).join(', ')}`);
+            if (addedCages.length === 1) {
+                parts.push(`la jaula ${addedCages[0]}`);
+            } else if (addedCages.length > 1) {
+                parts.push(`las jaulas ${addedCages.join(', ')}`);
+            }
+            
+            if (addedModules.length === 1) {
+                parts.push(`el proceso de ${translate(addedModules[0])}`);
+            } else if (addedModules.length > 1) {
+                parts.push(`los procesos de ${addedModules.map(translate).join(', ')}`);
+            }
             
             await notificationService.createNotification(member.profileId, {
                 type: 'info',
@@ -152,11 +161,20 @@ class FarmMemberService {
 
         if (removedCages.length > 0 || removedModules.length > 0) {
             let parts = [];
-            if (removedCages.length > 0) parts.push(`las jaulas ${removedCages.join(', ')}`);
-            if (removedModules.length > 0) parts.push(`los procesos de ${removedModules.map(translate).join(', ')}`);
+            if (removedCages.length === 1) {
+                parts.push(`la jaula ${removedCages[0]}`);
+            } else if (removedCages.length > 1) {
+                parts.push(`las jaulas ${removedCages.join(', ')}`);
+            }
+            
+            if (removedModules.length === 1) {
+                parts.push(`el proceso de ${translate(removedModules[0])}`);
+            } else if (removedModules.length > 1) {
+                parts.push(`los procesos de ${removedModules.map(translate).join(', ')}`);
+            }
             
             await notificationService.createNotification(member.profileId, {
-                type: 'warning',
+                type: 'info',
                 title: 'Asignaciones removidas',
                 message: `${ownerProfile.username} te quitó ${parts.join(' y ')} en el galpón "${galpon.name}".`,
                 data: { galponId: galpon.id }

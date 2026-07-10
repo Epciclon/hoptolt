@@ -20,11 +20,14 @@ const startReproductionCron = () => {
                 }
             });
 
+            const { notifyAutomatedPhaseChange } = require('../../common/helpers/reproductionNotification.helper');
+
             for (const rep of montasToTransition) {
                 await rep.update({
                     status: 'gestacion',
                     updatedBySystem: true
                 });
+                await notifyAutomatedPhaseChange(rep, 2, 'Gestación');
             }
 
             // 2. Fase 2 a Fase 3 (Gestación a Lactancia) - Producción: 31 días desde mountDate
@@ -44,6 +47,7 @@ const startReproductionCron = () => {
                     status: 'lactancia',
                     updatedBySystem: true
                 });
+                await notifyAutomatedPhaseChange(rep, 3, 'Lactancia');
             }
         } catch (error) {
             console.error('Error en el cron de reproducción:', error.message);
