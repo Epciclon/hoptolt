@@ -9,6 +9,7 @@ export interface AssignedRabbit {
   cageNumber?: number;
   cageType?: string;
   cageId?: number;
+  isLactating?: boolean;
 }
 
 export interface Assignment {

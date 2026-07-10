@@ -157,12 +157,12 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
         {selectedVaccines.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
             {selectedVaccines.map(vaccine => (
-              <div key={vaccine} className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+              <div key={vaccine} className="flex items-center gap-1 bg-sky-100 text-sky-800 border border-sky-200 px-2 py-1 rounded text-sm shadow-sm">
                 <span>{vaccine}</span>
                 <button
                   type="button"
                   onClick={() => handleVaccineRemove(vaccine)}
-                  className="text-blue-600 hover:text-blue-800 font-bold"
+                  className="text-sky-600 hover:text-sky-800 font-bold ml-1"
                 >
                   ×
                 </button>

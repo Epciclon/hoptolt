@@ -317,12 +317,12 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
         {selectedFoodTypes.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
             {selectedFoodTypes.map(food => (
-              <div key={food} className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+              <div key={food} className="flex items-center gap-1 bg-sky-100 text-sky-800 border border-sky-200 px-2 py-1 rounded text-sm shadow-sm">
                 <span>{food}</span>
                 <button
                   type="button"
                   onClick={() => handleFoodRemove(food)}
-                  className="text-blue-600 hover:text-blue-800 font-bold"
+                  className="text-sky-600 hover:text-sky-800 font-bold ml-1"
                 >
                   ×
                 </button>

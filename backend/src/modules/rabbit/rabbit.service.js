@@ -146,7 +146,17 @@ class RabbitService {
             order: [['createdAt', 'DESC']]
         };
 
-        const rabbits = await rabbitRepository.findByGalpon(galponId, options);
+        let rabbits = await rabbitRepository.findByGalpon(galponId, options);
+        
+        const reproductionRepo = require('../reproduction/reproduction.repository');
+        const lactatingIds = await reproductionRepo.findLactatingFemaleIds(galponId);
+
+        rabbits = rabbits.map(rabbit => {
+            const rabbitData = rabbit.toJSON();
+            rabbitData.isLactating = lactatingIds.has(rabbit.id);
+            return rabbitData;
+        });
+
         const total = await rabbitRepository.countByGalpon(galponId, { where });
 
         return createPaginatedResponse(rabbits, pageValue, limitValue, total);

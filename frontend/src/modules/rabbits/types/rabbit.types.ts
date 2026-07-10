@@ -9,6 +9,7 @@ export interface Rabbit {
   weight: number;
   purpose: 'Reproducción' | 'Engorde';
   imageUrl?: string;
+  isLactating?: boolean;
 }
 
 export interface CreateRabbitDto {

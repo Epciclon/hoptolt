@@ -33,12 +33,18 @@ export function CageCatalog({
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 items-start">
       {cageGroups.map(group => {
         const isSelected = selectedCageNumbers.includes(group.cageNumber);
+        const hasLactatingRabbit = group.rabbits.some(r => (r as any).isLactating);
         return (
           <CageGroupCard
             key={group.cageNumber}
             cageNumber={group.cageNumber}
             cageType={group.cageType}
             isSelected={isSelected}
+            headerBadge={hasLactatingRabbit ? (
+              <span className="px-2 py-1 bg-sky-100 text-sky-700 text-[10px] font-medium rounded-full">
+                Lactancia
+              </span>
+            ) : undefined}
             onCageClick={() => onToggleCage(group.cageNumber)}
             footer={renderCageContent ? renderCageContent(group) : undefined}
           >

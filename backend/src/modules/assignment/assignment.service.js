@@ -124,6 +124,8 @@ class AssignmentService {
 
     async getAssignedRabbits(galponId) {
         const assignments = await assignmentRepository.findByGalponId(galponId);
+        const reproductionRepo = require('../reproduction/reproduction.repository');
+        const lactatingIds = await reproductionRepo.findLactatingFemaleIds(galponId);
 
         // Los datos ya vienen con includes (rabbit y cage), no necesitamos consultas adicionales
         return assignments.map(assignment => {
@@ -139,6 +141,7 @@ class AssignmentService {
                     weight: rabbit.weight,
                     race: rabbit.race,
                     imageUrl: rabbit.imageUrl,
+                    isLactating: lactatingIds.has(rabbit.id),
                     cageNumber: cage?.number,
                     cageType: cage?.type,
                     cageId: cage?.id
@@ -162,7 +165,7 @@ class AssignmentService {
 
         const cagesWithStats = [];
         const activeAssignments = await assignmentRepository.findByGalponId(galponId);
-        
+
         const countsByCage = {};
         for (const a of activeAssignments) {
             countsByCage[a.cageId] = (countsByCage[a.cageId] || 0) + 1;

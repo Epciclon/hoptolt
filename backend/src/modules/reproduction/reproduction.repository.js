@@ -7,6 +7,14 @@ class ReproductionRepository {
         return Reproduction.findAll({ where: { femaleId } });
     }
 
+    async findLactatingFemaleIds(galponId) {
+        const reps = await Reproduction.findAll({
+            where: { galponId, status: 'lactancia' },
+            attributes: ['femaleId']
+        });
+        return new Set(reps.map(r => r.femaleId));
+    }
+
     async findActiveMountByFemaleId(femaleId) {
         const dateStr = new Date().toLocaleDateString('sv', { timeZone: 'America/Guayaquil' });
         return Reproduction.findOne({
@@ -94,9 +102,9 @@ class ReproductionRepository {
         if (options.status) {
             whereClause.status = options.status.includes(',') ? { [Op.in]: options.status.split(',') } : options.status;
         }
-        
+
         const countOptions = { where: whereClause };
-        
+
         if (options.search) {
             const search = `%${options.search}%`;
             countOptions.include = [{
@@ -120,7 +128,7 @@ class ReproductionRepository {
                 required: true
             }];
         }
-        
+
         return Reproduction.count(countOptions);
     }
 
@@ -186,7 +194,7 @@ class ReproductionRepository {
             include: includeOptions,
             order: [['estimatedBirthDate', 'ASC']]
         });
-        
+
         // Filter out records that have already given birth (lactancia, completado) or failed
         return results.filter(r => ['monta', 'gestacion'].includes(r.status));
     }
@@ -243,7 +251,7 @@ class ReproductionRepository {
             include: includeOptions,
             order: [['estimatedBirthDate', 'ASC']]
         });
-        
+
         return results.filter(r => ['monta', 'gestacion'].includes(r.status));
     }
 

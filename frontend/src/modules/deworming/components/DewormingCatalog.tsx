@@ -71,8 +71,8 @@ export function DewormingCatalog({ onSuccess }: Readonly<DewormingCatalogProps>)
     <div className="flex flex-col gap-4">
 
 
-      <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-        <p className="text-sm text-blue-800">
+      <div className="p-3 bg-sky-50 border border-sky-200 rounded-md shadow-sm">
+        <p className="text-sm text-sky-800">
           Período de desparasitación configurado: <strong>{dewormingPeriod} días</strong>
         </p>
       </div>

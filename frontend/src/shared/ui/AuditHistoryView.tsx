@@ -230,7 +230,7 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
                     {profile.fullName || profile.username}
                   </h3>
                   <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
-                    <span className={`px-1.5 py-0.5 rounded ${isOwner ? 'bg-slate-100 text-slate-700' : 'bg-blue-100 text-blue-700'} font-medium`}>
+                    <span className={`px-1.5 py-0.5 rounded ${isOwner ? 'bg-slate-100 text-slate-700' : 'bg-sky-100 text-sky-700'} font-medium`}>
                       {isOwner ? 'Propietario' : 'Trabajador'}
                     </span>
                   </div>

@@ -27,13 +27,20 @@ export function CageGroupGrid({
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 items-start">
-      {cageGroups.map(group => (
-        <CageGroupCard
-          key={group.cageNumber}
-          cageNumber={group.cageNumber}
-          cageType={group.cageType}
-        >
-          {group.rabbits.map(rabbit => {
+      {cageGroups.map(group => {
+        const hasLactatingRabbit = group.rabbits.some(r => (r as any).isLactating);
+        return (
+          <CageGroupCard
+            key={group.cageNumber}
+            cageNumber={group.cageNumber}
+            cageType={group.cageType}
+            headerBadge={hasLactatingRabbit ? (
+              <span className="px-2 py-1 bg-sky-100 text-sky-700 text-[10px] font-medium rounded-full">
+                Lactancia
+              </span>
+            ) : undefined}
+          >
+            {group.rabbits.map(rabbit => {
             const isSelected = selectedRabbitIds.includes(rabbit.id);
             return (
               <RabbitSelectableCard
@@ -46,7 +53,8 @@ export function CageGroupGrid({
             );
           })}
         </CageGroupCard>
-      ))}
+        );
+      })}
     </div>
   );
 }

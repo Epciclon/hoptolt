@@ -59,6 +59,13 @@ class DewormingService {
             return;
         }
 
+        const { Reproduction } = require('../../domain/models');
+        const lactating = await Reproduction.findOne({ where: { femaleId: rabbitId, status: 'lactancia' } });
+        if (lactating) {
+            dewormingErrors.push(`El conejo ${rabbit.code}${nameSuffix} está en período de lactancia. No se puede administrar desparasitante hasta que finalice esta etapa, verifique en el módulo de Reproducción y Partos.`);
+            return;
+        }
+
         const lastDeworming = await dewormingRepository.findLastDewormingByRabbit(rabbitId);
         if (lastDeworming) {
             const lastDate = new Date(lastDeworming.dewormingDate);

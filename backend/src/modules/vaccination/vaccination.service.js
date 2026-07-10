@@ -25,6 +25,13 @@ class VaccinationService {
             return;
         }
 
+        const { Reproduction } = require('../../domain/models');
+        const lactating = await Reproduction.findOne({ where: { femaleId: rabbitId, status: 'lactancia' } });
+        if (lactating) {
+            vaccinationErrors.push(`El conejo ${rabbit.code}${this._getRabbitNameStr(rabbit)} está en período de lactancia. No se pueden administrar vacunas hasta que finalice esta etapa, verifique en el módulo de Reproducción y Partos.`);
+            return;
+        }
+
         for (const vaccine of vaccines) {
             const period = vaccinePeriodMap.get(vaccine);
             if (!period) {
