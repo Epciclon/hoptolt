@@ -115,7 +115,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-800">Mi Perfil</h1>
         <p className="text-slate-500 mt-1">Administra tus datos personales, seguridad de la cuenta y preferencias</p>
@@ -123,196 +123,192 @@ export default function ProfilePage() {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
         {/* Navigation Tabs */}
-        <div className="flex flex-col gap-1.5 bg-white p-3 rounded-xl border border-slate-200 shadow-sm md:col-span-1">
-          <button
-            onClick={() => setActiveTab('personal')}
-            className={cn(
-              "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors text-left",
-              activeTab === 'personal'
-                ? "bg-primary-50 text-primary-600"
-                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-            )}
-          >
-            <User size={18} />
-            Datos Personales
-          </button>
-          <button
-            onClick={() => setActiveTab('password')}
-            className={cn(
-              "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors text-left",
-              activeTab === 'password'
-                ? "bg-primary-50 text-primary-600"
-                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-            )}
-          >
-            <Lock size={18} />
-            Seguridad
-          </button>
-          <button
-            onClick={() => setActiveTab('delete')}
-            className={cn(
-              "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors text-left",
-              activeTab === 'delete'
-                ? "bg-red-50 text-red-600"
-                : "text-slate-600 hover:bg-slate-50 hover:text-red-600"
-            )}
-          >
-            <Trash2 size={18} />
-            Eliminar Cuenta
-          </button>
-        </div>
+        <Card className="md:col-span-1" padding="sm">
+          <nav className="flex flex-col gap-1">
+            <button
+              onClick={() => setActiveTab('personal')}
+              className={cn(
+                "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors text-left",
+                activeTab === 'personal'
+                  ? "bg-primary-50 text-primary-600"
+                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+              )}
+            >
+              <User size={18} />
+              Datos Personales
+            </button>
+            <button
+              onClick={() => setActiveTab('password')}
+              className={cn(
+                "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors text-left",
+                activeTab === 'password'
+                  ? "bg-primary-50 text-primary-600"
+                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+              )}
+            >
+              <Lock size={18} />
+              Seguridad
+            </button>
+            <button
+              onClick={() => setActiveTab('delete')}
+              className={cn(
+                "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors text-left",
+                activeTab === 'delete'
+                  ? "bg-red-50 text-red-600"
+                  : "text-slate-600 hover:bg-slate-50 hover:text-red-600"
+              )}
+            >
+              <Trash2 size={18} />
+              Eliminar Cuenta
+            </button>
+          </nav>
+        </Card>
 
         {/* Tab Content Area */}
         <div className="md:col-span-3">
           {activeTab === 'personal' && (
             <Card>
-              <div className="p-6">
-                <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
-                  <User className="text-primary-500" size={20} />
-                  Datos Personales
-                </h3>
+              <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                <User className="text-primary-500" size={20} />
+                Datos Personales
+              </h3>
 
-                <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-xl">
-                  <Input
-                    label="Nombre Completo"
-                    required
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Tu nombre completo"
-                  />
+              <form onSubmit={handleUpdateProfile} className="space-y-5">
+                <Input
+                  label="Nombre Completo"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Tu nombre completo"
+                />
 
-                  <Input
-                    label="Nombre de Usuario"
-                    required
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Tu nombre de usuario"
-                    hint="Debe ser único y sin espacios"
-                  />
+                <Input
+                  label="Nombre de Usuario"
+                  required
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Tu nombre de usuario"
+                  hint="Debe ser único y sin espacios"
+                />
 
-                  <Input
-                    label="Correo Electrónico"
-                    value={user?.email || ''}
-                    disabled
-                    placeholder="Tu correo electrónico"
-                    hint="El correo electrónico no puede ser modificado"
-                  />
+                <Input
+                  label="Correo Electrónico"
+                  value={user?.email || ''}
+                  disabled
+                  placeholder="Tu correo electrónico"
+                  hint="El correo electrónico no puede ser modificado"
+                />
 
-                  <div className="pt-4 border-t border-slate-100 flex justify-end">
-                    <Button type="submit" disabled={updatingProfile}>
-                      {updatingProfile ? 'Guardando...' : 'Guardar Cambios'}
-                    </Button>
-                  </div>
-                </form>
-              </div>
+                <div className="pt-4 border-t border-slate-100 flex justify-end">
+                  <Button type="submit" disabled={updatingProfile}>
+                    {updatingProfile ? 'Guardando...' : 'Guardar Cambios'}
+                  </Button>
+                </div>
+              </form>
             </Card>
           )}
 
           {activeTab === 'password' && (
             <Card>
-              <div className="p-6">
-                <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
-                  <Lock className="text-primary-500" size={20} />
-                  Cambio de Contraseña
-                </h3>
+              <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                <Lock className="text-primary-500" size={20} />
+                Cambio de Contraseña
+              </h3>
 
-                <form onSubmit={handleUpdatePassword} className="space-y-5 max-w-xl">
-                  <div className="relative">
-                    <Input
-                      type={showCurrentPassword ? 'text' : 'password'}
-                      label="Contraseña Actual"
-                      required
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      placeholder="Ingrese su contraseña actual"
-                      className="pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                      className="absolute right-3 top-[34px] text-slate-400 hover:text-slate-600 focus:outline-none"
-                    >
-                      {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
+              <form onSubmit={handleUpdatePassword} className="space-y-5">
+                <div className="relative">
+                  <Input
+                    type={showCurrentPassword ? 'text' : 'password'}
+                    label="Contraseña Actual"
+                    required
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="Ingrese su contraseña actual"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    className="absolute right-3 top-[34px] text-slate-400 hover:text-slate-600 focus:outline-none"
+                  >
+                    {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
 
-                  <div className="relative">
-                    <Input
-                      type={showNewPassword ? 'text' : 'password'}
-                      label="Nueva Contraseña"
-                      required
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="Mínimo 6 caracteres"
-                      className="pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="absolute right-3 top-[34px] text-slate-400 hover:text-slate-600 focus:outline-none"
-                    >
-                      {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
+                <div className="relative">
+                  <Input
+                    type={showNewPassword ? 'text' : 'password'}
+                    label="Nueva Contraseña"
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Mínimo 6 caracteres"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-[34px] text-slate-400 hover:text-slate-600 focus:outline-none"
+                  >
+                    {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
 
-                  <div className="relative">
-                    <Input
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      label="Confirmar Nueva Contraseña"
-                      required
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Repita la nueva contraseña"
-                      className="pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-[34px] text-slate-400 hover:text-slate-600 focus:outline-none"
-                    >
-                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
+                <div className="relative">
+                  <Input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    label="Confirmar Nueva Contraseña"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Repita la nueva contraseña"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-[34px] text-slate-400 hover:text-slate-600 focus:outline-none"
+                  >
+                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
 
-                  <div className="pt-4 border-t border-slate-100 flex justify-end">
-                    <Button type="submit" disabled={updatingPassword}>
-                      {updatingPassword ? 'Cambiando...' : 'Cambiar Contraseña'}
-                    </Button>
-                  </div>
-                </form>
-              </div>
+                <div className="pt-4 border-t border-slate-100 flex justify-end">
+                  <Button type="submit" disabled={updatingPassword}>
+                    {updatingPassword ? 'Cambiando...' : 'Cambiar Contraseña'}
+                  </Button>
+                </div>
+              </form>
             </Card>
           )}
 
           {activeTab === 'delete' && (
             <Card>
-              <div className="p-6">
-                <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                  <Trash2 className="text-slate-500" size={20} />
-                  Eliminar Cuenta
-                </h3>
+              <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <Trash2 className="text-slate-500" size={20} />
+                Eliminar Cuenta
+              </h3>
 
-                <p className="text-sm text-slate-500 mb-3">Al eliminar tu cuenta se realizarán las siguientes acciones:</p>
-                <ul className="text-sm text-slate-600 list-disc pl-5 space-y-1.5 mb-8">
-                  <li>Se eliminará tu perfil y tus credenciales de acceso.</li>
-                  <li>Se eliminarán todos tus galpones, jaulas y conejos.</li>
-                  <li>Se eliminarán los registros sanitarios, reproducciones y alimentación.</li>
-                  <li>Se revocarán los accesos de trabajadores en tus galpones.</li>
-                  <li>Serás removido de cualquier galpón donde estés registrado como trabajador.</li>
-                </ul>
+              <p className="text-sm text-slate-500 mb-3">Al eliminar tu cuenta se realizarán las siguientes acciones:</p>
+              <ul className="text-sm text-slate-600 list-disc pl-5 space-y-1.5 mb-8">
+                <li>Se eliminará tu perfil y tus credenciales de acceso.</li>
+                <li>Se eliminarán todos tus galpones, jaulas y conejos.</li>
+                <li>Se eliminarán los registros sanitarios, reproducciones y alimentación.</li>
+                <li>Se revocarán los accesos de trabajadores en tus galpones.</li>
+                <li>Serás removido de cualquier galpón donde estés registrado como trabajador.</li>
+              </ul>
 
-                <div className="border-t border-slate-100 pt-6 flex justify-center">
-                  <Button
-                    variant="danger"
-                    onClick={() => {
-                      setDeletePassword('');
-                      setShowDeletePassword(false);
-                      setShowDeleteModal(true);
-                    }}
-                  >
-                    Eliminar mi cuenta
-                  </Button>
-                </div>
+              <div className="border-t border-slate-100 pt-6 flex justify-center">
+                <Button
+                  variant="danger"
+                  onClick={() => {
+                    setDeletePassword('');
+                    setShowDeletePassword(false);
+                    setShowDeleteModal(true);
+                  }}
+                >
+                  Eliminar mi cuenta
+                </Button>
               </div>
             </Card>
           )}
