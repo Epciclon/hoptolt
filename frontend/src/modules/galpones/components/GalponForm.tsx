@@ -176,6 +176,7 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
         showToast('Galpón actualizado exitosamente.', 'success');
       }
       queryClient.invalidateQueries({ queryKey: ['galpones'] });
+      queryClient.invalidateQueries({ queryKey: ['activeGalpon'] });
       onSuccess?.();
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Error inesperado.', 'error');

@@ -30,7 +30,7 @@ export function CageCatalog({
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 items-start">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
       {cageGroups.map(group => {
         const isSelected = selectedCageNumbers.includes(group.cageNumber);
         const hasLactatingRabbit = group.rabbits.some(r => (r as any).isLactating);

@@ -128,7 +128,7 @@ export function AssignmentTable() {
       )}
       {!loading && Object.keys(groupedByCage).length > 0 && filteredGroups.length > 0 && (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 items-start">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
             {paginatedGroups.map(group => {
               const selectedIds = selectedRabbitsByCage[group.cageId] || [];
               return (

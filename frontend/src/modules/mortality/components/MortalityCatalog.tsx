@@ -71,7 +71,7 @@ export function MortalityCatalog({ onSuccess }: Readonly<MortalityCatalogProps>)
       {cageGroups.length === 0 ? (
         <p className="text-sm text-slate-500">No hay conejos con jaula asignada disponibles para registrar mortalidad.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           {cageGroups.map((group) => (
             <CageGroupCard
               key={group.cageNumber}

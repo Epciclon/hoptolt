@@ -612,7 +612,7 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
                                             ))}
                                         </div>
                                     )}
-                                    <p className="text-xs text-slate-500 mt-1">Opcional. Se puede seleccionar una o varias razas.</p>
+
                                 </div>
                             )}
 
@@ -653,7 +653,7 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
                                             ))}
                                         </div>
                                     )}
-                                    <p className="text-xs text-slate-500 mt-1">Opcional. Se puede filtrar por uno o varios tipos de jaula.</p>
+
                                 </div>
                             )}
 
@@ -700,7 +700,7 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
                                         })}
                                     </div>
                                 )}
-                                <p className="text-xs text-slate-500 mt-1">Opcional. Se puede filtrar por uno o varios trabajadores.</p>
+
                             </div>
 
                             {selectedModule === 'reproduction' && (
@@ -755,7 +755,7 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
                                             })}
                                         </div>
                                     )}
-                                    <p className="text-xs text-slate-500 mt-1">Opcional. Se puede seleccionar uno o varios estados.</p>
+
                                 </div>
                             )}
 

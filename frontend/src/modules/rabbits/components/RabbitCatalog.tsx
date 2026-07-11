@@ -92,7 +92,7 @@ export function RabbitCatalog({ onSuccess }: Readonly<RabbitCatalogProps>) {
         <p className="text-sm text-slate-500 text-center py-8 bg-slate-50 rounded-lg border border-slate-200">No hay conejos registrados con esos filtros.</p>
       )}
       {!loading && rabbits.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           {rabbits.map((rabbit) => {
             const isSelected = selectedRabbitId === rabbit.id;
             return (

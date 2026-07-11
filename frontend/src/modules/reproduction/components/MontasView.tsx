@@ -131,7 +131,7 @@ export function MontasView({ reproductions, onSuccess }: Readonly<MontasViewProp
     );
   } else {
     content = (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
         {Object.values(filteredMales.reduce((acc, macho) => {
           const cageNumber = macho.cageNumber || 0;
           if (!acc[cageNumber]) {

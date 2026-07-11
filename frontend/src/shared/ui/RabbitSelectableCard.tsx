@@ -44,8 +44,8 @@ export function RabbitSelectableCard({
       }}
     >
 
-      <div className="flex justify-between items-start mb-2">
-        <div className="flex items-center gap-3 relative z-0">
+      <div className="flex justify-between items-start mb-2 gap-2">
+        <div className="flex items-center gap-3 relative z-0 min-w-0 flex-1">
           {rabbit.imageUrl ? (
             <img src={rabbit.imageUrl} alt={rabbit.code} className="w-10 h-10 flex-shrink-0 rounded-full object-cover shadow-sm border border-slate-200" />
           ) : (
@@ -53,20 +53,20 @@ export function RabbitSelectableCard({
               Sin foto
             </div>
           )}
-          <div>
+          <div className="min-w-0">
             {rabbit.name ? (
               <>
-                <h4 className="font-bold text-sm text-slate-800 leading-tight pr-6">{rabbit.name}</h4>
+                <h4 className="font-bold text-sm text-slate-800 leading-tight">{rabbit.name}</h4>
                 <p className="text-xs text-slate-500">{rabbit.code}</p>
               </>
             ) : (
-              <h4 className="font-bold text-sm text-slate-800 leading-tight pr-6">{rabbit.code}</h4>
+              <h4 className="font-bold text-sm text-slate-800 leading-tight">{rabbit.code}</h4>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-start gap-1 flex-shrink-0">
           {rabbit.race && (
-            <span className="px-2 py-0.5 bg-slate-50 text-slate-600 text-[10px] font-medium rounded-full shrink-0 capitalize border border-slate-200 relative z-0">
+            <span className="px-2 py-0.5 bg-slate-50 text-slate-600 text-[10px] font-medium rounded-full capitalize border border-slate-200" title={rabbit.race}>
               {rabbit.race}
             </span>
           )}

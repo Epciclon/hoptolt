@@ -183,7 +183,7 @@ export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<Repro
           No hay conejas en etapa de gestación que coincidan con los filtros.
         </p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
           {Object.values(gestaciones.reduce((acc, reproduction) => {
             const cageNumber = reproduction.cageNumber || 0;
             if (!acc[cageNumber]) {

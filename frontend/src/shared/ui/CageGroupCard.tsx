@@ -52,7 +52,7 @@ export function CageGroupCard({
             {headerBadge}
           </div>
         )}
-        <span className="px-2.5 py-0.5 bg-slate-100 text-slate-700 rounded-full text-[11px] font-medium capitalize border border-slate-200">
+        <span className="px-2.5 py-0.5 bg-slate-100 text-slate-700 rounded-full text-[11px] font-medium capitalize border border-slate-200 max-w-[120px] truncate">
           {cageType}
         </span>
       </div>
