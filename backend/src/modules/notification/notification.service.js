@@ -40,7 +40,7 @@ class NotificationService {
             const { notifiedIds, notificationMap } = await this._getNotifiedIds(profileId, 'warning', 'birth');
 
             await this._processUpcomingBirths(upcomingReproductions, profileId, notifiedIds);
-            await this._cleanupStaleBirthNotifications(notifiedIds, notificationMap);
+            await this._cleanupStaleNotifications(notifiedIds, notificationMap, 'gestacion');
         } catch (error) {
             console.error('Error checking/creating birth notifications:', error);
         }
@@ -79,7 +79,7 @@ class NotificationService {
             const { notifiedIds, notificationMap } = await this._getNotifiedIds(profileId, 'warning', 'weaning');
 
             await this._processWeaningAlerts(weaningReproductions, profileId, notifiedIds);
-            await this._cleanupStaleWeaningNotifications(notifiedIds, notificationMap);
+            await this._cleanupStaleNotifications(notifiedIds, notificationMap, 'lactancia');
         } catch (error) {
             console.error('Error checking/creating weaning notifications:', error);
         }
@@ -416,7 +416,7 @@ class NotificationService {
         }
     }
 
-    async _cleanupStaleBirthNotifications(notifiedIds, notificationMap) {
+    async _cleanupStaleNotifications(notifiedIds, notificationMap, validStatus) {
         if (notifiedIds.size === 0) return;
         const { Reproduction, Notification } = require('../../domain/models');
         const allNotifiedReproductions = await Reproduction.findAll({
@@ -425,7 +425,7 @@ class NotificationService {
         });
         const statusMap = new Map(allNotifiedReproductions.map(r => [Number(r.id), r.status]));
         for (const notifiedId of notifiedIds) {
-            if (statusMap.get(notifiedId) !== 'gestacion') {
+            if (statusMap.get(notifiedId) !== validStatus) {
                 const notifId = notificationMap.get(notifiedId);
                 if (notifId) await Notification.destroy({ where: { id: notifId } });
             }
@@ -450,21 +450,6 @@ class NotificationService {
         }
     }
 
-    async _cleanupStaleWeaningNotifications(notifiedIds, notificationMap) {
-        if (notifiedIds.size === 0) return;
-        const { Reproduction, Notification } = require('../../domain/models');
-        const allNotifiedReproductions = await Reproduction.findAll({
-            where: { id: { [Op.in]: Array.from(notifiedIds) } },
-            attributes: ['id', 'status']
-        });
-        const statusMap = new Map(allNotifiedReproductions.map(r => [Number(r.id), r.status]));
-        for (const notifiedId of notifiedIds) {
-            if (statusMap.get(notifiedId) !== 'lactancia') {
-                const notifId = notificationMap.get(notifiedId);
-                if (notifId) await Notification.destroy({ where: { id: notifId } });
-            }
-        }
-    }
 }
 
 module.exports = new NotificationService();

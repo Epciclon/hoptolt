@@ -57,20 +57,7 @@ class ReproductionRepository {
             ]
         };
 
-        if (options.search) {
-            const search = `%${options.search}%`;
-            // Búsqueda por nombre o código de la hembra
-            includeFemale.where = {
-                ...rabbitWhere,
-                [Op.or]: [
-                    { name: { [Op.iLike]: search } },
-                    { code: { [Op.iLike]: search } }
-                ]
-            };
-        } else if (Object.keys(rabbitWhere).length > 0) {
-            includeFemale.where = rabbitWhere;
-            includeFemale.required = true;
-        }
+        this._applySearchFiltersToIncludeFemale(includeFemale, options, rabbitWhere);
 
         return Reproduction.findAll({
             where: whereClause,
@@ -105,31 +92,37 @@ class ReproductionRepository {
 
         const countOptions = { where: whereClause };
 
-        if (options.search) {
-            const search = `%${options.search}%`;
-            countOptions.include = [{
-                model: Rabbit,
-                as: 'female',
-                attributes: [],
-                where: {
-                    ...rabbitWhere,
-                    [Op.or]: [
-                        { name: { [Op.iLike]: search } },
-                        { code: { [Op.iLike]: search } }
-                    ]
-                }
-            }];
-        } else if (Object.keys(rabbitWhere).length > 0) {
-            countOptions.include = [{
-                model: Rabbit,
-                as: 'female',
-                attributes: [],
-                where: rabbitWhere,
-                required: true
-            }];
+        const includeFemale = {
+            model: Rabbit,
+            as: 'female',
+            attributes: [],
+            required: false
+        };
+
+        this._applySearchFiltersToIncludeFemale(includeFemale, options, rabbitWhere);
+
+        if (includeFemale.where || includeFemale.required) {
+            countOptions.include = [includeFemale];
         }
 
         return Reproduction.count(countOptions);
+    }
+
+    _applySearchFiltersToIncludeFemale(includeFemale, options, rabbitWhere) {
+        if (options.search) {
+            const search = `%${options.search}%`;
+            includeFemale.where = {
+                ...rabbitWhere,
+                [Op.or]: [
+                    { name: { [Op.iLike]: search } },
+                    { code: { [Op.iLike]: search } }
+                ]
+            };
+            includeFemale.required = true; // when searching, the join must be required to filter results
+        } else if (Object.keys(rabbitWhere).length > 0) {
+            includeFemale.where = rabbitWhere;
+            includeFemale.required = true;
+        }
     }
 
     async findById(id) {
