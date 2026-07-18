@@ -40,12 +40,38 @@ async function notifyOwnerOnManualPhaseChange(profileId, galponId, reproductionI
     }
 }
 
+async function _notifyWorkersForPhaseChange(WorkerPermission, WorkerCage, Notification, workers, cageId, message, dataPayload) {
+    for (const worker of workers) {
+        if (!worker.profileId) continue;
+
+        const hasPermission = await WorkerPermission.findOne({
+            where: { farmMemberId: worker.id, moduleName: 'reproduccionyparto', canRead: true }
+        });
+        
+        if (!hasPermission) continue;
+        
+        const isAssigned = await WorkerCage.findOne({
+            where: { farmMemberId: worker.id, cageId }
+        });
+        
+        if (!isAssigned) continue;
+        
+        await Notification.create({
+            profileId: worker.profileId,
+            type: 'info',
+            title: 'Cambio de Fase Automático',
+            message,
+            data: dataPayload
+        });
+    }
+}
+
 /**
  * Notifies the owner and relevant workers when the cron automatically advances a reproduction phase.
  */
 async function notifyAutomatedPhaseChange(rep, newPhase, newPhaseName) {
     try {
-        const { WorkerPermission, WorkerCage } = require('../../domain/models');
+        const { WorkerPermission, WorkerCage, Notification } = require('../../domain/models');
         const reproductionRepository = require('../../modules/reproduction/reproduction.repository');
 
         const fullRep = await reproductionRepository.findByIdWithDetails(rep.id);
@@ -78,29 +104,7 @@ async function notifyAutomatedPhaseChange(rep, newPhase, newPhaseName) {
                 where: { galponId: rep.galponId, role: 'worker', status: 'active' }
             });
 
-            for (const worker of workers) {
-                if (!worker.profileId) continue;
-
-                const hasPermission = await WorkerPermission.findOne({
-                    where: { farmMemberId: worker.id, moduleName: 'reproduccionyparto', canRead: true }
-                });
-                
-                if (!hasPermission) continue;
-                
-                const isAssigned = await WorkerCage.findOne({
-                    where: { farmMemberId: worker.id, cageId }
-                });
-                
-                if (!isAssigned) continue;
-                
-                await Notification.create({
-                    profileId: worker.profileId,
-                    type: 'info',
-                    title: 'Cambio de Fase Automático',
-                    message,
-                    data: dataPayload
-                });
-            }
+            await _notifyWorkersForPhaseChange(WorkerPermission, WorkerCage, Notification, workers, cageId, message, dataPayload);
         }
     } catch (error) {
         console.error('Error notifying automated phase change:', error);
