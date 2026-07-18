@@ -19,7 +19,7 @@ class NotificationService {
             const todayStr = new Date().toLocaleDateString('sv', { timeZone: 'America/Guayaquil' });
             const d = new Date(todayStr + 'T00:00:00-05:00');
             d.setDate(d.getDate() + 3);
-            const threeDaysFromNowStr = `--`;
+            const threeDaysFromNowStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
             const { Assignment } = require('../../domain/models');
             const conditions = await this._getReproductionConditions(profileId);
@@ -44,12 +44,12 @@ class NotificationService {
                 if (!notifiedIds.has(repId)) {
                     notifiedIds.add(repId);
                     const birthDateStr = typeof r.estimatedBirthDate === 'string' ? r.estimatedBirthDate : r.estimatedBirthDate.toISOString().split('T')[0];
-                    const rabbitName = r.female?.name ?  " + r.female.name + " : '';
+                    const rabbitName = r.female?.name ? " (" + r.female.name + ")" : "";
                     await Notification.create({
                         profileId,
                         type: 'warning',
                         title: 'Alerta de Parto Pr�ximo',
-                        message: La coneja con c�digo  tiene un parto estimado para el . �Por favor prepara la jaula con al menos 3 d�as de anticipaci�n!,
+                        message: `La coneja con c\xf3digo ${r.female?.code}${rabbitName} tiene un parto estimado para el ${birthDateStr}. \xa1Por favor prepara la jaula con al menos 3 d\xedas de anticipaci\xf3n!`,
                         data: { type: 'birth_warning', reproductionId: repId, estimatedBirthDate: birthDateStr }
                     });
                 }
@@ -74,9 +74,9 @@ class NotificationService {
     }
 
     async checkAndCreateWeaningNotifications(profileId) {
-        if (ongoingChecks.has(${profileId}_weaning)) return ongoingChecks.get(${profileId}_weaning);
-        const promise = this._runWeaningCheck(profileId).finally(() => ongoingChecks.delete(${profileId}_weaning));
-        ongoingChecks.set(${profileId}_weaning, promise);
+        if (ongoingChecks.has(`${profileId}_weaning`)) return ongoingChecks.get(`${profileId}_weaning`);
+        const promise = this._runWeaningCheck(profileId).finally(() => ongoingChecks.delete(`${profileId}_weaning`));
+        ongoingChecks.set(`${profileId}_weaning`, promise);
         return promise;
     }
 
@@ -85,7 +85,7 @@ class NotificationService {
             const todayStr = new Date().toLocaleDateString('sv', { timeZone: 'America/Guayaquil' });
             const d = new Date(todayStr + 'T00:00:00-05:00');
             d.setDate(d.getDate() - 30);
-            const thirtyDaysAgoStr = `--`;
+            const thirtyDaysAgoStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
             const { Assignment } = require('../../domain/models');
             const conditions = await this._getReproductionConditions(profileId);
@@ -109,12 +109,12 @@ class NotificationService {
                 const repId = Number(r.id);
                 if (!notifiedIds.has(repId)) {
                     notifiedIds.add(repId);
-                    const rabbitName = r.female?.name ?  " + r.female.name + " : '';
+                    const rabbitName = r.female?.name ? " (" + r.female.name + ")" : "";
                     await Notification.create({
                         profileId,
                         type: 'warning',
                         title: 'Recordatorio de Destete',
-                        message: La camada de la coneja  ya cumpli� 30 d�as de lactancia. Es tiempo de realizar el destete.,
+                        message: `La camada de la coneja ${rabbitName} ya cumpli\xf3 30 d\xedas de lactancia. Es tiempo de realizar el destete.`,
                         data: { type: 'weaning_alert', reproductionId: repId }
                     });
                 }
@@ -139,9 +139,9 @@ class NotificationService {
     }
 
     async checkAndCreateCleaningNotifications(profileId) {
-        if (ongoingChecks.has(${profileId}_cleaning)) return ongoingChecks.get(${profileId}_cleaning);
-        const promise = this._runCleaningCheck(profileId).finally(() => ongoingChecks.delete(${profileId}_cleaning));
-        ongoingChecks.set(${profileId}_cleaning, promise);
+        if (ongoingChecks.has(`${profileId}_cleaning`)) return ongoingChecks.get(`${profileId}_cleaning`);
+        const promise = this._runCleaningCheck(profileId).finally(() => ongoingChecks.delete(`${profileId}_cleaning`));
+        ongoingChecks.set(`${profileId}_cleaning`, promise);
         return promise;
     }
 
@@ -187,7 +187,6 @@ class NotificationService {
                 order: [['cleaningDate', 'DESC']]
             });
 
-            let startDate = null;
             let startDate = null;
             if (lastCleaning?.cleaningDate) {
                 startDate = new Date(lastCleaning.cleaningDate);
