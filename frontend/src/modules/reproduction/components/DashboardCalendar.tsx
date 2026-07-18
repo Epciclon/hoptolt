@@ -65,9 +65,9 @@ function getDayStyles(
     if (calendarType === 'receptive') return { bgClass: 'bg-pink-50 hover:bg-pink-100 text-pink-800 font-semibold', eventTextClass: 'text-pink-600' };
     return { bgClass: 'bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold', eventTextClass: 'text-amber-600' };
   }
-  if (isDayToday) return { bgClass: 'bg-slate-200/80 hover:bg-slate-200 text-slate-800 font-bold', eventTextClass: 'text-slate-600' };
-  if (!hasEvents) return { bgClass: 'opacity-50 cursor-default bg-slate-50/50 hover:bg-slate-50/50', eventTextClass: 'text-slate-600' };
-  return { bgClass: 'hover:bg-slate-100 text-slate-700', eventTextClass: 'text-slate-600' };
+  if (isDayToday) return { bgClass: 'bg-slate-200/80 hover:bg-slate-200 text-main font-bold', eventTextClass: 'text-muted' };
+  if (!hasEvents) return { bgClass: 'opacity-50 cursor-default bg-theme-surface hover:bg-theme-surface', eventTextClass: 'text-muted' };
+  return { bgClass: 'hover:bg-theme-surface border border-default text-main', eventTextClass: 'text-muted' };
 }
 
 export function DashboardCalendar() {
@@ -178,11 +178,11 @@ export function DashboardCalendar() {
   return (
     <div className="space-y-4 relative px-1">
       <div className="mb-4">
-        <h3 className="text-lg font-bold text-slate-800">
+        <h3 className="text-lg font-bold text-main">
           {canViewReproduction ? "Calendario de Eventos" : "Calendario General"}
         </h3>
         {canViewReproduction && (
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-sm text-muted mt-0.5">
             Alterna entre las vistas para ver los partos, destetes o conejas en celo.
           </p>
         )}
@@ -190,7 +190,7 @@ export function DashboardCalendar() {
 
       {/* Selector de tipo de calendario */}
       {canViewReproduction && (
-        <div className="flex bg-slate-100 p-1 rounded-lg w-full max-w-2xl mx-auto mb-4 relative overflow-hidden">
+        <div className="flex bg-theme-surface border border-default p-1 rounded-lg w-full max-w-2xl mx-auto mb-4 relative overflow-hidden">
         {isFetching && (
           <div className="absolute top-0 left-0 w-full h-0.5 bg-slate-200">
             <div className="h-full bg-primary-500 animate-pulse w-full"></div>
@@ -199,7 +199,7 @@ export function DashboardCalendar() {
         <button
           onClick={() => { setCalendarType('births'); setSelectedDate(null); }}
           className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-            calendarType === 'births' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600 hover:text-slate-800'
+            calendarType === 'births' ? 'bg-card text-emerald-700 dark:text-emerald-400 shadow-sm border border-default' : 'text-muted hover:text-main'
           }`}
         >
           {typeConfig.births.icon} <span className="hidden sm:inline">{typeConfig.births.label}</span>
@@ -207,7 +207,7 @@ export function DashboardCalendar() {
         <button
           onClick={() => { setCalendarType('receptive'); setSelectedDate(null); }}
           className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-            calendarType === 'receptive' ? 'bg-white text-pink-700 shadow-sm' : 'text-slate-600 hover:text-slate-800'
+            calendarType === 'receptive' ? 'bg-card text-pink-700 dark:text-pink-400 shadow-sm border border-default' : 'text-muted hover:text-main'
           }`}
         >
           {typeConfig.receptive.icon} <span className="hidden sm:inline">{typeConfig.receptive.label}</span>
@@ -215,7 +215,7 @@ export function DashboardCalendar() {
         <button
           onClick={() => { setCalendarType('weaning'); setSelectedDate(null); }}
           className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-            calendarType === 'weaning' ? 'bg-white text-amber-700 shadow-sm' : 'text-slate-600 hover:text-slate-800'
+            calendarType === 'weaning' ? 'bg-card text-amber-700 dark:text-amber-400 shadow-sm border border-default' : 'text-muted hover:text-main'
           }`}
         >
           {typeConfig.weaning.icon} <span className="hidden sm:inline">{typeConfig.weaning.label}</span>
@@ -223,23 +223,23 @@ export function DashboardCalendar() {
       </div>
       )}
 
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden w-full max-w-3xl mx-auto">
+      <div className="bg-card rounded-xl border border-strong overflow-hidden w-full max-w-3xl mx-auto">
         {/* Header con navegación */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-default bg-theme-surface">
           <button
             onClick={prevMonth}
-            className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors text-slate-600"
+            className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors text-muted"
           >
             <ChevronLeft size={20} />
           </button>
           <div className="flex flex-col items-center">
-            <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-main flex items-center gap-2">
               {MONTHS[month - 1]} {year}
             </h3>
           </div>
           <button
             onClick={nextMonth}
-            className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors text-slate-600"
+            className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors text-muted"
           >
             <ChevronRight size={20} />
           </button>
@@ -254,7 +254,7 @@ export function DashboardCalendar() {
             {/* Day headers */}
             <div className="grid grid-cols-7 mb-1">
               {DAYS.map(d => (
-                <div key={d} className="text-center text-xs font-semibold text-slate-500 py-2">
+                <div key={d} className="text-center text-xs font-semibold text-muted py-2">
                   {d}
                 </div>
               ))}
@@ -289,7 +289,7 @@ export function DashboardCalendar() {
                     {hasEvents && canViewReproduction && (
                       <span className={`
                         text-[10px] sm:text-xs font-bold mt-0.5 sm:mt-1 leading-none
-                        ${isSelected ? 'text-slate-800' : eventTextClass}
+                        ${isSelected ? 'text-main' : eventTextClass}
                       `}>
                         {entries.length} {entries.length === 1 ? currentConfig.eventLabel : currentConfig.eventsLabel}
                       </span>
@@ -310,7 +310,7 @@ export function DashboardCalendar() {
       >
         <div className="max-h-[60vh] overflow-y-auto px-1 py-2 flex flex-col gap-4">
           {selectedEntries.length > 5 && (
-            <div className="sticky top-0 z-10 bg-white pb-2 pt-1">
+            <div className="sticky top-0 z-10 bg-card pb-2 pt-1">
               <FilterBar
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
@@ -321,7 +321,7 @@ export function DashboardCalendar() {
           )}
           
           {filteredEntries.length === 0 ? (
-            <p className="text-sm text-slate-500 text-center py-8">
+            <p className="text-sm text-muted text-center py-8">
               {searchTerm ? 'No se encontraron resultados para la búsqueda.' : 'No hay eventos para este día.'}
             </p>
           ) : (
@@ -331,45 +331,45 @@ export function DashboardCalendar() {
                 return (
                   <div
                     key={entry.id}
-                    className={`border rounded-xl p-4 flex gap-4 items-start bg-white shadow-sm transition-all
-                      ${isHighlighted ? 'border-primary-500 ring-2 ring-primary-500/20' : 'border-slate-200'}
+                    className={`border rounded-xl p-4 flex gap-4 items-start bg-card shadow-sm transition-all
+                      ${isHighlighted ? 'border-primary-500 ring-2 ring-primary-500/20' : 'border-strong'}
                     `}
                   >
                     {entry.femaleImageUrl ? (
-                      <img src={entry.femaleImageUrl} alt={entry.femaleName || entry.femaleCode} className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 rounded-full object-cover shadow-sm border border-slate-200" />
+                      <img src={entry.femaleImageUrl} alt={entry.femaleName || entry.femaleCode} className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 rounded-full object-cover shadow-sm border border-strong" />
                     ) : (
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 bg-slate-100 rounded-full flex items-center justify-center border border-slate-200">
-                        <span className="text-slate-400 text-xs font-medium text-center leading-tight">Sin Foto</span>
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 bg-theme-surface border border-default rounded-full flex items-center justify-center border border-strong">
+                        <span className="text-theme-faint text-xs font-medium text-center leading-tight">Sin Foto</span>
                       </div>
                     )}
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start">
                         <div className="truncate">
-                          <p className="font-bold text-slate-800 text-base truncate">
+                          <p className="font-bold text-main text-base truncate">
                             {entry.femaleName || 'Sin Nombre'}
-                            <span className="ml-2 text-sm font-medium text-slate-500">
+                            <span className="ml-2 text-sm font-medium text-muted">
                               {entry.femaleCode}
                             </span>
                           </p>
                           {entry.cageNumber && (
-                            <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1 truncate">
+                            <p className="text-xs text-muted mt-0.5 flex items-center gap-1 truncate">
                               Jaula #{entry.cageNumber} {entry.cageType ? `(${entry.cageType})` : ''}
                             </p>
                           )}
                         </div>
                       </div>
                       
-                      <div className="mt-3 flex flex-col sm:flex-row gap-3 p-3 bg-slate-50 rounded-lg">
+                      <div className="mt-3 flex flex-col sm:flex-row gap-3 p-3 bg-theme-surface rounded-lg">
                         {calendarType === 'births' && (
                           <>
                             <div className="flex-1 min-w-0">
-                              <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-0.5 truncate">Monta</p>
-                              <p className="text-xs text-slate-700 font-medium truncate">{formatDate(entry.mountDate)}</p>
+                              <p className="text-[10px] uppercase tracking-wider text-theme-faint font-bold mb-0.5 truncate">Monta</p>
+                              <p className="text-xs text-main font-medium truncate">{formatDate(entry.mountDate)}</p>
                             </div>
-                            <div className="flex-1 min-w-0 border-t sm:border-t-0 sm:border-l border-slate-200 pt-2 sm:pt-0 sm:pl-3">
-                              <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-0.5 truncate">Parto Est.</p>
-                              <p className="text-xs text-slate-700 font-medium truncate">{formatDate(entry.estimatedBirthDate)}</p>
+                            <div className="flex-1 min-w-0 border-t sm:border-t-0 sm:border-l border-strong pt-2 sm:pt-0 sm:pl-3">
+                              <p className="text-[10px] uppercase tracking-wider text-theme-faint font-bold mb-0.5 truncate">Parto Est.</p>
+                              <p className="text-xs text-main font-medium truncate">{formatDate(entry.estimatedBirthDate)}</p>
                             </div>
                           </>
                         )}
@@ -377,37 +377,37 @@ export function DashboardCalendar() {
                         {calendarType === 'weaning' && (
                           <>
                             <div className="flex-1 min-w-0">
-                              <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-0.5 truncate">Parto Est.</p>
-                              <p className="text-xs text-slate-700 font-medium truncate">{formatDate(entry.estimatedBirthDate)}</p>
+                              <p className="text-[10px] uppercase tracking-wider text-theme-faint font-bold mb-0.5 truncate">Parto Est.</p>
+                              <p className="text-xs text-main font-medium truncate">{formatDate(entry.estimatedBirthDate)}</p>
                             </div>
-                            <div className="flex-1 min-w-0 border-t sm:border-t-0 sm:border-l border-slate-200 pt-2 sm:pt-0 sm:pl-3">
-                              <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-0.5 truncate">Destete Est.</p>
-                              <p className="text-xs text-slate-700 font-medium truncate">{formatDate(entry.estimatedWeaningDate)}</p>
+                            <div className="flex-1 min-w-0 border-t sm:border-t-0 sm:border-l border-strong pt-2 sm:pt-0 sm:pl-3">
+                              <p className="text-[10px] uppercase tracking-wider text-theme-faint font-bold mb-0.5 truncate">Destete Est.</p>
+                              <p className="text-xs text-main font-medium truncate">{formatDate(entry.estimatedWeaningDate)}</p>
                             </div>
                           </>
                         )}
 
                         {calendarType === 'receptive' && (
                           <div className="flex-1 min-w-0">
-                            <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-0.5 truncate">Disponible Desde</p>
-                            <p className="text-sm text-slate-700 font-medium truncate">{formatDate(entry.receptiveDate)}</p>
+                            <p className="text-[10px] uppercase tracking-wider text-theme-faint font-bold mb-0.5 truncate">Disponible Desde</p>
+                            <p className="text-sm text-main font-medium truncate">{formatDate(entry.receptiveDate)}</p>
                           </div>
                         )}
                       </div>
 
                       {entry.maleCode && calendarType !== 'receptive' && (
-                        <div className="mt-3 flex items-center gap-2 border-t border-slate-100 pt-3 min-w-0">
+                        <div className="mt-3 flex items-center gap-2 border-t border-default pt-3 min-w-0">
                           {entry.maleImageUrl ? (
-                            <img src={entry.maleImageUrl} alt={entry.maleName || entry.maleCode} className="w-10 h-10 flex-shrink-0 rounded-full object-cover shadow-sm border border-slate-200" />
+                            <img src={entry.maleImageUrl} alt={entry.maleName || entry.maleCode} className="w-10 h-10 flex-shrink-0 rounded-full object-cover shadow-sm border border-strong" />
                           ) : (
-                            <div className="w-10 h-10 flex-shrink-0 bg-slate-100 rounded-full flex items-center justify-center border border-slate-200">
-                              <span className="text-slate-400 text-[8px] font-medium uppercase text-center leading-tight">Sin Foto</span>
+                            <div className="w-10 h-10 flex-shrink-0 bg-theme-surface border border-default rounded-full flex items-center justify-center border border-strong">
+                              <span className="text-theme-faint text-[8px] font-medium uppercase text-center leading-tight">Sin Foto</span>
                             </div>
                           )}
                           <div className="min-w-0 flex-1">
-                            <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-0.5 truncate">Pareja (Macho)</p>
-                            <p className="text-xs text-slate-700 font-medium truncate">
-                              {entry.maleName || 'Sin Nombre'} <span className="text-slate-500">({entry.maleCode})</span>
+                            <p className="text-[10px] uppercase tracking-wider text-theme-faint font-bold mb-0.5 truncate">Pareja (Macho)</p>
+                            <p className="text-xs text-main font-medium truncate">
+                              {entry.maleName || 'Sin Nombre'} <span className="text-muted">({entry.maleCode})</span>
                             </p>
                           </div>
                         </div>
@@ -419,7 +419,7 @@ export function DashboardCalendar() {
             </div>
           )}
         </div>
-        <div className="mt-4 flex justify-end pt-4 border-t border-slate-100">
+        <div className="mt-4 flex justify-end pt-4 border-t border-default">
           <Button variant="outline" onClick={() => { setSelectedDate(null); setSearchTerm(''); }}>
             Cerrar
           </Button>

@@ -1,4 +1,4 @@
-import api from '@/lib/api';
+﻿import api from '@/lib/api';
 import type { Reproduction, CreateReproductionDto, StartMatingDto, MatingRabbit, ReproductionFemale, ReproductionMale } from '../types/reproduction.types';
 
 export const reproductionService = {

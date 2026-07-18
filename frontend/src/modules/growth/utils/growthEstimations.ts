@@ -1,4 +1,4 @@
-export function calculateEstimatedWeight(purpose: string, ageMonths: number): number {
+﻿export function calculateEstimatedWeight(purpose: string, ageMonths: number): number {
     if (purpose === 'Engorde') {
         const table: Record<number, number> = {
             0: 0.05, 1: 0.5, 2: 1.0, 3: 1.5, 4: 2.0, 5: 2.2, 6: 2.4, 7: 2.6

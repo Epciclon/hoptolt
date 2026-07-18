@@ -1,4 +1,4 @@
-import api from '@/lib/api';
+﻿import api from '@/lib/api';
 import type { Mortality, CreateMortalityDto } from '../types/mortality.types';
 
 export const mortalityService = {

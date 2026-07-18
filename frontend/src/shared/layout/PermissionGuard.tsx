@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
 import { Alert } from '@/shared/ui';
@@ -30,7 +30,7 @@ export function PermissionGuard({ children, moduleName, requireOwner = false }: 
       <div className="p-4">
         <div className="max-w-md mx-auto mt-12">
           <Alert variant="error" message="Acceso Denegado" />
-          <p className="text-slate-600 text-sm mt-4 text-center">
+          <p className="text-muted text-sm mt-4 text-center">
             Solo el propietario del criadero puede acceder a esta sección.
           </p>
         </div>
@@ -44,7 +44,7 @@ export function PermissionGuard({ children, moduleName, requireOwner = false }: 
       <div className="p-4">
         <div className="max-w-md mx-auto mt-12">
           <Alert variant="error" message="Acceso Denegado" />
-          <p className="text-slate-600 text-sm mt-4 text-center">
+          <p className="text-muted text-sm mt-4 text-center">
             No tienes los permisos necesarios para acceder a esta sección. Si crees que esto es un error, contacta al propietario del galpón.
           </p>
         </div>

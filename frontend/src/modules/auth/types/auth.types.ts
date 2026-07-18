@@ -1,4 +1,4 @@
-export interface WorkerPermission {
+﻿export interface WorkerPermission {
   moduleName: string;
   canCreate: boolean;
   canRead: boolean;

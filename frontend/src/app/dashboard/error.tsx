@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect } from 'react';
 import { AlertTriangle, RefreshCw, ArrowLeft } from 'lucide-react';
@@ -24,11 +24,11 @@ export default function DashboardError({
           <AlertTriangle size={36} className="text-red-400" />
         </div>
         <h1 className="text-5xl font-bold text-red-400 mb-2">500</h1>
-        <h2 className="text-xl font-semibold text-slate-700 mb-3">Algo salió mal</h2>
-        <p className="text-base text-slate-500 mb-2">
+        <h2 className="text-xl font-semibold text-main mb-3">Algo salió mal</h2>
+        <p className="text-base text-muted mb-2">
           {error.message || 'Ocurrió un error inesperado al cargar esta sección.'}
         </p>
-        <p className="text-sm text-slate-400 mb-8">
+        <p className="text-sm text-theme-faint mb-8">
           Si el problema persiste, contacta al administrador del sistema.
         </p>
         <div className="flex gap-3 justify-center">
@@ -41,7 +41,7 @@ export default function DashboardError({
           </button>
           <button
             onClick={() => router.push('/dashboard')}
-            className="inline-flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold px-5 py-2.5 rounded-xl transition-colors text-base"
+            className="inline-flex items-center gap-2 bg-card border border-strong hover:bg-theme-surface text-main font-semibold px-5 py-2.5 rounded-xl transition-colors text-base"
           >
             <ArrowLeft size={16} />
             Volver

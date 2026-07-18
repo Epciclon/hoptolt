@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { usePersistentTab } from '@/shared/hooks/usePersistentTab';
 import { DashboardTabs } from '@/shared/ui/DashboardTabs';
 import { Heart, Activity, Archive } from 'lucide-react';

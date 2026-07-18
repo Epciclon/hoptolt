@@ -1,4 +1,4 @@
-import api from '@/lib/api';
+﻿import api from '@/lib/api';
 import type { Cage, CreateCageDto, UpdateCageDto } from '../types/cage.types';
 
 export interface GetCagesParams {

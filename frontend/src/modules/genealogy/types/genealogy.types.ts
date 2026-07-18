@@ -1,4 +1,4 @@
-export interface Genealogy {
+﻿export interface Genealogy {
   id?: number;
   rabbitId: number;
   fatherId?: number | null;

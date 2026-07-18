@@ -1,10 +1,10 @@
-
+﻿
 export interface DateTimeBadgeProps {
   dateString: string | null | undefined;
 }
 
 export function DateTimeBadge({ dateString }: Readonly<DateTimeBadgeProps>) {
-  if (!dateString) return <span className="text-slate-500">N/A</span>;
+  if (!dateString) return <span className="text-muted">N/A</span>;
 
   const date = new Date(dateString);
   const ecuadorDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
@@ -13,8 +13,8 @@ export function DateTimeBadge({ dateString }: Readonly<DateTimeBadgeProps>) {
 
   return (
     <div className="flex flex-col">
-      <span className="text-slate-800">{formattedDate}</span>
-      <span className="text-[11px] text-slate-500">{formattedTime}</span>
+      <span className="text-main">{formattedDate}</span>
+      <span className="text-[11px] text-muted">{formattedTime}</span>
     </div>
   );
 }

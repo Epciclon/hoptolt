@@ -10,8 +10,27 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es">
-      <body>
+    <html lang="es" suppressHydrationWarning>
+      <body suppressHydrationWarning>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                var size = localStorage.getItem('fontSize');
+                var family = localStorage.getItem('fontFamily');
+                var bold = localStorage.getItem('fontBold');
+                var theme = localStorage.getItem('theme');
+                
+                if (size) document.documentElement.style.fontSize = size;
+                if (theme === 'dark') document.documentElement.classList.add('theme-dark');
+                else if (theme === 'contrast') document.documentElement.classList.add('theme-contrast');
+                
+                if (family) document.body.style.fontFamily = family;
+                if (bold === 'true') document.documentElement.classList.add('theme-bold');
+              } catch (e) {}
+            `,
+          }}
+        />
         <ClientProviders>
           {children}
         </ClientProviders>

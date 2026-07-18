@@ -1,4 +1,4 @@
-export const formatDateTime = (dateString: string) => {
+﻿export const formatDateTime = (dateString: string) => {
   const date = new Date(dateString);
   const ecuadorDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
   const formattedDate = ecuadorDate.toLocaleDateString('es-EC', {

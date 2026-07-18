@@ -27,9 +27,9 @@ export function CageGroupCard({
       className={cn(
         'group relative border shadow-sm rounded-xl p-4 transition-all duration-150 flex flex-col text-left w-full',
         (() => {
-          if (isSelected) return 'border-primary-500 ring-1 ring-primary-500 bg-white shadow-sm';
-          if (isSelectable) return 'border-slate-300 bg-white hover:border-primary-400';
-          return 'border-slate-300 bg-white hover:shadow-md';
+          if (isSelected) return 'border-primary-500 ring-1 ring-primary-500 bg-card shadow-sm';
+          if (isSelectable) return 'border-slate-300 bg-card hover:border-primary-400';
+          return 'border-slate-300 bg-card hover:shadow-md';
         })()
       )}
     >
@@ -43,8 +43,8 @@ export function CageGroupCard({
         />
       )}
 
-      <div className="flex flex-col items-center justify-center mb-4 border-b border-slate-200 pb-3 relative z-10 pointer-events-none">
-        <h3 className="text-lg font-bold text-slate-800 text-center mb-1">
+      <div className="flex flex-col items-center justify-center mb-4 border-b border-strong pb-3 relative z-10 pointer-events-none">
+        <h3 className="text-lg font-bold text-main text-center mb-1">
           Jaula #{cageNumber}
         </h3>
         {headerBadge && (
@@ -52,7 +52,7 @@ export function CageGroupCard({
             {headerBadge}
           </div>
         )}
-        <span className="px-2.5 py-0.5 bg-slate-100 text-slate-700 rounded-full text-[11px] font-medium capitalize border border-slate-200 max-w-[120px] truncate">
+        <span className="px-2.5 py-0.5 bg-theme-surface border border-default text-main rounded-full text-[11px] font-medium capitalize border border-strong max-w-[120px] truncate">
           {cageType}
         </span>
       </div>
@@ -62,7 +62,7 @@ export function CageGroupCard({
       </div>
 
       {footer && (
-        <div className="mt-4 pt-3 border-t border-slate-100 relative z-10 pointer-events-auto">
+        <div className="mt-4 pt-3 border-t border-default relative z-10 pointer-events-auto">
           {footer}
         </div>
       )}

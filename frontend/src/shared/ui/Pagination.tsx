@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -31,7 +31,7 @@ export function Pagination({
         Anterior
       </Button>
       
-      <span className="text-sm text-slate-600 font-medium">
+      <span className="text-sm text-muted font-medium">
         Página {currentPage} de {totalPages}
       </span>
       

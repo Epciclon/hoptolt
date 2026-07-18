@@ -92,15 +92,17 @@ export default function NotificationsPage() {
       router.push(`/dashboard/${notification.data.module}?tab=historial`);
     } else if (type === 'reproduction_automated' || type === 'reproduction_manual') {
       const phase = notification.data?.phase;
-      if (phase === 2) router.push('/dashboard/reproduction/gestacion');
-      else if (phase === 3) router.push('/dashboard/reproduction/lactancia');
-      else router.push('/dashboard/reproduction');
+      if (phase === 2) router.push('/dashboard/reproduction?tab=partos');
+      else if (phase === 3) router.push('/dashboard/reproduction?tab=gazapos');
+      else router.push('/dashboard/reproduction?tab=montas');
     } else if (type === 'birth_warning') {
-      router.push('/dashboard/reproduction/gestacion');
+      router.push('/dashboard/reproduction?tab=partos');
     } else if (type === 'weaning_alert') {
-      router.push('/dashboard/reproduction/lactancia');
+      router.push('/dashboard/reproduction?tab=gazapos');
     } else if (type === 'cleaning_warning') {
       router.push('/dashboard/cleaning');
+    } else if (type === 'growth_summary') {
+      router.push('/dashboard/conejos');
     } else if (notification.data?.galponId && (notification.type === 'success' || notification.type === 'invitation')) {
       router.push('/dashboard/galpones');
     }
@@ -120,7 +122,7 @@ export default function NotificationsPage() {
       case 'warning': return 'bg-yellow-50 border-yellow-200 text-yellow-800';
       case 'info': return 'bg-blue-50 border-blue-200 text-blue-800';
       case 'invitation': return 'bg-purple-50 border-purple-200 text-purple-800';
-      default: return 'bg-slate-50 border-slate-200 text-slate-800';
+      default: return 'bg-theme-surface border-strong text-main';
     }
   };
 
@@ -133,28 +135,30 @@ export default function NotificationsPage() {
     if (filter === 'all') return true;
     if (filter === 'unread') return !n.read;
     if (filter === 'cleaning') return n.data?.type === 'cleaning_warning';
-    if (filter === 'growth') return n.data?.type === 'weight_estimation' || n.data?.type === 'weight_estimations' || n.data?.type === 'age_update';
-    if (filter === 'birth') return n.data?.type === 'birth_warning';
+    if (filter === 'growth') return n.data?.type === 'growth_summary' || n.data?.type === 'weight_estimation' || n.data?.type === 'weight_estimations' || n.data?.type === 'age_update';
+    if (filter === 'reproduction') return n.data?.type === 'birth_warning' || n.data?.type === 'weaning_alert' || n.data?.type === 'reproduction_manual' || n.data?.type === 'reproduction_automated';
+    if (filter === 'activity') return n.data?.type === 'worker_action';
+    if (filter === 'invitation') return n.type === 'invitation' || n.title?.includes('trabajador en tu galpón') || n.title?.includes('unido al galpón');
     return true;
   });
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Centro de Notificaciones</h1>
-          <p className="text-slate-500 mt-1">Gestiona todas las alertas y actualizaciones del sistema</p>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <Card className="border-0 shadow-sm ring-1 ring-slate-200/50 overflow-hidden" padding="none">
+        <div className="p-6 md:p-8 border-b border-default bg-card flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-main">Centro de Notificaciones</h1>
+            <p className="text-muted mt-1">Gestiona todas las alertas y actualizaciones del sistema</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" onClick={handleMarkAllRead} className="flex items-center gap-2">
+              <CheckCheck size={18} />
+              Marcar todas como leídas
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={handleMarkAllRead} className="flex items-center gap-2">
-            <CheckCheck size={18} />
-            Marcar todas como leídas
-          </Button>
-        </div>
-      </div>
 
-      <Card className="border-0 shadow-sm ring-1 ring-slate-200/50" padding="none">
-        <div className="p-4 border-b border-slate-100 flex gap-2 overflow-x-auto">
+        <div className="p-4 border-b border-default flex gap-2 overflow-x-auto bg-card">
           <Button 
             variant={filter === 'all' ? 'primary' : 'outline'} 
             onClick={() => setFilter('all')}
@@ -184,19 +188,33 @@ export default function NotificationsPage() {
             Limpieza
           </Button>
           <Button 
-            variant={filter === 'birth' ? 'primary' : 'outline'} 
-            onClick={() => setFilter('birth')}
+            variant={filter === 'reproduction' ? 'primary' : 'outline'} 
+            onClick={() => setFilter('reproduction')}
             className="rounded-full px-6"
           >
-            Partos
+            Reproducción
+          </Button>
+          <Button 
+            variant={filter === 'activity' ? 'primary' : 'outline'} 
+            onClick={() => setFilter('activity')}
+            className="rounded-full px-6"
+          >
+            Actividad
+          </Button>
+          <Button 
+            variant={filter === 'invitation' ? 'primary' : 'outline'} 
+            onClick={() => setFilter('invitation')}
+            className="rounded-full px-6"
+          >
+            Invitaciones
           </Button>
         </div>
 
-        <div className="p-0">
+        <div className="p-0 bg-card">
           {(() => {
             if (loading) {
               return (
-                <div className="p-12 text-center text-slate-400">
+                <div className="p-12 text-center text-theme-faint">
                   <Clock className="w-8 h-8 animate-spin mx-auto mb-3" />
                   <p>Cargando notificaciones...</p>
                 </div>
@@ -205,9 +223,9 @@ export default function NotificationsPage() {
 
             if (filteredNotifications.length === 0) {
               return (
-                <div className="p-16 text-center text-slate-500">
+                <div className="p-16 text-center text-muted">
                   <Bell className="w-16 h-16 mx-auto mb-4 text-slate-300" />
-                  <h3 className="text-lg font-medium text-slate-700">No hay notificaciones</h3>
+                  <h3 className="text-lg font-medium text-main">No hay notificaciones</h3>
                   <p className="mt-1">No tienes alertas pendientes en esta categoría.</p>
                 </div>
               );
@@ -219,7 +237,7 @@ export default function NotificationsPage() {
                   <div 
                     key={notification.id}
                     className={cn(
-                      "w-full text-left p-6 flex items-start gap-4 hover:bg-slate-50 transition-colors group cursor-pointer",
+                      "w-full text-left p-6 flex items-start gap-4 hover:bg-theme-surface transition-colors group cursor-pointer",
                       !notification.read && "bg-blue-50/30"
                     )}
                     onClick={() => handleNotificationClick(notification)}
@@ -231,15 +249,15 @@ export default function NotificationsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <h4 className="text-base font-semibold text-slate-800 flex items-center gap-2">
+                          <h4 className="text-base font-semibold text-main flex items-center gap-2">
                             {notification.title}
                             {!notification.read && (
                               <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
                             )}
                           </h4>
-                          <p className="text-slate-600 mt-1 whitespace-pre-wrap">{notification.message}</p>
+                          <p className="text-muted mt-1 whitespace-pre-wrap">{notification.message}</p>
                         </div>
-                        <div className="text-sm text-slate-400 flex flex-col items-end gap-2 shrink-0">
+                        <div className="text-sm text-theme-faint flex flex-col items-end gap-2 shrink-0">
                           <span>{formatTime(notification.createdAt)}</span>
                           {!(notification.type === 'warning' || notification.type === 'invitation') && (
                             <button 
@@ -248,7 +266,7 @@ export default function NotificationsPage() {
                                 e.stopPropagation();
                                 handleDelete(notification.id);
                               }}
-                              className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition-opacity p-2"
+                              className="opacity-0 group-hover:opacity-100 text-theme-faint hover:text-red-500 transition-opacity p-2"
                               title="Eliminar notificación"
                             >
                               <Trash2 size={16} />
@@ -258,12 +276,12 @@ export default function NotificationsPage() {
                       </div>
 
                       {notification.data?.type === 'growth_summary' && (
-                        <div className="mt-4 p-4 rounded-lg bg-slate-50 border border-slate-100">
+                        <div className="mt-4 p-4 rounded-lg bg-theme-surface border border-default">
                           <div className="flex gap-6">
                             {notification.data.updatesCount > 0 && (
                               <div className="w-full">
-                                <p className="text-sm font-semibold text-slate-700 mb-2">Conejos Actualizados ({notification.data.updatesCount})</p>
-                                <ul className="text-xs text-slate-600 list-disc list-inside space-y-1">
+                                <p className="text-sm font-semibold text-main mb-2">Conejos Actualizados ({notification.data.updatesCount})</p>
+                                <ul className="text-xs text-muted list-disc list-inside space-y-1">
                                   {notification.data.details?.map((detail: string, i: number) => (
                                     <li key={`${detail}-${i}`}>{detail}</li>
                                   ))}
@@ -275,10 +293,10 @@ export default function NotificationsPage() {
                       )}
 
                       {notification.type === 'invitation' && (
-                        <div className="mt-4 p-4 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-between">
+                        <div className="mt-4 p-4 rounded-lg bg-theme-surface border border-default flex items-center justify-between">
                           <div>
-                            <p className="text-sm font-medium text-slate-700">Invitación a unirse a un galpón</p>
-                            <p className="text-xs text-slate-500 mt-1">Galpón: {notification.data?.galponName || 'Galpón'}</p>
+                            <p className="text-sm font-medium text-main">Invitación a unirse a un galpón</p>
+                            <p className="text-xs text-muted mt-1">Galpón: {notification.data?.galponName || 'Galpón'}</p>
                           </div>
                           <div className="flex gap-2">
                             <Button

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -88,26 +88,26 @@ export function ReproductionForm({ onSuccess, onCancel, editingReproduction }: R
   }
 
   if (!editingReproduction) {
-    return <p className="text-center text-slate-500 py-6">No hay datos de monta para editar.</p>;
+    return <p className="text-center text-muted py-6">No hay datos de monta para editar.</p>;
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
       {/* Visualización de la Pareja */}
-      <div className="flex items-center justify-center gap-6 p-5 bg-slate-50 border border-slate-200/80 rounded-xl">
+      <div className="flex items-center justify-center gap-6 p-5 bg-theme-surface border border-strong/80 rounded-xl">
         {/* Hembra */}
         <div className="flex flex-col items-center gap-2 text-center w-28">
           {femaleRabbit?.imageUrl ? (
             <img src={femaleRabbit.imageUrl} alt={femaleRabbit.code} className="w-16 h-16 rounded-full object-cover shadow-md border-2 border-primary-100" />
           ) : (
-            <div className="w-16 h-16 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-semibold text-xs border border-slate-300">
+            <div className="w-16 h-16 rounded-full bg-slate-200 flex items-center justify-center text-muted font-semibold text-xs border border-slate-300">
               Sin foto
             </div>
           )}
           <div>
             <span className="px-2 py-0.5 bg-primary-100 text-primary-700 text-[10px] font-semibold rounded-full">Hembra</span>
-            <h5 className="font-bold text-slate-800 text-sm mt-1">{editingReproduction.femaleCode}</h5>
-            {editingReproduction.femaleName && <p className="text-xs text-slate-500 truncate max-w-[110px]">{editingReproduction.femaleName}</p>}
+            <h5 className="font-bold text-main text-sm mt-1">{editingReproduction.femaleCode}</h5>
+            {editingReproduction.femaleName && <p className="text-xs text-muted truncate max-w-[110px]">{editingReproduction.femaleName}</p>}
           </div>
         </div>
 
@@ -116,7 +116,7 @@ export function ReproductionForm({ onSuccess, onCancel, editingReproduction }: R
           <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 shadow-sm border border-violet-200">
             <Heart size={20} className="animate-pulse text-violet-500" fill="currentColor" />
           </div>
-          <span className="text-[10px] text-slate-400 mt-1 uppercase font-semibold tracking-wider">Pareja</span>
+          <span className="text-[10px] text-theme-faint mt-1 uppercase font-semibold tracking-wider">Pareja</span>
         </div>
 
         {/* Macho */}
@@ -124,14 +124,14 @@ export function ReproductionForm({ onSuccess, onCancel, editingReproduction }: R
           {maleRabbit?.imageUrl ? (
             <img src={maleRabbit.imageUrl} alt={maleRabbit.code} className="w-16 h-16 rounded-full object-cover shadow-md border-2 border-violet-100" />
           ) : (
-            <div className="w-16 h-16 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-semibold text-xs border border-slate-300">
+            <div className="w-16 h-16 rounded-full bg-slate-200 flex items-center justify-center text-muted font-semibold text-xs border border-slate-300">
               Sin foto
             </div>
           )}
           <div>
             <span className="px-2 py-0.5 bg-violet-100 text-violet-700 text-[10px] font-semibold rounded-full">Macho</span>
-            <h5 className="font-bold text-slate-800 text-sm mt-1">{editingReproduction.maleCode || 'N/A'}</h5>
-            {editingReproduction.maleName && <p className="text-xs text-slate-500 truncate max-w-[110px]">{editingReproduction.maleName}</p>}
+            <h5 className="font-bold text-main text-sm mt-1">{editingReproduction.maleCode || 'N/A'}</h5>
+            {editingReproduction.maleName && <p className="text-xs text-muted truncate max-w-[110px]">{editingReproduction.maleName}</p>}
           </div>
         </div>
       </div>

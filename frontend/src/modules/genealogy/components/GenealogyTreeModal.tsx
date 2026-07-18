@@ -96,22 +96,22 @@ export function GenealogyTreeModal({ rabbit, onClose }: Readonly<GenealogyTreeMo
                     {node.imageUrl ? (
                       <img src={node.imageUrl} alt={node.name} className="w-10 h-10 rounded-full object-cover border border-slate-300 shadow-sm" />
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-300 flex items-center justify-center text-[8px] text-slate-400 text-center leading-tight px-0.5 shadow-sm">
+                      <div className="w-10 h-10 rounded-full bg-theme-surface border border-default border border-slate-300 flex items-center justify-center text-[8px] text-theme-faint text-center leading-tight px-0.5 shadow-sm">
                         Sin foto
                       </div>
                     )}
                   </div>
                   <div className="font-semibold">{node.code}</div>
-                  <div className="text-slate-600 truncate">{node.name}</div>
+                  <div className="text-muted truncate">{node.name}</div>
                   {(node.age !== undefined || (node as any).weight !== undefined) && (
-                    <div className="flex justify-center gap-2 mt-1 text-[9px] text-slate-500">
+                    <div className="flex justify-center gap-2 mt-1 text-[9px] text-muted">
                       {node.age !== undefined && <span>Edad: {node.age} {node.age === 1 ? 'mes' : 'meses'}</span>}
                       {(node as any).weight !== undefined && <span>Peso: {(node as any).weight} kg</span>}
                     </div>
                   )}
-                  {level === 0 && <div className="text-[10px] font-medium text-slate-500 mt-1">Conejo seleccionado</div>}
+                  {level === 0 && <div className="text-[10px] font-medium text-muted mt-1">Conejo seleccionado</div>}
                 </div>
-                {label && <div className="text-xs text-slate-500 font-medium mt-1">{label}</div>}
+                {label && <div className="text-xs text-muted font-medium mt-1">{label}</div>}
               </div>
             );
           })}
@@ -211,7 +211,7 @@ export function GenealogyTreeModal({ rabbit, onClose }: Readonly<GenealogyTreeMo
           </ZoomableViewer>
         )}
         {!loading && treeGenerations.length === 0 && !errorMessage && (
-          <div className="text-center text-slate-500 py-10">No se encontró información genealógica.</div>
+          <div className="text-center text-muted py-10">No se encontró información genealógica.</div>
         )}
       </div>
     </Dialog>

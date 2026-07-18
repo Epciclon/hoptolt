@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { ReactNode, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -58,21 +58,21 @@ export function Dialog({ open, onClose, title, description, children, size = 'md
       />
       <div
         className={cn(
-          'relative w-full bg-white rounded-2xl shadow-2xl flex flex-col',
+          'relative w-full bg-card rounded-2xl shadow-2xl flex flex-col',
           'animate-in fade-in zoom-in-95 duration-200',
           'max-h-[92vh]',
           sizeMap[size],
         )}
       >
-        <div className="flex items-start justify-between px-6 pt-5 pb-4 border-b border-slate-100 shrink-0">
+        <div className="flex items-start justify-between px-6 pt-5 pb-4 border-b border-default shrink-0">
           <div>
-            <h2 className="text-lg font-semibold text-slate-800">{title}</h2>
-            {description && <p className="mt-0.5 text-sm text-slate-500">{description}</p>}
+            <h2 className="text-lg font-semibold text-main">{title}</h2>
+            {description && <p className="mt-0.5 text-sm text-muted">{description}</p>}
           </div>
           {!hideClose && (
             <button
               onClick={onClose}
-              className="ml-4 mt-0.5 text-slate-400 hover:text-slate-600 transition-colors"
+              className="ml-4 mt-0.5 text-theme-faint hover:text-muted transition-colors"
             >
               <X size={20} />
             </button>

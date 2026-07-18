@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { ChevronRight } from 'lucide-react';
@@ -119,21 +119,21 @@ export function WeaningWizard({ open, onClose, onFinish, reproduction, finishing
 
         {step === 'ask' && (
           <div className="flex flex-col gap-5">
-            <p className="text-slate-600 text-sm leading-relaxed">
+            <p className="text-muted text-sm leading-relaxed">
               Al finalizar, se registrará la separación oficial de la madre y los gazapos. La coneja volverá a estar receptiva para una nueva monta.
             </p>
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-3">
+            <div className="bg-theme-surface border border-strong rounded-xl p-4 flex flex-col gap-3">
               <div>
-                <p className="font-semibold text-slate-800 text-sm">¿Retendrás alguna cría de esta camada?</p>
-                <p className="text-slate-500 text-xs mt-1">Por ejemplo, un pie de cría para reproducción o alguno para engorde.</p>
+                <p className="font-semibold text-main text-sm">¿Retendrás alguna cría de esta camada?</p>
+                <p className="text-muted text-xs mt-1">Por ejemplo, un pie de cría para reproducción o alguno para engorde.</p>
               </div>
               
               <div className="flex gap-3 mt-2 pl-7">
-                <label className={`flex items-center gap-2 cursor-pointer border rounded-lg px-3 py-2 transition-colors flex-1 ${willKeepKits === false ? 'bg-primary-50 border-primary-200 text-primary-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                <label className={`flex items-center gap-2 cursor-pointer border rounded-lg px-3 py-2 transition-colors flex-1 ${willKeepKits === false ? 'bg-primary-50 border-primary-200 text-primary-700' : 'bg-card border-strong text-muted hover:bg-theme-surface'}`}>
                   <input type="radio" name="keepKits" checked={willKeepKits === false} onChange={() => setWillKeepKits(false)} className="accent-primary-600" />
                   <span className="text-sm font-medium">No, ninguna</span>
                 </label>
-                <label className={`flex items-center gap-2 cursor-pointer border rounded-lg px-3 py-2 transition-colors flex-1 ${willKeepKits === true ? 'bg-primary-50 border-primary-200 text-primary-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                <label className={`flex items-center gap-2 cursor-pointer border rounded-lg px-3 py-2 transition-colors flex-1 ${willKeepKits === true ? 'bg-primary-50 border-primary-200 text-primary-700' : 'bg-card border-strong text-muted hover:bg-theme-surface'}`}>
                   <input type="radio" name="keepKits" checked={willKeepKits === true} onChange={() => setWillKeepKits(true)} className="accent-primary-600" />
                   <span className="text-sm font-medium">Sí, me quedo con crías</span>
                 </label>
@@ -168,7 +168,7 @@ export function WeaningWizard({ open, onClose, onFinish, reproduction, finishing
 
         {step === 'count' && (
           <div className="flex flex-col gap-5">
-            <p className="text-slate-900 font-medium text-sm">¿Cuántas crías retendrás? Las registraremos una por una.</p>
+            <p className="text-main font-medium text-sm">¿Cuántas crías retendrás? Las registraremos una por una.</p>
             <div className="py-4">
               <Input
                 label="Cantidad de crías"
@@ -193,7 +193,7 @@ export function WeaningWizard({ open, onClose, onFinish, reproduction, finishing
                   }
                 }}
               />
-              <p className="text-xs text-slate-500 mt-2">
+              <p className="text-xs text-muted mt-2">
                 Máximo permitido: {reproduction.bornKits || 20} según los gazapos nacidos registrados
               </p>
             </div>
@@ -249,11 +249,11 @@ export function WeaningWizard({ open, onClose, onFinish, reproduction, finishing
       size="sm"
     >
       <div className="p-4 flex flex-col gap-4">
-        <p className="text-slate-700 text-sm">
+        <p className="text-main text-sm">
           Ya has registrado <strong>{currentIndex}</strong> cría(s) de las {keepCount} que indicaste.
         </p>
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
-          <p className="text-slate-600 text-xs">
+        <div className="bg-theme-surface border border-strong rounded-xl p-3">
+          <p className="text-muted text-xs">
             Si finalizas ahora, el ciclo de lactancia se cerrará y se conservarán únicamente las crías que ya guardaste.
           </p>
         </div>

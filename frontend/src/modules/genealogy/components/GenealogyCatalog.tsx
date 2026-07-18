@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useRabbits } from '@/modules/rabbits/hooks/useRabbits';
 import { useRaces } from '@/modules/races/hooks/useRaces';
@@ -37,7 +37,7 @@ export function GenealogyCatalog({ onViewTree, onEditRelation }: Readonly<Geneal
 
   const renderContent = () => {
     if (loading) return <LoadingMessage message="Cargando genealogías..." />;
-    if (rabbits.length === 0) return <p className="text-sm text-slate-500 text-center py-8 bg-slate-50 rounded-lg border border-slate-200">No hay conejos registrados con esos filtros.</p>;
+    if (rabbits.length === 0) return <p className="text-sm text-muted text-center py-8 bg-theme-surface rounded-lg border border-strong">No hay conejos registrados con esos filtros.</p>;
     
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -74,12 +74,12 @@ export function GenealogyCatalog({ onViewTree, onEditRelation }: Readonly<Geneal
             details={
               <>
                 <div className="flex items-center gap-1">
-                  <span className="font-semibold text-slate-700">Edad:</span> {formatAge(rabbit.age)}
+                  <span className="font-semibold text-main">Edad:</span> {formatAge(rabbit.age)}
                 </div>
                 {rabbit.weight !== undefined && rabbit.weight !== null && (
                   <>
                     <div className="w-px h-3 bg-slate-300"></div>
-                    <div className="flex items-center gap-1"><span className="font-semibold text-slate-700">Peso:</span> {rabbit.weight} kg</div>
+                    <div className="flex items-center gap-1"><span className="font-semibold text-main">Peso:</span> {rabbit.weight} kg</div>
                   </>
                 )}
               </>

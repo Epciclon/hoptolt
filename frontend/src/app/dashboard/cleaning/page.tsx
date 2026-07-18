@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { GalponGuard } from '@/modules/galpones/components/GalponGuard';
 import { CleaningDashboard } from '@/modules/cleaning/components/CleaningDashboard';

@@ -1,4 +1,4 @@
-import { Card, CardHeader } from '@/shared/ui';
+﻿import { Card, CardHeader } from '@/shared/ui';
 import { CageForm } from '@/modules/cages/components/CageForm';
 
 export default function CageRegisterPage() {

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -155,11 +155,11 @@ export function Sidebar({ collapsed, onToggle }: Readonly<SidebarProps>) {
           <h1 className="text-primary-400 font-bold text-base tracking-widest uppercase">
             Hoptolt
           </h1>
-          <p className="text-slate-400 text-xs mt-0.5">Sistema de gestión de crianza</p>
+          <p className="text-theme-faint text-xs mt-0.5">Sistema de gestión de crianza</p>
         </div>
         <button
           onClick={onToggle}
-          className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors flex items-center justify-center"
+          className="p-1.5 rounded-lg hover:bg-card/10 text-theme-faint hover:text-white transition-colors flex items-center justify-center"
           title="Ocultar menú"
         >
           <Menu size={20} />
@@ -179,7 +179,7 @@ export function Sidebar({ collapsed, onToggle }: Readonly<SidebarProps>) {
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium mb-1 transition-all',
                   isActive(item.href!)
                     ? 'bg-primary-500 text-white'
-                    : 'text-slate-300 hover:bg-white/10 hover:text-white',
+                    : 'text-slate-300 hover:bg-card/10 hover:text-white',
                 )}
               >
                 <Icon size={18} className="shrink-0" />
@@ -198,8 +198,8 @@ export function Sidebar({ collapsed, onToggle }: Readonly<SidebarProps>) {
                 className={cn(
                   'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all',
                   hasActiveChild
-                    ? 'text-primary-400 bg-white/5'
-                    : 'text-slate-300 hover:bg-white/10 hover:text-white',
+                    ? 'text-primary-400 bg-card/5'
+                    : 'text-slate-300 hover:bg-card/10 hover:text-white',
                 )}
               >
                 <Icon size={18} className="shrink-0" />
@@ -222,7 +222,7 @@ export function Sidebar({ collapsed, onToggle }: Readonly<SidebarProps>) {
                           'flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-all',
                           isActive(child.href)
                             ? 'bg-primary-500/20 text-primary-300 border-l-2 border-primary-400'
-                            : 'text-slate-400 hover:bg-white/5 hover:text-slate-200',
+                            : 'text-theme-faint hover:bg-card/5 hover:text-slate-200',
                         )}
                       >
                         {ChildIcon && <ChildIcon size={15} className="shrink-0" />}

@@ -1,4 +1,4 @@
-import type { Column } from '@/shared/ui/Table';
+﻿import type { Column } from '@/shared/ui/Table';
 import type { Galpon } from '../types/galpon.types';
 
 export function getGalponBaseColumns(): Column<Galpon>[] {

@@ -83,17 +83,12 @@ export function useNotifications(options?: { limit?: number; offset?: number; un
     mutationFn: (id: number) => notificationService.markAsRead(id),
     onMutate: async (id: number) => {
       await queryClient.cancelQueries({ queryKey: ['notifications'] });
-      const previousNotifications = queryClient.getQueryData(['notifications']);
-      queryClient.setQueryData(['notifications'], (old: any) => {
+      // We don't save previous state here easily because there can be multiple queries,
+      // but typically we can just rely on invalidation if it fails.
+      queryClient.setQueriesData({ queryKey: ['notifications'] }, (old: any) => {
         if (!old) return old;
         return old.map((n: any) => n.id === id ? { ...n, read: true } : n);
       });
-      return { previousNotifications };
-    },
-    onError: (err, variables, context) => {
-      if (context?.previousNotifications) {
-        queryClient.setQueryData(['notifications'], context.previousNotifications);
-      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
@@ -105,17 +100,10 @@ export function useNotifications(options?: { limit?: number; offset?: number; un
     mutationFn: () => notificationService.markAllAsRead(),
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: ['notifications'] });
-      const previousNotifications = queryClient.getQueryData(['notifications']);
-      queryClient.setQueryData(['notifications'], (old: any) => {
+      queryClient.setQueriesData({ queryKey: ['notifications'] }, (old: any) => {
         if (!old) return old;
         return old.map((n: any) => ({ ...n, read: true }));
       });
-      return { previousNotifications };
-    },
-    onError: (err, variables, context) => {
-      if (context?.previousNotifications) {
-        queryClient.setQueryData(['notifications'], context.previousNotifications);
-      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
@@ -127,17 +115,10 @@ export function useNotifications(options?: { limit?: number; offset?: number; un
     mutationFn: (id: number) => notificationService.delete(id),
     onMutate: async (id: number) => {
       await queryClient.cancelQueries({ queryKey: ['notifications'] });
-      const previousNotifications = queryClient.getQueryData(['notifications']);
-      queryClient.setQueryData(['notifications'], (old: any) => {
+      queryClient.setQueriesData({ queryKey: ['notifications'] }, (old: any) => {
         if (!old) return old;
         return old.filter((n: any) => n.id !== id);
       });
-      return { previousNotifications };
-    },
-    onError: (err, variables, context) => {
-      if (context?.previousNotifications) {
-        queryClient.setQueryData(['notifications'], context.previousNotifications);
-      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });

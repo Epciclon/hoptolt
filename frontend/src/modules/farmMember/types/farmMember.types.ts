@@ -1,4 +1,4 @@
-import type { Profile } from '../../auth/types/auth.types';
+﻿import type { Profile } from '../../auth/types/auth.types';
 import type { Galpon } from '../../galpones/types/galpon.types';
 
 export interface WorkerPermission {

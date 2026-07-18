@@ -1,4 +1,4 @@
-import { createClient } from './client'
+﻿import { createClient } from './client'
 
 export async function uploadImage(file: File, bucket: string, folder: string): Promise<string> {
   const supabase = createClient()

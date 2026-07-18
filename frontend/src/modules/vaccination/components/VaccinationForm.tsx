@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -60,7 +60,7 @@ export function VaccinationForm({ onSuccess, onCancel }: Readonly<VaccinationFor
       />
 
       <div>
-        <span className="block text-sm font-medium text-slate-600 mb-2">Vacunas</span>
+        <span className="block text-sm font-medium text-muted mb-2">Vacunas</span>
         <div className="space-y-2">
           {VACCINES.map(vaccine => (
             <label key={vaccine} className="flex items-center gap-2">
@@ -70,7 +70,7 @@ export function VaccinationForm({ onSuccess, onCancel }: Readonly<VaccinationFor
                 {...register('vaccines')}
                 className="rounded border-slate-300"
               />
-              <span className="text-sm text-slate-700">{vaccine}</span>
+              <span className="text-sm text-main">{vaccine}</span>
             </label>
           ))}
         </div>

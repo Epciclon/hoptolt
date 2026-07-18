@@ -1,4 +1,4 @@
-export interface Vaccination {
+﻿export interface Vaccination {
   id: number;
   rabbitId: number;
   rabbitCode: string;

@@ -1,4 +1,4 @@
-import api from '@/lib/api';
+﻿import api from '@/lib/api';
 import type { Assignment, AssignRabbitDto, UnassignRabbitDto, AssignedRabbit } from '../types/assignment.types';
 import type { Rabbit } from '@/modules/rabbits/types/rabbit.types';
 import type { Cage } from '@/modules/cages/types/cage.types';

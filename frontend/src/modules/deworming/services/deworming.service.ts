@@ -1,4 +1,4 @@
-import api from '@/lib/api';
+﻿import api from '@/lib/api';
 import type { Deworming, CreateDewormingDto } from '../types/deworming.types';
 
 export const dewormingService = {

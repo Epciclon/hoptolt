@@ -1,4 +1,4 @@
-export interface Cleaning {
+﻿export interface Cleaning {
   id: number;
   cageId: number;
   cageNumber: number;

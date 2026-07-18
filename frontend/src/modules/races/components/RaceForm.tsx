@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -104,8 +104,8 @@ export function RaceForm({ mode, defaultValues, raceId, onSuccess, onCancel }: R
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
       {mode === 'edit' ? (
         <div>
-          <span className="block text-sm font-medium text-slate-600 mb-1">Nombre de la raza</span>
-          <div className="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-semibold text-base">
+          <span className="block text-sm font-medium text-muted mb-1">Nombre de la raza</span>
+          <div className="px-3 py-2.5 bg-theme-surface border border-strong rounded-lg text-main font-semibold text-base">
             {defaultValues?.name}
           </div>
         </div>
@@ -128,7 +128,7 @@ export function RaceForm({ mode, defaultValues, raceId, onSuccess, onCancel }: R
       />
 
       <div>
-        <span className="block text-sm font-medium text-slate-600 mb-2">Imagen de la raza</span>
+        <span className="block text-sm font-medium text-muted mb-2">Imagen de la raza</span>
         {imageUrl ? (
           <div className="mb-3 relative w-full h-64">
             <Image
@@ -151,7 +151,7 @@ export function RaceForm({ mode, defaultValues, raceId, onSuccess, onCancel }: R
           accept="image/*"
           onChange={handleImageUpload}
           disabled={uploading}
-          className="block w-full text-sm text-slate-500
+          className="block w-full text-sm text-muted
             file:mr-4 file:py-2 file:px-4
             file:rounded-lg file:border-0
             file:text-sm file:font-semibold
@@ -159,7 +159,7 @@ export function RaceForm({ mode, defaultValues, raceId, onSuccess, onCancel }: R
             hover:file:bg-blue-100
             disabled:opacity-50"
         />
-        {uploading && <p className="text-sm text-slate-500 mt-2">Subiendo imagen...</p>}
+        {uploading && <p className="text-sm text-muted mt-2">Subiendo imagen...</p>}
       </div>
 
       <div className="flex justify-end gap-3 pt-2">

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -38,7 +38,7 @@ export default function RaceEditPage() {
         subtitle="Modifica la descripción de la raza"
       />
       {error && <Alert variant="error" message={error} className="mb-4" />}
-      {loading && <p className="text-base text-slate-500">Cargando raza...</p>}
+      {loading && <p className="text-base text-muted">Cargando raza...</p>}
       {race && <RaceForm mode="edit" defaultValues={race} raceId={race.id} onSuccess={handleSuccess} onCancel={handleCancel} />}
     </Card>
   );

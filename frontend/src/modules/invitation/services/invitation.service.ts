@@ -1,4 +1,4 @@
-import api from '@/lib/api';
+﻿import api from '@/lib/api';
 import type { Invitation, CreateInvitationDto } from '../types/invitation.types';
 
 export const invitationService = {

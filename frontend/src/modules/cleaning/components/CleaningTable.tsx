@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import type { Cleaning } from '../types/cleaning.types';
@@ -22,7 +22,7 @@ export function CleaningTable({ profileId, date }: CleaningTableProps) {
     {
       key: 'cage',
       header: 'Jaula',
-      className: 'font-medium text-slate-900',
+      className: 'font-medium text-main',
       render: (row) => row.cageNumber?.toString() || '-'
     },
 

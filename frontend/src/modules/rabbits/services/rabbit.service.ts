@@ -1,4 +1,4 @@
-import api from '@/lib/api';
+﻿import api from '@/lib/api';
 import type { Rabbit, CreateRabbitDto, UpdateRabbitDto } from '../types/rabbit.types';
 
 export interface GetRabbitsParams {

@@ -1,4 +1,4 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import { Search, ArrowLeft } from 'lucide-react';
 
 export default function DashboardNotFound() {
@@ -9,8 +9,8 @@ export default function DashboardNotFound() {
           <Search size={36} className="text-primary-400" />
         </div>
         <h1 className="text-5xl font-bold text-primary-500 mb-2">404</h1>
-        <h2 className="text-xl font-semibold text-slate-700 mb-3">Sección no encontrada</h2>
-        <p className="text-base text-slate-500 mb-8">
+        <h2 className="text-xl font-semibold text-main mb-3">Sección no encontrada</h2>
+        <p className="text-base text-muted mb-8">
           Esta sección no existe. Puede que el enlace esté desactualizado o que el módulo aún no esté disponible.
         </p>
         <Link

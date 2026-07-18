@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
@@ -52,7 +52,7 @@ export function Table<T>({
     if (loading) {
       return (
         <tr>
-          <td colSpan={columns.length} className="py-10 text-center text-slate-500">
+          <td colSpan={columns.length} className="py-10 text-center text-muted">
             <div className="flex items-center justify-center gap-2">
               <svg className="animate-spin h-5 w-5 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -68,7 +68,7 @@ export function Table<T>({
     if (data.length === 0) {
       return (
         <tr>
-          <td colSpan={columns.length} className="py-10 text-center text-slate-400">
+          <td colSpan={columns.length} className="py-10 text-center text-theme-faint">
             {emptyMessage}
           </td>
         </tr>
@@ -81,15 +81,15 @@ export function Table<T>({
         onClick={() => onRowClick?.(row)}
         data-active={isRowActive?.(row) ? 'true' : 'false'}
         className={cn(
-          'border-t border-slate-100 transition-colors duration-150',
+          'border-t border-default transition-colors duration-150',
           onRowClick && 'cursor-pointer hover:bg-primary-50',
           isRowActive?.(row) 
             ? 'bg-green-100/40 border-l-4 border-l-green-500'
-            : 'even:bg-slate-50/50'
+            : 'even:bg-theme-surface'
         )}
       >
         {columns.map((col) => (
-          <td key={`${rowKey ? rowKey(row, index) : index}-${col.key}`} className={cn('px-4 py-3 text-slate-700', col.className)}>
+          <td key={`${rowKey ? rowKey(row, index) : index}-${col.key}`} className={cn('px-4 py-3 text-main', col.className)}>
             {renderCellContent(row, col, index)}
           </td>
         ))}
@@ -98,7 +98,7 @@ export function Table<T>({
   };
 
   return (
-    <div className={cn('w-full overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-card', className)}>
+    <div className={cn('w-full overflow-x-auto rounded-xl border border-strong bg-card shadow-card', className)}>
       <table className="w-full min-w-[600px] border-collapse text-sm">
         <thead>
           <tr className="bg-sidebar text-white">

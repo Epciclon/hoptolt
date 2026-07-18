@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
@@ -182,14 +182,14 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
       {mode === 'edit' ? (
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <span className="block text-sm font-medium text-slate-600 mb-1">Código</span>
-            <div className="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-semibold">
+            <span className="block text-sm font-medium text-muted mb-1">Código</span>
+            <div className="px-3 py-2.5 bg-theme-surface border border-strong rounded-lg text-main font-semibold">
               {defaultValues?.code}
             </div>
           </div>
           <div>
-            <span className="block text-sm font-medium text-slate-600 mb-1">Raza</span>
-            <div className="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700">
+            <span className="block text-sm font-medium text-muted mb-1">Raza</span>
+            <div className="px-3 py-2.5 bg-theme-surface border border-strong rounded-lg text-main">
               {defaultValues?.race}
             </div>
           </div>
@@ -271,10 +271,10 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
         {...register('weight')}
       />
 
-      <div className="border-t border-slate-100 pt-3 mt-1">
-        <span className="block text-sm font-medium text-slate-600 mb-2">Fotografía del conejo</span>
+      <div className="border-t border-default pt-3 mt-1">
+        <span className="block text-sm font-medium text-muted mb-2">Fotografía del conejo</span>
         {imageUrl ? (
-          <div className="mb-2 relative w-full h-32 bg-slate-50 border border-slate-200 rounded-lg overflow-hidden">
+          <div className="mb-2 relative w-full h-32 bg-theme-surface border border-strong rounded-lg overflow-hidden">
             <Image
               src={imageUrl}
               alt="Foto del conejo"
@@ -295,7 +295,7 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
           accept="image/*"
           onChange={handleImageUpload}
           disabled={uploading}
-          className="block w-full text-sm text-slate-500
+          className="block w-full text-sm text-muted
             file:mr-4 file:py-2 file:px-4
             file:rounded-lg file:border-0
             file:text-sm file:font-semibold
@@ -303,10 +303,10 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
             hover:file:bg-blue-100
             disabled:opacity-50 transition-colors"
         />
-        {uploading && <p className="text-sm text-slate-500 mt-2">Subiendo imagen, por favor espera...</p>}
+        {uploading && <p className="text-sm text-muted mt-2">Subiendo imagen, por favor espera...</p>}
       </div>
 
-      <div className="flex gap-3 justify-end pt-4 border-t border-slate-100">
+      <div className="flex gap-3 justify-end pt-4 border-t border-default">
         {!hideCancel && (
           <Button
             type="button"

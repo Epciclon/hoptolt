@@ -34,7 +34,7 @@ export function CatalogCard({
       className={`group relative flex flex-col border rounded-lg overflow-hidden transition-all duration-200 text-left w-full ${
         isSelected 
           ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-500 ring-opacity-50' 
-          : 'border-slate-200 bg-white hover:border-primary-300 hover:shadow-md'
+          : 'border-strong bg-card hover:border-primary-300 hover:shadow-md'
       }`}
     >
       {/* Invisible button for full-card click accessibility without nested buttons */}
@@ -48,7 +48,7 @@ export function CatalogCard({
       )}
 
       {/* 1. Imagen a full-width en la parte superior */}
-      <div className="relative z-10 w-full h-56 bg-slate-50 border-b border-slate-100 flex-shrink-0 overflow-hidden pointer-events-none">
+      <div className="relative z-10 w-full h-56 bg-theme-surface border-b border-default flex-shrink-0 overflow-hidden pointer-events-none">
         {imageUrl ? (
           <Image
             src={imageUrl}
@@ -59,7 +59,7 @@ export function CatalogCard({
             sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
           />
         ) : (
-          <div className="w-full h-full flex justify-center items-center bg-slate-100">
+          <div className="w-full h-full flex justify-center items-center bg-theme-surface border border-default">
             <ImagePlaceholder size="lg" />
           </div>
         )}
@@ -77,10 +77,10 @@ export function CatalogCard({
 
       {/* 2. Textos centrados debajo */}
       <div className="p-4 flex flex-col flex-grow items-center text-center relative z-10 pointer-events-none">
-        <h4 className="font-bold text-lg text-slate-800 mb-1 leading-tight">{title}</h4>
+        <h4 className="font-bold text-lg text-main mb-1 leading-tight">{title}</h4>
         
         {subtitle && (
-          <div className="text-sm text-slate-500 font-medium mb-3">{subtitle}</div>
+          <div className="text-sm text-muted font-medium mb-3">{subtitle}</div>
         )}
         
         {tags && (
@@ -90,14 +90,14 @@ export function CatalogCard({
         )}
 
         {details && (
-          <div className="flex gap-4 text-xs text-slate-600 mt-auto bg-slate-100/70 p-2 rounded-md w-full justify-center shadow-inner mb-2 pointer-events-auto">
+          <div className="flex gap-4 text-xs text-muted mt-auto bg-theme-surface border border-default/70 p-2 rounded-md w-full justify-center shadow-inner mb-2 pointer-events-auto">
             {details}
           </div>
         )}
 
         {/* Botones de acción */}
         {isSelected && actions && (
-          <div className={`flex flex-wrap gap-2 w-full pt-4 border-t border-slate-200/60 animate-in fade-in slide-in-from-bottom-2 duration-200 justify-center pointer-events-auto ${!details ? 'mt-auto' : ''}`}>
+          <div className={`flex flex-wrap gap-2 w-full pt-4 border-t border-strong/60 animate-in fade-in slide-in-from-bottom-2 duration-200 justify-center pointer-events-auto ${!details ? 'mt-auto' : ''}`}>
             {actions}
           </div>
         )}

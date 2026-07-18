@@ -1,4 +1,4 @@
-export const CAGE_TYPES = ['engorde', 'reproducción'] as const;
+﻿export const CAGE_TYPES = ['engorde', 'reproducción'] as const;
 export type CageType = (typeof CAGE_TYPES)[number];
 
 export const CAGE_CAPACITY = {

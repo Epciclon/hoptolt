@@ -244,17 +244,17 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
     <div className="flex flex-col gap-6 animate-in fade-in duration-300">
       
       {/* Sección de Estadísticas (Barra de progreso) */}
-      <div className="bg-white border border-slate-200 rounded-lg p-5">
-        <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-          📊 Progreso de Alimentación Hoy
+      <div className="bg-card border border-strong rounded-lg p-5">
+        <h3 className="text-sm font-semibold text-main mb-4 flex items-center gap-2">
+          ?? Progreso de Alimentación Hoy
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <div className="flex justify-between text-xs mb-1">
-              <span className="text-slate-600 font-medium">Turno Mañana</span>
+              <span className="text-muted font-medium">Turno Mañana</span>
               <span className="text-emerald-600 font-semibold">{uniqueCagesMorning} / {totalCages} Jaulas</span>
             </div>
-            <div className="w-full bg-slate-100 rounded-full h-2">
+            <div className="w-full bg-theme-surface border border-default rounded-full h-2">
               <div 
                 className="bg-emerald-500 h-2 rounded-full transition-all duration-500" 
                 style={{ width: `${Math.min(morningPercentage, 100)}%` }} 
@@ -263,10 +263,10 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
           </div>
           <div>
             <div className="flex justify-between text-xs mb-1">
-              <span className="text-slate-600 font-medium">Turno Tarde</span>
+              <span className="text-muted font-medium">Turno Tarde</span>
               <span className="text-orange-600 font-semibold">{uniqueCagesAfternoon} / {totalCages} Jaulas</span>
             </div>
-            <div className="w-full bg-slate-100 rounded-full h-2">
+            <div className="w-full bg-theme-surface border border-default rounded-full h-2">
               <div 
                 className="bg-orange-500 h-2 rounded-full transition-all duration-500" 
                 style={{ width: `${Math.min(afternoonPercentage, 100)}%` }} 
@@ -276,16 +276,16 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
         </div>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-lg p-4 sticky top-0 z-10 shadow-sm flex flex-col gap-4">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <span className="text-sm font-medium text-slate-600">Turno Actual:</span>
+      <div className="bg-card border border-strong rounded-lg p-4 sticky top-0 z-10 shadow-sm flex flex-col gap-4">
+        <div className="flex items-center justify-between border-b border-default pb-3">
+          <span className="text-sm font-medium text-muted">Turno Actual:</span>
           <span className={`px-3 py-1 rounded-full text-xs font-bold ${currentEcuadorShift === 'mañana' ? 'bg-emerald-100 text-emerald-800' : 'bg-orange-100 text-orange-800'}`}>
             {currentEcuadorShift === 'mañana' ? 'Mañana' : 'Tarde'}
           </span>
         </div>
 
         <div className="w-full relative" ref={foodDropdownRef}>
-          <span className="block text-sm font-medium text-slate-600 mb-2">Tipos de Alimento</span>
+          <span className="block text-sm font-medium text-muted mb-2">Tipos de Alimento</span>
           <Input
             placeholder="Busca y selecciona tipos de alimento"
             value={foodSearch}
@@ -296,7 +296,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
             onFocus={() => setShowFoodDropdown(true)}
           />
           {showFoodDropdown && (
-            <div className="absolute z-10 w-full border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-white mt-1">
+            <div className="absolute z-10 w-full border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-card mt-1">
               {filteredFoodTypes.length === 0 ? (
                 <p className="text-gray-500 text-sm p-3">No hay tipos de alimento disponibles</p>
               ) : (
@@ -346,7 +346,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
       </div>
 
       {cageGroups.length === 0 ? (
-        <p className="text-sm text-slate-500">No hay conejos con jaula asignada en el galpón activo.</p>
+        <p className="text-sm text-muted">No hay conejos con jaula asignada en el galpón activo.</p>
       ) : (
         <CageCatalog
           cageGroups={cageGroups}
@@ -359,20 +359,20 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
               <>
                 {cageLastFeeding ? (
                   <>
-                    <p className="text-xs font-semibold text-slate-600">
+                    <p className="text-xs font-semibold text-muted">
                       Último alimento suministrado:
                     </p>
-                    <p className="text-xs text-slate-600 mt-1">
+                    <p className="text-xs text-muted mt-1">
                       {cageLastFeeding.foodTypes.join(', ')}
                     </p>
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-xs text-muted mt-1">
                       {formatDateTime(cageLastFeeding.feedingDate)}
                     </p>
                   </>
                 ) : (
-                  <p className="text-xs text-slate-400">Sin registros previos</p>
+                  <p className="text-xs text-theme-faint">Sin registros previos</p>
                 )}
-                <p className="text-xs text-slate-500 mt-1 font-medium text-emerald-600">
+                <p className="text-xs text-muted mt-1 font-medium text-emerald-600">
                   {cageFeedingsThisShift} registro{cageFeedingsThisShift !== 1 ? 's' : ''} tuyos en este turno
                 </p>
               </>
@@ -381,7 +381,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
         />
       )}
 
-      <div className="flex justify-end gap-3 pt-4 sticky bottom-0 bg-white py-4 border-t border-slate-200">
+      <div className="flex justify-end gap-3 pt-4 sticky bottom-0 bg-card py-4 border-t border-strong">
         <Button 
           onClick={handleRegister}
           disabled={selectedCageNumbers.length === 0 || selectedFoodTypes.length === 0 || isSubmitting}
@@ -399,29 +399,29 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
         size="sm"
       >
         <div className="p-3 bg-blue-50 border border-blue-200 rounded-md mb-4 mt-2">
-          <h4 className="text-sm font-semibold text-blue-900 mb-2">📋 Política de Alimentación</h4>
+          <h4 className="text-sm font-semibold text-blue-900 mb-2">?? Política de Alimentación</h4>
           <p className="text-sm text-blue-800">
             El sistema permite un (1) registro de alimentación sin justificación por turno y por usuario. Estás intentando registrar un segundo alimento en el turno de la <strong>{currentEcuadorShift}</strong>, por lo que es requerido ingresar un motivo.
           </p>
         </div>
         
         <div className="mb-4">
-          <p className="text-sm font-medium text-slate-700 mb-2">Jaulas con observaciones en este turno:</p>
-          <ul className="text-sm text-slate-600 space-y-1">
+          <p className="text-sm font-medium text-main mb-2">Jaulas con observaciones en este turno:</p>
+          <ul className="text-sm text-muted space-y-1">
             {cagesWithIssue.map(cage => (
               <li key={cage.cageNumber} className="flex items-center gap-2">
-                <span className="font-medium">Jaula #{cage.cageNumber} — {cage.cageType.charAt(0).toUpperCase() + cage.cageType.slice(1)}</span>
+                <span className="font-medium">Jaula #{cage.cageNumber}  {cage.cageType.charAt(0).toUpperCase() + cage.cageType.slice(1)}</span>
                 <span className="text-red-600">({cage.feedingsToday} registros)</span>
               </li>
             ))}
           </ul>
         </div>
         
-        <p className="text-sm text-slate-600 mb-4">
+        <p className="text-sm text-muted mb-4">
           Por favor, explica el motivo de la alimentación adicional.
         </p>
         <div className="mb-4">
-          <label htmlFor="justificationInput" className="block text-sm font-medium text-slate-600 mb-2">Justificación</label>
+          <label htmlFor="justificationInput" className="block text-sm font-medium text-muted mb-2">Justificación</label>
           <textarea
             id="justificationInput"
             value={justification}

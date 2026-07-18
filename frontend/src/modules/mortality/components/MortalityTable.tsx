@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { Table, Dialog, LoadingMessage } from '@/shared/ui';
@@ -26,8 +26,8 @@ export function MortalityTable({ profileId, date }: MortalityTableProps) {
         const hasName = row.rabbitName && row.rabbitName !== 'N/A';
         return (
           <div className="flex flex-col leading-tight">
-            <span className="font-semibold text-slate-800 text-sm">{hasName ? row.rabbitName : row.rabbitCode}</span>
-            {hasName && <span className="text-[11px] text-slate-500 font-medium">{row.rabbitCode}</span>}
+            <span className="font-semibold text-main text-sm">{hasName ? row.rabbitName : row.rabbitCode}</span>
+            {hasName && <span className="text-[11px] text-muted font-medium">{row.rabbitCode}</span>}
           </div>
         );
       },
@@ -36,7 +36,7 @@ export function MortalityTable({ profileId, date }: MortalityTableProps) {
       key: 'cause',
       header: 'Causa',
       render: (row) => (
-        <span className="text-slate-600 capitalize">{row.cause}</span>
+        <span className="text-muted capitalize">{row.cause}</span>
       ),
     },
 
@@ -73,51 +73,51 @@ export function MortalityTable({ profileId, date }: MortalityTableProps) {
         {selectedMortality && (
           <div className="space-y-4 pt-4">
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                <p className="text-xs text-slate-500 font-medium mb-1">Conejo</p>
+              <div className="bg-theme-surface border border-strong rounded-lg p-3">
+                <p className="text-xs text-muted font-medium mb-1">Conejo</p>
                 <div className="flex flex-col leading-tight">
-                  <span className="font-semibold text-slate-800 text-sm">
+                  <span className="font-semibold text-main text-sm">
                     {selectedMortality.rabbitName && selectedMortality.rabbitName !== 'N/A'
                       ? selectedMortality.rabbitName
                       : selectedMortality.rabbitCode}
                   </span>
                   {selectedMortality.rabbitName && selectedMortality.rabbitName !== 'N/A' && (
-                    <span className="text-[11px] text-slate-500 font-medium mt-0.5">
+                    <span className="text-[11px] text-muted font-medium mt-0.5">
                       {selectedMortality.rabbitCode}
                     </span>
                   )}
                   {selectedMortality.rabbitRace && selectedMortality.rabbitRace !== 'N/A' && (
-                    <span className="text-[10px] text-slate-400 mt-0.5">
+                    <span className="text-[10px] text-theme-faint mt-0.5">
                       {selectedMortality.rabbitRace}
                     </span>
                   )}
                 </div>
               </div>
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                <p className="text-xs text-slate-500 font-medium mb-1">Causa</p>
-                <p className="text-sm font-semibold text-slate-800 capitalize">
+              <div className="bg-theme-surface border border-strong rounded-lg p-3">
+                <p className="text-xs text-muted font-medium mb-1">Causa</p>
+                <p className="text-sm font-semibold text-main capitalize">
                   {selectedMortality.cause}
                 </p>
               </div>
 
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                <p className="text-xs text-slate-500 font-medium mb-1">Fecha</p>
+              <div className="bg-theme-surface border border-strong rounded-lg p-3">
+                <p className="text-xs text-muted font-medium mb-1">Fecha</p>
                 <div className="flex flex-col leading-tight mt-1">
                   {(() => {
                     const date = new Date(selectedMortality.deathDate);
                     const ecuadorDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
                     const formattedDate = ecuadorDate.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
                     return (
-                      <span className="text-sm font-semibold text-slate-800">{formattedDate}</span>
+                      <span className="text-sm font-semibold text-main">{formattedDate}</span>
                     );
                   })()}
                 </div>
               </div>
             </div>
 
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mt-4">
-              <p className="text-xs text-slate-500 font-medium mb-2 uppercase tracking-wide">Observaciones</p>
-              <p className="text-sm text-slate-800 whitespace-pre-wrap leading-relaxed">
+            <div className="bg-theme-surface border border-strong rounded-lg p-4 mt-4">
+              <p className="text-xs text-muted font-medium mb-2 uppercase tracking-wide">Observaciones</p>
+              <p className="text-sm text-main whitespace-pre-wrap leading-relaxed">
                 {selectedMortality.observations || 'Sin observaciones registradas.'}
               </p>
             </div>

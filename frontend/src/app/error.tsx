@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
@@ -23,8 +23,8 @@ export default function GlobalError({
             <AlertTriangle size={40} className="text-red-400" />
           </div>
           <h1 className="text-6xl font-bold text-red-400 mb-2">500</h1>
-          <h2 className="text-2xl font-semibold text-slate-700 mb-3">Error del servidor</h2>
-          <p className="text-base text-slate-500 mb-8">
+          <h2 className="text-2xl font-semibold text-main mb-3">Error del servidor</h2>
+          <p className="text-base text-muted mb-8">
             Ocurrió un error inesperado. Por favor intenta de nuevo o regresa al inicio.
           </p>
           <div className="flex gap-3 justify-center">
@@ -37,7 +37,7 @@ export default function GlobalError({
             </button>
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold px-6 py-3 rounded-xl transition-colors text-base"
+              className="inline-flex items-center gap-2 bg-card border border-strong hover:bg-theme-surface text-main font-semibold px-6 py-3 rounded-xl transition-colors text-base"
             >
               <Home size={18} />
               Ir al inicio

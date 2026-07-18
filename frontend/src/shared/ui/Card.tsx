@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+﻿import { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 interface CardProps {
@@ -23,7 +23,7 @@ const paddingMap = {
 
 export function Card({ children, className, padding = 'md' }: Readonly<CardProps>) {
   return (
-    <div className={cn('bg-white rounded-xl shadow-card border border-slate-100', paddingMap[padding], className)}>
+    <div className={cn('bg-card rounded-xl shadow-card border border-default', paddingMap[padding], className)}>
       {children}
     </div>
   );
@@ -33,8 +33,8 @@ export function CardHeader({ title, subtitle, actions, className }: Readonly<Car
   return (
     <div className={cn('flex items-start justify-between gap-4 mb-5', className)}>
       <div>
-        <h2 className="text-lg font-semibold text-slate-800">{title}</h2>
-        {subtitle && <p className="text-sm text-slate-500 mt-0.5">{subtitle}</p>}
+        <h2 className="text-lg font-semibold text-main">{title}</h2>
+        {subtitle && <p className="text-sm text-muted mt-0.5">{subtitle}</p>}
       </div>
       {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
     </div>

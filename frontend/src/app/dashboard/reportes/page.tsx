@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useActiveGalpon } from '@/modules/galpones/hooks/useActiveGalpon';
 import { useToast } from '@/shared/contexts/ToastContext';
@@ -18,7 +18,7 @@ export default function ReportesPage() {
             <div className="p-4">
                 <div className="max-w-md mx-auto">
                     <Alert variant="error" message="Acceso Denegado" />
-                    <p className="text-slate-600 text-sm mt-4">
+                    <p className="text-muted text-sm mt-4">
                         Solo el propietario del criadero puede acceder a los reportes y métricas.
                     </p>
                 </div>

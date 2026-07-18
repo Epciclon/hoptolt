@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import type { Toast, ToastType } from '@/shared/ui/Toast';

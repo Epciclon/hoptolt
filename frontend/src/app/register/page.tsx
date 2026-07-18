@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -57,8 +57,8 @@ export default function RegisterPage() {
   return (
     <AuthLayout>
       <div className="text-center mb-6 animate-fade-in-right" style={{ animationDelay: '0.2s' }}>
-        <h2 className="text-3xl font-bold text-slate-800 mb-2">Crear Cuenta</h2>
-        <p className="text-slate-500">Completa los datos para registrarte</p>
+        <h2 className="text-3xl font-bold text-main mb-2">Crear Cuenta</h2>
+        <p className="text-muted">Completa los datos para registrarte</p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 animate-fade-in-right" style={{ animationDelay: '0.4s' }}>
@@ -72,7 +72,7 @@ export default function RegisterPage() {
         {/* Nombre completo + Username */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="fullName" className="block text-sm font-semibold text-slate-700 mb-2">Nombre Completo</label>
+            <label htmlFor="fullName" className="block text-sm font-semibold text-main mb-2">Nombre Completo</label>
             <input
               {...register('fullName')}
               id="fullName"
@@ -84,7 +84,7 @@ export default function RegisterPage() {
             {errors.fullName && <p className="text-red-500 text-sm mt-1">{errors.fullName.message}</p>}
           </div>
           <div>
-            <label htmlFor="username" className="block text-sm font-semibold text-slate-700 mb-2">Nombre de Usuario</label>
+            <label htmlFor="username" className="block text-sm font-semibold text-main mb-2">Nombre de Usuario</label>
             <input
               {...register('username')}
               id="username"
@@ -99,7 +99,7 @@ export default function RegisterPage() {
 
         {/* Email */}
         <div>
-          <label htmlFor="email" className="block text-sm font-semibold text-slate-700 mb-2">Correo Electrónico</label>
+          <label htmlFor="email" className="block text-sm font-semibold text-main mb-2">Correo Electrónico</label>
           <input
             {...register('email')}
             id="email"
@@ -115,7 +115,7 @@ export default function RegisterPage() {
         {/* Contraseña + Confirmación */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="password" className="block text-sm font-semibold text-slate-700 mb-2">Contraseña</label>
+            <label htmlFor="password" className="block text-sm font-semibold text-main mb-2">Contraseña</label>
             <div className="relative">
               <input
                 {...register('password')}
@@ -129,7 +129,7 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-teal-500 transition-colors focus:outline-none"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-theme-faint hover:text-teal-500 transition-colors focus:outline-none"
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
@@ -137,7 +137,7 @@ export default function RegisterPage() {
             {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>}
           </div>
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-semibold text-slate-700 mb-2">Confirmar Contraseña</label>
+            <label htmlFor="confirmPassword" className="block text-sm font-semibold text-main mb-2">Confirmar Contraseña</label>
             <div className="relative">
               <input
                 {...register('confirmPassword')}
@@ -151,7 +151,7 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-teal-500 transition-colors focus:outline-none"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-theme-faint hover:text-teal-500 transition-colors focus:outline-none"
               >
                 {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
@@ -178,13 +178,13 @@ export default function RegisterPage() {
       </form>
 
       <div className="mt-6 text-center animate-fade-in-right" style={{ animationDelay: '0.8s' }}>
-        <p className="text-slate-600 text-sm mb-4">
+        <p className="text-muted text-sm mb-4">
           ¿Ya tienes una cuenta?{' '}
           <Link href="/login" className="text-teal-600 font-semibold hover:underline">
             Inicia Sesión
           </Link>
         </p>
-        <div className="flex items-center justify-center gap-3 text-slate-400 text-xs">
+        <div className="flex items-center justify-center gap-3 text-theme-faint text-xs">
           <span>v2.0.0</span>
           <span>•</span>
           <span>© 2025 Hoptolt Ecuador</span>

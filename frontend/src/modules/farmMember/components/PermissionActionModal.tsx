@@ -138,7 +138,7 @@ export function PermissionActionModal({ open, onClose, onConfirm, moduleName, is
         )}
         
         <div className="flex justify-between items-center mb-3">
-          <span className="text-sm text-slate-600">Acciones permitidas:</span>
+          <span className="text-sm text-muted">Acciones permitidas:</span>
           <button
             onClick={handleToggleAll}
             className="text-xs text-primary-600 hover:text-primary-700"
@@ -152,7 +152,7 @@ export function PermissionActionModal({ open, onClose, onConfirm, moduleName, is
             const isDisabled = action === 'canRead' && (permissions.canCreate || permissions.canUpdate || permissions.canDelete);
 
             return (
-              <label key={action} className={`flex items-center gap-2 p-3 border border-slate-200 rounded transition-colors ${isDisabled ? 'bg-slate-100 opacity-70 cursor-not-allowed' : 'hover:bg-slate-50 cursor-pointer'}`}>
+              <label key={action} className={`flex items-center gap-2 p-3 border border-strong rounded transition-colors ${isDisabled ? 'bg-theme-surface border border-default opacity-70 cursor-not-allowed' : 'hover:bg-theme-surface cursor-pointer'}`}>
                 <input
                   type="checkbox"
                   checked={permissions[action]}
@@ -160,7 +160,7 @@ export function PermissionActionModal({ open, onClose, onConfirm, moduleName, is
                   disabled={isDisabled}
                   className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500 disabled:cursor-not-allowed"
                 />
-                <span className="text-sm text-slate-700">
+                <span className="text-sm text-main">
                   {(() => {
                     if (action === 'canCreate') return 'Crear';
                     if (action === 'canRead') return 'Consultar';
@@ -173,7 +173,7 @@ export function PermissionActionModal({ open, onClose, onConfirm, moduleName, is
           })}
         </div>
 
-        <div className="flex justify-end gap-2 pt-4 border-t border-slate-200">
+        <div className="flex justify-end gap-2 pt-4 border-t border-strong">
           <Button variant="outline" onClick={handleClose}>
             Cancelar
           </Button>

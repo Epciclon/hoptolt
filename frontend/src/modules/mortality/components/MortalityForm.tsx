@@ -140,29 +140,29 @@ export function MortalityForm({ selectedRabbits, onSuccess, onCancel }: Readonly
   return (
     <form onSubmit={handleFormSubmit} className="space-y-4">
       {/* Listado de conejos con contenedor gris blanquecino y badges en azul */}
-      <div className="bg-slate-50 border border-slate-200 p-3 rounded-lg">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+      <div className="bg-theme-surface border border-strong p-3 rounded-lg">
+        <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">
           Conejos a dar de baja:
         </p>
         <div className="flex flex-wrap gap-2">
           {selectedRabbits.map(r => (
             <div
               key={r.id}
-              className="flex items-center gap-2 bg-white border border-slate-200 rounded-full pr-3 pl-1 py-1 shadow-sm"
+              className="flex items-center gap-2 bg-card border border-strong rounded-full pr-3 pl-1 py-1 shadow-sm"
             >
               {r.imageUrl ? (
                 <img src={r.imageUrl} alt={r.code} className="w-6 h-6 rounded-full object-cover" />
               ) : (
-                <div className="w-7 h-7 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-center">
-                  <span className="text-[7px] leading-[8px] font-bold text-slate-400 px-0.5">Sin foto</span>
+                <div className="w-7 h-7 rounded-full bg-theme-surface border border-default border border-strong flex items-center justify-center text-center">
+                  <span className="text-[7px] leading-[8px] font-bold text-theme-faint px-0.5">Sin foto</span>
                 </div>
               )}
               <div className="flex flex-col leading-tight justify-center">
-                <span className="text-sm font-semibold text-slate-800">
+                <span className="text-sm font-semibold text-main">
                   {r.name || r.code}
                 </span>
                 {r.name && (
-                  <span className="text-[10px] text-slate-500 font-medium -mt-0.5">
+                  <span className="text-[10px] text-muted font-medium -mt-0.5">
                     {r.code}
                   </span>
                 )}
@@ -183,7 +183,7 @@ export function MortalityForm({ selectedRabbits, onSuccess, onCancel }: Readonly
 
         {/* Selector de Causa Search & Select */}
         <div className="relative flex flex-col gap-1.5" ref={causeDropdownRef}>
-          <label htmlFor="causeInput" className="text-sm font-medium text-slate-700">
+          <label htmlFor="causeInput" className="text-sm font-medium text-main">
             Causa <span className="text-red-500">*</span>
           </label>
           <Input
@@ -198,9 +198,9 @@ export function MortalityForm({ selectedRabbits, onSuccess, onCancel }: Readonly
             required
           />
           {showCauseDropdown && (
-            <div className="absolute top-full left-0 right-0 z-20 bg-white border border-slate-200 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
+            <div className="absolute top-full left-0 right-0 z-20 bg-card border border-strong rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
               {filteredCauseOptions.length === 0 ? (
-                <p className="text-slate-500 text-sm p-3">No hay opciones disponibles</p>
+                <p className="text-muted text-sm p-3">No hay opciones disponibles</p>
               ) : (
                 filteredCauseOptions.map(opt => (
                   <button
@@ -217,7 +217,7 @@ export function MortalityForm({ selectedRabbits, onSuccess, onCancel }: Readonly
                       }
                       setShowCauseDropdown(false);
                     }}
-                    className="w-full text-left px-3 py-2 hover:bg-slate-100 text-sm border-b border-slate-50 last:border-0"
+                    className="w-full text-left px-3 py-2 hover:bg-theme-surface border border-default text-sm border-b border-slate-50 last:border-0"
                   >
                     {opt.label}
                   </button>
@@ -230,12 +230,12 @@ export function MortalityForm({ selectedRabbits, onSuccess, onCancel }: Readonly
 
       {/* Observaciones obligatorias */}
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="observationsInput" className="text-sm font-medium text-slate-700">
+        <label htmlFor="observationsInput" className="text-sm font-medium text-main">
           Observaciones (¿Qué pasó?) <span className="text-red-500">*</span>
         </label>
         <textarea
           id="observationsInput"
-          className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500"
+          className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-card text-main focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500"
           rows={3}
           value={observations}
           onChange={(e) => setObservations(e.target.value)}

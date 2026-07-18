@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Sidebar } from '@/shared/layout/Sidebar';
 import { Header } from '@/shared/layout/Header';

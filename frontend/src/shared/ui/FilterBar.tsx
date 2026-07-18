@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { ReactNode } from 'react';
 import { Search, X } from 'lucide-react';
@@ -36,9 +36,9 @@ export function FilterBar({
   children
 }: Readonly<FilterBarProps>) {
   return (
-    <div className={cn("flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-3 rounded-xl border border-slate-200 shadow-sm", className)}>
+    <div className={cn("flex flex-col sm:flex-row gap-4 items-center justify-between bg-card p-3 rounded-xl border border-strong shadow-sm", className)}>
       <div className="relative w-full sm:w-80">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-theme-faint">
           <Search size={16} />
         </div>
         <input
@@ -63,7 +63,7 @@ export function FilterBar({
               <button
                 type="button"
                 onClick={() => filter.onChange('')}
-                className="absolute right-7 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-red-500 rounded-full transition-colors flex items-center justify-center bg-white"
+                className="absolute right-7 top-1/2 -translate-y-1/2 p-1 text-theme-faint hover:text-red-500 rounded-full transition-colors flex items-center justify-center bg-card"
                 title="Limpiar"
               >
                 <X size={14} />

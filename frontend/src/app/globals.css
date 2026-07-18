@@ -8,12 +8,53 @@
     --color-primary-dark: #16a085;
     --color-sidebar: #263445;
     --color-page-bg: #f4f6fa;
-    --color-text-primary: #2c3e50;
-    --color-text-secondary: #7f8c8d;
-    --color-border: #e6ebf0;
+    --color-card-bg: #ffffff;
+    --color-surface-bg: #f8fafc;
+    --color-text-primary: #1e293b;
+    --color-text-secondary: #64748b;
+    --color-text-muted: #94a3b8;
+    --color-border: #f1f5f9;
+    --color-border-strong: #e2e8f0;
     --color-success: #27ae60;
     --color-error: #e74c3c;
     --color-warning: #f39c12;
+    color-scheme: light;
+  }
+
+  .theme-dark {
+    --color-primary: #1abc9c;
+    --color-primary-dark: #20c9a6;
+    --color-sidebar: #0f172a;
+    --color-page-bg: #0f172a;
+    --color-card-bg: #1e293b;
+    --color-surface-bg: #334155;
+    --color-text-primary: #f8fafc;
+    --color-text-secondary: #cbd5e1;
+    --color-text-muted: #94a3b8;
+    --color-border: #334155;
+    --color-border-strong: #475569;
+    --color-success: #2ecc71;
+    --color-error: #e74c3c;
+    --color-warning: #f1c40f;
+    color-scheme: dark;
+  }
+
+  .theme-contrast {
+    --color-primary: #00ffcc;
+    --color-primary-dark: #00ccaa;
+    --color-sidebar: #000000;
+    --color-page-bg: #000000;
+    --color-card-bg: #000000;
+    --color-surface-bg: #1a1a1a;
+    --color-text-primary: #ffffff;
+    --color-text-secondary: #facc15; /* Yellow for high contrast */
+    --color-text-muted: #d4d4d8;
+    --color-border: #ffffff;
+    --color-border-strong: #ffffff;
+    --color-success: #00ff00;
+    --color-error: #ff0000;
+    --color-warning: #ffcc00;
+    color-scheme: dark;
   }
 
   html {
@@ -28,22 +69,28 @@
   }
 
   body {
-    @apply bg-page font-sans text-slate-800 antialiased;
+    background-color: var(--color-page-bg);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans), 'Segoe UI', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
     font-size: 1rem;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
   }
   ::-webkit-scrollbar-track {
-    @apply bg-slate-100 rounded;
+    background: var(--color-surface-bg);
+    border-radius: 4px;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-primary-400 rounded;
+    background: var(--color-border-strong);
+    border-radius: 4px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-primary-500;
+    background: var(--color-text-muted);
   }
 }
 
@@ -52,3 +99,6 @@
     width: 240px;
   }
 }
+
+.theme-bold * { font-weight: 600 !important; }
+

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useRaces } from '../hooks/useRaces';
 import type { Race } from '../types/race.types';
@@ -63,7 +63,7 @@ export function RaceCatalog({ onSuccess }: Readonly<RaceCatalogProps>) {
         <LoadingMessage message="Cargando razas..." />
       )}
       {!loading && races.length === 0 && (
-        <p className="text-sm text-slate-500">No hay razas registradas.</p>
+        <p className="text-sm text-muted">No hay razas registradas.</p>
       )}
       {!loading && races.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useQuery } from '@tanstack/react-query';
 import { growthService } from '../services/growth.service';
@@ -23,9 +23,9 @@ export function RabbitGrowthHistory({ rabbitId }: Readonly<RabbitGrowthHistoryPr
 
   if (growths.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-slate-500 bg-slate-50 rounded-lg border border-slate-100 border-dashed">
+      <div className="flex flex-col items-center justify-center py-12 text-muted bg-theme-surface rounded-lg border border-default border-dashed">
         <TrendingUp className="w-12 h-12 text-slate-300 mb-3" />
-        <h3 className="text-lg font-medium text-slate-700">Sin registros</h3>
+        <h3 className="text-lg font-medium text-main">Sin registros</h3>
         <p className="text-sm mt-1 max-w-sm text-center">Este conejo aún no tiene registros de crecimiento. El sistema calculará su peso estimado conforme cumpla meses.</p>
       </div>
     );
@@ -33,13 +33,13 @@ export function RabbitGrowthHistory({ rabbitId }: Readonly<RabbitGrowthHistoryPr
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+      <div className="flex items-center gap-3 border-b border-default pb-4">
         <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center text-primary-600">
           <LineChart size={20} />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-slate-800">Curva de Crecimiento Estimado</h3>
-          <p className="text-sm text-slate-500">Historial de actualizaciones automáticas de peso según la edad.</p>
+          <h3 className="text-lg font-semibold text-main">Curva de Crecimiento Estimado</h3>
+          <p className="text-sm text-muted">Historial de actualizaciones automáticas de peso según la edad.</p>
         </div>
       </div>
 
@@ -53,18 +53,18 @@ export function RabbitGrowthHistory({ rabbitId }: Readonly<RabbitGrowthHistoryPr
               {/* Timeline dot */}
               <div className={`absolute -left-[35px] w-4 h-4 rounded-full border-4 border-white shadow-sm flex items-center justify-center ${isLatest ? 'bg-primary-500 scale-125' : 'bg-slate-300'}`} />
               
-              <div className={`bg-white rounded-xl border p-4 shadow-sm transition-all ${isLatest ? 'border-primary-200 ring-1 ring-green-50' : 'border-slate-100 hover:border-slate-200'}`}>
+              <div className={`bg-card rounded-xl border p-4 shadow-sm transition-all ${isLatest ? 'border-primary-200 ring-1 ring-green-50' : 'border-default hover:border-strong'}`}>
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
-                    <div className={`p-3 rounded-lg flex items-center justify-center ${isLatest ? 'bg-primary-50 text-primary-600' : 'bg-slate-50 text-slate-500'}`}>
+                    <div className={`p-3 rounded-lg flex items-center justify-center ${isLatest ? 'bg-primary-50 text-primary-600' : 'bg-theme-surface text-muted'}`}>
                       <Scale size={24} />
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-2xl font-bold text-slate-800">{Number(growth.weight).toFixed(2)}</span>
-                        <span className="text-sm font-medium text-slate-500">kg</span>
+                        <span className="text-2xl font-bold text-main">{Number(growth.weight).toFixed(2)}</span>
+                        <span className="text-sm font-medium text-muted">kg</span>
                       </div>
-                      <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
+                      <div className="flex items-center gap-1.5 text-xs text-theme-faint font-medium">
                         <Calendar size={12} />
                         {date.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                       </div>

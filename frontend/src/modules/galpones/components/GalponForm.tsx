@@ -195,7 +195,7 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
       />
 
       <div>
-        <span className="block text-sm font-medium text-slate-600 mb-2">Provincia *</span>
+        <span className="block text-sm font-medium text-muted mb-2">Provincia *</span>
         <div className="relative">
           <Input
             placeholder="Buscar provincia..."
@@ -204,13 +204,13 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
             onFocus={() => setShowProvinceDropdown(true)}
           />
           {showProvinceDropdown && filteredProvinces.length > 0 && (
-            <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-md mt-1 max-h-48 overflow-y-auto z-10">
+            <div className="absolute top-full left-0 right-0 bg-card border border-strong rounded-md mt-1 max-h-48 overflow-y-auto z-10">
               {filteredProvinces.map(p => (
                 <button
                   key={p}
                   type="button"
                   onClick={() => handleProvinceSelect(p)}
-                  className="w-full text-left px-3 py-2 hover:bg-slate-100 text-sm"
+                  className="w-full text-left px-3 py-2 hover:bg-theme-surface border border-default text-sm"
                 >
                   {p}
                 </button>
@@ -239,7 +239,7 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
       />
 
       <div>
-        <span className="block text-sm font-medium text-slate-600 mb-2">Tipos de Alimento *</span>
+        <span className="block text-sm font-medium text-muted mb-2">Tipos de Alimento *</span>
         <div className="relative mb-2">
           <Input
             placeholder="Buscar tipo de alimento..."
@@ -248,13 +248,13 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
             onFocus={() => setShowFoodDropdown(true)}
           />
           {showFoodDropdown && filteredFoods.length > 0 && (
-            <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-md mt-1 max-h-48 overflow-y-auto z-10">
+            <div className="absolute top-full left-0 right-0 bg-card border border-strong rounded-md mt-1 max-h-48 overflow-y-auto z-10">
               {filteredFoods.map(f => (
                 <button
                   key={f}
                   type="button"
                   onClick={() => handleFoodSelect(f)}
-                  className="w-full text-left px-3 py-2 hover:bg-slate-100 text-sm"
+                  className="w-full text-left px-3 py-2 hover:bg-theme-surface border border-default text-sm"
                 >
                   {f}
                 </button>
@@ -306,7 +306,7 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
       </div>
 
       <div>
-        <span className="block text-sm font-medium text-slate-600 mb-2">Vacunas *</span>
+        <span className="block text-sm font-medium text-muted mb-2">Vacunas *</span>
         <div className="relative mb-2">
           <Input
             placeholder="Buscar vacuna..."
@@ -315,13 +315,13 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
             onFocus={() => setShowVaccineDropdown(true)}
           />
           {showVaccineDropdown && filteredVaccines.length > 0 && (
-            <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-md mt-1 max-h-48 overflow-y-auto z-10">
+            <div className="absolute top-full left-0 right-0 bg-card border border-strong rounded-md mt-1 max-h-48 overflow-y-auto z-10">
               {filteredVaccines.map(v => (
                 <button
                   key={v.name}
                   type="button"
                   onClick={() => handleVaccineSelect(v)}
-                  className="w-full text-left px-3 py-2 hover:bg-slate-100 text-sm"
+                  className="w-full text-left px-3 py-2 hover:bg-theme-surface border border-default text-sm"
                 >
                   {v.name} - {v.period} días
                 </button>

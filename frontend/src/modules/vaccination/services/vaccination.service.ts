@@ -1,4 +1,4 @@
-import api from '@/lib/api';
+﻿import api from '@/lib/api';
 import type { Vaccination, CreateVaccinationDto, GalponVaccine } from '../types/vaccination.types';
 
 export const vaccinationService = {

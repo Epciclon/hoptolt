@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useMemo } from 'react';
 import { LogOut } from 'lucide-react';
@@ -121,10 +121,10 @@ export function AssignmentTable() {
         <LoadingMessage message="Cargando asignaciones..." />
       )}
       {!loading && Object.keys(groupedByCage).length === 0 && (
-        <p className="text-sm text-slate-500 py-8">No hay conejos con jaula asignada en el galpón activo.</p>
+        <p className="text-sm text-muted py-8">No hay conejos con jaula asignada en el galpón activo.</p>
       )}
       {!loading && Object.keys(groupedByCage).length > 0 && filteredGroups.length === 0 && (
-        <p className="text-sm text-slate-500 py-8">No se encontraron jaulas con los filtros aplicados.</p>
+        <p className="text-sm text-muted py-8">No se encontraron jaulas con los filtros aplicados.</p>
       )}
       {!loading && Object.keys(groupedByCage).length > 0 && filteredGroups.length > 0 && (
         <>

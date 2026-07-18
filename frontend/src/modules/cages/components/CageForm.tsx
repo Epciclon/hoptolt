@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -93,8 +93,8 @@ export function CageForm({ defaultValues, cageId, mode, onSuccess, onCancel }: R
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
       {mode === 'edit' ? (
         <div>
-          <span className="block text-sm font-medium text-slate-600 mb-1">Número de Jaula</span>
-          <div className="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-semibold text-base">
+          <span className="block text-sm font-medium text-muted mb-1">Número de Jaula</span>
+          <div className="px-3 py-2.5 bg-theme-surface border border-strong rounded-lg text-main font-semibold text-base">
             #{defaultValues?.number}
           </div>
         </div>

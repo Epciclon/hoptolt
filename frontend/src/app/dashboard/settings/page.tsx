@@ -27,22 +27,7 @@ const FONT_FAMILIES = [
   { key: "'Courier New', monospace",      label: 'Courier New',               description: 'Monoespaciada — para quienes prefieren claridad total' },
 ];
 
-// ── Aplicar preferencias al DOM ──────────────────────────────────────────────
-
-function applyToDOM(fontSize: string, fontFamily: string, bold: boolean) {
-  document.documentElement.style.fontSize = fontSize;
-  // Aplicar fuente en body (donde Tailwind la define) para que surta efecto
-  if (fontFamily) {
-    document.body.style.fontFamily = fontFamily;
-  } else {
-    document.body.style.removeProperty('font-family');
-  }
-  if (bold) {
-    document.body.style.fontWeight = '600';
-  } else {
-    document.body.style.removeProperty('font-weight');
-  }
-}
+import { applyThemeToDOM as applyToDOM } from '@/hooks/useThemeSync';
 
 // ── Tipos de sección ──────────────────────────────────────────────────────────
 
@@ -59,8 +44,8 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'size',     label: 'Tamaño de Letra',   icon: ALargeSmall, ready: true  },
   { id: 'family',   label: 'Tipo de Letra',      icon: Type,        ready: true  },
   { id: 'bold',     label: 'Texto en Negrilla',  icon: Bold,        ready: true  },
-  { id: 'dark',     label: 'Modo Oscuro',         icon: Moon,        ready: false },
-  { id: 'contrast', label: 'Alto Contraste',      icon: Contrast,    ready: false },
+  { id: 'dark',     label: 'Modo Oscuro',         icon: Moon,        ready: true },
+  { id: 'contrast', label: 'Alto Contraste',      icon: Contrast,    ready: true },
 ];
 
 // ── Componente check ─────────────────────────────────────────────────────────
@@ -82,102 +67,115 @@ export default function SettingsPage() {
   const [fontSize,   setFontSize]   = useState('16px');
   const [fontFamily, setFontFamily] = useState('');
   const [bold,       setBold]       = useState(false);
+  const [theme,      setTheme]      = useState<'light' | 'dark' | 'contrast'>('light');
 
   useEffect(() => {
     const size   = localStorage.getItem('fontSize')   ?? '16px';
     const family = localStorage.getItem('fontFamily') ?? '';
     const bld    = localStorage.getItem('fontBold')   === 'true';
+    const thm    = (localStorage.getItem('theme') as any) ?? 'light';
     setFontSize(size);
     setFontFamily(family);
     setBold(bld);
-    applyToDOM(size, family, bld);
+    setTheme(thm);
+    applyToDOM(size, family, bld, thm);
   }, []);
 
   const selectSize = useCallback((key: string) => {
     setFontSize(key);
-    applyToDOM(key, fontFamily, bold);
-  }, [fontFamily, bold]);
+    applyToDOM(key, fontFamily, bold, theme);
+    localStorage.setItem('fontSize', key);
+    showToast('Tamaño de letra actualizado', 'success');
+  }, [fontFamily, bold, theme, showToast]);
 
   const selectFamily = useCallback((key: string) => {
     setFontFamily(key);
-    applyToDOM(fontSize, key, bold);
-  }, [fontSize, bold]);
-
-  const toggleBold = useCallback(() => {
-    const next = !bold;
-    setBold(next);
-    applyToDOM(fontSize, fontFamily, next);
-  }, [bold, fontSize, fontFamily]);
-
-  const savePreferences = () => {
-    localStorage.setItem('fontSize', fontSize);
-    if (fontFamily) localStorage.setItem('fontFamily', fontFamily);
+    applyToDOM(fontSize, key, bold, theme);
+    if (key) localStorage.setItem('fontFamily', key);
     else localStorage.removeItem('fontFamily');
-    localStorage.setItem('fontBold', String(bold));
-    showToast('Preferencias guardadas', 'success');
-  };
+    showToast('Tipo de letra actualizado', 'success');
+  }, [fontSize, bold, theme, showToast]);
+
+  const toggleBold = useCallback((opt: boolean) => {
+    setBold(opt);
+    applyToDOM(fontSize, fontFamily, opt, theme);
+    localStorage.setItem('fontBold', String(opt));
+    showToast(opt ? 'Negrilla activada' : 'Negrilla desactivada', 'success');
+  }, [fontSize, fontFamily, theme, showToast]);
+
+  const selectTheme = useCallback((thm: 'light' | 'dark' | 'contrast') => {
+    setTheme(thm);
+    applyToDOM(fontSize, fontFamily, bold, thm);
+    localStorage.setItem('theme', thm);
+    
+    const msg = thm === 'dark' ? 'Modo oscuro activado' : thm === 'contrast' ? 'Alto contraste activado' : 'Modo normal activado';
+    showToast(msg, 'success');
+  }, [fontSize, fontFamily, bold, theme, showToast]);
 
   const resetDefaults = () => {
     setFontSize('16px');
     setFontFamily('');
     setBold(false);
-    applyToDOM('16px', '', false);
+    setTheme('light');
+    applyToDOM('16px', '', false, 'light');
     localStorage.setItem('fontSize', '16px');
     localStorage.removeItem('fontFamily');
     localStorage.removeItem('fontBold');
+    localStorage.removeItem('theme');
     showToast('Preferencias restablecidas', 'success');
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800">Apariencia del Sistema</h1>
-        <p className="text-slate-500 mt-1">Personaliza el aspecto visual para una experiencia más cómoda</p>
-      </div>
+    <div className="max-w-5xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <Card className="border-0 shadow-sm ring-1 ring-slate-200/50 overflow-hidden" padding="none">
+        <div className="p-6 md:p-8 border-b border-default bg-card">
+          <h1 className="text-2xl font-bold text-main">Apariencia del Sistema</h1>
+          <p className="text-muted mt-1">Personaliza el aspecto visual para una experiencia más cómoda</p>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
-        {/* Sidebar nav */}
-        <Card className="md:col-span-1" padding="sm">
-          <nav className="flex flex-col gap-1">
-            {NAV_ITEMS.map(({ id, label, icon: Icon, ready }) => (
-              <button
-                key={id}
-                onClick={() => ready && setActiveSection(id)}
-                disabled={!ready}
-                className={cn(
-                  "flex items-center justify-between gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors text-left w-full",
-                  !ready && "opacity-50 cursor-not-allowed",
-                  ready && activeSection === id
-                    ? "bg-primary-50 text-primary-600"
-                    : ready
-                    ? "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                    : "text-slate-400"
-                )}
-              >
-                <span className="flex items-center gap-3">
-                  <Icon size={18} />
-                  {label}
-                </span>
-                {!ready && (
-                  <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full font-normal">
-                    Pronto
+        <div className="flex flex-col md:flex-row bg-card min-h-[calc(100vh-12rem)]">
+          {/* Navigation Tabs */}
+          <div className="w-full md:w-64 shrink-0 p-4 md:p-6 md:border-r border-default bg-card">
+            <nav className="flex flex-row md:flex-col gap-2 overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
+              {NAV_ITEMS.map(({ id, label, icon: Icon, ready }) => (
+                <button
+                  key={id}
+                  onClick={() => ready && setActiveSection(id)}
+                  disabled={!ready}
+                  className={cn(
+                    "flex items-center justify-center md:justify-between gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors whitespace-nowrap shrink-0 w-auto md:w-full",
+                    !ready && "opacity-50 cursor-not-allowed",
+                    ready && activeSection === id
+                      ? "bg-primary-50 text-primary-600"
+                      : ready
+                      ? "text-muted hover:bg-theme-surface hover:text-main"
+                      : "text-theme-faint"
+                  )}
+                >
+                  <span className="flex items-center gap-3">
+                    <Icon size={18} />
+                    {label}
                   </span>
-                )}
-              </button>
-            ))}
-          </nav>
-        </Card>
+                  {!ready && (
+                    <span className="text-[10px] bg-theme-surface border border-default text-muted px-1.5 py-0.5 rounded-full font-normal">
+                      Pronto
+                    </span>
+                  )}
+                </button>
+              ))}
+            </nav>
+          </div>
 
-        {/* Content area */}
-        <div className="md:col-span-3 flex flex-col gap-4">
+          {/* Content Area */}
+          <div className="flex-1 p-6 md:p-8 bg-card flex flex-col gap-4">
           {/* ── Tamaño de Letra ── */}
           {activeSection === 'size' && (
             <Card>
-              <h3 className="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
+              <h3 className="text-lg font-bold text-main mb-1 flex items-center gap-2">
                 <ALargeSmall className="text-primary-500" size={20} />
                 Tamaño de Letra
               </h3>
-              <p className="text-sm text-slate-500 mb-6">El cambio se aplica de inmediato en toda la aplicación.</p>
+              <p className="text-sm text-muted mb-6">El cambio se aplica de inmediato en toda la aplicación.</p>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
                 {FONT_SIZES.map((f) => (
@@ -188,7 +186,7 @@ export default function SettingsPage() {
                       'relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all text-center',
                       fontSize === f.key
                         ? 'border-primary-500 bg-primary-50 shadow-sm'
-                        : 'border-slate-200 bg-white hover:border-primary-300 hover:bg-slate-50',
+                        : 'border-strong bg-card hover:border-primary-300 hover:bg-theme-surface',
                     )}
                   >
                     {fontSize === f.key && (
@@ -196,34 +194,34 @@ export default function SettingsPage() {
                         <CheckIcon />
                       </span>
                     )}
-                    <span style={{ fontSize: f.key }} className="font-semibold text-slate-700 leading-none">
+                    <span style={{ fontSize: f.key }} className="font-semibold text-main leading-none">
                       Aa
                     </span>
-                    <span className="text-xs text-slate-500 leading-tight">{f.label}</span>
-                    <span className="text-[11px] text-slate-400">{f.key}</span>
+                    <span className="text-xs text-muted leading-tight">{f.label}</span>
+                    <span className="text-[11px] text-theme-faint">{f.key}</span>
                   </button>
                 ))}
               </div>
 
-              <div className="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-100">
-                <p className="text-slate-500 text-xs mb-1">Vista previa con el tamaño actual:</p>
-                <p style={{ fontSize }} className="text-slate-800 font-medium">
+              <div className="mt-6 p-4 bg-theme-surface rounded-xl border border-default">
+                <p className="text-muted text-xs mb-1">Vista previa con el tamaño actual:</p>
+                <p style={{ fontSize }} className="text-main font-medium">
                   Hoptolt — Sistema de gestión de crianza de conejos
                 </p>
               </div>
 
-              <SaveBar onSave={savePreferences} onReset={resetDefaults} />
+              <SaveBar onReset={resetDefaults} />
             </Card>
           )}
 
           {/* ── Tipo de Letra ── */}
           {activeSection === 'family' && (
             <Card>
-              <h3 className="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
+              <h3 className="text-lg font-bold text-main mb-1 flex items-center gap-2">
                 <Type className="text-primary-500" size={20} />
                 Tipo de Letra
               </h3>
-              <p className="text-sm text-slate-500 mb-6">Elige la fuente que te resulte más cómoda de leer.</p>
+              <p className="text-sm text-muted mb-6">Elige la fuente que te resulte más cómoda de leer.</p>
 
               <div className="flex flex-col gap-3">
                 {FONT_FAMILIES.map((f) => (
@@ -234,7 +232,7 @@ export default function SettingsPage() {
                       'flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left',
                       fontFamily === f.key
                         ? 'border-primary-500 bg-primary-50 shadow-sm'
-                        : 'border-slate-200 bg-white hover:border-primary-300 hover:bg-slate-50',
+                        : 'border-strong bg-card hover:border-primary-300 hover:bg-theme-surface',
                     )}
                   >
                     <span className={cn(
@@ -244,12 +242,12 @@ export default function SettingsPage() {
                       {fontFamily === f.key && <CheckIcon />}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-slate-700" style={{ fontFamily: f.key || undefined }}>
+                      <p className="font-semibold text-main" style={{ fontFamily: f.key || undefined }}>
                         {f.label}
                       </p>
-                      <p className="text-xs text-slate-400 mt-0.5">{f.description}</p>
+                      <p className="text-xs text-theme-faint mt-0.5">{f.description}</p>
                       <p
-                        className="text-sm text-slate-600 mt-2 pt-2 border-t border-slate-100"
+                        className="text-sm text-muted mt-2 pt-2 border-t border-default"
                         style={{ fontFamily: f.key || undefined, fontSize }}
                       >
                         Hoptolt — Sistema de gestión de crianza
@@ -259,18 +257,18 @@ export default function SettingsPage() {
                 ))}
               </div>
 
-              <SaveBar onSave={savePreferences} onReset={resetDefaults} />
+              <SaveBar onReset={resetDefaults} />
             </Card>
           )}
 
           {/* ── Texto en Negrilla ── */}
           {activeSection === 'bold' && (
             <Card>
-              <h3 className="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
+              <h3 className="text-lg font-bold text-main mb-1 flex items-center gap-2">
                 <Bold className="text-primary-500" size={20} />
                 Texto en Negrilla
               </h3>
-              <p className="text-sm text-slate-500 mb-6">
+              <p className="text-sm text-muted mb-6">
                 Aumenta el peso del texto para mejorar la legibilidad, especialmente útil en tamaños de letra grandes.
               </p>
 
@@ -281,12 +279,12 @@ export default function SettingsPage() {
                 ].map((opt) => (
                   <button
                     key={String(opt.value)}
-                    onClick={() => { setBold(opt.value); applyToDOM(fontSize, fontFamily, opt.value); }}
+                    onClick={() => toggleBold(opt.value)}
                     className={cn(
                       'flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left',
                       bold === opt.value
                         ? 'border-primary-500 bg-primary-50 shadow-sm'
-                        : 'border-slate-200 bg-white hover:border-primary-300 hover:bg-slate-50',
+                        : 'border-strong bg-card hover:border-primary-300 hover:bg-theme-surface',
                     )}
                   >
                     <span className={cn(
@@ -297,54 +295,77 @@ export default function SettingsPage() {
                     </span>
                     <div>
                       <p
-                        className="text-slate-700"
+                        className="text-main"
                         style={{ fontWeight: opt.value ? 700 : 400, fontSize }}
                       >
                         {opt.label} — Hoptolt Sistema de Crianza
                       </p>
-                      <p className="text-xs text-slate-400 mt-0.5">{opt.description}</p>
+                      <p className="text-xs text-theme-faint mt-0.5">{opt.description}</p>
                     </div>
                   </button>
                 ))}
               </div>
 
-              <SaveBar onSave={savePreferences} onReset={resetDefaults} />
+              <SaveBar onReset={resetDefaults} />
             </Card>
           )}
 
-          {/* ── Próximamente ── */}
-          {(activeSection === 'dark' || activeSection === 'contrast') && (
-            <Card>
-              <div className="flex flex-col items-center justify-center py-12 text-center gap-4">
-                {activeSection === 'dark'
-                  ? <Moon size={48} className="text-slate-300" />
-                  : <Contrast size={48} className="text-slate-300" />
-                }
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-700">
-                    {activeSection === 'dark' ? 'Modo Oscuro' : 'Alto Contraste'}
-                  </h3>
-                  <p className="text-sm text-slate-400 mt-1">Esta función estará disponible próximamente.</p>
+            {/* ── Modo Oscuro ── */}
+            {activeSection === 'dark' && (
+              <div className="max-w-3xl mx-auto w-full">
+                <h3 className="text-lg font-bold text-main mb-1 flex items-center gap-2">
+                  <Moon className="text-primary-500" size={20} />
+                  Modo Oscuro
+                </h3>
+                <p className="text-sm text-muted mb-6">
+                  Cambia la interfaz a colores oscuros para reducir la fatiga visual.
+                </p>
+                <div className="flex gap-4">
+                  <button onClick={() => { if (theme === 'dark') selectTheme('light'); }} className={cn("p-4 border-2 rounded-xl flex-1 text-center font-medium", theme !== 'dark' ? 'border-primary-500 bg-theme-surface text-primary-600' : 'border-default text-muted')}>
+                    Desactivado
+                  </button>
+                  <button onClick={() => selectTheme('dark')} className={cn("p-4 border-2 rounded-xl flex-1 text-center font-medium", theme === 'dark' ? 'border-primary-500 bg-theme-surface text-primary-600' : 'border-default text-muted')}>
+                    Activado
+                  </button>
                 </div>
-                <span className="px-3 py-1 bg-primary-50 text-primary-600 text-xs font-medium rounded-full border border-primary-200">
-                  Próximamente
-                </span>
+                <SaveBar onReset={resetDefaults} />
               </div>
-            </Card>
-          )}
+            )}
+
+            {/* ── Alto Contraste ── */}
+            {activeSection === 'contrast' && (
+              <div className="max-w-3xl mx-auto w-full">
+                <h3 className="text-lg font-bold text-main mb-1 flex items-center gap-2">
+                  <Contrast className="text-primary-500" size={20} />
+                  Alto Contraste
+                </h3>
+                <p className="text-sm text-muted mb-6">
+                  Usa colores intensos (blanco, negro, amarillo) para máxima legibilidad.
+                </p>
+                <div className="flex gap-4">
+                  <button onClick={() => { if (theme === 'contrast') selectTheme('light'); }} className={cn("p-4 border-2 rounded-xl flex-1 text-center font-medium", theme !== 'contrast' ? 'border-primary-500 bg-theme-surface text-primary-600' : 'border-default text-muted')}>
+                    Desactivado
+                  </button>
+                  <button onClick={() => selectTheme('contrast')} className={cn("p-4 border-2 rounded-xl flex-1 text-center font-medium", theme === 'contrast' ? 'border-primary-500 bg-theme-surface text-primary-600' : 'border-default text-muted')}>
+                    Activado
+                  </button>
+                </div>
+                <SaveBar onReset={resetDefaults} />
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
 
-// ── Barra de acciones compartida ──────────────────────────────────────────────
+// ── Botón de restablecer compartido ──────────────────────────────────────────────
 
-function SaveBar({ onSave, onReset }: { onSave: () => void; onReset: () => void }) {
+function SaveBar({ onReset }: { onReset: () => void }) {
   return (
-    <div className="flex flex-wrap gap-3 pt-5 mt-5 border-t border-slate-100">
-      <Button onClick={onSave} size="lg">Guardar preferencias</Button>
-      <Button variant="secondary" size="lg" onClick={onReset}>Restablecer valores por defecto</Button>
+    <div className="flex flex-wrap justify-end pt-5 mt-5 border-t border-default">
+      <Button variant="secondary" onClick={onReset}>Restablecer valores por defecto</Button>
     </div>
   );
 }

@@ -119,7 +119,7 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
     return (
       <div className="space-y-4">
         {/* Header del Detalle */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card p-4 rounded-xl shadow-sm border border-strong">
           <div className="flex items-center gap-3">
             <Button 
               variant="outline" 
@@ -131,12 +131,12 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
               Volver
             </Button>
             <div>
-              <h2 className="text-lg font-bold text-slate-800">Historial de {profileName}</h2>
+              <h2 className="text-lg font-bold text-main">Historial de {profileName}</h2>
               <div className="flex flex-col gap-0.5 mt-1">
-                <p className="text-sm font-medium text-slate-600">
+                <p className="text-sm font-medium text-muted">
                   {isOwner ? 'Propietario del Galpón' : 'Trabajador del Galpón'}
                 </p>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted">
                   Selecciona un registro de la lista para ver información más detallada.
                 </p>
               </div>
@@ -144,10 +144,10 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
           </div>
           
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-slate-600">Filtrar por fecha:</span>
+            <span className="text-sm font-medium text-muted">Filtrar por fecha:</span>
             {fetchActiveDates ? (
               loadingDates ? (
-                <div className="text-sm text-slate-500 py-1.5 px-3">Cargando fechas...</div>
+                <div className="text-sm text-muted py-1.5 px-3">Cargando fechas...</div>
               ) : activeDates && activeDates.length > 0 ? (
                 <div className="flex items-center gap-2">
                   <select
@@ -173,7 +173,7 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
                   </select>
                 </div>
               ) : (
-                <div className="text-sm text-slate-500 py-1.5 px-3 bg-slate-50 border border-slate-200 rounded-md">Sin registros</div>
+                <div className="text-sm text-muted py-1.5 px-3 bg-theme-surface border border-strong rounded-md">Sin registros</div>
               )
             ) : (
               <Input
@@ -188,7 +188,7 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
         </div>
 
         {/* Tabla inyectada por el módulo */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden p-4">
+        <div className="bg-card rounded-xl shadow-sm border border-strong overflow-hidden p-4">
           {renderTable(selectedWorker.profile.id, selectedDate)}
         </div>
       </div>
@@ -219,18 +219,18 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
                 setSelectedWorker(member);
                 setSelectedDate(getEcuadorDateString()); // Resetear fecha al hoy al entrar
               }}
-              className="flex flex-col text-left bg-white border border-slate-200 rounded-xl p-4 hover:border-primary-300 hover:shadow-md transition-all group"
+              className="flex flex-col text-left bg-card border border-strong rounded-xl p-4 hover:border-primary-300 hover:shadow-md transition-all group"
             >
-              <div className="flex items-center gap-3 w-full border-b border-slate-100 pb-3 mb-3">
+              <div className="flex items-center gap-3 w-full border-b border-default pb-3 mb-3">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-sm group-hover:scale-105 transition-transform">
                   {initials}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-base font-bold text-slate-800 truncate">
+                  <h3 className="text-base font-bold text-main truncate">
                     {profile.fullName || profile.username}
                   </h3>
-                  <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
-                    <span className={`px-1.5 py-0.5 rounded ${isOwner ? 'bg-slate-100 text-slate-700' : 'bg-sky-100 text-sky-700'} font-medium`}>
+                  <div className="flex items-center gap-1.5 text-xs text-muted mt-0.5">
+                    <span className={`px-1.5 py-0.5 rounded ${isOwner ? 'bg-theme-surface border border-default text-main' : 'bg-sky-100 text-sky-700'} font-medium`}>
                       {isOwner ? 'Propietario' : 'Trabajador'}
                     </span>
                   </div>
@@ -239,14 +239,14 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
 
               <div className="flex flex-col gap-1.5 w-full">
                 {profile.email && (
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <Mail size={14} className="text-slate-400" />
+                  <div className="flex items-center gap-2 text-sm text-muted">
+                    <Mail size={14} className="text-theme-faint" />
                     <span className="truncate">{profile.email}</span>
                   </div>
                 )}
                 {profile.username && (
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <AtSign size={14} className="text-slate-400" />
+                  <div className="flex items-center gap-2 text-sm text-muted">
+                    <AtSign size={14} className="text-theme-faint" />
                     <span className="truncate">{profile.username}</span>
                   </div>
                 )}
@@ -254,25 +254,25 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
                 {/* Jaulas Asignadas (Solo para trabajadores) */}
                 {!isOwner && (
                   <div className="mt-2 pt-2 border-t border-slate-50">
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 uppercase mb-1.5">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-muted uppercase mb-1.5">
                       <Box size={13} />
                       Jaulas Asignadas ({assignedCages.length})
                     </div>
                     {assignedCages.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
                         {assignedCages.slice(0, 5).map(wc => (
-                          <span key={wc.id} className="text-[11px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
+                          <span key={wc.id} className="text-[11px] bg-theme-surface border border-default text-muted px-1.5 py-0.5 rounded">
                             #{wc.cage?.number ?? wc.cageId}
                           </span>
                         ))}
                         {assignedCages.length > 5 && (
-                          <span className="text-[11px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">
+                          <span className="text-[11px] bg-theme-surface border border-default text-muted px-1.5 py-0.5 rounded">
                             +{assignedCages.length - 5}
                           </span>
                         )}
                       </div>
                     ) : (
-                      <span className="text-xs text-slate-400 italic">Ninguna</span>
+                      <span className="text-xs text-theme-faint italic">Ninguna</span>
                     )}
                   </div>
                 )}

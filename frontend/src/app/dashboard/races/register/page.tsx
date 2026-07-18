@@ -1,4 +1,4 @@
-import { Card, CardHeader } from '@/shared/ui';
+﻿import { Card, CardHeader } from '@/shared/ui';
 import { RaceForm } from '@/modules/races/components/RaceForm';
 
 export default function RaceRegisterPage() {

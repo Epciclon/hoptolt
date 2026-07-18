@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
@@ -29,7 +29,7 @@ export default function RabbitEditPage() {
         subtitle="Modifica los datos del conejo"
       />
       {error && <Alert variant="error" message={error} className="mb-4" />}
-      {loading && <p className="text-base text-slate-500">Cargando conejo...</p>}
+      {loading && <p className="text-base text-muted">Cargando conejo...</p>}
       {rabbit && <RabbitForm mode="edit" defaultValues={rabbit} rabbitId={rabbit.id} />}
     </Card>
   );

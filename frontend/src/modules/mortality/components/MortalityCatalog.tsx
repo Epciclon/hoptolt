@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useMemo } from 'react';
 import { Button, Dialog, LoadingMessage, CageGroupCard, RabbitSelectableCard } from '@/shared/ui';
@@ -69,7 +69,7 @@ export function MortalityCatalog({ onSuccess }: Readonly<MortalityCatalogProps>)
       </div>
 
       {cageGroups.length === 0 ? (
-        <p className="text-sm text-slate-500">No hay conejos con jaula asignada disponibles para registrar mortalidad.</p>
+        <p className="text-sm text-muted">No hay conejos con jaula asignada disponibles para registrar mortalidad.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           {cageGroups.map((group) => (
@@ -92,7 +92,7 @@ export function MortalityCatalog({ onSuccess }: Readonly<MortalityCatalogProps>)
       )}
 
       {selectedRabbitIds.length > 0 && (
-        <div className="flex justify-end pt-4 mt-6 border-t border-slate-200">
+        <div className="flex justify-end pt-4 mt-6 border-t border-strong">
           <Button
             onClick={() => setIsFormModalOpen(true)}
           >

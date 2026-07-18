@@ -104,32 +104,32 @@ export function WorkerDetailsModal({
         </div>
       ) : (
         <div className="space-y-5">
-          {/* Header — Avatar + Name */}
-          <div className="flex items-center gap-4 pb-4 border-b border-slate-100">
+          {/* Header  Avatar + Name */}
+          <div className="flex items-center gap-4 pb-4 border-b border-default">
             <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-md">
               {initials}
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-bold text-slate-800 truncate">{profile?.fullName || '—'}</h3>
-              <div className="flex flex-wrap items-center gap-3 mt-1 text-sm text-slate-500">
+              <h3 className="text-lg font-bold text-main truncate">{profile?.fullName || ''}</h3>
+              <div className="flex flex-wrap items-center gap-3 mt-1 text-sm text-muted">
                 <span className="inline-flex items-center gap-1">
-                  <Mail size={14} /> {profile?.email || '—'}
+                  <Mail size={14} /> {profile?.email || ''}
                 </span>
                 <span className="inline-flex items-center gap-1">
-                  <AtSign size={14} /> {profile?.username || '—'}
+                  <AtSign size={14} /> {profile?.username || ''}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Jaulas Asignadas — FIRST */}
+          {/* Jaulas Asignadas  FIRST */}
           <div>
-            <h4 className="flex items-center gap-2 font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">
-              <Box size={15} className="text-slate-500" />
+            <h4 className="flex items-center gap-2 font-semibold text-main mb-3 text-sm uppercase tracking-wide">
+              <Box size={15} className="text-muted" />
               Jaulas Asignadas ({assignedCages.length})
             </h4>
             {assignedCages.length === 0 ? (
-              <p className="text-sm text-slate-400 bg-slate-50 rounded-lg py-4 text-center border border-slate-100">
+              <p className="text-sm text-theme-faint bg-theme-surface rounded-lg py-4 text-center border border-default">
                 No tiene jaulas asignadas.
               </p>
             ) : (
@@ -137,12 +137,12 @@ export function WorkerDetailsModal({
                 {assignedCages.map((wc) => (
                   <span
                     key={wc.id ?? wc.cageId}
-                    className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-700 text-sm font-medium px-3 py-1.5 rounded-lg border border-slate-200"
+                    className="inline-flex items-center gap-1.5 bg-theme-surface border border-default text-main text-sm font-medium px-3 py-1.5 rounded-lg border border-strong"
                   >
-                    <Box size={13} className="text-slate-500" />
+                    <Box size={13} className="text-muted" />
                     #{wc.cage?.number ?? wc.cageId}
                     {wc.cage?.type && (
-                      <span className="text-xs text-slate-400 ml-0.5">({wc.cage.type})</span>
+                      <span className="text-xs text-theme-faint ml-0.5">({wc.cage.type})</span>
                     )}
                   </span>
                 ))}
@@ -150,14 +150,14 @@ export function WorkerDetailsModal({
             )}
           </div>
 
-          {/* Permisos — SECOND */}
+          {/* Permisos  SECOND */}
           <div>
-            <h4 className="flex items-center gap-2 font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">
-              <Shield size={15} className="text-slate-500" />
+            <h4 className="flex items-center gap-2 font-semibold text-main mb-3 text-sm uppercase tracking-wide">
+              <Shield size={15} className="text-muted" />
               Permisos ({activePermissions.length})
             </h4>
             {activePermissions.length === 0 ? (
-              <p className="text-sm text-slate-400 bg-slate-50 rounded-lg py-4 text-center border border-slate-100">
+              <p className="text-sm text-theme-faint bg-theme-surface rounded-lg py-4 text-center border border-default">
                 Este trabajador no tiene permisos asignados.
               </p>
             ) : (
@@ -172,16 +172,16 @@ export function WorkerDetailsModal({
                   return (
                     <div
                       key={perm.id ?? perm.moduleName}
-                      className="border border-slate-200 rounded-lg p-3 bg-white flex flex-col gap-2"
+                      className="border border-strong rounded-lg p-3 bg-card flex flex-col gap-2"
                     >
-                      <span className="font-semibold text-slate-700 text-sm">
+                      <span className="font-semibold text-main text-sm">
                         {MODULE_DISPLAY_NAMES[perm.moduleName] || perm.moduleName}
                       </span>
                       <div className="flex flex-wrap gap-1.5">
                         {actions.map((act) => (
                           <span
                             key={act}
-                            className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200"
+                            className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full bg-theme-surface border border-default text-muted border border-strong"
                           >
                             {act}
                           </span>
@@ -195,7 +195,7 @@ export function WorkerDetailsModal({
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-2 pt-4 border-t border-slate-200">
+          <div className="flex justify-end gap-2 pt-4 border-t border-strong">
             <Button
               variant="outline"
               size="sm"

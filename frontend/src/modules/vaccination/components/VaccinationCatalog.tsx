@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useRef, useEffect } from 'react';
 
@@ -136,7 +136,7 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
             onFocus={() => setShowVaccineDropdown(true)}
           />
           {showVaccineDropdown && (
-            <div className="absolute z-10 w-full border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-white mt-1">
+            <div className="absolute z-10 w-full border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-card mt-1">
               {filteredVaccines.length === 0 ? (
                 <p className="text-gray-500 text-sm p-3">No hay vacunas disponibles</p>
               ) : (
@@ -191,12 +191,12 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
           const lastVaccination = getRabbitLastVaccination(rabbit.id);
           return (
             <>
-              <p className="text-[10px] text-slate-500 mb-0.5">Última vacunación:</p>
-              <p className="text-xs font-medium text-slate-700 truncate" title={lastVaccination ? lastVaccination.vaccines.join(', ') : 'Nunca'}>
+              <p className="text-[10px] text-muted mb-0.5">Última vacunación:</p>
+              <p className="text-xs font-medium text-main truncate" title={lastVaccination ? lastVaccination.vaccines.join(', ') : 'Nunca'}>
                 {lastVaccination ? lastVaccination.vaccines.join(', ') : 'Nunca'}
               </p>
               {lastVaccination && (
-                <p className="text-[10px] text-slate-500 mt-0.5">
+                <p className="text-[10px] text-muted mt-0.5">
                   {formatDateTime(lastVaccination.vaccinationDate)}
                 </p>
               )}
@@ -206,7 +206,7 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
       />
 
       {selectedRabbitIds.length > 0 && (
-        <div className="flex justify-end pt-4 mt-6 border-t border-slate-200">
+        <div className="flex justify-end pt-4 mt-6 border-t border-strong">
           <Button
             onClick={handleRegister}
             disabled={selectedVaccines.length === 0}

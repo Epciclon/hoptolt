@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Suspense, useEffect, useState } from 'react';
 import { Card } from '@/shared/ui';
@@ -54,10 +54,10 @@ function DashboardHomeContent() {
     <div>
       <InvitationBanner />
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-slate-800">
+        <h2 className="text-2xl font-bold text-main">
           ¡Hola {user?.fullName?.split(' ')[0] || 'Criador'}, bienvenido a Hoptolt!
         </h2>
-        <p className="text-base text-slate-500 mt-1">
+        <p className="text-base text-muted mt-1">
           {activeGalpon
             ? `Panel de control y estado de tu galpón activo: ${activeGalpon.name}`
             : 'Selecciona un galpón para empezar'}
@@ -92,11 +92,11 @@ function DashboardHomeContent() {
                   {isLoading ? (
                     <div className="h-8 w-12 bg-slate-200 rounded animate-pulse" />
                   ) : (
-                    <p className="text-2xl font-bold text-slate-800">
+                    <p className="text-2xl font-bold text-main">
                       {value ?? '—'}
                     </p>
                   )}
-                  <p className="text-sm text-slate-500 mt-0.5">{stat.label}</p>
+                  <p className="text-sm text-muted mt-0.5">{stat.label}</p>
                 </div>
               </div>
             </Card>

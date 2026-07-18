@@ -125,7 +125,7 @@ export function MontasView({ reproductions, onSuccess }: Readonly<MontasViewProp
     );
   } else if (filteredMales.length === 0) {
     content = (
-      <p className="text-sm text-center text-slate-500 py-8">
+      <p className="text-sm text-center text-muted py-8">
         No se encontraron machos reproductores que coincidan con la búsqueda.
       </p>
     );
@@ -175,44 +175,44 @@ export function MontasView({ reproductions, onSuccess }: Readonly<MontasViewProp
           >
 
             {macho.isOccupied && macho.activeMonta ? (
-              <div className="mt-3 pt-3 border-t border-slate-200">
-                <p className="text-slate-500 text-xs font-medium mb-2">Pareja actual</p>
+              <div className="mt-3 pt-3 border-t border-strong">
+                <p className="text-muted text-xs font-medium mb-2">Pareja actual</p>
                 
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex items-center gap-3">
                     {macho.activeMonta.imageUrl ? (
-                      <img src={macho.activeMonta.imageUrl} alt={macho.activeMonta.femaleCode} className="w-10 h-10 flex-shrink-0 rounded-full object-cover shadow-sm border border-slate-200" />
+                      <img src={macho.activeMonta.imageUrl} alt={macho.activeMonta.femaleCode} className="w-10 h-10 flex-shrink-0 rounded-full object-cover shadow-sm border border-strong" />
                     ) : (
-                      <div className="w-10 h-10 flex-shrink-0 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 border border-slate-200 text-[9px] text-center leading-tight px-1">
+                      <div className="w-10 h-10 flex-shrink-0 rounded-full bg-theme-surface border border-default flex items-center justify-center text-theme-faint border border-strong text-[9px] text-center leading-tight px-1">
                         Sin foto
                       </div>
                     )}
                     <div>
                       {macho.activeMonta.femaleName ? (
                         <>
-                          <h4 className="font-bold text-sm text-slate-800 leading-tight">{macho.activeMonta.femaleName}</h4>
-                          <p className="text-xs text-slate-500">{macho.activeMonta.femaleCode}</p>
+                          <h4 className="font-bold text-sm text-main leading-tight">{macho.activeMonta.femaleName}</h4>
+                          <p className="text-xs text-muted">{macho.activeMonta.femaleCode}</p>
                         </>
                       ) : (
-                        <h4 className="font-bold text-sm text-slate-800 leading-tight">{macho.activeMonta.femaleCode}</h4>
+                        <h4 className="font-bold text-sm text-main leading-tight">{macho.activeMonta.femaleCode}</h4>
                       )}
                     </div>
                   </div>
                   {macho.activeMonta.femaleRace && (
-                    <span className="px-2 py-0.5 bg-slate-50 text-slate-600 text-[10px] font-medium rounded-full shrink-0 ml-1 capitalize border border-slate-200">
+                    <span className="px-2 py-0.5 bg-theme-surface text-muted text-[10px] font-medium rounded-full shrink-0 ml-1 capitalize border border-strong">
                       {macho.activeMonta.femaleRace}
                     </span>
                   )}
                 </div>
                 
                 {(macho.activeMonta.femaleAge !== undefined || macho.activeMonta.femaleWeight !== undefined) && (
-                  <div className="flex justify-between text-xs text-slate-600 px-1 mt-1">
-                    <span>{macho.activeMonta.femaleAge !== undefined ? <><span className="font-medium text-slate-700">{macho.activeMonta.femaleAge}</span> meses</> : null}</span>
-                    <span>{macho.activeMonta.femaleWeight !== undefined ? <><span className="font-medium text-slate-700">{macho.activeMonta.femaleWeight}</span> kg</> : null}</span>
+                  <div className="flex justify-between text-xs text-muted px-1 mt-1">
+                    <span>{macho.activeMonta.femaleAge !== undefined ? <><span className="font-medium text-main">{macho.activeMonta.femaleAge}</span> meses</> : null}</span>
+                    <span>{macho.activeMonta.femaleWeight !== undefined ? <><span className="font-medium text-main">{macho.activeMonta.femaleWeight}</span> kg</> : null}</span>
                   </div>
                 )}
 
-                <div className="flex items-center gap-2 mt-3 px-1 text-xs font-medium text-slate-600 bg-slate-50 py-1.5 rounded-md justify-center border border-slate-200">
+                <div className="flex items-center gap-2 mt-3 px-1 text-xs font-medium text-muted bg-theme-surface py-1.5 rounded-md justify-center border border-strong">
                   <Clock size={12} className="opacity-70" />
                   {getRemainingTime(macho.activeMonta.createdAt)}
                 </div>
@@ -272,7 +272,7 @@ export function MontasView({ reproductions, onSuccess }: Readonly<MontasViewProp
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       <div className="flex flex-col gap-1 items-start">
-        <p className="text-base font-medium text-slate-700">En esta fase se encuentran los machos iguales o mayores de 4 meses.</p>
+        <p className="text-base font-medium text-main">En esta fase se encuentran los machos iguales o mayores de 4 meses.</p>
       </div>
       <FilterBar
         searchValue={search}
@@ -303,7 +303,7 @@ export function MontasView({ reproductions, onSuccess }: Readonly<MontasViewProp
         description={
           finishingReproduction ? (
             <>
-              ¿Estás seguro de que deseas retirar a la hembra <b>{finishingReproduction.femaleName ? `${finishingReproduction.femaleName} — ${finishingReproduction.femaleCode}` : finishingReproduction.femaleCode}</b> de la jaula del macho? Esto registrará que la monta ha concluido y pasará al estado de Gestación.
+              ¿Estás seguro de que deseas retirar a la hembra <b>{finishingReproduction.femaleName ? `${finishingReproduction.femaleName}  ${finishingReproduction.femaleCode}` : finishingReproduction.femaleCode}</b> de la jaula del macho? Esto registrará que la monta ha concluido y pasará al estado de Gestación.
             </>
           ) : ''
         }

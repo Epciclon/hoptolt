@@ -38,27 +38,27 @@ export function ReproductionTable() {
 
   if (loading) return <LoadingMessage message="Cargando reproducciones..." />;
   if (error) return <div className="text-red-600 py-8">{error}</div>;
-  if (reproductions.length === 0) return <div className="text-center py-8 text-slate-500">No hay registros de reproducción</div>;
+  if (reproductions.length === 0) return <div className="text-center py-8 text-muted">No hay registros de reproducción</div>;
 
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
-        <thead className="bg-slate-100 border-b border-slate-200">
+        <thead className="bg-theme-surface border border-default border-b border-strong">
           <tr>
-            <th className="px-4 py-3 text-left font-semibold text-slate-700">Hembra</th>
-            <th className="px-4 py-3 text-left font-semibold text-slate-700">Macho</th>
-            <th className="px-4 py-3 text-left font-semibold text-slate-700">Fecha Monta</th>
-            <th className="px-4 py-3 text-left font-semibold text-slate-700">Fecha Estimada Parto</th>
-            <th className="px-4 py-3 text-left font-semibold text-slate-700">Acciones</th>
+            <th className="px-4 py-3 text-left font-semibold text-main">Hembra</th>
+            <th className="px-4 py-3 text-left font-semibold text-main">Macho</th>
+            <th className="px-4 py-3 text-left font-semibold text-main">Fecha Monta</th>
+            <th className="px-4 py-3 text-left font-semibold text-main">Fecha Estimada Parto</th>
+            <th className="px-4 py-3 text-left font-semibold text-main">Acciones</th>
           </tr>
         </thead>
         <tbody>
           {reproductions.map((reproduction) => (
-            <tr key={reproduction.id} className="border-b border-slate-200 hover:bg-slate-50">
-              <td className="px-4 py-3 font-medium text-slate-900">{reproduction.femaleCode}</td>
-              <td className="px-4 py-3 text-slate-600">{reproduction.maleCode || '-'}</td>
-              <td className="px-4 py-3 text-slate-600">{new Date(reproduction.mountDate).toLocaleDateString()}</td>
-              <td className="px-4 py-3 text-slate-600">{new Date(reproduction.estimatedBirthDate).toLocaleDateString()}</td>
+            <tr key={reproduction.id} className="border-b border-strong hover:bg-theme-surface">
+              <td className="px-4 py-3 font-medium text-main">{reproduction.femaleCode}</td>
+              <td className="px-4 py-3 text-muted">{reproduction.maleCode || '-'}</td>
+              <td className="px-4 py-3 text-muted">{new Date(reproduction.mountDate).toLocaleDateString()}</td>
+              <td className="px-4 py-3 text-muted">{new Date(reproduction.estimatedBirthDate).toLocaleDateString()}</td>
               <td className="px-4 py-3">
                 <Button
                   variant="secondary"

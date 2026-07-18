@@ -158,7 +158,7 @@ export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<Repro
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-1 items-start">
-        <p className="text-base font-medium text-slate-700">En esta fase se encuentran las conejas con fechas estimadas que aún no han realizado su parto, calculado a 1 mes desde la fecha de monta. El sistema estima la fecha, pero tienes la opción de registrar el parto antes si este ocurre de forma anticipada, lo cual moverá automáticamente a la coneja a la fase 3 de lactancia.</p>
+        <p className="text-base font-medium text-main">En esta fase se encuentran las conejas con fechas estimadas que aún no han realizado su parto, calculado a 1 mes desde la fecha de monta. El sistema estima la fecha, pero tienes la opción de registrar el parto antes si este ocurre de forma anticipada, lo cual moverá automáticamente a la coneja a la fase 3 de lactancia.</p>
       </div>
       <FilterBar
         searchValue={searchTerm}
@@ -179,7 +179,7 @@ export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<Repro
       />
 
       {gestaciones.length === 0 ? (
-        <p className="text-sm text-slate-500 bg-slate-50 p-4 rounded-lg border border-slate-100">
+        <p className="text-sm text-muted bg-theme-surface p-4 rounded-lg border border-default">
           No hay conejas en etapa de gestación que coincidan con los filtros.
         </p>
       ) : (
@@ -228,40 +228,40 @@ export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<Repro
 
                 <div className="space-y-2 mt-2 text-xs">
                   {reproduction.maleCode && (
-                    <div className="bg-slate-50/50 border border-slate-100 p-2 rounded">
-                      <p className="text-slate-500 mb-2">Última pareja</p>
+                    <div className="bg-theme-surface border border-default p-2 rounded">
+                      <p className="text-muted mb-2">Última pareja</p>
                       <div className="flex items-center gap-2">
                         {reproduction.maleImageUrl ? (
                           <img
                             src={reproduction.maleImageUrl}
                             alt={reproduction.maleCode ?? ''}
-                            className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0 shadow-sm"
+                            className="w-8 h-8 rounded-full object-cover border border-strong shrink-0 shadow-sm"
                           />
                         ) : (
-                          <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 shrink-0 flex items-center justify-center text-slate-400 text-[8px] text-center leading-tight px-0.5">
+                          <div className="w-8 h-8 rounded-full bg-theme-surface border border-default border border-strong shrink-0 flex items-center justify-center text-theme-faint text-[8px] text-center leading-tight px-0.5">
                             Sin foto
                           </div>
                         )}
                         <div>
                           {reproduction.maleName ? (
                             <>
-                              <h4 className="font-bold text-sm text-slate-800 leading-tight">{reproduction.maleName}</h4>
-                              <p className="text-xs text-slate-500">{reproduction.maleCode}</p>
+                              <h4 className="font-bold text-sm text-main leading-tight">{reproduction.maleName}</h4>
+                              <p className="text-xs text-muted">{reproduction.maleCode}</p>
                             </>
                           ) : (
-                            <h4 className="font-bold text-sm text-slate-800 leading-tight">{reproduction.maleCode}</h4>
+                            <h4 className="font-bold text-sm text-main leading-tight">{reproduction.maleCode}</h4>
                           )}
                         </div>
                       </div>
                     </div>
                   )}
-                  <div className="bg-slate-50/50 border border-slate-100 p-2 rounded flex justify-between items-center">
-                    <p className="text-slate-500">Fecha de monta</p>
-                    <p className="font-medium text-slate-700">{formatDateTime(reproduction.mountDate)}</p>
+                  <div className="bg-theme-surface border border-default p-2 rounded flex justify-between items-center">
+                    <p className="text-muted">Fecha de monta</p>
+                    <p className="font-medium text-main">{formatDateTime(reproduction.mountDate)}</p>
                   </div>
                   <button 
                     type="button"
-                    className={`bg-slate-50/50 border border-slate-100 p-2 rounded flex justify-between items-center w-full text-left ${
+                    className={`bg-theme-surface border border-default p-2 rounded flex justify-between items-center w-full text-left ${
                       isExpanded 
                         ? 'cursor-pointer hover:bg-primary-50 hover:border-primary-200 transition-colors group' 
                         : ''
@@ -273,20 +273,20 @@ export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<Repro
                       setShowEditModal(true);
                     }}
                   >
-                    <p className="text-slate-500 flex items-center gap-1">
+                    <p className="text-muted flex items-center gap-1">
                       <Calendar size={12} className="opacity-70" />
                       Fecha estimada
                     </p>
-                    <p className={`font-medium ${canGiveBirth ? 'text-amber-600' : 'text-slate-700'}`}>{formatDateTime(reproduction.estimatedBirthDate)}</p>
+                    <p className={`font-medium ${canGiveBirth ? 'text-amber-600' : 'text-main'}`}>{formatDateTime(reproduction.estimatedBirthDate)}</p>
                   </button>
                   <div className={`p-2 rounded flex justify-between items-center border ${
                     nearBirth
                       ? 'bg-orange-50 border-orange-200'
-                      : 'bg-slate-50/50 border-slate-100'
+                      : 'bg-theme-surface border-default'
                   }`}>
-                    <p className={`${nearBirth ? 'text-orange-600' : 'text-slate-500'}`}>Días de gestación</p>
+                    <p className={`${nearBirth ? 'text-orange-600' : 'text-muted'}`}>Días de gestación</p>
                     <div className="text-right">
-                      <p className={`font-bold ${nearBirth ? 'text-orange-600' : 'text-slate-700'}`}>
+                      <p className={`font-bold ${nearBirth ? 'text-orange-600' : 'text-main'}`}>
                         {31 - Math.max(0, daysLeft)} / 31
                       </p>
                       {nearBirth && daysLeft > 0 && (
@@ -346,13 +346,13 @@ export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<Repro
           setCancelReasonOther('');
         }}
         title={(() => {
-          const name = toCancel?.femaleName ? ` — ${toCancel.femaleName}` : '';
+          const name = toCancel?.femaleName ? `  ${toCancel.femaleName}` : '';
           return `Cancelar Gestación: ${toCancel?.femaleCode ?? ''}${name}`;
         })()}
       >
         <div className="p-4">
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4">
-            <p className="text-sm text-slate-700">
+          <div className="bg-theme-surface border border-strong rounded-xl p-4 mb-4">
+            <p className="text-sm text-main">
               Selecciona la razón por la cual estás cancelando esta gestación.
             </p>
           </div>
@@ -374,7 +374,7 @@ export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<Repro
 
             {cancelReason === 'otro' && (
               <div>
-                <label htmlFor="cancelReasonInput" className="block text-sm font-medium text-slate-700 mb-1">Especifique el problema</label>
+                <label htmlFor="cancelReasonInput" className="block text-sm font-medium text-main mb-1">Especifique el problema</label>
                 <input
                   id="cancelReasonInput"
                   type="text"
@@ -412,12 +412,12 @@ export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<Repro
           setActualBirthDate('');
         }}
         title={(() => {
-          const name = toRegisterBirth?.femaleName ? ` — ${toRegisterBirth.femaleName}` : '';
+          const name = toRegisterBirth?.femaleName ? `  ${toRegisterBirth.femaleName}` : '';
           return `Registrar Parto: ${toRegisterBirth?.femaleCode ?? ''}${name}`;
         })()}
       >
         <form onSubmit={handleRegisterBirth} className="p-4">
-          <p className="text-sm text-slate-600 mb-4">
+          <p className="text-sm text-muted mb-4">
             Ingresa la fecha real del parto. La coneja pasará a la fase de lactancia (1 mes).
           </p>
           
@@ -455,7 +455,7 @@ export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<Repro
           setEditingReproduction(null);
         }}
         title={(() => {
-          const name = editingReproduction?.femaleName ? ` — ${editingReproduction.femaleName}` : '';
+          const name = editingReproduction?.femaleName ? `  ${editingReproduction.femaleName}` : '';
           return `Editar monta de ${editingReproduction?.femaleCode ?? ''}${name}`;
         })()}
         size="xl"

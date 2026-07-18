@@ -16,12 +16,12 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:   'bg-primary-500 hover:bg-primary-600 text-white shadow-sm',
-  secondary: 'bg-slate-100 hover:bg-slate-200 text-slate-700',
+  secondary: 'bg-theme-surface hover:bg-slate-200 dark:hover:bg-slate-700 text-main border border-default',
   danger:    'bg-red-500 hover:bg-red-600 text-white shadow-sm',
   success:   'bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm',
   warning:   'bg-amber-500 hover:bg-amber-600 text-white shadow-sm',
-  ghost:     'hover:bg-slate-100 text-slate-600',
-  outline:   'border border-slate-300 hover:border-primary-500 hover:text-primary-600 text-slate-600 bg-white',
+  ghost:     'hover:bg-theme-surface text-muted hover:text-main',
+  outline:   'border border-default hover:border-primary-500 hover:text-primary-600 text-muted bg-card',
 };
 
 const sizeStyles: Record<ButtonSize, string> = {

@@ -4,8 +4,11 @@ import { AuthProvider } from '@/modules/auth/contexts/AuthContext';
 import { QueryProvider } from '@/providers/QueryProvider';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 
+import { useThemeSync } from '@/hooks/useThemeSync';
+
 function RealtimeSyncHelper() {
   useRealtimeSync();
+  useThemeSync();
   return null;
 }
 

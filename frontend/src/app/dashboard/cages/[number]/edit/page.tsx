@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
@@ -28,7 +28,7 @@ export default function CageEditPage() {
         subtitle="Modifica los datos de la jaula seleccionada"
       />
       {error && <Alert variant="error" message={error} className="mb-4" />}
-      {loading && <p className="text-base text-slate-500">Cargando jaula...</p>}
+      {loading && <p className="text-base text-muted">Cargando jaula...</p>}
       {cage && <CageForm mode="edit" defaultValues={cage} cageId={cage.id} />}
     </Card>
   );

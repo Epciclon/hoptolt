@@ -103,23 +103,23 @@ export default function UsersPage() {
   const renderWorkersTab = () => {
     let content;
     if (loadingWorkers) {
-      content = <div className="p-8 text-center text-slate-500">Cargando...</div>;
+      content = <div className="p-8 text-center text-muted">Cargando...</div>;
     } else if (workers.length === 0) {
-      content = <div className="p-8 text-center text-slate-500">No hay trabajadores activos en este galpón.</div>;
+      content = <div className="p-8 text-center text-muted">No hay trabajadores activos en este galpón.</div>;
     } else {
       content = workers.map(worker => (
         <button 
           key={worker.id} 
           type="button"
-          className="w-full text-left bg-transparent border-none outline-none p-4 flex justify-between items-center hover:bg-slate-100 cursor-pointer transition-colors group block"
+          className="w-full text-left bg-transparent border-none outline-none p-4 flex justify-between items-center hover:bg-theme-surface border border-default cursor-pointer transition-colors group block"
           onClick={() => setWorkerToView(worker)}
         >
           <div>
-            <div className="font-medium text-slate-800">{worker.profile?.fullName}</div>
-            <div className="text-xs text-slate-500">{worker.profile?.email} • @{worker.profile?.username}</div>
+            <div className="font-medium text-main">{worker.profile?.fullName}</div>
+            <div className="text-xs text-muted">{worker.profile?.email}  @{worker.profile?.username}</div>
           </div>
-          <span className="text-xs text-slate-400 group-hover:text-slate-600 transition-colors">
-            Ver detalles →
+          <span className="text-xs text-theme-faint group-hover:text-muted transition-colors">
+            Ver detalles ?
           </span>
         </button>
       ));
@@ -128,7 +128,7 @@ export default function UsersPage() {
     return (
       <>
         <SectionMessage message="En esta fase se puede revisar el equipo de trabajo actual." />
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-card rounded-xl shadow-sm border border-strong overflow-hidden">
           <div className="divide-y divide-slate-100">
             {content}
           </div>
@@ -140,15 +140,15 @@ export default function UsersPage() {
   const renderInvitationsTab = () => {
     let content;
     if (loadingInv) {
-      content = <div className="p-8 text-center text-slate-500">Cargando...</div>;
+      content = <div className="p-8 text-center text-muted">Cargando...</div>;
     } else if (pendingInvitations.length === 0) {
-      content = <div className="p-8 text-center text-slate-500">No hay invitaciones pendientes.</div>;
+      content = <div className="p-8 text-center text-muted">No hay invitaciones pendientes.</div>;
     } else {
       content = pendingInvitations.map(inv => (
-        <div key={inv.token} className="p-4 flex justify-between items-center hover:bg-slate-50 transition-colors">
+        <div key={inv.token} className="p-4 flex justify-between items-center hover:bg-theme-surface transition-colors">
           <div>
-            <div className="font-medium text-slate-800">{inv.email}</div>
-            <div className="text-xs text-slate-500">Invitado por: {inv.inviter?.fullName || 'Usuario'} • Enviada: {new Date(inv.createdAt).toLocaleDateString()}</div>
+            <div className="font-medium text-main">{inv.email}</div>
+            <div className="text-xs text-muted">Invitado por: {inv.inviter?.fullName || 'Usuario'}  Enviada: {new Date(inv.createdAt).toLocaleDateString()}</div>
           </div>
           <Button 
             variant="outline" 
@@ -165,7 +165,7 @@ export default function UsersPage() {
     return (
       <>
         <SectionMessage message="En esta fase se puede revisar las invitaciones pendientes." />
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-card rounded-xl shadow-sm border border-strong overflow-hidden">
           <div className="divide-y divide-slate-100">
             {content}
           </div>
@@ -191,7 +191,7 @@ export default function UsersPage() {
               variant="warning"
               message="Solo los propietarios pueden gestionar usuarios"
             />
-            <p className="text-slate-600 text-sm mt-4 mb-6">
+            <p className="text-muted text-sm mt-4 mb-6">
               Actualmente eres trabajador en este galpón. Si deseas gestionar tu propio equipo de trabajo, debes crear tu propio galpón.
             </p>
             <Link href="/dashboard/galpones">

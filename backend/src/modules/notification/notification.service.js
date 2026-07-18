@@ -166,15 +166,33 @@ class NotificationService {
 
         const promise = (async () => {
             try {
-                const { Assignment } = require('../../domain/models');
+                const { Assignment, Notification } = require('../../domain/models');
                 const activeAssignments = await Assignment.findAll({ where: { status: 'asignado' } });
                 const assignedCageIds = new Set(activeAssignments.map(a => Number(a.cageId)));
-                if (assignedCageIds.size === 0) return;
+                
+                // Fetch notified IDs BEFORE returning if assignedCageIds.size === 0, 
+                // so we can clean up notifications for ALL empty cages!
+                const { notifiedIds, notificationMap } = await this._getNotifiedIds(profileId, 'warning', 'cleaning');
 
-                const cagesToCheck = await this._getCagesToCheckForCleaning(profileId, assignedCageIds);
+                let cagesToCheck = [];
+                if (assignedCageIds.size > 0) {
+                    cagesToCheck = await this._getCagesToCheckForCleaning(profileId, assignedCageIds);
+                }
+
+                // Delete obsolete notifications for cages that are no longer assigned
+                const cageIdsToCheck = new Set(cagesToCheck.map(c => Number(c.id)));
+                for (const notifiedCageId of notifiedIds) {
+                    if (!cageIdsToCheck.has(Number(notifiedCageId))) {
+                        const notifId = notificationMap.get(Number(notifiedCageId));
+                        if (notifId) {
+                            await Notification.destroy({ where: { id: notifId } });
+                            notifiedIds.delete(Number(notifiedCageId));
+                        }
+                    }
+                }
+
                 if (cagesToCheck.length === 0) return;
 
-                const { notifiedIds, notificationMap } = await this._getNotifiedIds(profileId, 'warning', 'cleaning');
                 await this._processCleaningNotifications(profileId, cagesToCheck, notifiedIds, notificationMap);
             } catch (error) {
                 console.error('Error checking/creating cleaning notifications:', error);
@@ -188,7 +206,7 @@ class NotificationService {
     }
 
     async _processCleaningNotifications(profileId, cagesToCheck, notifiedCageIds, notificationMap) {
-        const { Cleaning, Notification } = require('../../domain/models');
+        const { Cleaning, Notification, Assignment } = require('../../domain/models');
         const today = new Date();
 
         for (const cage of cagesToCheck) {
@@ -197,10 +215,64 @@ class NotificationService {
                 order: [['cleaningDate', 'DESC']]
             });
 
-            if (!lastCleaning?.cleaningDate) continue;
+            let startDate = null;
+            if (lastCleaning?.cleaningDate) {
+                startDate = new Date(lastCleaning.cleaningDate);
+            } else {
+                const firstAssignment = await Assignment.findOne({
+                    where: { cageId: cage.id },
+                    order: [['assignedAt', 'ASC']]
+                });
+                if (firstAssignment?.assignedAt) {
+                    startDate = new Date(firstAssignment.assignedAt);
+                }
+            }
 
-            const diffTime = today.getTime() - new Date(lastCleaning.cleaningDate).getTime();
-            const daysWithoutCleaning = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            if (!startDate) continue;
+
+            const assignments = await Assignment.findAll({
+                where: { cageId: cage.id }
+            });
+
+            const startMs = startDate.getTime();
+            const todayMs = today.getTime();
+            const intervals = [];
+
+            for (const assignment of assignments) {
+                const assignedMs = new Date(assignment.assignedAt).getTime();
+                const liberatedMs = (assignment.status === 'liberado' && assignment.updatedAt) 
+                    ? new Date(assignment.updatedAt).getTime() 
+                    : todayMs;
+
+                const overlapStart = Math.max(startMs, assignedMs);
+                const overlapEnd = Math.min(todayMs, liberatedMs);
+
+                if (overlapStart < overlapEnd) {
+                    intervals.push([overlapStart, overlapEnd]);
+                }
+            }
+
+            intervals.sort((a, b) => a[0] - b[0]);
+            const merged = [];
+            for (const [start, end] of intervals) {
+                if (merged.length === 0) {
+                    merged.push([start, end]);
+                } else {
+                    const last = merged[merged.length - 1];
+                    if (start <= last[1]) {
+                        last[1] = Math.max(last[1], end);
+                    } else {
+                        merged.push([start, end]);
+                    }
+                }
+            }
+
+            let totalOccupiedMs = 0;
+            for (const [start, end] of merged) {
+                totalOccupiedMs += (end - start);
+            }
+
+            const daysWithoutCleaning = Math.floor(totalOccupiedMs / (1000 * 60 * 60 * 24));
 
             if (daysWithoutCleaning > 3) {
                 if (!notifiedCageIds.has(Number(cage.id))) {
@@ -209,7 +281,7 @@ class NotificationService {
                         profileId,
                         type: 'warning',
                         title: 'Alerta de Limpieza Requerida',
-                        message: `La jaula #${cage.number} lleva ${daysWithoutCleaning} días sin ser limpiada. ¡Por favor realiza la limpieza lo antes posible!`,
+                        message: `La jaula #${cage.number} acumula ${daysWithoutCleaning} días de ocupación sin limpieza. ¡Por favor realiza la limpieza lo antes posible!`,
                         data: { type: 'cleaning_warning', cageId: cage.id, cageNumber: cage.number, daysWithoutCleaning }
                     });
                 }

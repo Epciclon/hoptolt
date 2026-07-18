@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { ReactNode } from 'react';
 import { CageGroupCard } from './CageGroupCard';
@@ -26,7 +26,7 @@ export function CageCatalog({
   renderCageContent
 }: Readonly<CageCatalogProps>) {
   if (cageGroups.length === 0) {
-    return <p className="text-sm text-slate-500">No hay jaulas disponibles.</p>;
+    return <p className="text-sm text-muted">No hay jaulas disponibles.</p>;
   }
 
   return (

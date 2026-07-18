@@ -1,4 +1,4 @@
-import { Card, CardHeader } from '@/shared/ui';
+﻿import { Card, CardHeader } from '@/shared/ui';
 import { RabbitForm } from '@/modules/rabbits/components/RabbitForm';
 
 export default function RabbitRegisterPage() {

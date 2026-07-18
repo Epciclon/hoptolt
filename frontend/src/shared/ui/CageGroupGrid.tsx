@@ -1,4 +1,4 @@
-import { CageGroupCard } from './CageGroupCard';
+﻿import { CageGroupCard } from './CageGroupCard';
 import { RabbitSelectableCard } from './RabbitSelectableCard';
 import type { AssignedRabbit } from '@/modules/assignments/types/assignment.types';
 import { ReactNode } from 'react';
@@ -22,7 +22,7 @@ export function CageGroupGrid({
   renderExtras
 }: Readonly<CageGroupGridProps>) {
   if (cageGroups.length === 0) {
-    return <p className="text-sm text-slate-500">No hay conejos con jaula asignada en el galpón activo.</p>;
+    return <p className="text-sm text-muted">No hay conejos con jaula asignada en el galpón activo.</p>;
   }
 
   return (

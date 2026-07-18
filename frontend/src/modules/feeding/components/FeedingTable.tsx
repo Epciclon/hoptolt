@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useFeeding } from '../hooks/useFeeding';
@@ -19,7 +19,7 @@ export function FeedingTable({ profileId, date }: FeedingTableProps) {
     { 
       key: 'cageNumber', 
       header: 'Jaula',
-      className: 'font-medium text-slate-900',
+      className: 'font-medium text-main',
       render: (row) => row.cageNumber?.toString() || '-'
     },
     { 
@@ -72,19 +72,19 @@ export function FeedingTable({ profileId, date }: FeedingTableProps) {
         customDetails={
           selectedFeeding && (
             <>
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                <p className="text-xs text-slate-500 font-medium mb-1">Alimentos suministrados</p>
+              <div className="bg-theme-surface border border-strong rounded-lg p-3">
+                <p className="text-xs text-muted font-medium mb-1">Alimentos suministrados</p>
                 <div className="flex flex-col leading-tight mt-1">
-                  <span className="text-sm font-semibold text-slate-800">
+                  <span className="text-sm font-semibold text-main">
                     {selectedFeeding.foodTypes.join(', ')}
                   </span>
                 </div>
               </div>
               {selectedFeeding.justification && (
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 col-span-2">
-                  <p className="text-xs text-slate-500 font-medium mb-1">Justificación</p>
+                <div className="bg-theme-surface border border-strong rounded-lg p-3 col-span-2">
+                  <p className="text-xs text-muted font-medium mb-1">Justificación</p>
                   <div className="flex flex-col leading-tight mt-1">
-                    <span className="text-sm text-slate-800">
+                    <span className="text-sm text-main">
                       {selectedFeeding.justification}
                     </span>
                   </div>

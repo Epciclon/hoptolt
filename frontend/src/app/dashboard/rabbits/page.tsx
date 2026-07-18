@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
@@ -22,7 +22,7 @@ export default function RabbitsPage() {
               <Button icon={<Plus size={16} />} onClick={() => setIsCreateOpen(true)}>Nuevo Conejo</Button>
             }
           />
-          <div className="p-4 border-t border-slate-100">
+          <div className="p-4 border-t border-default">
             <RabbitCatalog />
           </div>
 

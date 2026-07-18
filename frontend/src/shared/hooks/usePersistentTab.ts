@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useEffect } from 'react';
 
 export function usePersistentTab(moduleName: string, defaultTab: string) {

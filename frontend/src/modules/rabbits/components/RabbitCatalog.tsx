@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useRabbits } from '../hooks/useRabbits';
 import { useRaces } from '../../races/hooks/useRaces';
@@ -89,7 +89,7 @@ export function RabbitCatalog({ onSuccess }: Readonly<RabbitCatalogProps>) {
         <LoadingMessage message="Cargando conejos..." />
       )}
       {!loading && rabbits.length === 0 && (
-        <p className="text-sm text-slate-500 text-center py-8 bg-slate-50 rounded-lg border border-slate-200">No hay conejos registrados con esos filtros.</p>
+        <p className="text-sm text-muted text-center py-8 bg-theme-surface rounded-lg border border-strong">No hay conejos registrados con esos filtros.</p>
       )}
       {!loading && rabbits.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -131,11 +131,11 @@ export function RabbitCatalog({ onSuccess }: Readonly<RabbitCatalogProps>) {
                 }
                 details={
                   <>
-                    <div className="flex items-center gap-1"><span className="font-semibold text-slate-700">Edad:</span> {getRabbitAge(rabbit.age)}</div>
+                    <div className="flex items-center gap-1"><span className="font-semibold text-main">Edad:</span> {getRabbitAge(rabbit.age)}</div>
                     {rabbit.weight !== undefined && rabbit.weight !== null && (
                       <>
                         <div className="w-px h-3 bg-slate-300"></div>
-                        <div className="flex items-center gap-1"><span className="font-semibold text-slate-700">Peso:</span> {rabbit.weight} kg</div>
+                        <div className="flex items-center gap-1"><span className="font-semibold text-main">Peso:</span> {rabbit.weight} kg</div>
                       </>
                     )}
                   </>

@@ -1,4 +1,4 @@
-export interface Reproduction {
+﻿export interface Reproduction {
   id: number;
   femaleId: number;
   femaleCode: string;

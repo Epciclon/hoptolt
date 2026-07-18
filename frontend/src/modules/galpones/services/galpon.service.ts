@@ -1,4 +1,4 @@
-import api from '@/lib/api';
+﻿import api from '@/lib/api';
 import type { Galpon, CreateGalponDto, UpdateGalponDto } from '../types/galpon.types';
 
 export const galponService = {

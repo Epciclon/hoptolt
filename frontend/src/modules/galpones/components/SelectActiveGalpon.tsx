@@ -33,7 +33,7 @@ export function SelectActiveGalpon() {
         <span className={`px-2 py-1 rounded text-sm font-medium ${
           activeGalpon?.id === row.id
             ? 'bg-green-100 text-green-800'
-            : 'bg-slate-100 text-slate-600'
+            : 'bg-theme-surface border border-default text-muted'
         }`}>
           {activeGalpon?.id === row.id ? 'Activo' : 'Inactivo'}
         </span>
@@ -59,7 +59,7 @@ export function SelectActiveGalpon() {
   return (
     <div className="space-y-4">
       {selecting && (
-        <div className="fixed inset-0 z-50 bg-white/40 cursor-wait"></div>
+        <div className="fixed inset-0 z-50 bg-card/40 cursor-wait"></div>
       )}
 
       {activeGalpon && (

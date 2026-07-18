@@ -1,4 +1,4 @@
-export interface Galpon {
+﻿export interface Galpon {
   id: number;
   name: string;
   province: string;

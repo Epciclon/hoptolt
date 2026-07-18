@@ -115,23 +115,24 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800">Mi Perfil</h1>
-        <p className="text-slate-500 mt-1">Administra tus datos personales, seguridad de la cuenta y preferencias</p>
-      </div>
+    <div className="max-w-5xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <Card className="border-0 shadow-sm ring-1 ring-slate-200/50 overflow-hidden" padding="none">
+        <div className="p-6 md:p-8 border-b border-default bg-card">
+          <h1 className="text-2xl font-bold text-main">Mi Perfil</h1>
+          <p className="text-muted mt-1">Administra tus datos personales, seguridad de la cuenta y preferencias</p>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
-        {/* Navigation Tabs */}
-        <Card className="md:col-span-1" padding="sm">
-          <nav className="flex flex-col gap-1">
+        <div className="flex flex-col md:flex-row bg-card min-h-[calc(100vh-12rem)]">
+          {/* Navigation Tabs */}
+          <div className="w-full md:w-64 shrink-0 p-4 md:p-6 md:border-r border-default bg-card">
+          <nav className="flex flex-row md:flex-col gap-2 overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
             <button
               onClick={() => setActiveTab('personal')}
               className={cn(
-                "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors text-left",
+                "flex items-center justify-center md:justify-start gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors whitespace-nowrap shrink-0",
                 activeTab === 'personal'
                   ? "bg-primary-50 text-primary-600"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  : "text-muted hover:bg-theme-surface hover:text-main"
               )}
             >
               <User size={18} />
@@ -140,10 +141,10 @@ export default function ProfilePage() {
             <button
               onClick={() => setActiveTab('password')}
               className={cn(
-                "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors text-left",
+                "flex items-center justify-center md:justify-start gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors whitespace-nowrap shrink-0",
                 activeTab === 'password'
                   ? "bg-primary-50 text-primary-600"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  : "text-muted hover:bg-theme-surface hover:text-main"
               )}
             >
               <Lock size={18} />
@@ -152,23 +153,23 @@ export default function ProfilePage() {
             <button
               onClick={() => setActiveTab('delete')}
               className={cn(
-                "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors text-left",
+                "flex items-center justify-center md:justify-start gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors whitespace-nowrap shrink-0",
                 activeTab === 'delete'
                   ? "bg-red-50 text-red-600"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-red-600"
+                  : "text-muted hover:bg-theme-surface hover:text-red-600"
               )}
             >
               <Trash2 size={18} />
               Eliminar Cuenta
             </button>
           </nav>
-        </Card>
+        </div>
 
-        {/* Tab Content Area */}
-        <div className="md:col-span-3">
-          {activeTab === 'personal' && (
-            <Card>
-              <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+          {/* Tab Content Area */}
+          <div className="flex-1 p-6 md:p-8 bg-card">
+            {activeTab === 'personal' && (
+              <div className="max-w-2xl">
+              <h3 className="text-lg font-bold text-main mb-6 flex items-center gap-2">
                 <User className="text-primary-500" size={20} />
                 Datos Personales
               </h3>
@@ -199,18 +200,18 @@ export default function ProfilePage() {
                   hint="El correo electrónico no puede ser modificado"
                 />
 
-                <div className="pt-4 border-t border-slate-100 flex justify-end">
+                <div className="pt-4 border-t border-default flex justify-end">
                   <Button type="submit" disabled={updatingProfile}>
                     {updatingProfile ? 'Guardando...' : 'Guardar Cambios'}
                   </Button>
                 </div>
               </form>
-            </Card>
+            </div>
           )}
 
           {activeTab === 'password' && (
-            <Card>
-              <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+            <div className="max-w-2xl">
+              <h3 className="text-lg font-bold text-main mb-6 flex items-center gap-2">
                 <Lock className="text-primary-500" size={20} />
                 Cambio de Contraseña
               </h3>
@@ -229,7 +230,7 @@ export default function ProfilePage() {
                   <button
                     type="button"
                     onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                    className="absolute right-3 top-[34px] text-slate-400 hover:text-slate-600 focus:outline-none"
+                    className="absolute right-3 top-[34px] text-theme-faint hover:text-muted focus:outline-none"
                   >
                     {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -248,7 +249,7 @@ export default function ProfilePage() {
                   <button
                     type="button"
                     onClick={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute right-3 top-[34px] text-slate-400 hover:text-slate-600 focus:outline-none"
+                    className="absolute right-3 top-[34px] text-theme-faint hover:text-muted focus:outline-none"
                   >
                     {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -267,30 +268,30 @@ export default function ProfilePage() {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-[34px] text-slate-400 hover:text-slate-600 focus:outline-none"
+                    className="absolute right-3 top-[34px] text-theme-faint hover:text-muted focus:outline-none"
                   >
                     {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
 
-                <div className="pt-4 border-t border-slate-100 flex justify-end">
+                <div className="pt-4 border-t border-default flex justify-end">
                   <Button type="submit" disabled={updatingPassword}>
                     {updatingPassword ? 'Cambiando...' : 'Cambiar Contraseña'}
                   </Button>
                 </div>
               </form>
-            </Card>
+            </div>
           )}
 
           {activeTab === 'delete' && (
-            <Card>
-              <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                <Trash2 className="text-slate-500" size={20} />
+            <div className="max-w-2xl">
+              <h3 className="text-lg font-bold text-main mb-4 flex items-center gap-2">
+                <Trash2 className="text-muted" size={20} />
                 Eliminar Cuenta
               </h3>
 
-              <p className="text-sm text-slate-500 mb-3">Al eliminar tu cuenta se realizarán las siguientes acciones:</p>
-              <ul className="text-sm text-slate-600 list-disc pl-5 space-y-1.5 mb-8">
+              <p className="text-sm text-muted mb-3">Al eliminar tu cuenta se realizarán las siguientes acciones:</p>
+              <ul className="text-sm text-muted list-disc pl-5 space-y-1.5 mb-8">
                 <li>Se eliminará tu perfil y tus credenciales de acceso.</li>
                 <li>Se eliminarán todos tus galpones, jaulas y conejos.</li>
                 <li>Se eliminarán los registros sanitarios, reproducciones y alimentación.</li>
@@ -298,7 +299,7 @@ export default function ProfilePage() {
                 <li>Serás removido de cualquier galpón donde estés registrado como trabajador.</li>
               </ul>
 
-              <div className="border-t border-slate-100 pt-6 flex justify-center">
+              <div className="border-t border-default pt-6 flex justify-center">
                 <Button
                   variant="danger"
                   onClick={() => {
@@ -310,21 +311,22 @@ export default function ProfilePage() {
                   Eliminar mi cuenta
                 </Button>
               </div>
-            </Card>
+            </div>
           )}
         </div>
       </div>
+    </Card>
 
-      {/* Confirmation Modal */}
+    {/* Confirmation Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="bg-card rounded-xl shadow-xl border border-strong w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6">
-              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <h3 className="text-lg font-bold text-main flex items-center gap-2">
                 <AlertTriangle className="text-red-500 shrink-0" size={22} />
                 Confirmar eliminación
               </h3>
-              <p className="text-sm text-slate-600 mt-3">
+              <p className="text-sm text-muted mt-3">
                 Para confirmar la eliminación física de tu cuenta y de toda tu información, introduce tu contraseña actual a continuación:
               </p>
 
@@ -341,14 +343,14 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={() => setShowDeletePassword(!showDeletePassword)}
-                  className="absolute right-3 top-[34px] text-slate-400 hover:text-slate-600 focus:outline-none"
+                  className="absolute right-3 top-[34px] text-theme-faint hover:text-muted focus:outline-none"
                 >
                   {showDeletePassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
 
-            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+            <div className="p-4 bg-theme-surface border-t border-default flex justify-end gap-2">
               <Button
                 variant="outline"
                 onClick={() => {

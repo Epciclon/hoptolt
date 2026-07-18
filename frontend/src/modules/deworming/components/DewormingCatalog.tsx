@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Button, LoadingMessage, CageGroupGrid } from '@/shared/ui';
 import { useToast } from '@/shared/contexts/ToastContext';
@@ -96,8 +96,8 @@ export function DewormingCatalog({ onSuccess }: Readonly<DewormingCatalogProps>)
           const lastDeworming = getRabbitLastDeworming(rabbit.id);
           return (
             <>
-              <p className="text-[10px] text-slate-500 mb-0.5">Última desparasitación:</p>
-              <p className="text-xs font-medium text-slate-700 truncate" title={lastDeworming ? formatDateTime(lastDeworming.dewormingDate) : 'Nunca'}>
+              <p className="text-[10px] text-muted mb-0.5">Última desparasitación:</p>
+              <p className="text-xs font-medium text-main truncate" title={lastDeworming ? formatDateTime(lastDeworming.dewormingDate) : 'Nunca'}>
                 {lastDeworming ? formatDateTime(lastDeworming.dewormingDate) : 'Nunca'}
               </p>
             </>
@@ -106,7 +106,7 @@ export function DewormingCatalog({ onSuccess }: Readonly<DewormingCatalogProps>)
       />
 
       {selectedRabbitIds.length > 0 && (
-        <div className="flex justify-end pt-4 mt-6 border-t border-slate-200">
+        <div className="flex justify-end pt-4 mt-6 border-t border-strong">
           <Button
             onClick={handleRegister}
             disabled={selectedRabbitIds.length === 0}

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
@@ -88,7 +88,7 @@ export function GalponTable({ onEdit }: Readonly<GalponTableProps>) {
   return (
     <>
       {selecting && (
-        <div className="fixed inset-0 z-50 bg-white/40 cursor-wait"></div>
+        <div className="fixed inset-0 z-50 bg-card/40 cursor-wait"></div>
       )}
       <Table<Galpon>
         columns={columns}

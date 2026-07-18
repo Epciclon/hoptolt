@@ -1,4 +1,4 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import { Home, Search } from 'lucide-react';
 
 export default function NotFound() {
@@ -9,8 +9,8 @@ export default function NotFound() {
           <Search size={40} className="text-primary-400" />
         </div>
         <h1 className="text-6xl font-bold text-primary-500 mb-2">404</h1>
-        <h2 className="text-2xl font-semibold text-slate-700 mb-3">Página no encontrada</h2>
-        <p className="text-base text-slate-500 mb-8">
+        <h2 className="text-2xl font-semibold text-main mb-3">Página no encontrada</h2>
+        <p className="text-base text-muted mb-8">
           La página que buscas no existe o fue movida. Verifica la dirección o regresa al inicio.
         </p>
         <Link

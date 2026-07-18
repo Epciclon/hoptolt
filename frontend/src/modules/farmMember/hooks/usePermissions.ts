@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useMemo, useCallback } from 'react';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';

@@ -1,18 +1,18 @@
-import { ReactNode } from 'react';
+﻿import { ReactNode } from 'react';
 
 export function AuthLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Animated background shapes */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-10 left-10 w-20 h-20 bg-white/10 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
-        <div className="absolute top-20 right-20 w-32 h-32 bg-white/10 rounded-full animate-bounce" style={{ animationDelay: '1s' }} />
-        <div className="absolute bottom-32 left-20 w-16 h-16 bg-white/10 rounded-full animate-bounce" style={{ animationDelay: '2s' }} />
-        <div className="absolute bottom-20 right-32 w-24 h-24 bg-white/10 rounded-full animate-bounce" style={{ animationDelay: '3s' }} />
-        <div className="absolute top-1/2 left-1/2 w-40 h-40 bg-white/10 rounded-full animate-bounce" style={{ animationDelay: '4s', transform: 'translate(-50%, -50%)' }} />
+        <div className="absolute top-10 left-10 w-20 h-20 bg-card/10 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
+        <div className="absolute top-20 right-20 w-32 h-32 bg-card/10 rounded-full animate-bounce" style={{ animationDelay: '1s' }} />
+        <div className="absolute bottom-32 left-20 w-16 h-16 bg-card/10 rounded-full animate-bounce" style={{ animationDelay: '2s' }} />
+        <div className="absolute bottom-20 right-32 w-24 h-24 bg-card/10 rounded-full animate-bounce" style={{ animationDelay: '3s' }} />
+        <div className="absolute top-1/2 left-1/2 w-40 h-40 bg-card/10 rounded-full animate-bounce" style={{ animationDelay: '4s', transform: 'translate(-50%, -50%)' }} />
       </div>
 
-      <div className="w-full max-w-5xl bg-white rounded-2xl shadow-2xl overflow-hidden flex relative z-10 animate-fade-in-up">
+      <div className="w-full max-w-5xl bg-card rounded-2xl shadow-2xl overflow-hidden flex relative z-10 animate-fade-in-up">
         {/* Panel izquierdo — Presentación de la app */}
         <div className="w-1/2 bg-gradient-to-br from-teal-500 to-teal-600 p-12 flex-col justify-center text-white relative overflow-hidden hidden md:flex">
           <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent animate-spin-slow" style={{ animationDuration: '20s' }} />
@@ -50,7 +50,7 @@ export function AuthLayout({ children }: Readonly<{ children: ReactNode }>) {
               ].map(({ icon, label }, i) => (
                 <div
                   key={label}
-                  className="flex items-center p-4 bg-white/10 rounded-xl backdrop-blur-sm hover:bg-white/20 transition-all animate-fade-in-up"
+                  className="flex items-center p-4 bg-card/10 rounded-xl backdrop-blur-sm hover:bg-card/20 transition-all animate-fade-in-up"
                   style={{ animationDelay: `${0.8 + i * 0.1}s` }}
                 >
                   <span className="text-2xl mr-3">{icon}</span>

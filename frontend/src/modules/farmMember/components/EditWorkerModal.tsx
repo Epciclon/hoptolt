@@ -293,8 +293,8 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
 
         {/* Asignación de Jaulas */}
         <div>
-          <h3 className="font-semibold text-slate-800 mb-3">Jaulas Asignadas</h3>
-          <p className="text-sm text-slate-600 mb-3">
+          <h3 className="font-semibold text-main mb-3">Jaulas Asignadas</h3>
+          <p className="text-sm text-muted mb-3">
             El trabajador solo podrá ver y gestionar las jaulas que le asigne y estará a cargo de ellas.
           </p>
           <div className="relative" ref={cageDropdownRef}>
@@ -309,7 +309,7 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
               disabled={loadingCages}
             />
             {showCageDropdown && (
-              <div className="absolute z-10 w-full border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-white mt-1">
+              <div className="absolute z-10 w-full border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-card mt-1">
                 {(() => {
                   if (loadingCages) return <p className="text-gray-500 text-sm p-3">Cargando jaulas...</p>;
                   if (filteredCages.length === 0) return <p className="text-gray-500 text-sm p-3">No hay jaulas disponibles</p>;
@@ -320,7 +320,7 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
                       onClick={() => handleCageSelect(cage)}
                       className="w-full text-left px-3 py-2 hover:bg-gray-100 border-b last:border-b-0 text-sm"
                     >
-                      {cage.number} — {cage.type.charAt(0).toUpperCase() + cage.type.slice(1)}
+                      {cage.number}  {cage.type.charAt(0).toUpperCase() + cage.type.slice(1)}
                     </button>
                   ));
                 })()}
@@ -348,7 +348,7 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
             </div>
           )}
           {occupiedCages.length === 0 && !loadingCages && (
-            <p className="text-sm text-slate-500 text-center py-4">
+            <p className="text-sm text-muted text-center py-4">
               No hay jaulas con conejos asignados en este galpón.
             </p>
           )}
@@ -356,8 +356,8 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
 
         {/* Permisos del Trabajador */}
         <div>
-          <h3 className="font-semibold text-slate-800 mb-3">Permisos del Trabajador</h3>
-          <p className="text-sm text-slate-600 mb-3">
+          <h3 className="font-semibold text-main mb-3">Permisos del Trabajador</h3>
+          <p className="text-sm text-muted mb-3">
             Permisos para realizar las operaciones diarias de control del galpón.
           </p>
           
@@ -373,7 +373,7 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
               onFocus={() => setShowSensitiveDropdown(true)}
             />
             {showSensitiveDropdown && (
-              <div className="absolute z-10 w-full border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-white mt-1">
+              <div className="absolute z-10 w-full border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-card mt-1">
                 {filteredPermissions.length === 0 ? (
                   <p className="text-gray-500 text-sm p-3">No hay permisos disponibles</p>
                 ) : (
@@ -409,15 +409,15 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
                 if (perm.canDelete) actions.push('Eliminar');
                 
                 return (
-                  <div key={moduleName} className="border border-slate-200 rounded-lg overflow-hidden">
+                  <div key={moduleName} className="border border-strong rounded-lg overflow-hidden">
                     <button 
                       type="button"
-                      className="w-full text-left bg-transparent border-none outline-none flex justify-between items-center p-3 bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors block"
+                      className="w-full text-left bg-transparent border-none outline-none flex justify-between items-center p-3 bg-theme-surface hover:bg-theme-surface border border-default cursor-pointer transition-colors block"
                       onClick={() => handleEditPermission(moduleName, permissionName)}
                     >
                       <div>
-                        <span className="font-medium text-slate-700">{permissionName}</span>
-                        <div className="text-sm text-slate-500 mt-1">
+                        <span className="font-medium text-main">{permissionName}</span>
+                        <div className="text-sm text-muted mt-1">
                           Acciones: {actions.length > 0 ? actions.join(', ') : 'Ninguna'}
                         </div>
                       </div>
@@ -427,7 +427,7 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
                           e.stopPropagation();
                           handleRemovePermission(moduleName);
                         }}
-                        className="text-slate-500 hover:text-red-600 font-bold text-lg"
+                        className="text-muted hover:text-red-600 font-bold text-lg"
                       >
                         ×
                       </button>
@@ -440,7 +440,7 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
         </div>
 
         {/* Botones de acción */}
-        <div className="flex justify-end gap-2 pt-4 border-t border-slate-200">
+        <div className="flex justify-end gap-2 pt-4 border-t border-strong">
           <Button variant="outline" onClick={onClose} disabled={saving}>
             Cancelar
           </Button>

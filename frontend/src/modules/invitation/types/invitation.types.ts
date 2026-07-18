@@ -1,4 +1,4 @@
-import type { Galpon } from '../../galpones/types/galpon.types';
+﻿import type { Galpon } from '../../galpones/types/galpon.types';
 
 export interface Invitation {
   id: number;

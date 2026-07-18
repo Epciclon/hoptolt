@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useMemo } from 'react';
 import { Button, Alert, CageCatalog, LoadingMessage } from '@/shared/ui';
@@ -102,7 +102,7 @@ export function CleaningCatalog({ onSuccess }: Readonly<CleaningCatalogProps>) {
       </div>
 
       {cageGroups.length === 0 ? (
-        <p className="text-sm text-slate-500">No hay conejos con jaula asignada en el galpón activo.</p>
+        <p className="text-sm text-muted">No hay conejos con jaula asignada en el galpón activo.</p>
       ) : (
         <CageCatalog
           cageGroups={cageGroups}
@@ -114,15 +114,15 @@ export function CleaningCatalog({ onSuccess }: Readonly<CleaningCatalogProps>) {
               <>
                 {cageLastCleaning ? (
                   <>
-                    <p className="text-xs font-semibold text-slate-600">
+                    <p className="text-xs font-semibold text-muted">
                       Última limpieza:
                     </p>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <p className="text-xs text-muted mt-0.5">
                       {formatDateTime(cageLastCleaning.cleaningDate)}
                     </p>
                   </>
                 ) : (
-                  <p className="text-xs text-slate-400">Sin registros previos</p>
+                  <p className="text-xs text-theme-faint">Sin registros previos</p>
                 )}
               </>
             );
@@ -130,7 +130,7 @@ export function CleaningCatalog({ onSuccess }: Readonly<CleaningCatalogProps>) {
         />
       )}
 
-      <div className="flex justify-end pt-4 mt-6 border-t border-slate-200">
+      <div className="flex justify-end pt-4 mt-6 border-t border-strong">
         <Button
           onClick={handleRegister}
           loading={submitting}

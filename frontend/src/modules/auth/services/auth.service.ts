@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/client';
+﻿import { createClient } from '@/utils/supabase/client';
 import api from '@/lib/api';
 import type { Profile, RegisterDto, LoginDto, SyncProfileResponse } from '../types/auth.types';
 

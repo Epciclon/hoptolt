@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -280,12 +280,12 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
     <>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
 
-        <p className="text-sm font-medium text-slate-700">
+        <p className="text-sm font-medium text-main">
           No es necesario agregar ambos progenitores. Puedes registrar solo el padre, solo la madre, o ambos.
         </p>
 
         <div>
-          <span className="block text-sm font-medium text-slate-600 mb-2">Conejo *</span>
+          <span className="block text-sm font-medium text-muted mb-2">Conejo *</span>
           {selectedRabbit ? (
             <RabbitSelectableCard 
               rabbit={selectedRabbit} 
@@ -301,7 +301,7 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
                 disabled={!!rabbitId || !!editData}
               />
               {showRabbitDropdown && filteredRabbits.length > 0 && !rabbitId && !editData && (
-                <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-md mt-1 max-h-64 overflow-y-auto z-50 shadow-lg p-2 flex flex-col gap-2">
+                <div className="absolute top-full left-0 right-0 bg-card border border-strong rounded-md mt-1 max-h-64 overflow-y-auto z-50 shadow-lg p-2 flex flex-col gap-2">
                   {filteredRabbits.map(r => (
                     <RabbitSelectableCard
                       key={r.id}
@@ -317,7 +317,7 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
         </div>
 
         <div>
-          <span className="block text-sm font-medium text-slate-600 mb-2">Padre</span>
+          <span className="block text-sm font-medium text-muted mb-2">Padre</span>
           {selectedFather ? (
             <RabbitSelectableCard 
               rabbit={selectedFather} 
@@ -332,7 +332,7 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
                 onFocus={() => setShowFatherDropdown(true)}
               />
               {showFatherDropdown && filteredFathers.length > 0 && (
-                <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-md mt-1 max-h-64 overflow-y-auto z-50 shadow-lg p-2 flex flex-col gap-2">
+                <div className="absolute top-full left-0 right-0 bg-card border border-strong rounded-md mt-1 max-h-64 overflow-y-auto z-50 shadow-lg p-2 flex flex-col gap-2">
                   {filteredFathers.map(r => (
                     <RabbitSelectableCard
                       key={r.id}
@@ -348,7 +348,7 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
         </div>
 
         <div>
-          <span className="block text-sm font-medium text-slate-600 mb-2">Madre</span>
+          <span className="block text-sm font-medium text-muted mb-2">Madre</span>
           {selectedMother ? (
             <RabbitSelectableCard 
               rabbit={selectedMother} 
@@ -363,7 +363,7 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
                 onFocus={() => setShowMotherDropdown(true)}
               />
               {showMotherDropdown && filteredMothers.length > 0 && (
-                <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-md mt-1 max-h-64 overflow-y-auto z-50 shadow-lg p-2 flex flex-col gap-2">
+                <div className="absolute top-full left-0 right-0 bg-card border border-strong rounded-md mt-1 max-h-64 overflow-y-auto z-50 shadow-lg p-2 flex flex-col gap-2">
                   {filteredMothers.map(r => (
                     <RabbitSelectableCard
                       key={r.id}
@@ -410,7 +410,7 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
               <p className="text-sm text-amber-800">{consequenceExplanation}</p>
             </div>
           )}
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-muted">
             El registro se completará exitosamente, pero debe ser consciente de las consecuencias genéticas que esto puede tener en los descendientes.
           </p>
           <div className="flex gap-3 pt-2">

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
@@ -176,7 +176,7 @@ export function AssignRabbitForm({ onSuccess, onCancel }: Readonly<AssignRabbitF
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label htmlFor="cageSelect" className="block text-sm font-medium mb-2 text-slate-700">Jaula de destino <span className="text-red-500">*</span></label>
+          <label htmlFor="cageSelect" className="block text-sm font-medium mb-2 text-main">Jaula de destino <span className="text-red-500">*</span></label>
           <div className="relative" ref={cageDropdownRef}>
             <Input
               id="cageSelect"
@@ -189,7 +189,7 @@ export function AssignRabbitForm({ onSuccess, onCancel }: Readonly<AssignRabbitF
               onFocus={handleCageInputFocus}
             />
             {showCageDropdown && (
-              <div className="absolute z-50 w-full border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-white mt-1 shadow-xl">
+              <div className="absolute z-50 w-full border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-card mt-1 shadow-xl">
                 {filteredCages.length === 0 ? (
                   <p className="text-gray-500 text-sm p-3">No hay jaulas disponibles</p>
                 ) : (
@@ -228,7 +228,7 @@ export function AssignRabbitForm({ onSuccess, onCancel }: Readonly<AssignRabbitF
         </div>
 
         <div>
-          <label htmlFor="rabbitSelect" className="block text-sm font-medium mb-2 text-slate-700">Conejos a asignar <span className="text-red-500">*</span></label>
+          <label htmlFor="rabbitSelect" className="block text-sm font-medium mb-2 text-main">Conejos a asignar <span className="text-red-500">*</span></label>
           <div className="relative" ref={rabbitDropdownRef}>
             <Input
               id="rabbitSelect"
@@ -242,7 +242,7 @@ export function AssignRabbitForm({ onSuccess, onCancel }: Readonly<AssignRabbitF
               disabled={!selectedCage}
             />
             {showRabbitDropdown && (
-              <div className="absolute z-50 w-full border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-white mt-1 shadow-xl">
+              <div className="absolute z-50 w-full border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-card mt-1 shadow-xl">
                 {filteredRabbits.length === 0 ? (
                   <p className="text-gray-500 text-sm p-3">No hay conejos disponibles</p>
                 ) : (

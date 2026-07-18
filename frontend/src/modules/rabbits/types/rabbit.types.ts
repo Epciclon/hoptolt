@@ -1,4 +1,4 @@
-export interface Rabbit {
+﻿export interface Rabbit {
   id: number;
   race: string;
   code: string;

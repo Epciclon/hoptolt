@@ -1,4 +1,4 @@
-export interface ReportFilterParams {
+﻿export interface ReportFilterParams {
   galponId: number | string;
   module: string;
   startDate?: string;

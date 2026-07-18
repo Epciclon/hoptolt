@@ -32,7 +32,7 @@ const config: Record<AlertVariant, { icon: ReactNode; styles: string }> = {
   },
   neutral: {
     icon: <Info size={16} />,
-    styles: 'bg-slate-100 text-slate-800 border-slate-200',
+    styles: 'bg-theme-surface border border-default text-main border-strong',
   },
 };
 

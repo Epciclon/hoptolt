@@ -262,7 +262,7 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-1 items-start">
-        <p className="text-base font-medium text-slate-700">En esta fase se encuentran las camadas en lactancia. Las madres estarán en esta etapa aproximadamente 1 mes hasta el destete, calculado desde la fecha de parto. El sistema estima la fecha, pero tienes la opción de finalizar el ciclo de lactancia antes si separas a los gazapos de forma anticipada.</p>
+        <p className="text-base font-medium text-main">En esta fase se encuentran las camadas en lactancia. Las madres estarán en esta etapa aproximadamente 1 mes hasta el destete, calculado desde la fecha de parto. El sistema estima la fecha, pero tienes la opción de finalizar el ciclo de lactancia antes si separas a los gazapos de forma anticipada.</p>
       </div>
       <FilterBar
         searchValue={searchTerm}
@@ -283,7 +283,7 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
       />
 
       {lactancias.length === 0 ? (
-        <p className="text-sm text-slate-500 bg-slate-50 p-4 rounded-lg border border-slate-100">
+        <p className="text-sm text-muted bg-theme-surface p-4 rounded-lg border border-default">
           No hay camadas en etapa de lactancia.
         </p>
       ) : (
@@ -337,28 +337,28 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
                 onClick={() => setExpandedId(isExpanded ? null : reproduction.id)}
               >
                 {reproduction.maleCode && (
-                  <div className="bg-slate-50/50 border border-slate-100 p-2 rounded mt-2 mb-2 text-xs">
-                    <p className="text-slate-500 mb-2">Última pareja</p>
+                  <div className="bg-theme-surface border border-default p-2 rounded mt-2 mb-2 text-xs">
+                    <p className="text-muted mb-2">Última pareja</p>
                     <div className="flex items-center gap-2">
                       {reproduction.maleImageUrl ? (
                         <img
                           src={reproduction.maleImageUrl}
                           alt={reproduction.maleCode ?? ''}
-                          className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0 shadow-sm"
+                          className="w-8 h-8 rounded-full object-cover border border-strong shrink-0 shadow-sm"
                         />
                       ) : (
-                        <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 shrink-0 flex items-center justify-center text-slate-400 text-[8px] text-center leading-tight px-0.5">
+                        <div className="w-8 h-8 rounded-full bg-theme-surface border border-default border border-strong shrink-0 flex items-center justify-center text-theme-faint text-[8px] text-center leading-tight px-0.5">
                           Sin foto
                         </div>
                       )}
                       <div>
                         {reproduction.maleName ? (
                           <>
-                            <h4 className="font-bold text-sm text-slate-800 leading-tight">{reproduction.maleName}</h4>
-                            <p className="text-xs text-slate-500">{reproduction.maleCode}</p>
+                            <h4 className="font-bold text-sm text-main leading-tight">{reproduction.maleName}</h4>
+                            <p className="text-xs text-muted">{reproduction.maleCode}</p>
                           </>
                         ) : (
-                          <h4 className="font-bold text-sm text-slate-800 leading-tight">{reproduction.maleCode}</h4>
+                          <h4 className="font-bold text-sm text-main leading-tight">{reproduction.maleCode}</h4>
                         )}
                       </div>
                     </div>
@@ -368,7 +368,7 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
                   {isExpanded && !hasKits ? (
                     <button
                       type="button"
-                      className="bg-slate-50/50 border border-slate-100 p-2 rounded flex justify-between items-center w-full text-left cursor-pointer hover:bg-primary-50 hover:border-primary-200 transition-colors group"
+                      className="bg-theme-surface border border-default p-2 rounded flex justify-between items-center w-full text-left cursor-pointer hover:bg-primary-50 hover:border-primary-200 transition-colors group"
                       onClick={(e) => {
                         e.stopPropagation();
                         setEditingReproduction(reproduction);
@@ -376,21 +376,21 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
                       }}
                       title="Editar fecha"
                     >
-                      <p className="text-slate-500 mb-1 flex items-center gap-1">
+                      <p className="text-muted mb-1 flex items-center gap-1">
                         Fecha de Parto
                       </p>
-                      <p className="font-medium text-slate-700">{formatDateTime(reproduction.estimatedBirthDate)}</p>
+                      <p className="font-medium text-main">{formatDateTime(reproduction.estimatedBirthDate)}</p>
                     </button>
                   ) : (
-                    <div className="bg-slate-50/50 border border-slate-100 p-2 rounded flex justify-between items-center">
-                      <p className="text-slate-500">Fecha de Parto</p>
-                      <p className="font-medium text-slate-700">{formatDateTime(reproduction.estimatedBirthDate)}</p>
+                    <div className="bg-theme-surface border border-default p-2 rounded flex justify-between items-center">
+                      <p className="text-muted">Fecha de Parto</p>
+                      <p className="font-medium text-main">{formatDateTime(reproduction.estimatedBirthDate)}</p>
                     </div>
                   )}
 
-                  <div className="bg-slate-50/50 border border-slate-100 p-2 rounded flex justify-between items-center">
-                    <p className="text-slate-500">Fecha est. de destete</p>
-                    <p className={`font-medium ${readyToWean ? 'text-amber-600' : 'text-slate-700'}`}>{estimatedWeaningDate}</p>
+                  <div className="bg-theme-surface border border-default p-2 rounded flex justify-between items-center">
+                    <p className="text-muted">Fecha est. de destete</p>
+                    <p className={`font-medium ${readyToWean ? 'text-amber-600' : 'text-main'}`}>{estimatedWeaningDate}</p>
                   </div>
                 </div>
 
@@ -400,10 +400,10 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
                     className={cn(
                       'border p-2 rounded relative transition-colors text-left',
                       (() => {
-                        if (!isExpanded) return 'bg-white/60 border-slate-100';
+                        if (!isExpanded) return 'bg-card/60 border-default';
                         return hasKits
-                          ? 'bg-white/60 border-slate-100 cursor-pointer hover:bg-emerald-50 group'
-                          : 'bg-white/60 border-slate-100 cursor-pointer hover:bg-slate-50 group';
+                          ? 'bg-card/60 border-default cursor-pointer hover:bg-emerald-50 group'
+                          : 'bg-card/60 border-default cursor-pointer hover:bg-theme-surface group';
                       })()
                     )}
                     onClick={(e) => { 
@@ -421,23 +421,23 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
                       return hasKits ? 'Clic para registrar una baja de gazapos' : 'Toca para registrar la cantidad de gazapos nacidos';
                     })()}
                   >
-                    <p className="text-slate-500 mb-1 flex justify-between items-center">
+                    <p className="text-muted mb-1 flex justify-between items-center">
                       Gazapos Nacidos
-                      {(!hasKits && isExpanded) && <Pencil size={12} className="text-slate-400 group-hover:text-primary-500 transition-colors" />}
-                      {(hasKits && isExpanded) && <AlertTriangle size={12} className="text-slate-400 group-hover:text-emerald-500 transition-colors" />}
+                      {(!hasKits && isExpanded) && <Pencil size={12} className="text-theme-faint group-hover:text-primary-500 transition-colors" />}
+                      {(hasKits && isExpanded) && <AlertTriangle size={12} className="text-theme-faint group-hover:text-emerald-500 transition-colors" />}
                     </p>
-                    <p className={`font-bold ${hasKits ? 'text-slate-700' : 'text-slate-400 font-normal italic'}`}>
+                    <p className={`font-bold ${hasKits ? 'text-main' : 'text-theme-faint font-normal italic'}`}>
                       {hasKits ? reproduction.bornKits : 'Toca para registrar'}
                     </p>
                   </button>
-                  <div className="border p-2 rounded bg-white/60 border-slate-100">
-                    <p className="text-slate-500 mb-1">Días en Lactancia</p>
-                    <p className="font-bold text-slate-700">{daysInLactation} / 30</p>
+                  <div className="border p-2 rounded bg-card/60 border-default">
+                    <p className="text-muted mb-1">Días en Lactancia</p>
+                    <p className="font-bold text-main">{daysInLactation} / 30</p>
                     {daysInLactation >= 27 && daysInLactation < 30 && (
                       <p className="text-[10px] text-amber-600 mt-1 font-medium">Próximo al destete</p>
                     )}
                     {daysInLactation >= 30 && (
-                      <p className="text-xs text-slate-800 font-bold mt-1">Listo para destetar</p>
+                      <p className="text-xs text-main font-bold mt-1">Listo para destetar</p>
                     )}
                   </div>
                 </div>
@@ -499,8 +499,8 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
         })()}
       >
         <div className="p-4">
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4">
-            <p className="text-sm text-slate-700">
+          <div className="bg-theme-surface border border-strong rounded-xl p-4 mb-4">
+            <p className="text-sm text-main">
               Selecciona la razón por la cual la lactancia ha fallado (ej. la madre mató a las crías, enfermedad grave). El registro pasará al Historial como Fallido.
             </p>
           </div>
@@ -568,28 +568,28 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
         title="Registrar Baja"
       >
         <form onSubmit={handleRegisterMortality} className="p-4 space-y-4">
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-muted">
             Ingresa los datos para registrar la baja en la camada.
           </p>
 
-          <div className="bg-slate-50 border border-slate-200 p-3 rounded-lg">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+          <div className="bg-theme-surface border border-strong p-3 rounded-lg">
+            <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">
               Madre de la camada:
             </p>
             <div className="flex flex-wrap gap-2">
-              <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-full pr-3 pl-1 py-1 shadow-sm">
+              <div className="flex items-center gap-2 bg-card border border-strong rounded-full pr-3 pl-1 py-1 shadow-sm">
                 {toRegisterMortality?.imageUrl ? (
                   <img src={toRegisterMortality.imageUrl} alt={toRegisterMortality.femaleCode} className="w-6 h-6 rounded-full object-cover" />
                 ) : (
-                  <div className="w-7 h-7 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-center">
-                    <span className="text-[7px] leading-[8px] font-bold text-slate-400 px-0.5">Sin foto</span>
+                  <div className="w-7 h-7 rounded-full bg-theme-surface border border-default border border-strong flex items-center justify-center text-center">
+                    <span className="text-[7px] leading-[8px] font-bold text-theme-faint px-0.5">Sin foto</span>
                   </div>
                 )}
                 <div className="flex flex-col leading-tight justify-center">
                   {toRegisterMortality?.femaleName && (
-                    <span className="text-xs font-bold text-slate-700">{toRegisterMortality.femaleName}</span>
+                    <span className="text-xs font-bold text-main">{toRegisterMortality.femaleName}</span>
                   )}
-                  <span className={toRegisterMortality?.femaleName ? 'text-[10px] text-slate-500 font-medium' : 'text-xs font-bold text-slate-700'}>
+                  <span className={toRegisterMortality?.femaleName ? 'text-[10px] text-muted font-medium' : 'text-xs font-bold text-main'}>
                     {toRegisterMortality?.femaleCode}
                   </span>
                 </div>
@@ -617,7 +617,7 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
           </div>
 
           <div className="relative flex flex-col gap-1.5" ref={mortalityCauseDropdownRef}>
-            <label htmlFor="mortalityCauseInput" className="text-sm font-medium text-slate-700">
+            <label htmlFor="mortalityCauseInput" className="text-sm font-medium text-main">
               Causa <span className="text-red-500">*</span>
             </label>
             <Input
@@ -632,9 +632,9 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
               required
             />
             {showMortalityCauseDropdown && (
-              <div className="absolute top-full left-0 right-0 z-20 bg-white border border-slate-200 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
+              <div className="absolute top-full left-0 right-0 z-20 bg-card border border-strong rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
                 {filteredMortalityCauseOptions.length === 0 ? (
-                  <p className="text-slate-500 text-sm p-3">No hay opciones disponibles</p>
+                  <p className="text-muted text-sm p-3">No hay opciones disponibles</p>
                 ) : (
                   filteredMortalityCauseOptions.map(opt => (
                     <button
@@ -651,7 +651,7 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
                         }
                         setShowMortalityCauseDropdown(false);
                       }}
-                      className="w-full text-left px-3 py-2 hover:bg-slate-100 text-sm border-b border-slate-50 last:border-0"
+                      className="w-full text-left px-3 py-2 hover:bg-theme-surface border border-default text-sm border-b border-slate-50 last:border-0"
                     >
                       {opt.label}
                     </button>
@@ -662,12 +662,12 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="mortalityObsInput" className="text-sm font-medium text-slate-700">
+            <label htmlFor="mortalityObsInput" className="text-sm font-medium text-main">
               Observaciones (¿Qué pasó?) <span className="text-red-500">*</span>
             </label>
             <textarea
               id="mortalityObsInput"
-              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-card text-main focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500"
               rows={3}
               value={mortalityObs}
               onChange={(e) => setMortalityObs(e.target.value)}
@@ -745,10 +745,10 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
         title={`Registrar Gazapos: ${toRegisterKits?.femaleCode}`}
       >
         <form onSubmit={handleRegisterKits} className="p-4">
-          <p className="text-sm text-slate-600 mb-2">
+          <p className="text-sm text-muted mb-2">
             Ingresa la cantidad inicial de gazapos nacidos vivos en la camada.
           </p>
-          <div className="bg-slate-50 text-slate-600 text-xs p-3 rounded-lg border border-slate-200 mb-4 flex items-start gap-2">
+          <div className="bg-theme-surface text-muted text-xs p-3 rounded-lg border border-strong mb-4 flex items-start gap-2">
             <AlertTriangle size={14} className="mt-0.5 flex-shrink-0" />
             <p>
               <strong>Atención:</strong> Una vez guardada esta cantidad, quedará <strong>bloqueada y no se podrá volver a editar</strong>. Asegúrate de ingresar el número correcto inicial antes de que ocurran posibles bajas.
@@ -790,7 +790,7 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
           setEditingReproduction(null);
         }}
         title={(() => {
-          const name = editingReproduction?.femaleName ? ` — ${editingReproduction.femaleName}` : '';
+          const name = editingReproduction?.femaleName ? `  ${editingReproduction.femaleName}` : '';
           return `Editar fechas de ${editingReproduction?.femaleCode ?? ''}${name}`;
         })()}
         size="xl"

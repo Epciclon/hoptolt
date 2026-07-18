@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useMemo, useEffect } from 'react';
 import { Button, Input, Select, Card, CardHeader, Badge } from '@/shared/ui';
@@ -539,10 +539,10 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
             <div className="flex flex-col md:flex-row gap-6 p-6 pt-0 flex-1">
                 {/* Panel de Filtros */}
                 {!isExpanded && (
-                    <div className="w-full md:w-1/3 flex flex-col gap-4 border-r pr-0 md:pr-6 border-slate-200 border-b md:border-b-0 pb-6 md:pb-0">
+                    <div className="w-full md:w-1/3 flex flex-col gap-4 border-r pr-0 md:pr-6 border-strong border-b md:border-b-0 pb-6 md:pb-0">
                         <div className="flex items-center gap-2 mb-2">
-                            <Settings className="w-5 h-5 text-slate-500" />
-                            <h3 className="text-lg font-semibold text-slate-800">Filtros del Reporte</h3>
+                            <Settings className="w-5 h-5 text-muted" />
+                            <h3 className="text-lg font-semibold text-main">Filtros del Reporte</h3>
                         </div>
 
                         <div className="space-y-4">
@@ -784,7 +784,7 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
                 {/* Área de Vista Previa */}
                 <div className={`flex flex-col transition-all duration-300 ${isExpanded ? 'w-full' : 'w-full md:w-2/3'}`}>
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                        <h3 className="text-lg font-semibold text-main flex items-center gap-2">
                             <FileText className="w-5 h-5 text-primary-500" />
                             Vista Previa
                         </h3>
@@ -810,7 +810,7 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
                     </div>
 
                     {pdfPreviewUrl ? (
-                        <div className="flex-1 overflow-hidden rounded-xl border border-slate-200">
+                        <div className="flex-1 overflow-hidden rounded-xl border border-strong">
                             <iframe
                                 src={pdfPreviewUrl}
                                 className="w-full h-full min-h-[500px]"
@@ -818,7 +818,7 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
                             />
                         </div>
                     ) : (
-                        <div className="flex-1 flex flex-col items-center justify-center p-12 text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                        <div className="flex-1 flex flex-col items-center justify-center p-12 text-theme-faint bg-theme-surface rounded-xl border border-dashed border-strong">
                             <Info className="w-12 h-12 mb-3 text-slate-300" />
                             <p className="text-center font-medium">No hay datos para mostrar</p>
                             <p className="text-sm text-center mt-1">Selecciona los filtros y genera una vista previa para visualizar los resultados antes de descargar.</p>

@@ -1,4 +1,4 @@
-export interface AssignedRabbit {
+﻿export interface AssignedRabbit {
   id: number;
   code: string;
   name?: string;

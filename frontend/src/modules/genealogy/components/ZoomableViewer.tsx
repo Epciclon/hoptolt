@@ -50,11 +50,11 @@ export function ZoomableViewer({ children }: Readonly<ZoomableViewerProps>) {
   };
 
   return (
-    <div className="relative w-full h-[500px] border border-slate-200 rounded-lg bg-slate-100 overflow-hidden flex flex-col">
+    <div className="relative w-full h-[500px] border border-strong rounded-lg bg-theme-surface border border-default overflow-hidden flex flex-col">
       {/* Barra de herramientas */}
-      <div className="absolute top-4 right-4 z-10 flex gap-2 bg-white p-2 rounded-lg shadow-lg border border-slate-200">
+      <div className="absolute top-4 right-4 z-10 flex gap-2 bg-card p-2 rounded-lg shadow-lg border border-strong">
         <Button variant="outline" size="sm" icon={<ZoomOut size={16} />} onClick={handleZoomOut} title="Alejar" />
-        <div className="flex items-center justify-center w-12 text-sm font-semibold text-slate-600">
+        <div className="flex items-center justify-center w-12 text-sm font-semibold text-muted">
           {Math.round(scale * 100)}%
         </div>
         <Button variant="outline" size="sm" icon={<ZoomIn size={16} />} onClick={handleZoomIn} title="Acercar" />
@@ -62,7 +62,7 @@ export function ZoomableViewer({ children }: Readonly<ZoomableViewerProps>) {
         <Button variant="outline" size="sm" icon={<Maximize size={16} />} onClick={handleReset} title="Restablecer vista" />
       </div>
 
-      {/* Visor interactivo — role="application" is an interactive ARIA landmark (WAI-ARIA spec) */}
+      {/* Visor interactivo  role="application" is an interactive ARIA landmark (WAI-ARIA spec) */}
       {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-tabindex */}
       <div
         role="application"

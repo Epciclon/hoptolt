@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { Input } from './Input';
@@ -34,7 +34,7 @@ export function RabbitMultiSelectField({
 
   return (
     <div>
-      {label && <span className="block text-sm font-medium text-slate-600 mb-2">{label}</span>}
+      {label && <span className="block text-sm font-medium text-muted mb-2">{label}</span>}
       <div className="flex gap-2 mb-2">
         <Input
           placeholder={placeholder}

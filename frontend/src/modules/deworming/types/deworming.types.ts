@@ -1,4 +1,4 @@
-export interface Deworming {
+﻿export interface Deworming {
   id: number;
   rabbitId: number;
   rabbitCode: string;

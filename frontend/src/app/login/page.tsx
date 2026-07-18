@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -42,8 +42,8 @@ export default function LoginPage() {
   return (
     <AuthLayout>
       <div className="text-center mb-8 animate-fade-in-right" style={{ animationDelay: '0.2s' }}>
-        <h2 className="text-3xl font-bold text-slate-800 mb-2">Iniciar Sesión</h2>
-        <p className="text-slate-500">Acceda a su cuenta para continuar</p>
+        <h2 className="text-3xl font-bold text-main mb-2">Iniciar Sesión</h2>
+        <p className="text-muted">Acceda a su cuenta para continuar</p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 animate-fade-in-right" style={{ animationDelay: '0.4s' }}>
@@ -56,7 +56,7 @@ export default function LoginPage() {
 
         {/* Usuario o Email */}
         <div>
-          <label htmlFor="identifier" className="block text-sm font-semibold text-slate-700 mb-2">
+          <label htmlFor="identifier" className="block text-sm font-semibold text-main mb-2">
             Usuario o Correo Electrónico
           </label>
           <input
@@ -77,7 +77,7 @@ export default function LoginPage() {
 
         {/* Contraseña */}
         <div>
-          <label htmlFor="password" className="block text-sm font-semibold text-slate-700 mb-2">Contraseña</label>
+          <label htmlFor="password" className="block text-sm font-semibold text-main mb-2">Contraseña</label>
           <div className="relative">
             <input
               {...register('password')}
@@ -93,7 +93,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-teal-500 transition-colors"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-theme-faint hover:text-teal-500 transition-colors"
               aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
             >
               {showPassword ? (
@@ -137,13 +137,13 @@ export default function LoginPage() {
       </form>
 
       <div className="mt-8 text-center animate-fade-in-right" style={{ animationDelay: '0.8s' }}>
-        <p className="text-slate-600 text-sm mb-4">
+        <p className="text-muted text-sm mb-4">
           ¿No tienes una cuenta?{' '}
           <Link href="/register" className="text-teal-600 font-semibold hover:underline">
             Regístrate aquí
           </Link>
         </p>
-        <div className="flex items-center justify-center gap-3 text-slate-400 text-xs">
+        <div className="flex items-center justify-center gap-3 text-theme-faint text-xs">
           <span>v2.0.0</span>
           <span>•</span>
           <span>© 2025 Hoptolt Ecuador</span>

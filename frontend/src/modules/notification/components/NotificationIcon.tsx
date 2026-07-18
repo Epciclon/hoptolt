@@ -7,6 +7,7 @@ import { useInvitation } from '@/modules/invitation/hooks/useInvitation';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { Button } from '@/shared/ui';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
 
@@ -92,7 +93,7 @@ export function NotificationIcon() {
       case 'invitation':
         return 'bg-purple-50 border-purple-200 text-purple-800';
       default:
-        return 'bg-slate-50 border-slate-200 text-slate-800';
+        return 'bg-theme-surface border-strong text-main';
     }
   };
 
@@ -164,15 +165,17 @@ export function NotificationIcon() {
       router.push(`/dashboard/${notification.data.module}?tab=historial`);
     } else if (type === 'reproduction_automated' || type === 'reproduction_manual') {
       const phase = notification.data?.phase;
-      if (phase === 2) router.push('/dashboard/reproduction/gestacion');
-      else if (phase === 3) router.push('/dashboard/reproduction/lactancia');
-      else router.push('/dashboard/reproduction');
+      if (phase === 2) router.push('/dashboard/reproduction?tab=partos');
+      else if (phase === 3) router.push('/dashboard/reproduction?tab=gazapos');
+      else router.push('/dashboard/reproduction?tab=montas');
     } else if (type === 'birth_warning') {
-      router.push('/dashboard/reproduction/gestacion');
+      router.push('/dashboard/reproduction?tab=partos');
     } else if (type === 'weaning_alert') {
-      router.push('/dashboard/reproduction/lactancia');
+      router.push('/dashboard/reproduction?tab=gazapos');
     } else if (type === 'cleaning_warning') {
       router.push('/dashboard/cleaning');
+    } else if (type === 'growth_summary') {
+      router.push('/dashboard/conejos');
     } else if (notification.data?.galponId && (notification.type === 'info' || notification.type === 'invitation')) {
       router.push('/dashboard/galpones');
     }
@@ -192,9 +195,9 @@ export function NotificationIcon() {
             window.dispatchEvent(new CustomEvent('close-sidebar'));
           }
         }}
-        className="relative p-2 rounded-lg hover:bg-slate-100 transition-colors"
+        className="relative p-2 rounded-lg hover:bg-theme-surface border border-default transition-colors"
       >
-        <Bell className={cn("w-5 h-5 text-slate-600 transition-colors", 
+        <Bell className={cn("w-5 h-5 text-muted transition-colors", 
           isAnimating && "animate-bounce text-primary-500"
         )} />
         {unreadCount > 0 && (
@@ -215,32 +218,32 @@ export function NotificationIcon() {
             onClick={() => setIsOpen(false)} 
             aria-label="Cerrar notificaciones"
           />
-          <div className="fixed sm:absolute top-16 sm:top-full right-4 sm:right-0 left-4 sm:left-auto mt-2 w-auto sm:w-96 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-50">
-            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <button 
-                 type="button"
-                 onClick={() => {
-                   router.push('/dashboard/notifications');
-                   setIsOpen(false);
-                 }}
-                 className="font-semibold text-slate-700 cursor-pointer hover:text-primary-600 transition-colors bg-transparent border-none p-0 text-left text-base"
-               >
-                 Notificaciones
-               </button>
-              {unreadCount > 0 && (
-                <button
-                  onClick={() => markAllAsRead()}
-                  className="text-xs text-primary-600 hover:text-primary-700 flex items-center gap-1"
-                >
-                  <CheckCheck size={14} />
-                  Marcar todas como leídas
-                </button>
-              )}
+          <div className="fixed sm:absolute top-16 sm:top-full right-4 sm:right-0 left-4 sm:left-auto mt-2 w-auto sm:w-96 max-w-[calc(100vw-2rem)] bg-card rounded-xl shadow-lg border border-strong overflow-hidden z-50">
+            <div className="p-4 border-b border-default flex flex-col gap-3 bg-theme-surface">
+              <div className="flex justify-between items-center">
+                <h3 className="font-semibold text-main text-base m-0">Notificaciones</h3>
+                {unreadCount > 0 && (
+                  <button
+                    onClick={() => markAllAsRead()}
+                    className="text-xs text-primary-600 hover:text-primary-700 flex items-center gap-1 font-medium bg-transparent border-none p-0 cursor-pointer"
+                  >
+                    <CheckCheck size={14} />
+                    Marcar leídas
+                  </button>
+                )}
+              </div>
+              <Link
+                href="/dashboard/notifications"
+                onClick={() => setIsOpen(false)}
+                className="w-full text-center block text-sm text-primary-600 hover:text-primary-700 font-medium py-1.5 bg-primary-50 hover:bg-primary-100 rounded-md transition-colors border-none cursor-pointer"
+              >
+                Ver todas las notificaciones
+              </Link>
             </div>
 
             <div className="max-h-96 overflow-y-auto">
               {displayedNotifications.length === 0 ? (
-                <div className="p-8 text-center text-slate-500">
+                <div className="p-8 text-center text-muted">
                   <Bell className="w-12 h-12 mx-auto mb-3 text-slate-300" />
                   <p className="text-sm">No tienes notificaciones</p>
                 </div>
@@ -250,7 +253,7 @@ export function NotificationIcon() {
                     <div
                       key={notification.id}
                       className={cn(
-                        'w-full text-left p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer block',
+                        'w-full text-left p-4 border-b border-default hover:bg-theme-surface transition-colors cursor-pointer block',
                         !notification.read && 'bg-blue-50/50'
                       )}
                       onClick={() => handleNotificationClick(notification)}
@@ -261,7 +264,7 @@ export function NotificationIcon() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-start gap-2">
-                            <h4 className="font-medium text-slate-800 text-sm">{notification.title}</h4>
+                            <h4 className="font-medium text-main text-sm">{notification.title}</h4>
                             {!(notification.type === 'warning' || notification.type === 'invitation') && (
                               <button
                                 onClick={async (e) => {
@@ -274,14 +277,14 @@ export function NotificationIcon() {
                                     showToast('Error al eliminar notificación', 'error');
                                   }
                                 }}
-                                className="text-slate-400 hover:text-slate-600"
+                                className="text-theme-faint hover:text-muted"
                               >
                                 <X size={14} />
                               </button>
                             )}
                           </div>
-                          <p className="text-sm text-slate-600 mt-1">{notification.message}</p>
-                          <p className="text-xs text-slate-400 mt-2">{formatTime(notification.createdAt)}</p>
+                          <p className="text-sm text-muted mt-1">{notification.message}</p>
+                          <p className="text-xs text-theme-faint mt-2">{formatTime(notification.createdAt)}</p>
                           {notification.type === 'invitation' && (
                             <div className="flex gap-2 mt-3">
                               <Button
@@ -309,16 +312,16 @@ export function NotificationIcon() {
                             </div>
                           )}
                           {notification.data?.type === 'growth_summary' && (
-                            <div className="mt-2 bg-slate-100 rounded-md p-2 border border-slate-200">
-                              <p className="text-xs text-slate-700 font-medium mb-1">
+                            <div className="mt-2 bg-theme-surface border border-default rounded-md p-2 border border-strong">
+                              <p className="text-xs text-main font-medium mb-1">
                                 Actualizaciones ({notification.data.updatesCount || 0})
                               </p>
-                              <ul className="text-xs text-slate-500 list-disc list-inside">
+                              <ul className="text-xs text-muted list-disc list-inside">
                                 {notification.data.details?.slice(0, 3).map((detail: string) => (
                                   <li key={detail} className="truncate">{detail}</li>
                                 ))}
                                 {notification.data.details?.length > 3 && (
-                                  <li className="italic text-slate-400">... y {notification.data.details.length - 3} más</li>
+                                  <li className="italic text-theme-faint">... y {notification.data.details.length - 3} más</li>
                                 )}
                               </ul>
                             </div>
@@ -327,15 +330,6 @@ export function NotificationIcon() {
                       </div>
                     </div>
                   ))}
-                  <button
-                    onClick={() => {
-                      router.push('/dashboard/notifications');
-                      setIsOpen(false);
-                    }}
-                    className="w-full p-3 text-sm text-primary-600 hover:bg-slate-50 transition-colors flex items-center justify-center gap-2 border-t border-slate-100 font-medium"
-                  >
-                    Ver todas las notificaciones
-                  </button>
                 </>
               )}
             </div>

@@ -1,4 +1,4 @@
-export interface Growth {
+﻿export interface Growth {
   id: number;
   rabbitCode: string;
   weight: number;

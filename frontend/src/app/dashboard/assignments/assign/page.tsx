@@ -1,4 +1,4 @@
-import { Card, CardHeader } from '@/shared/ui';
+﻿import { Card, CardHeader } from '@/shared/ui';
 import { AssignRabbitForm } from '@/modules/assignments/components/AssignRabbitForm';
 
 export default function AssignRabbitPage() {

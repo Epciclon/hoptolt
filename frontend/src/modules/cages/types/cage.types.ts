@@ -1,4 +1,4 @@
-export interface Cage {
+﻿export interface Cage {
   id: number;
   number: number;
   type: 'engorde' | 'reproducción';
