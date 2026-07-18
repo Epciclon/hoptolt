@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import type { Deworming } from '../types/deworming.types';
@@ -19,7 +19,12 @@ function DewormingCustomDetails({ nextDeworm }: Readonly<{ nextDeworm: NextDewor
     <div className="bg-theme-surface border border-strong rounded-lg p-3 col-span-2">
       <p className="text-xs text-muted font-medium mb-3">Seguimiento de Desparasitación</p>
       <div className={`flex flex-col leading-tight border rounded p-3 justify-center ${
-        nextDeworm ? (nextDeworm.diffDays === 0 ? 'bg-emerald-50 border-emerald-100' : nextDeworm.diffDays < 0 ? 'bg-amber-50 border-amber-100' : 'bg-card border-default') : 'bg-card border-default'
+        (() => {
+          if (!nextDeworm) return 'bg-card border-default';
+          if (nextDeworm.diffDays === 0) return 'bg-emerald-50 border-emerald-100';
+          if (nextDeworm.diffDays < 0) return 'bg-amber-50 border-amber-100';
+          return 'bg-card border-default';
+        })()
       }`}>
         {nextDeworm ? (
           <>
@@ -64,8 +69,8 @@ function DewormingCustomDetails({ nextDeworm }: Readonly<{ nextDeworm: NextDewor
 }
 
 interface DewormingTableProps {
-  profileId?: string;
-  date?: string;
+  readonly profileId?: string;
+  readonly date?: string;
 }
 
 export function DewormingTable({ profileId, date }: DewormingTableProps) {

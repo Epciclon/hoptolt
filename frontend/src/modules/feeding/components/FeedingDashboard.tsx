@@ -4,9 +4,8 @@ import { DashboardTabs } from '@/shared/ui/DashboardTabs';
 import { SectionMessage } from '@/shared/ui/SectionMessage';
 import { Utensils, Archive } from 'lucide-react';
 import { FeedingTable } from './FeedingTable';
-import { AuditHistoryView } from '@/shared/ui';
 import { FeedingCatalog } from './FeedingCatalog';
-import { Card, CardHeader } from '@/shared/ui';
+import { Card, CardHeader, AuditHistoryView } from '@/shared/ui';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 
 export function FeedingDashboard() {
@@ -48,3 +47,4 @@ export function FeedingDashboard() {
     </Card>
   );
 }
+

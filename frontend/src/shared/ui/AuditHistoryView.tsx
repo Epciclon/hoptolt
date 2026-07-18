@@ -4,14 +4,14 @@ import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { farmMemberService } from '@/modules/farmMember/services/farmMember.service';
 import { useActiveGalpon } from '@/modules/galpones/hooks/useActiveGalpon';
-import { Mail, AtSign, Box, ArrowLeft, Calendar } from 'lucide-react';
+import { Mail, AtSign, Box, ArrowLeft } from 'lucide-react';
 import { Button, Input } from '@/shared/ui';
 import type { FarmMember } from '@/modules/farmMember/types/farmMember.types';
 
 interface AuditHistoryViewProps {
-  renderTable: (profileId: string, date: string) => React.ReactNode;
-  fetchActiveDates?: (profileId: string) => Promise<string[]>;
-  moduleName: string;
+  readonly renderTable: (profileId: string, date: string) => React.ReactNode;
+  readonly fetchActiveDates?: (profileId: string) => Promise<string[]>;
+  readonly moduleName: string;
 }
 
 // Obtener fecha en zona horaria de Ecuador (YYYY-MM-DD)
@@ -68,20 +68,20 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
 
   const [currentYear, currentMonth, currentDay] = selectedDate.split('-');
   
-  const availableYears = useMemo(() => Object.keys(dateTree).sort().reverse(), [dateTree]);
-  const availableMonths = useMemo(() => dateTree[currentYear] ? Object.keys(dateTree[currentYear]).sort().reverse() : [], [dateTree, currentYear]);
-  const availableDays = useMemo(() => (dateTree[currentYear] && dateTree[currentYear][currentMonth]) ? dateTree[currentYear][currentMonth].sort().reverse() : [], [dateTree, currentYear, currentMonth]);
+  const availableYears = useMemo(() => Object.keys(dateTree).sort((a, b) => b.localeCompare(a)), [dateTree]);
+  const availableMonths = useMemo(() => dateTree[currentYear] ? Object.keys(dateTree[currentYear]).sort((a, b) => b.localeCompare(a)) : [], [dateTree, currentYear]);
+  const availableDays = useMemo(() => dateTree[currentYear]?.[currentMonth]?.sort((a, b) => b.localeCompare(a)) || [], [dateTree, currentYear, currentMonth]);
 
   const onYearChange = (newYear: string) => {
-    const newMonths = Object.keys(dateTree[newYear]).sort().reverse();
+    const newMonths = Object.keys(dateTree[newYear]).sort((a, b) => b.localeCompare(a));
     const newMonth = newMonths[0];
-    const newDays = dateTree[newYear][newMonth].sort().reverse();
+    const newDays = dateTree[newYear][newMonth].sort((a, b) => b.localeCompare(a));
     const newDay = newDays[0];
     setSelectedDate(`${newYear}-${newMonth}-${newDay}`);
   };
 
   const onMonthChange = (newMonth: string) => {
-    const newDays = dateTree[currentYear][newMonth].sort().reverse();
+    const newDays = dateTree[currentYear][newMonth].sort((a, b) => b.localeCompare(a));
     const newDay = newDays[0];
     setSelectedDate(`${currentYear}-${newMonth}-${newDay}`);
   };
@@ -145,45 +145,50 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
           
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-muted">Filtrar por fecha:</span>
-            {fetchActiveDates ? (
-              loadingDates ? (
-                <div className="text-sm text-muted py-1.5 px-3">Cargando fechas...</div>
-              ) : activeDates && activeDates.length > 0 ? (
-                <div className="flex items-center gap-2">
-                  <select
-                    value={currentYear}
-                    onChange={(e) => onYearChange(e.target.value)}
-                    className="border border-slate-300 rounded-md shadow-sm py-1.5 px-3 text-sm focus:ring-primary-500 focus:border-primary-500 min-w-[80px]"
-                  >
-                    {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
-                  </select>
-                  <select
-                    value={currentMonth}
-                    onChange={(e) => onMonthChange(e.target.value)}
-                    className="border border-slate-300 rounded-md shadow-sm py-1.5 px-3 text-sm focus:ring-primary-500 focus:border-primary-500 min-w-[120px]"
-                  >
-                    {availableMonths.map(m => <option key={m} value={m}>{monthNames[m]}</option>)}
-                  </select>
-                  <select
-                    value={currentDay}
-                    onChange={(e) => onDayChange(e.target.value)}
-                    className="border border-slate-300 rounded-md shadow-sm py-1.5 px-3 text-sm focus:ring-primary-500 focus:border-primary-500 min-w-[70px]"
-                  >
-                    {availableDays.map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
-                </div>
-              ) : (
-                <div className="text-sm text-muted py-1.5 px-3 bg-theme-surface border border-strong rounded-md">Sin registros</div>
-              )
-            ) : (
-              <Input
-                type="date"
-                value={selectedDate}
-                max={maxDate} // No permitir fechas futuras
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-40"
-              />
-            )}
+            {(() => {
+              if (!fetchActiveDates) {
+                return (
+                  <Input 
+                    type="date" 
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    max={maxDate}
+                    className="w-40"
+                  />
+                );
+              }
+              if (loadingDates) {
+                return <div className="text-sm text-muted py-1.5 px-3">Cargando fechas...</div>;
+              }
+              if (activeDates && activeDates.length > 0) {
+                return (
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={currentYear}
+                      onChange={(e) => onYearChange(e.target.value)}
+                      className="border border-slate-300 rounded-md shadow-sm py-1.5 px-3 text-sm focus:ring-primary-500 focus:border-primary-500 min-w-[80px]"
+                    >
+                      {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                    </select>
+                    <select
+                      value={currentMonth}
+                      onChange={(e) => onMonthChange(e.target.value)}
+                      className="border border-slate-300 rounded-md shadow-sm py-1.5 px-3 text-sm focus:ring-primary-500 focus:border-primary-500 min-w-[120px]"
+                    >
+                      {availableMonths.map(m => <option key={m} value={m}>{monthNames[m]}</option>)}
+                    </select>
+                    <select
+                      value={currentDay}
+                      onChange={(e) => onDayChange(e.target.value)}
+                      className="border border-slate-300 rounded-md shadow-sm py-1.5 px-3 text-sm focus:ring-primary-500 focus:border-primary-500 min-w-[70px]"
+                    >
+                      {availableDays.map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  </div>
+                );
+              }
+              return <div className="text-sm text-muted py-1.5 px-3">No hay registros en este galpón</div>;
+            })()}
           </div>
         </div>
 

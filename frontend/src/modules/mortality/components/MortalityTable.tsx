@@ -7,8 +7,8 @@ import type { Mortality } from '../types/mortality.types';
 import { useMortality } from '../hooks/useMortality';
 
 interface MortalityTableProps {
-  profileId?: string;
-  date?: string;
+  readonly profileId?: string;
+  readonly date?: string;
 }
 
 export function MortalityTable({ profileId, date }: MortalityTableProps) {

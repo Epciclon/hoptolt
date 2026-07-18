@@ -6,11 +6,10 @@ import { MontasView } from './MontasView';
 import { ReproductionCatalog } from './ReproductionCatalog';
 import { GazaposView } from './GazaposView';
 import { ReproductionHistoryView } from './ReproductionHistoryView';
-import { AuditHistoryView } from '@/shared/ui';
 import { useReproduction } from '../hooks/useReproduction';
 import { reproductionService } from '../services/reproduction.service';
 import { mortalityService } from '@/modules/mortality/services/mortality.service';
-import { Card, CardHeader } from '@/shared/ui';
+import { Card, CardHeader, AuditHistoryView } from '@/shared/ui';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 
 export function ReproductionDashboard() {
@@ -66,7 +65,7 @@ export function ReproductionDashboard() {
               mortsData.forEach(m => {
                 if (m.deathDate) dates.add(m.deathDate.split('T')[0]);
               });
-              return Array.from(dates).sort().reverse();
+              return Array.from(dates).sort((a, b) => b.localeCompare(a));
             }}
           />
         )}

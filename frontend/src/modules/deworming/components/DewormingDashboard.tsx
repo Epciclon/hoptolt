@@ -4,10 +4,9 @@ import { DashboardTabs } from '@/shared/ui/DashboardTabs';
 import { SectionMessage } from '@/shared/ui/SectionMessage';
 import { Pill, Archive } from 'lucide-react';
 import { DewormingTable } from './DewormingTable';
-import { AuditHistoryView } from '@/shared/ui';
 import { dewormingService } from '../services/deworming.service';
 import { DewormingCatalog } from './DewormingCatalog';
-import { Card, CardHeader } from '@/shared/ui';
+import { Card, CardHeader, AuditHistoryView } from '@/shared/ui';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 
 export function DewormingDashboard() {
@@ -45,7 +44,7 @@ export function DewormingDashboard() {
               fetchActiveDates={async (profileId) => {
                 const data = await dewormingService.getAll({ profileId });
                 const dates = data.map(d => d.dewormingDate.split('T')[0]);
-                return Array.from(new Set(dates)).sort().reverse();
+                return Array.from(new Set(dates)).sort((a, b) => b.localeCompare(a));
               }}
             />
           </>

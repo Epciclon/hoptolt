@@ -8,201 +8,173 @@ const ongoingChecks = new Map();
 
 class NotificationService {
     async checkAndCreateBirthNotifications(profileId) {
-        if (ongoingChecks.has(profileId)) {
-            return ongoingChecks.get(profileId);
-        }
-
-        const promise = (async () => {
-            try {
-                const todayStr = new Date().toLocaleDateString('sv', { timeZone: 'America/Guayaquil' });
-                const d = new Date(todayStr + 'T00:00:00-05:00');
-                d.setDate(d.getDate() + 3);
-                const threeDaysFromNowStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
-                const { Assignment } = require('../../domain/models');
-                const conditions = await this._getReproductionConditions(profileId);
-                if (conditions.length === 0) return;
-
-                const upcomingReproductions = await Reproduction.findAll({
-                    where: {
-                        [Op.or]: conditions,
-                        estimatedBirthDate: { [Op.between]: [todayStr, threeDaysFromNowStr] },
-                        status: 'gestacion'
-                    },
-                    include: [{
-                        model: Rabbit, as: 'female', attributes: ['code', 'name'],
-                        include: [{ model: Assignment, as: 'assignments', where: { status: 'asignado' }, required: true }]
-                    }]
-                });
-
-                const upcomingIds = new Set(upcomingReproductions.map(r => Number(r.id)));
-                const { notifiedIds, notificationMap } = await this._getNotifiedIds(profileId, 'warning', 'birth');
-
-                // Generate new notifications
-                for (const r of upcomingReproductions) {
-                    const repId = Number(r.id);
-                    if (!notifiedIds.has(repId)) {
-                        notifiedIds.add(repId);
-                        const birthDateStr = typeof r.estimatedBirthDate === 'string' ? r.estimatedBirthDate : r.estimatedBirthDate.toISOString().split('T')[0];
-                        const rabbitName = r.female?.name ? ` "${r.female.name}"` : '';
-                        await Notification.create({
-                            profileId,
-                            type: 'warning',
-                            title: 'Alerta de Parto PrÃ³ximo',
-                            message: `La coneja con cÃ³digo ${r.female?.code || 'N/A'}${rabbitName} tiene un parto estimado para el ${birthDateStr}. Â¡Por favor prepara la jaula con al menos 3 dÃ­as de anticipaciÃ³n!`,
-                            data: { type: 'birth_warning', reproductionId: repId, estimatedBirthDate: birthDateStr }
-                        });
-                    }
-                }
-
-                // Delete obsolete notifications (e.g. if the birth was registered and status is no longer gestacion)
-                // Wait, if it's no longer in the Op.between range, we don't want to delete it UNLESS it's no longer gestacion.
-                // We must query the DB for the current status of all notified reproductions.
-                if (notifiedIds.size > 0) {
-                    const allNotifiedReproductions = await Reproduction.findAll({
-                        where: { id: { [Op.in]: Array.from(notifiedIds) } },
-                        attributes: ['id', 'status']
-                    });
-                    const statusMap = new Map(allNotifiedReproductions.map(r => [Number(r.id), r.status]));
-                    for (const notifiedId of notifiedIds) {
-                        // If it's no longer gestacion, delete the notification
-                        if (statusMap.get(notifiedId) !== 'gestacion') {
-                            const notifId = notificationMap.get(notifiedId);
-                            if (notifId) {
-                                await Notification.destroy({ where: { id: notifId } });
-                            }
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('Error checking/creating birth notifications:', error);
-            } finally {
-                ongoingChecks.delete(profileId);
-            }
-        })();
-
+        if (ongoingChecks.has(profileId)) return ongoingChecks.get(profileId);
+        const promise = this._runBirthCheck(profileId).finally(() => ongoingChecks.delete(profileId));
         ongoingChecks.set(profileId, promise);
         return promise;
     }
 
-    async checkAndCreateWeaningNotifications(profileId) {
-        if (ongoingChecks.has(`${profileId}_weaning`)) {
-            return ongoingChecks.get(`${profileId}_weaning`);
-        }
+    async _runBirthCheck(profileId) {
+        try {
+            const todayStr = new Date().toLocaleDateString('sv', { timeZone: 'America/Guayaquil' });
+            const d = new Date(todayStr + 'T00:00:00-05:00');
+            d.setDate(d.getDate() + 3);
+            const threeDaysFromNowStr = `--`;
 
-        const promise = (async () => {
-            try {
-                const todayStr = new Date().toLocaleDateString('sv', { timeZone: 'America/Guayaquil' });
-                const d = new Date(todayStr + 'T00:00:00-05:00');
-                d.setDate(d.getDate() - 30);
-                const thirtyDaysAgoStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            const { Assignment } = require('../../domain/models');
+            const conditions = await this._getReproductionConditions(profileId);
+            if (conditions.length === 0) return;
 
-                const { Assignment } = require('../../domain/models');
-                const conditions = await this._getReproductionConditions(profileId);
-                if (conditions.length === 0) return;
+            const upcomingReproductions = await Reproduction.findAll({
+                where: {
+                    [Op.or]: conditions,
+                    estimatedBirthDate: { [Op.between]: [todayStr, threeDaysFromNowStr] },
+                    status: 'gestacion'
+                },
+                include: [{
+                    model: Rabbit, as: 'female', attributes: ['code', 'name'],
+                    include: [{ model: Assignment, as: 'assignments', where: { status: 'asignado' }, required: true }]
+                }]
+            });
 
-                const weaningReproductions = await Reproduction.findAll({
-                    where: {
-                        [Op.or]: conditions,
-                        status: 'lactancia',
-                        estimatedBirthDate: { [Op.lte]: thirtyDaysAgoStr }
-                    },
-                    include: [{
-                        model: Rabbit, as: 'female', attributes: ['code', 'name'],
-                        include: [{ model: Assignment, as: 'assignments', where: { status: 'asignado' }, required: true }]
-                    }]
-                });
+            const { notifiedIds, notificationMap } = await this._getNotifiedIds(profileId, 'warning', 'birth');
 
-                const { notifiedIds, notificationMap } = await this._getNotifiedIds(profileId, 'warning', 'weaning');
-
-                // Generate new notifications
-                for (const r of weaningReproductions) {
-                    const repId = Number(r.id);
-                    if (!notifiedIds.has(repId)) {
-                        notifiedIds.add(repId);
-                        const rabbitName = r.female?.name ? ` "${r.female.name}"` : '';
-                        await Notification.create({
-                            profileId,
-                            type: 'warning',
-                            title: 'Recordatorio de Destete',
-                            message: `La camada de la coneja ${r.female?.code || 'N/A'}${rabbitName} ya cumpliÃ³ 30 dÃ­as de lactancia. Es tiempo de realizar el destete.`,
-                            data: { type: 'weaning_alert', reproductionId: repId }
-                        });
-                    }
-                }
-
-                // Delete obsolete weaning notifications (e.g. if the weaning was registered and status is no longer lactancia)
-                if (notifiedIds.size > 0) {
-                    const allNotifiedReproductions = await Reproduction.findAll({
-                        where: { id: { [Op.in]: Array.from(notifiedIds) } },
-                        attributes: ['id', 'status']
+            for (const r of upcomingReproductions) {
+                const repId = Number(r.id);
+                if (!notifiedIds.has(repId)) {
+                    notifiedIds.add(repId);
+                    const birthDateStr = typeof r.estimatedBirthDate === 'string' ? r.estimatedBirthDate : r.estimatedBirthDate.toISOString().split('T')[0];
+                    const rabbitName = r.female?.name ?  " + r.female.name + " : '';
+                    await Notification.create({
+                        profileId,
+                        type: 'warning',
+                        title: 'Alerta de Parto Próximo',
+                        message: La coneja con código  tiene un parto estimado para el . ¡Por favor prepara la jaula con al menos 3 días de anticipación!,
+                        data: { type: 'birth_warning', reproductionId: repId, estimatedBirthDate: birthDateStr }
                     });
-                    const statusMap = new Map(allNotifiedReproductions.map(r => [Number(r.id), r.status]));
-                    for (const notifiedId of notifiedIds) {
-                        // If it's no longer lactancia, delete the notification
-                        if (statusMap.get(notifiedId) !== 'lactancia') {
-                            const notifId = notificationMap.get(notifiedId);
-                            if (notifId) {
-                                await Notification.destroy({ where: { id: notifId } });
-                            }
-                        }
+                }
+            }
+
+            if (notifiedIds.size > 0) {
+                const allNotifiedReproductions = await Reproduction.findAll({
+                    where: { id: { [Op.in]: Array.from(notifiedIds) } },
+                    attributes: ['id', 'status']
+                });
+                const statusMap = new Map(allNotifiedReproductions.map(r => [Number(r.id), r.status]));
+                for (const notifiedId of notifiedIds) {
+                    if (statusMap.get(notifiedId) !== 'gestacion') {
+                        const notifId = notificationMap.get(notifiedId);
+                        if (notifId) await Notification.destroy({ where: { id: notifId } });
                     }
                 }
-            } catch (error) {
-                console.error('Error checking/creating weaning notifications:', error);
-            } finally {
-                ongoingChecks.delete(`${profileId}_weaning`);
             }
-        })();
+        } catch (error) {
+            console.error('Error checking/creating birth notifications:', error);
+        }
+    }
 
-        ongoingChecks.set(`${profileId}_weaning`, promise);
+    async checkAndCreateWeaningNotifications(profileId) {
+        if (ongoingChecks.has(${profileId}_weaning)) return ongoingChecks.get(${profileId}_weaning);
+        const promise = this._runWeaningCheck(profileId).finally(() => ongoingChecks.delete(${profileId}_weaning));
+        ongoingChecks.set(${profileId}_weaning, promise);
         return promise;
     }
 
-    async checkAndCreateCleaningNotifications(profileId) {
-        if (ongoingChecks.has(`${profileId}_cleaning`)) {
-            return ongoingChecks.get(`${profileId}_cleaning`);
-        }
+    async _runWeaningCheck(profileId) {
+        try {
+            const todayStr = new Date().toLocaleDateString('sv', { timeZone: 'America/Guayaquil' });
+            const d = new Date(todayStr + 'T00:00:00-05:00');
+            d.setDate(d.getDate() - 30);
+            const thirtyDaysAgoStr = `--`;
 
-        const promise = (async () => {
-            try {
-                const { Assignment, Notification } = require('../../domain/models');
-                const activeAssignments = await Assignment.findAll({ where: { status: 'asignado' } });
-                const assignedCageIds = new Set(activeAssignments.map(a => Number(a.cageId)));
-                
-                // Fetch notified IDs BEFORE returning if assignedCageIds.size === 0, 
-                // so we can clean up notifications for ALL empty cages!
-                const { notifiedIds, notificationMap } = await this._getNotifiedIds(profileId, 'warning', 'cleaning');
+            const { Assignment } = require('../../domain/models');
+            const conditions = await this._getReproductionConditions(profileId);
+            if (conditions.length === 0) return;
 
-                let cagesToCheck = [];
-                if (assignedCageIds.size > 0) {
-                    cagesToCheck = await this._getCagesToCheckForCleaning(profileId, assignedCageIds);
+            const weaningReproductions = await Reproduction.findAll({
+                where: {
+                    [Op.or]: conditions,
+                    status: 'lactancia',
+                    estimatedBirthDate: { [Op.lte]: thirtyDaysAgoStr }
+                },
+                include: [{
+                    model: Rabbit, as: 'female', attributes: ['code', 'name'],
+                    include: [{ model: Assignment, as: 'assignments', where: { status: 'asignado' }, required: true }]
+                }]
+            });
+
+            const { notifiedIds, notificationMap } = await this._getNotifiedIds(profileId, 'warning', 'weaning');
+
+            for (const r of weaningReproductions) {
+                const repId = Number(r.id);
+                if (!notifiedIds.has(repId)) {
+                    notifiedIds.add(repId);
+                    const rabbitName = r.female?.name ?  " + r.female.name + " : '';
+                    await Notification.create({
+                        profileId,
+                        type: 'warning',
+                        title: 'Recordatorio de Destete',
+                        message: La camada de la coneja  ya cumplió 30 días de lactancia. Es tiempo de realizar el destete.,
+                        data: { type: 'weaning_alert', reproductionId: repId }
+                    });
                 }
+            }
 
-                // Delete obsolete notifications for cages that are no longer assigned
-                const cageIdsToCheck = new Set(cagesToCheck.map(c => Number(c.id)));
-                for (const notifiedCageId of notifiedIds) {
-                    if (!cageIdsToCheck.has(Number(notifiedCageId))) {
-                        const notifId = notificationMap.get(Number(notifiedCageId));
-                        if (notifId) {
-                            await Notification.destroy({ where: { id: notifId } });
-                            notifiedIds.delete(Number(notifiedCageId));
-                        }
+            if (notifiedIds.size > 0) {
+                const allNotifiedReproductions = await Reproduction.findAll({
+                    where: { id: { [Op.in]: Array.from(notifiedIds) } },
+                    attributes: ['id', 'status']
+                });
+                const statusMap = new Map(allNotifiedReproductions.map(r => [Number(r.id), r.status]));
+                for (const notifiedId of notifiedIds) {
+                    if (statusMap.get(notifiedId) !== 'lactancia') {
+                        const notifId = notificationMap.get(notifiedId);
+                        if (notifId) await Notification.destroy({ where: { id: notifId } });
                     }
                 }
-
-                if (cagesToCheck.length === 0) return;
-
-                await this._processCleaningNotifications(profileId, cagesToCheck, notifiedIds, notificationMap);
-            } catch (error) {
-                console.error('Error checking/creating cleaning notifications:', error);
-            } finally {
-                ongoingChecks.delete(`${profileId}_cleaning`);
             }
-        })();
+        } catch (error) {
+            console.error('Error checking/creating weaning notifications:', error);
+        }
+    }
 
-        ongoingChecks.set(`${profileId}_cleaning`, promise);
+    async checkAndCreateCleaningNotifications(profileId) {
+        if (ongoingChecks.has(${profileId}_cleaning)) return ongoingChecks.get(${profileId}_cleaning);
+        const promise = this._runCleaningCheck(profileId).finally(() => ongoingChecks.delete(${profileId}_cleaning));
+        ongoingChecks.set(${profileId}_cleaning, promise);
         return promise;
+    }
+
+    async _runCleaningCheck(profileId) {
+        try {
+            const { Assignment, Notification } = require('../../domain/models');
+            const activeAssignments = await Assignment.findAll({ where: { status: 'asignado' } });
+            const assignedCageIds = new Set(activeAssignments.map(a => Number(a.cageId)));
+            
+            const { notifiedIds, notificationMap } = await this._getNotifiedIds(profileId, 'warning', 'cleaning');
+
+            let cagesToCheck = [];
+            if (assignedCageIds.size > 0) {
+                cagesToCheck = await this._getCagesToCheckForCleaning(profileId, assignedCageIds);
+            }
+
+            const cageIdsToCheck = new Set(cagesToCheck.map(c => Number(c.id)));
+            for (const notifiedCageId of notifiedIds) {
+                if (!cageIdsToCheck.has(Number(notifiedCageId))) {
+                    const notifId = notificationMap.get(Number(notifiedCageId));
+                    if (notifId) {
+                        await Notification.destroy({ where: { id: notifId } });
+                        notifiedIds.delete(Number(notifiedCageId));
+                    }
+                }
+            }
+
+            if (cagesToCheck.length > 0) {
+                await this._processCleaningNotifications(profileId, cagesToCheck, notifiedIds, notificationMap);
+            }
+        } catch (error) {
+            console.error('Error checking/creating cleaning notifications:', error);
+        }
     }
 
     async _processCleaningNotifications(profileId, cagesToCheck, notifiedCageIds, notificationMap) {
@@ -216,6 +188,7 @@ class NotificationService {
             });
 
             let startDate = null;
+            let startDate = null;
             if (lastCleaning?.cleaningDate) {
                 startDate = new Date(lastCleaning.cleaningDate);
             } else {
@@ -223,9 +196,7 @@ class NotificationService {
                     where: { cageId: cage.id },
                     order: [['assignedAt', 'ASC']]
                 });
-                if (firstAssignment?.assignedAt) {
-                    startDate = new Date(firstAssignment.assignedAt);
-                }
+                startDate = firstAssignment?.assignedAt ? new Date(firstAssignment.assignedAt) : null;
             }
 
             if (!startDate) continue;
@@ -341,20 +312,21 @@ class NotificationService {
         }
     }
 
-    async getNotificationsByProfile(profileId, options = {}) {
+    async _runAllChecks(profileId) {
         await this.checkAndCreateBirthNotifications(profileId);
         await this.checkAndCreateCleaningNotifications(profileId);
         await this.checkAndCreateWeaningNotifications(profileId);
         await growthService.processDailyGrowth(profileId);
+    }
+
+    async getNotificationsByProfile(profileId, options = {}) {
+        await this._runAllChecks(profileId);
         const notifications = await notificationRepository.findByProfileId(profileId, options);
         return notifications.map(toNotificationDTO);
     }
 
     async getUnreadCount(profileId) {
-        await this.checkAndCreateBirthNotifications(profileId);
-        await this.checkAndCreateCleaningNotifications(profileId);
-        await this.checkAndCreateWeaningNotifications(profileId);
-        await growthService.processDailyGrowth(profileId);
+        await this._runAllChecks(profileId);
         return await notificationRepository.countUnread(profileId);
     }
 
@@ -476,3 +448,8 @@ class NotificationService {
 }
 
 module.exports = new NotificationService();
+
+
+
+
+

@@ -34,10 +34,10 @@ import { applyThemeToDOM as applyToDOM } from '@/hooks/useThemeSync';
 type Section = 'size' | 'family' | 'bold' | 'dark' | 'contrast';
 
 interface NavItem {
-  id: Section;
-  label: string;
-  icon: React.ElementType;
-  ready: boolean;
+  readonly id: Section;
+  readonly label: string;
+  readonly icon: React.ElementType;
+  readonly ready: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -108,7 +108,9 @@ export default function SettingsPage() {
     applyToDOM(fontSize, fontFamily, bold, thm);
     localStorage.setItem('theme', thm);
     
-    const msg = thm === 'dark' ? 'Modo oscuro activado' : thm === 'contrast' ? 'Alto contraste activado' : 'Modo normal activado';
+    let msg = 'Modo normal activado';
+    if (thm === 'dark') msg = 'Modo oscuro activado';
+    else if (thm === 'contrast') msg = 'Alto contraste activado';
     showToast(msg, 'success');
   }, [fontSize, fontFamily, bold, theme, showToast]);
 
@@ -147,9 +149,7 @@ export default function SettingsPage() {
                     !ready && "opacity-50 cursor-not-allowed",
                     ready && activeSection === id
                       ? "bg-primary-50 text-primary-600"
-                      : ready
-                      ? "text-muted hover:bg-theme-surface hover:text-main"
-                      : "text-theme-faint"
+                      : (ready ? "text-muted hover:bg-theme-surface hover:text-main" : "text-theme-faint")
                   )}
                 >
                   <span className="flex items-center gap-3">

@@ -14,12 +14,12 @@ async function notifyOwnerOnWorkerAction(profileId, galponId, moduleName, module
             include: [{ model: Profile, as: 'profile' }]
         });
 
-        if (workerMember && workerMember.role === 'worker') {
+        if (workerMember?.role === 'worker') {
             const ownerMember = await FarmMember.findOne({
                 where: { galponId, role: 'owner', status: 'active' }
             });
 
-            if (ownerMember && ownerMember.profileId) {
+            if (ownerMember?.profileId) {
                 const workerName = workerMember.profile?.fullName || workerMember.profile?.username || 'Un trabajador';
                 await Notification.create({
                     profileId: ownerMember.profileId,

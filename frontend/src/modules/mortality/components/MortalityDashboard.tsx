@@ -4,10 +4,9 @@ import { DashboardTabs } from '@/shared/ui/DashboardTabs';
 import { SectionMessage } from '@/shared/ui/SectionMessage';
 import { Skull, Archive } from 'lucide-react';
 import { MortalityTable } from './MortalityTable';
-import { AuditHistoryView } from '@/shared/ui';
 import { mortalityService } from '../services/mortality.service';
 import { MortalityCatalog } from './MortalityCatalog';
-import { Card, CardHeader } from '@/shared/ui';
+import { Card, CardHeader, AuditHistoryView } from '@/shared/ui';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 
 export function MortalityDashboard() {
@@ -45,7 +44,7 @@ export function MortalityDashboard() {
               fetchActiveDates={async (profileId) => {
                 const data = await mortalityService.getAll({ profileId });
                 const dates = data.map(m => m.deathDate.split('T')[0]);
-                return Array.from(new Set(dates)).sort().reverse();
+                return Array.from(new Set(dates)).sort((a, b) => b.localeCompare(a));
               }}
             />
           </>

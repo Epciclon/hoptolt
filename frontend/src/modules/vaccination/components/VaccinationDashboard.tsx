@@ -4,10 +4,9 @@ import { DashboardTabs } from '@/shared/ui/DashboardTabs';
 import { SectionMessage } from '@/shared/ui/SectionMessage';
 import { Syringe, Archive } from 'lucide-react';
 import { VaccinationTable } from './VaccinationTable';
-import { AuditHistoryView } from '@/shared/ui';
 import { vaccinationService } from '../services/vaccination.service';
 import { VaccinationCatalog } from './VaccinationCatalog';
-import { Card, CardHeader } from '@/shared/ui';
+import { Card, CardHeader, AuditHistoryView } from '@/shared/ui';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 
 export function VaccinationDashboard() {
@@ -45,7 +44,7 @@ export function VaccinationDashboard() {
               fetchActiveDates={async (profileId) => {
                 const data = await vaccinationService.getAll({ profileId });
                 const dates = data.map(v => v.vaccinationDate.split('T')[0]);
-                return Array.from(new Set(dates)).sort().reverse();
+                return Array.from(new Set(dates)).sort((a, b) => b.localeCompare(a));
               }}
             />
           </>

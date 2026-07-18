@@ -21,12 +21,12 @@ export function RabbitSelectableCard({
   children
 }: Readonly<RabbitSelectableCardProps>) {
   const isSelectable = !!onClick;
+  const Component = isSelectable ? 'button' as any : 'div';
 
   return (
-    <div
+    <Component
+      type={isSelectable ? "button" : undefined}
       onClick={isSelectable ? onClick : undefined}
-      role={isSelectable ? "button" : undefined}
-      tabIndex={isSelectable ? 0 : undefined}
       className={cn(
         'border rounded-lg p-3 transition-all duration-150 bg-card text-left w-full block relative',
         isSelectable && 'cursor-pointer focus-within:ring-2 focus-within:ring-primary-500 focus-within:ring-offset-1',
@@ -36,7 +36,7 @@ export function RabbitSelectableCard({
           return 'border-slate-300 shadow-sm';
         })()
       )}
-      onKeyDown={(e) => {
+      onKeyDown={(e: React.KeyboardEvent) => {
         if (isSelectable && onClick && (e.key === 'Enter' || e.key === ' ')) {
           e.preventDefault();
           onClick();
@@ -101,6 +101,6 @@ export function RabbitSelectableCard({
           {children}
         </div>
       )}
-    </div>
+    </Component>
   );
 }

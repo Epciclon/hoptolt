@@ -7,8 +7,8 @@ import type { Column } from '@/shared/ui/Table';
 import type { Feeding } from '../types/feeding.types';
 
 interface FeedingTableProps {
-  profileId?: string;
-  date?: string;
+  readonly profileId?: string;
+  readonly date?: string;
 }
 
 export function FeedingTable({ profileId, date }: FeedingTableProps) {

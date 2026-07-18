@@ -11,12 +11,12 @@ async function notifyOwnerOnManualPhaseChange(profileId, galponId, reproductionI
             include: [{ model: Profile, as: 'profile' }]
         });
 
-        if (workerMember && workerMember.role === 'worker') {
+        if (workerMember?.role === 'worker') {
             const ownerMember = await FarmMember.findOne({
                 where: { galponId, role: 'owner', status: 'active' }
             });
 
-            if (ownerMember && ownerMember.profileId) {
+            if (ownerMember?.profileId) {
                 const rep = await reproductionRepository.findByIdWithDetails(reproductionId);
                 const code = rep?.female?.code || 'N/A';
                 const name = rep?.female?.name ? ` ${rep.female.name}` : '';
@@ -45,7 +45,7 @@ async function notifyOwnerOnManualPhaseChange(profileId, galponId, reproductionI
  */
 async function notifyAutomatedPhaseChange(rep, newPhase, newPhaseName) {
     try {
-        const { Rabbit, WorkerPermission, WorkerCage, Assignment } = require('../../domain/models');
+        const { WorkerPermission, WorkerCage } = require('../../domain/models');
         const reproductionRepository = require('../../modules/reproduction/reproduction.repository');
 
         const fullRep = await reproductionRepository.findByIdWithDetails(rep.id);
@@ -63,7 +63,7 @@ async function notifyAutomatedPhaseChange(rep, newPhase, newPhaseName) {
         const message = `El sistema Hoptolt ha movido automáticamente a la coneja ${code}${name} a Fase ${newPhase} ${newPhaseName}.`;
         const dataPayload = { type: 'reproduction_automated', phase: newPhase };
 
-        if (ownerMember && ownerMember.profileId) {
+        if (ownerMember?.profileId) {
             await Notification.create({
                 profileId: ownerMember.profileId,
                 type: 'info',
@@ -79,25 +79,27 @@ async function notifyAutomatedPhaseChange(rep, newPhase, newPhaseName) {
             });
 
             for (const worker of workers) {
+                if (!worker.profileId) continue;
+
                 const hasPermission = await WorkerPermission.findOne({
                     where: { farmMemberId: worker.id, moduleName: 'reproduccionyparto', canRead: true }
                 });
                 
-                if (hasPermission) {
-                    const isAssigned = await WorkerCage.findOne({
-                        where: { farmMemberId: worker.id, cageId }
-                    });
-                    
-                    if (isAssigned && worker.profileId) {
-                        await Notification.create({
-                            profileId: worker.profileId,
-                            type: 'info',
-                            title: 'Cambio de Fase Automático',
-                            message,
-                            data: dataPayload
-                        });
-                    }
-                }
+                if (!hasPermission) continue;
+                
+                const isAssigned = await WorkerCage.findOne({
+                    where: { farmMemberId: worker.id, cageId }
+                });
+                
+                if (!isAssigned) continue;
+                
+                await Notification.create({
+                    profileId: worker.profileId,
+                    type: 'info',
+                    title: 'Cambio de Fase Automático',
+                    message,
+                    data: dataPayload
+                });
             }
         }
     } catch (error) {

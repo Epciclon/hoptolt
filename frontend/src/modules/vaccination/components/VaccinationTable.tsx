@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import type { Vaccination } from '../types/vaccination.types';
@@ -22,9 +22,11 @@ function VaccinationCustomDetails({ nextVacs }: Readonly<{ nextVacs: NextVaccina
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {nextVacs.length > 0 ? nextVacs.map((vac) => (
           <div key={vac.name} className={`flex flex-col leading-tight border rounded p-2 justify-center ${
-            vac.diffDays === 0 ? 'bg-emerald-50 border-emerald-100' :
-            vac.diffDays !== null && vac.diffDays < 0 ? 'bg-amber-50 border-amber-100' :
-            'bg-card border-default'
+            (() => {
+              if (vac.diffDays === 0) return 'bg-emerald-50 border-emerald-100';
+              if (vac.diffDays !== null && vac.diffDays < 0) return 'bg-amber-50 border-amber-100';
+              return 'bg-card border-default';
+            })()
           }`}>
             <span className="text-xs font-semibold text-main mb-1">{vac.name}</span>
             {(() => {
@@ -66,8 +68,8 @@ function VaccinationCustomDetails({ nextVacs }: Readonly<{ nextVacs: NextVaccina
 }
 
 interface VaccinationTableProps {
-  profileId?: string;
-  date?: string;
+  readonly profileId?: string;
+  readonly date?: string;
 }
 
 export function VaccinationTable({ profileId, date }: VaccinationTableProps) {

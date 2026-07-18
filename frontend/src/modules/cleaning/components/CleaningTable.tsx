@@ -7,8 +7,8 @@ import { LoadingMessage, DateTimeBadge, EventDetailsModal } from '@/shared/ui';
 import { Table, Column } from '@/shared/ui/Table';
 
 interface CleaningTableProps {
-  profileId?: string;
-  date?: string;
+  readonly profileId?: string;
+  readonly date?: string;
 }
 
 export function CleaningTable({ profileId, date }: CleaningTableProps) {

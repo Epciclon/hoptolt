@@ -408,7 +408,7 @@ export function ReproductionHistoryView({ profileId, date }: Readonly<Reproducti
         if (r.status !== 'completado' && r.status !== 'fallido') return false;
         if (!date) return true;
         const d = r.updatedAt || r.mountDate;
-        return d && d.split('T')[0] === date;
+        return d?.split('T')[0] === date;
       });
     },
   });
