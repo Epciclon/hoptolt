@@ -125,56 +125,59 @@ class NotificationService {
     }
 
     async _processCleaningNotifications(profileId, cagesToCheck, notifiedCageIds, notificationMap) {
+        for (const cage of cagesToCheck) {
+            await this._processCageCleaning(cage, profileId, notifiedCageIds, notificationMap);
+        }
+    }
+
+    async _processCageCleaning(cage, profileId, notifiedCageIds, notificationMap) {
         const { Cleaning, Notification, Assignment } = require('../../domain/models');
         const today = new Date();
 
-        for (const cage of cagesToCheck) {
-            const lastCleaning = await Cleaning.findOne({
+        const lastCleaning = await Cleaning.findOne({
+            where: { cageId: cage.id },
+            order: [['cleaningDate', 'DESC']]
+        });
+
+        let startDate = null;
+        if (lastCleaning?.cleaningDate) {
+            startDate = new Date(lastCleaning.cleaningDate);
+        } else {
+            const firstAssignment = await Assignment.findOne({
                 where: { cageId: cage.id },
-                order: [['cleaningDate', 'DESC']]
+                order: [['assignedAt', 'ASC']]
             });
+            startDate = firstAssignment?.assignedAt ? new Date(firstAssignment.assignedAt) : null;
+        }
 
-            let startDate = null;
-            if (lastCleaning?.cleaningDate) {
-                startDate = new Date(lastCleaning.cleaningDate);
-            } else {
-                const firstAssignment = await Assignment.findOne({
-                    where: { cageId: cage.id },
-                    order: [['assignedAt', 'ASC']]
+        if (!startDate) return;
+
+        const assignments = await Assignment.findAll({
+            where: { cageId: cage.id }
+        });
+
+        const startMs = startDate.getTime();
+        const todayMs = today.getTime();
+        
+        const merged = this._mergeIntervals(assignments, startMs, todayMs);
+        const daysWithoutCleaning = this._calculateDaysWithoutCleaning(merged);
+
+        if (daysWithoutCleaning > 3) {
+            if (!notifiedCageIds.has(Number(cage.id))) {
+                notifiedCageIds.add(Number(cage.id));
+                await Notification.create({
+                    profileId,
+                    type: 'warning',
+                    title: 'Alerta de Limpieza Requerida',
+                    message: `La jaula #${cage.number} acumula ${daysWithoutCleaning} días de ocupación sin limpieza. ¡Por favor realiza la limpieza lo antes posible!`,
+                    data: { type: 'cleaning_warning', cageId: cage.id, cageNumber: cage.number, daysWithoutCleaning }
                 });
-                startDate = firstAssignment?.assignedAt ? new Date(firstAssignment.assignedAt) : null;
             }
-
-            if (!startDate) continue;
-
-            const assignments = await Assignment.findAll({
-                where: { cageId: cage.id }
-            });
-
-            const startMs = startDate.getTime();
-            const todayMs = today.getTime();
-            
-            const merged = this._mergeIntervals(assignments, startMs, todayMs);
-            const daysWithoutCleaning = this._calculateDaysWithoutCleaning(merged);
-
-            if (daysWithoutCleaning > 3) {
-                if (!notifiedCageIds.has(Number(cage.id))) {
-                    notifiedCageIds.add(Number(cage.id));
-                    await Notification.create({
-                        profileId,
-                        type: 'warning',
-                        title: 'Alerta de Limpieza Requerida',
-                        message: `La jaula #${cage.number} acumula ${daysWithoutCleaning} días de ocupación sin limpieza. ¡Por favor realiza la limpieza lo antes posible!`,
-                        data: { type: 'cleaning_warning', cageId: cage.id, cageNumber: cage.number, daysWithoutCleaning }
-                    });
-                }
-            } else if (notifiedCageIds.has(Number(cage.id))) {
-                // If it was cleaned, delete the obsolete notification automatically
-                const notifId = notificationMap.get(Number(cage.id));
-                if (notifId) {
-                    await Notification.destroy({ where: { id: notifId } });
-                    notifiedCageIds.delete(Number(cage.id));
-                }
+        } else if (notifiedCageIds.has(Number(cage.id))) {
+            const notifId = notificationMap.get(Number(cage.id));
+            if (notifId) {
+                await Notification.destroy({ where: { id: notifId } });
+                notifiedCageIds.delete(Number(cage.id));
             }
         }
     }
