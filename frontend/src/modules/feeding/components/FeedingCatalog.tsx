@@ -246,7 +246,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
       {/* Sección de Estadísticas (Barra de progreso) */}
       <div className="bg-card border border-strong rounded-lg p-5">
         <h3 className="text-sm font-semibold text-main mb-4 flex items-center gap-2">
-          ?? Progreso de Alimentación Hoy
+          📊 Progreso de Alimentación Hoy
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
@@ -284,7 +284,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
           </span>
         </div>
 
-        <div className="w-full relative" ref={foodDropdownRef}>
+        <div className="w-full relative z-20" ref={foodDropdownRef}>
           <span className="block text-sm font-medium text-muted mb-2">Tipos de Alimento</span>
           <Input
             placeholder="Busca y selecciona tipos de alimento"
@@ -317,7 +317,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
         {selectedFoodTypes.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
             {selectedFoodTypes.map(food => (
-              <div key={food} className="flex items-center gap-1 bg-sky-100 text-sky-800 border border-sky-200 px-2 py-1 rounded text-sm shadow-sm">
+              <div key={food} className="flex items-center gap-1 bg-sky-100 dark:bg-sky-900/30 text-sky-800 dark:text-sky-400 border border-sky-200 dark:border-sky-500/30 px-2 py-1 rounded text-sm shadow-sm">
                 <span>{food}</span>
                 <button
                   type="button"
@@ -386,7 +386,8 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
         itemName="jaula"
         buttonText="Registrar Alimentación"
         onRegister={handleRegister}
-        isSubmitting={isSubmitting || selectedFoodTypes.length === 0}
+        isSubmitting={isSubmitting}
+        isDisabled={selectedFoodTypes.length === 0}
       />
 
       <Dialog
@@ -397,7 +398,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
         size="sm"
       >
         <div className="p-3 bg-blue-50 border border-blue-200 rounded-md mb-4 mt-2">
-          <h4 className="text-sm font-semibold text-blue-900 mb-2">?? Política de Alimentación</h4>
+          <h4 className="text-sm font-semibold text-blue-900 mb-2">⚠️ Política de Alimentación</h4>
           <p className="text-sm text-blue-800">
             El sistema permite un (1) registro de alimentación sin justificación por turno y por usuario. Estás intentando registrar un segundo alimento en el turno de la <strong>{currentEcuadorShift}</strong>, por lo que es requerido ingresar un motivo.
           </p>

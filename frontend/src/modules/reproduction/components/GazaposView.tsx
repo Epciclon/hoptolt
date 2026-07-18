@@ -290,7 +290,7 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
               cageNumber={group.cageNumber} 
               cageType={group.cageType}
               headerBadge={
-                <span className="px-2 py-1 bg-sky-100 text-sky-700 text-[10px] font-medium rounded-full">
+                <span className="px-2 py-1 bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 text-[10px] font-medium rounded-full">
                   Lactancia
                 </span>
               }
@@ -357,7 +357,7 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
                   {isExpanded && !hasKits ? (
                     <button
                       type="button"
-                      className="bg-theme-surface border border-default p-2 rounded flex justify-between items-center w-full text-left cursor-pointer hover:bg-primary-50 hover:border-primary-200 transition-colors group"
+                      className="bg-theme-surface border border-default p-2 rounded flex justify-between items-center w-full text-left cursor-pointer hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:border-primary-200 dark:hover:border-primary-500/30 transition-colors group"
                       onClick={(e) => {
                         e.stopPropagation();
                         setEditingReproduction(reproduction);
@@ -391,7 +391,7 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
                       (() => {
                         if (!isExpanded) return 'bg-card/60 border-default';
                         return hasKits
-                          ? 'bg-card/60 border-default cursor-pointer hover:bg-emerald-50 group'
+                          ? 'bg-card/60 border-default cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-900/20 group'
                           : 'bg-card/60 border-default cursor-pointer hover:bg-theme-surface group';
                       })()
                     )}

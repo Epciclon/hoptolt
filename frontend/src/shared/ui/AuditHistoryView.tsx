@@ -235,7 +235,7 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
                     {profile.fullName || profile.username}
                   </h3>
                   <div className="flex items-center gap-1.5 text-xs text-muted mt-0.5">
-                    <span className={`px-1.5 py-0.5 rounded ${isOwner ? 'bg-theme-surface border border-default text-main' : 'bg-sky-100 text-sky-700'} font-medium`}>
+                    <span className={`px-1.5 py-0.5 rounded ${isOwner ? 'bg-theme-surface border border-default text-main' : 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400'} font-medium`}>
                       {isOwner ? 'Propietario' : 'Trabajador'}
                     </span>
                   </div>

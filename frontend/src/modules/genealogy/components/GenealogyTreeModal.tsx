@@ -65,9 +65,9 @@ export function GenealogyTreeModal({ rabbit, onClose }: Readonly<GenealogyTreeMo
   };
 
   const renderGeneration = (generation: GenSlot[], level: number, nextGeneration?: GenSlot[]): JSX.Element => {
-    let bgColor = 'bg-yellow-50 border-yellow-200';
-    if (level === 0) bgColor = 'bg-blue-100 border-blue-300';
-    else if (level === 1) bgColor = 'bg-green-50 border-green-200';
+    let bgColor = 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-700/50';
+    if (level === 0) bgColor = 'bg-blue-100 dark:bg-blue-900/40 border-blue-300 dark:border-blue-700/50';
+    else if (level === 1) bgColor = 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700/50';
 
     const padding = 'p-2';
     const fontSize = 'text-xs';

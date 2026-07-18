@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { ReactNode } from 'react';
 import { CageGroupCard } from './CageGroupCard';
@@ -41,7 +41,7 @@ export function CageCatalog({
             cageType={group.cageType}
             isSelected={isSelected}
             headerBadge={hasLactatingRabbit ? (
-              <span className="px-2 py-1 bg-sky-100 text-sky-700 text-[10px] font-medium rounded-full">
+              <span className="px-2 py-1 bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 text-[10px] font-medium rounded-full">
                 Lactancia
               </span>
             ) : undefined}

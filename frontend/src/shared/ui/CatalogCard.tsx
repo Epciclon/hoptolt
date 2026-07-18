@@ -33,7 +33,7 @@ export function CatalogCard({
     <div
       className={`group relative flex flex-col border rounded-lg overflow-hidden transition-all duration-200 text-left w-full ${
         isSelected 
-          ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-500 ring-opacity-50' 
+          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 ring-2 ring-primary-500 ring-opacity-50' 
           : 'border-strong bg-card hover:border-primary-300 hover:shadow-md'
       }`}
     >

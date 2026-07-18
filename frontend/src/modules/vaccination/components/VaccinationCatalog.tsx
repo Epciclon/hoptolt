@@ -123,7 +123,7 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
 
       <div>
         <span className="block text-sm font-medium mb-2">Vacunas</span>
-        <div className="relative" ref={vaccineDropdownRef}>
+        <div className="relative z-20" ref={vaccineDropdownRef}>
           <Input
             placeholder="Busca o selecciona vacunas..."
             value={vaccineSearch}
@@ -155,7 +155,7 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
         {selectedVaccines.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
             {selectedVaccines.map(vaccine => (
-              <div key={vaccine} className="flex items-center gap-1 bg-sky-100 text-sky-800 border border-sky-200 px-2 py-1 rounded text-sm shadow-sm">
+              <div key={vaccine} className="flex items-center gap-1 bg-sky-100 dark:bg-sky-900/30 text-sky-800 dark:text-sky-400 border border-sky-200 dark:border-sky-500/30 px-2 py-1 rounded text-sm shadow-sm">
                 <span>{vaccine}</span>
                 <button
                   type="button"

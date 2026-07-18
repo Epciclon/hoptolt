@@ -333,7 +333,7 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
                 const cage = occupiedCages.find(c => c.id === id);
                 if (!cage) return null;
                 return (
-                  <div key={`cage-${id}`} className="flex items-center gap-1 bg-sky-100 text-sky-800 px-2 py-1 rounded text-sm">
+                  <div key={`cage-${id}`} className="flex items-center gap-1 bg-sky-100 dark:bg-sky-900/30 text-sky-800 dark:text-sky-400 px-2 py-1 rounded text-sm">
                     <span>{cage.number}</span>
                     <button
                       type="button"

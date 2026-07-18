@@ -216,7 +216,7 @@ export function NotificationIcon() {
               <Link
                 href="/dashboard/notifications"
                 onClick={() => setIsOpen(false)}
-                className="w-full text-center block text-sm text-primary-600 hover:text-primary-700 font-medium py-1.5 bg-primary-50 hover:bg-primary-100 rounded-md transition-colors border-none cursor-pointer"
+                className="w-full text-center block text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium py-1.5 bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-100 dark:hover:bg-primary-900/40 rounded-md transition-colors border-none cursor-pointer"
               >
                 Ver todas las notificaciones
               </Link>

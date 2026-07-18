@@ -116,7 +116,7 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-5xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <Card className="border-0 shadow-sm ring-1 ring-slate-200/50 overflow-hidden" padding="none">
+      <Card className="border-0 shadow-sm ring-1 ring-slate-200/50 dark:ring-slate-800/50 overflow-hidden" padding="none">
         <div className="p-6 md:p-8 border-b border-default bg-card">
           <h1 className="text-2xl font-bold text-main">Tu Cuenta</h1>
           <p className="text-muted mt-1">Cambia tu contraseña, asegura tu perfil y ajusta tus preferencias personales</p>
@@ -131,8 +131,8 @@ export default function ProfilePage() {
               className={cn(
                 "flex items-center justify-center md:justify-start gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors whitespace-nowrap shrink-0",
                 activeTab === 'personal'
-                  ? "bg-primary-50 text-primary-600"
-                  : "text-muted hover:bg-theme-surface hover:text-main"
+                  ? "bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400"
+                  : "text-muted hover:bg-theme-surface dark:hover:bg-slate-800/50 hover:text-main"
               )}
             >
               <User size={18} />
@@ -143,8 +143,8 @@ export default function ProfilePage() {
               className={cn(
                 "flex items-center justify-center md:justify-start gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors whitespace-nowrap shrink-0",
                 activeTab === 'password'
-                  ? "bg-primary-50 text-primary-600"
-                  : "text-muted hover:bg-theme-surface hover:text-main"
+                  ? "bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400"
+                  : "text-muted hover:bg-theme-surface dark:hover:bg-slate-800/50 hover:text-main"
               )}
             >
               <Lock size={18} />
@@ -155,8 +155,8 @@ export default function ProfilePage() {
               className={cn(
                 "flex items-center justify-center md:justify-start gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors whitespace-nowrap shrink-0",
                 activeTab === 'delete'
-                  ? "bg-red-50 text-red-600"
-                  : "text-muted hover:bg-theme-surface hover:text-red-600"
+                  ? "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400"
+                  : "text-muted hover:bg-theme-surface dark:hover:bg-slate-800/50 hover:text-red-600 dark:hover:text-red-400"
               )}
             >
               <Trash2 size={18} />

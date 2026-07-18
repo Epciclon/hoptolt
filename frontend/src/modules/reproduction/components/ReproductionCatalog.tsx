@@ -181,7 +181,7 @@ export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<Repro
               cageNumber={group.cageNumber} 
               cageType={group.cageType}
               headerBadge={
-                <span className="px-2 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-medium rounded-full">
+                <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-medium rounded-full">
                   Gestación
                 </span>
               }
@@ -247,7 +247,7 @@ export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<Repro
                     type="button"
                     className={`bg-theme-surface border border-default p-2 rounded flex justify-between items-center w-full text-left ${
                       isExpanded 
-                        ? 'cursor-pointer hover:bg-primary-50 hover:border-primary-200 transition-colors group' 
+                        ? 'cursor-pointer hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:border-primary-200 dark:hover:border-primary-500/30 transition-colors group' 
                         : ''
                     }`}
                     onClick={(e) => {
@@ -265,7 +265,7 @@ export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<Repro
                   </button>
                   <div className={`p-2 rounded flex justify-between items-center border ${
                     nearBirth
-                      ? 'bg-orange-50 border-orange-200'
+                      ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-500/30'
                       : 'bg-theme-surface border-default'
                   }`}>
                     <p className={`${nearBirth ? 'text-orange-600' : 'text-muted'}`}>Días de gestación</p>
@@ -330,7 +330,7 @@ export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<Repro
           setCancelReasonOther('');
         }}
         title={(() => {
-          const name = toCancel?.femaleName ? `  ${toCancel.femaleName}` : '';
+          const name = toCancel?.femaleName ? ` - ${toCancel.femaleName}` : '';
           return `Cancelar Gestación: ${toCancel?.femaleCode ?? ''}${name}`;
         })()}
       >
@@ -396,7 +396,7 @@ export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<Repro
           setActualBirthDate('');
         }}
         title={(() => {
-          const name = toRegisterBirth?.femaleName ? `  ${toRegisterBirth.femaleName}` : '';
+          const name = toRegisterBirth?.femaleName ? ` - ${toRegisterBirth.femaleName}` : '';
           return `Registrar Parto: ${toRegisterBirth?.femaleCode ?? ''}${name}`;
         })()}
       >
@@ -439,7 +439,7 @@ export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<Repro
           setEditingReproduction(null);
         }}
         title={(() => {
-          const name = editingReproduction?.femaleName ? `  ${editingReproduction.femaleName}` : '';
+          const name = editingReproduction?.femaleName ? ` - ${editingReproduction.femaleName}` : '';
           return `Editar monta de ${editingReproduction?.femaleCode ?? ''}${name}`;
         })()}
         size="xl"

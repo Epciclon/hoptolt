@@ -23,12 +23,12 @@ export function DashboardTabs({ tabs, activeTab, onTabChange }: Readonly<Dashboa
           onClick={() => onTabChange(tab.id)}
           className={`flex items-center gap-2 px-6 py-3 border-b-2 transition-colors whitespace-nowrap ${
             activeTab === tab.id
-              ? 'border-primary-500 text-primary-700 dark:text-primary-400 bg-primary-50/50 dark:bg-primary-500/10 font-semibold'
+              ? 'border-primary-500 text-primary-700 dark:text-primary-400 bg-primary-50/50 dark:bg-primary-900/20 font-semibold'
               : 'border-transparent text-muted hover:text-main hover:border-slate-300 dark:hover:border-slate-600 hover:bg-theme-surface'
           }`}
         >
           {tab.icon && (
-            <span className={activeTab === tab.id ? 'text-primary-500' : 'text-theme-faint'}>
+            <span className={activeTab === tab.id ? 'text-primary-500 dark:text-primary-400' : 'text-theme-faint'}>
               {tab.icon}
             </span>
           )}

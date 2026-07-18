@@ -146,11 +146,11 @@ export function MontasView({ reproductions, onSuccess }: Readonly<MontasViewProp
             cageType={group.cageType}
             headerBadge={
               group.machos[0]?.isOccupied ? (
-                <span className="flex items-center gap-1 px-2 py-1 bg-violet-100 text-violet-700 text-[10px] font-medium rounded-full animate-pulse">
+                <span className="flex items-center gap-1 px-2 py-1 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 text-[10px] font-medium rounded-full animate-pulse">
                   <Heart size={10} /> En Monta
                 </span>
               ) : (
-                <span className="px-2 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-medium rounded-full">
+                <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-medium rounded-full">
                   Disponible
                 </span>
               )

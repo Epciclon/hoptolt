@@ -6,9 +6,10 @@ interface SelectionActionBarProps {
   buttonText: string;
   onRegister: () => void;
   isSubmitting?: boolean;
+  isDisabled?: boolean;
 }
 
-export function SelectionActionBar({ count, itemName, buttonText, onRegister, isSubmitting }: Readonly<SelectionActionBarProps>) {
+export function SelectionActionBar({ count, itemName, buttonText, onRegister, isSubmitting, isDisabled }: Readonly<SelectionActionBarProps>) {
   if (count === 0) return null;
 
   return (
@@ -18,7 +19,7 @@ export function SelectionActionBar({ count, itemName, buttonText, onRegister, is
       </span>
       <Button
         onClick={onRegister}
-        disabled={count === 0}
+        disabled={count === 0 || isDisabled}
         loading={isSubmitting}
         variant="primary"
       >

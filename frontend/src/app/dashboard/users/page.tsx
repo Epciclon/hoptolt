@@ -111,15 +111,15 @@ export default function UsersPage() {
         <button 
           key={worker.id} 
           type="button"
-          className="w-full text-left bg-transparent border-none outline-none p-4 flex justify-between items-center hover:bg-theme-surface border border-default cursor-pointer transition-colors group block"
+          className="w-full text-left bg-transparent border-none outline-none p-4 flex justify-between items-center hover:bg-primary-50 dark:hover:bg-primary-900/20 border-b border-default cursor-pointer transition-colors group block"
           onClick={() => setWorkerToView(worker)}
         >
           <div>
             <div className="font-medium text-main">{worker.profile?.fullName}</div>
-            <div className="text-xs text-muted">{worker.profile?.email}  @{worker.profile?.username}</div>
+            <div className="text-xs text-muted">{worker.profile?.email} - @{worker.profile?.username}</div>
           </div>
           <span className="text-xs text-theme-faint group-hover:text-muted transition-colors">
-            Ver detalles ?
+            Ver detalles →
           </span>
         </button>
       ));
@@ -145,15 +145,14 @@ export default function UsersPage() {
       content = <div className="p-8 text-center text-muted">No hay invitaciones pendientes.</div>;
     } else {
       content = pendingInvitations.map(inv => (
-        <div key={inv.token} className="p-4 flex justify-between items-center hover:bg-theme-surface transition-colors">
+        <div key={inv.token} className="p-4 flex justify-between items-center hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors">
           <div>
             <div className="font-medium text-main">{inv.email}</div>
-            <div className="text-xs text-muted">Invitado por: {inv.inviter?.fullName || 'Usuario'}  Enviada: {new Date(inv.createdAt).toLocaleDateString()}</div>
+            <div className="text-xs text-muted">Invitado por: {inv.inviter?.fullName || 'Usuario'} - Enviada: {new Date(inv.createdAt).toLocaleDateString()}</div>
           </div>
           <Button 
-            variant="outline" 
+            variant="danger" 
             size="sm"
-            className="text-red-600 border-red-200 hover:bg-red-50"
             onClick={() => setInvitationToDelete(inv)}
           >
             Eliminar

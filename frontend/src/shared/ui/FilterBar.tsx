@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { ReactNode } from 'react';
 import { Search, X } from 'lucide-react';
@@ -43,7 +43,7 @@ export function FilterBar({
         </div>
         <input
           type="text"
-          className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500"
+          className="w-full pl-9 pr-3 py-2 bg-card text-main border border-slate-300 dark:border-slate-700 rounded-lg text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500"
           placeholder={searchPlaceholder}
           value={searchValue}
           onChange={(e) => onSearchChange(e.target.value)}

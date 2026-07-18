@@ -129,7 +129,7 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-5xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <Card className="border-0 shadow-sm ring-1 ring-slate-200/50 overflow-hidden" padding="none">
+      <Card className="border-0 shadow-sm ring-1 ring-slate-200/50 dark:ring-slate-800/50 overflow-hidden" padding="none">
         <div className="p-6 md:p-8 border-b border-default bg-card">
           <h1 className="text-2xl font-bold text-main">Apariencia</h1>
           <p className="text-muted mt-1">Ajusta los colores y el tamaño de letra a tu gusto para no cansarte la vista</p>
@@ -148,8 +148,8 @@ export default function SettingsPage() {
                     "flex items-center justify-center md:justify-between gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors whitespace-nowrap shrink-0 w-auto md:w-full",
                     !ready && "opacity-50 cursor-not-allowed",
                     !ready && "text-theme-faint",
-                    ready && activeSection === id && "bg-primary-50 text-primary-600",
-                    ready && activeSection !== id && "text-muted hover:bg-theme-surface hover:text-main"
+                    ready && activeSection === id && "bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400",
+                    ready && activeSection !== id && "text-muted hover:bg-theme-surface dark:hover:bg-slate-800/50 hover:text-main"
                   )}
                 >
                   <span className="flex items-center gap-3">
@@ -185,8 +185,8 @@ export default function SettingsPage() {
                     className={cn(
                       'relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all text-center',
                       fontSize === f.key
-                        ? 'border-primary-500 bg-primary-50 shadow-sm'
-                        : 'border-strong bg-card hover:border-primary-300 hover:bg-theme-surface',
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 shadow-sm'
+                        : 'border-strong bg-card hover:border-primary-300 dark:hover:border-primary-700/50 hover:bg-theme-surface dark:hover:bg-slate-800/50',
                     )}
                   >
                     {fontSize === f.key && (
@@ -206,7 +206,7 @@ export default function SettingsPage() {
               <div className="mt-6 p-4 bg-theme-surface rounded-xl border border-default">
                 <p className="text-muted text-xs mb-1">Vista previa con el tamaño actual:</p>
                 <p style={{ fontSize }} className="text-main font-medium">
-                  Hoptolt — Sistema de gestión de crianza de conejos
+                  Hoptolt - Sistema de gestión de crianza de conejos
                 </p>
               </div>
 
@@ -231,8 +231,8 @@ export default function SettingsPage() {
                     className={cn(
                       'flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left',
                       fontFamily === f.key
-                        ? 'border-primary-500 bg-primary-50 shadow-sm'
-                        : 'border-strong bg-card hover:border-primary-300 hover:bg-theme-surface',
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 shadow-sm'
+                        : 'border-strong bg-card hover:border-primary-300 dark:hover:border-primary-700/50 hover:bg-theme-surface dark:hover:bg-slate-800/50',
                     )}
                   >
                     <span className={cn(
@@ -250,7 +250,7 @@ export default function SettingsPage() {
                         className="text-sm text-muted mt-2 pt-2 border-t border-default"
                         style={{ fontFamily: f.key || undefined, fontSize }}
                       >
-                        Hoptolt — Sistema de gestión de crianza
+                        Hoptolt - Sistema de gestión de crianza
                       </p>
                     </div>
                   </button>
@@ -283,8 +283,8 @@ export default function SettingsPage() {
                     className={cn(
                       'flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left',
                       bold === opt.value
-                        ? 'border-primary-500 bg-primary-50 shadow-sm'
-                        : 'border-strong bg-card hover:border-primary-300 hover:bg-theme-surface',
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 shadow-sm'
+                        : 'border-strong bg-card hover:border-primary-300 dark:hover:border-primary-700/50 hover:bg-theme-surface dark:hover:bg-slate-800/50',
                     )}
                   >
                     <span className={cn(
@@ -298,7 +298,7 @@ export default function SettingsPage() {
                         className="text-main"
                         style={{ fontWeight: opt.value ? 700 : 400, fontSize }}
                       >
-                        {opt.label} — Hoptolt Sistema de Crianza
+                        {opt.label} - Hoptolt Sistema de Crianza
                       </p>
                       <p className="text-xs text-theme-faint mt-0.5">{opt.description}</p>
                     </div>
@@ -321,10 +321,10 @@ export default function SettingsPage() {
                   Cambia la interfaz a colores oscuros para reducir la fatiga visual.
                 </p>
                 <div className="flex gap-4">
-                  <button type="button" onClick={() => { if (theme === 'dark') selectTheme('light'); }} className={cn("p-4 border-2 rounded-xl flex-1 text-center font-medium", theme !== 'dark' ? 'border-primary-500 bg-theme-surface text-primary-600' : 'border-default text-muted')}>
+                  <button type="button" onClick={() => { if (theme === 'dark') selectTheme('light'); }} className={cn("p-4 border-2 rounded-xl flex-1 text-center font-medium transition-colors hover:bg-theme-surface dark:hover:bg-slate-800/50", theme !== 'dark' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 shadow-sm' : 'border-default text-muted')}>
                     Desactivado
                   </button>
-                  <button type="button" onClick={() => selectTheme('dark')} className={cn("p-4 border-2 rounded-xl flex-1 text-center font-medium", theme === 'dark' ? 'border-primary-500 bg-theme-surface text-primary-600' : 'border-default text-muted')}>
+                  <button type="button" onClick={() => selectTheme('dark')} className={cn("p-4 border-2 rounded-xl flex-1 text-center font-medium transition-colors hover:bg-theme-surface dark:hover:bg-slate-800/50", theme === 'dark' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 shadow-sm' : 'border-default text-muted')}>
                     Activado
                   </button>
                 </div>
@@ -343,10 +343,10 @@ export default function SettingsPage() {
                   Usa colores intensos (blanco, negro, amarillo) para máxima legibilidad.
                 </p>
                 <div className="flex gap-4">
-                  <button type="button" onClick={() => { if (theme === 'contrast') selectTheme('light'); }} className={cn("p-4 border-2 rounded-xl flex-1 text-center font-medium", theme !== 'contrast' ? 'border-primary-500 bg-theme-surface text-primary-600' : 'border-default text-muted')}>
+                  <button type="button" onClick={() => { if (theme === 'contrast') selectTheme('light'); }} className={cn("p-4 border-2 rounded-xl flex-1 text-center font-medium transition-colors hover:bg-theme-surface dark:hover:bg-slate-800/50", theme !== 'contrast' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 shadow-sm' : 'border-default text-muted')}>
                     Desactivado
                   </button>
-                  <button type="button" onClick={() => selectTheme('contrast')} className={cn("p-4 border-2 rounded-xl flex-1 text-center font-medium", theme === 'contrast' ? 'border-primary-500 bg-theme-surface text-primary-600' : 'border-default text-muted')}>
+                  <button type="button" onClick={() => selectTheme('contrast')} className={cn("p-4 border-2 rounded-xl flex-1 text-center font-medium transition-colors hover:bg-theme-surface dark:hover:bg-slate-800/50", theme === 'contrast' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 shadow-sm' : 'border-default text-muted')}>
                     Activado
                   </button>
                 </div>

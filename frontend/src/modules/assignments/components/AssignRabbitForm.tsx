@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
@@ -213,14 +213,14 @@ export function AssignRabbitForm({ onSuccess, onCancel }: Readonly<AssignRabbitF
             )}
           </div>
           {selectedCage && (
-            <div className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm mt-2 w-fit">
+            <div className="flex items-center gap-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 px-2 py-1 rounded text-sm mt-2 w-fit">
               <span>Jaula #{selectedCage.number} — {selectedCage.type.charAt(0).toUpperCase() + selectedCage.type.slice(1)}</span>
               <button
                 type="button"
                 onClick={handleCageDeselect}
                 className="text-blue-600 hover:text-blue-800 font-bold"
               >
-                ×
+                x
               </button>
             </div>
           )}
@@ -266,14 +266,14 @@ export function AssignRabbitForm({ onSuccess, onCancel }: Readonly<AssignRabbitF
                 const rabbit = rabbits.find(r => r.id === id);
                 if (!rabbit) return null;
                 return (
-                  <div key={`rabbit-${id}`} className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+                  <div key={`rabbit-${id}`} className="flex items-center gap-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 px-2 py-1 rounded text-sm">
                     <span>{rabbit.name || rabbit.code}</span>
                     <button
                       type="button"
                       onClick={() => handleRabbitToggle(id)}
                       className="text-blue-600 hover:text-blue-800 font-bold"
                     >
-                      ×
+                      x
                     </button>
                   </div>
                 );
@@ -285,8 +285,8 @@ export function AssignRabbitForm({ onSuccess, onCancel }: Readonly<AssignRabbitF
       </div>
 
       {selectedCage && (
-        <div className="p-3 bg-blue-50 border border-blue-200 rounded-md text-center">
-          <p className="text-sm text-blue-800 font-medium">
+        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-500/30 rounded-md text-center">
+          <p className="text-sm text-blue-800 dark:text-blue-400 font-medium">
             Capacidad total: {selectedCage.capacity} | Ya asignados: {currentAssigned}
           </p>
         </div>

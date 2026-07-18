@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
@@ -82,9 +82,9 @@ export function Table<T>({
         data-active={isRowActive?.(row) ? 'true' : 'false'}
         className={cn(
           'border-t border-default transition-colors duration-150',
-          onRowClick && 'cursor-pointer hover:bg-primary-50',
+          onRowClick && 'cursor-pointer hover:bg-primary-50 dark:hover:bg-primary-900/20',
           isRowActive?.(row) 
-            ? 'bg-green-100/40 border-l-4 border-l-green-500'
+            ? 'bg-green-100/40 dark:bg-green-900/20 border-l-4 border-l-green-500'
             : 'even:bg-theme-surface'
         )}
       >
