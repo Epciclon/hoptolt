@@ -21,9 +21,7 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
   const {
     selectedRabbitIds,
     toggleRabbit,
-    selectAllRabbits,
     cageGroups,
-    isAllSelected,
     clearSelection
   } = useCageSelection(assignedRabbits);
 

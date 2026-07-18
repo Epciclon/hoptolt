@@ -70,14 +70,7 @@ jest.mock('../src/domain/models', () => {
     Op
   };
 
-  // Mock instance methods
-  const mockInstance = {
-    toJSON: jest.fn().mockReturnValue({}),
-    get: jest.fn().mockReturnValue({}),
-    update: jest.fn().mockResolvedValue({}),
-    destroy: jest.fn().mockResolvedValue(true),
-    save: jest.fn().mockResolvedValue(true)
-  };
+
 
   return models;
 });

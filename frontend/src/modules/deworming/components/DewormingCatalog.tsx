@@ -18,9 +18,7 @@ export function DewormingCatalog({ onSuccess }: Readonly<DewormingCatalogProps>)
   const {
     selectedRabbitIds,
     toggleRabbit,
-    selectAllRabbits,
     cageGroups,
-    isAllSelected,
     clearSelection
   } = useCageSelection(assignedRabbits);
 

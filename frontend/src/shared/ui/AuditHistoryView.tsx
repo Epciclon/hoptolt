@@ -111,7 +111,7 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
   }
 
   // Vista Detallada (In-page view)
-  if (selectedWorker && selectedWorker.profile) {
+  if (selectedWorker?.profile) {
     const isOwner = selectedWorker.role === 'owner';
     const profileName = selectedWorker.profile.fullName || selectedWorker.profile.username || 'Usuario';
     const maxDate = getEcuadorDateString();

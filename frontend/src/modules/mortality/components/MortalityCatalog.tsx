@@ -24,13 +24,6 @@ export function MortalityCatalog({ onSuccess }: Readonly<MortalityCatalogProps>)
     );
   };
 
-  const selectAllRabbits = () => {
-    if (selectedRabbitIds.length === assignedRabbits.length) {
-      setSelectedRabbitIds([]);
-    } else {
-      setSelectedRabbitIds(assignedRabbits.map(r => r.id));
-    }
-  };
 
   const handleCloseFormModal = () => {
     setIsFormModalOpen(false);

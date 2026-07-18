@@ -147,9 +147,9 @@ export default function SettingsPage() {
                   className={cn(
                     "flex items-center justify-center md:justify-between gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors whitespace-nowrap shrink-0 w-auto md:w-full",
                     !ready && "opacity-50 cursor-not-allowed",
-                    ready && activeSection === id
-                      ? "bg-primary-50 text-primary-600"
-                      : (ready ? "text-muted hover:bg-theme-surface hover:text-main" : "text-theme-faint")
+                    !ready && "text-theme-faint",
+                    ready && activeSection === id && "bg-primary-50 text-primary-600",
+                    ready && activeSection !== id && "text-muted hover:bg-theme-surface hover:text-main"
                   )}
                 >
                   <span className="flex items-center gap-3">
@@ -362,7 +362,7 @@ export default function SettingsPage() {
 
 // ── Botón de restablecer compartido ──────────────────────────────────────────────
 
-function SaveBar({ onReset }: { onReset: () => void }) {
+function SaveBar({ onReset }: Readonly<{ onReset: () => void }>) {
   return (
     <div className="flex flex-wrap justify-end pt-5 mt-5 border-t border-default">
       <Button variant="secondary" onClick={onReset}>Restablecer valores por defecto</Button>
