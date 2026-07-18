@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, LoadingMessage, CageGroupGrid, SelectionActionBar } from '@/shared/ui';
+import { LoadingMessage, CageGroupGrid, SelectionActionBar } from '@/shared/ui';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { useDeworming } from '../hooks/useDeworming';
 import { useCageSelection } from '@/shared/hooks/useCageSelection';

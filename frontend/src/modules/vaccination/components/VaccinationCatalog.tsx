@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 
-import { Input, Button, LoadingMessage, CageGroupGrid, SelectionActionBar } from '@/shared/ui';
+import { Input, LoadingMessage, CageGroupGrid, SelectionActionBar } from '@/shared/ui';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { useVaccination } from '../hooks/useVaccination';
 import { useCageSelection } from '@/shared/hooks/useCageSelection';

@@ -8,7 +8,7 @@ interface SelectionActionBarProps {
   isSubmitting?: boolean;
 }
 
-export function SelectionActionBar({ count, itemName, buttonText, onRegister, isSubmitting }: SelectionActionBarProps) {
+export function SelectionActionBar({ count, itemName, buttonText, onRegister, isSubmitting }: Readonly<SelectionActionBarProps>) {
   if (count === 0) return null;
 
   return (
