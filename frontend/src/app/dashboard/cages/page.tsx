@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
@@ -22,8 +22,8 @@ export default function CagesPage() {
       <GalponGuard>
         <Card>
           <CardHeader
-            title="Gestión de Jaulas"
-            subtitle="Administra las jaulas del criadero"
+            title="Tus Jaulas"
+            subtitle="Aquí puedes organizar, ubicar y revisar el estado de todas las jaulas"
             actions={
               <Button icon={<Plus size={16} />} onClick={openCreate}>Nueva Jaula</Button>
             }

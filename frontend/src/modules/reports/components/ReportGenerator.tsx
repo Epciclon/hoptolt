@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useMemo, useEffect } from 'react';
 import { Button, Input, Select, Card, CardHeader, Badge } from '@/shared/ui';
@@ -534,7 +534,7 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
 
     return (
         <Card className="min-h-[calc(100vh-7rem)] flex flex-col">
-            <CardHeader title="Centro de Reportes" subtitle="Genera y exporta reportes de todos los módulos." />
+            <CardHeader title="Tus Estadísticas y Reportes" subtitle="Genera documentos y mira cómo va el rendimiento de tu granja" />
 
             <div className="flex flex-col md:flex-row gap-6 p-6 pt-0 flex-1">
                 {/* Panel de Filtros */}

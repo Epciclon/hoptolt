@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { usePersistentTab } from '@/shared/hooks/usePersistentTab';
 import { DashboardTabs } from '@/shared/ui/DashboardTabs';
 import { SectionMessage } from '@/shared/ui/SectionMessage';
@@ -19,7 +19,7 @@ export function DewormingDashboard() {
 
   return (
     <Card className="min-h-[calc(100vh-7rem)]">
-      <CardHeader title="Control de Desparasitación" subtitle="Registra y monitorea las desparasitaciones" />
+      <CardHeader title="Desparasitación" subtitle="Anota y lleva el control de los días en que desparasitas a tus conejos" />
       <DashboardTabs
         tabs={[
           { id: 'registro', label: 'Registro Diario', icon: <Pill size={18} /> },

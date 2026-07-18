@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { Button, LoadingMessage, CageGroupGrid } from '@/shared/ui';
 import { useToast } from '@/shared/contexts/ToastContext';
@@ -77,17 +77,6 @@ export function DewormingCatalog({ onSuccess }: Readonly<DewormingCatalogProps>)
         </p>
       </div>
 
-      <div className="flex justify-end mb-2">
-        <Button 
-          type="button" 
-          variant={isAllSelected ? 'success' : 'outline'}
-          size="sm" 
-          onClick={selectAllRabbits}
-        >
-          {isAllSelected ? 'Deseleccionar todos' : 'Seleccionar todos'}
-        </Button>
-      </div>
-
       <CageGroupGrid
         cageGroups={cageGroups}
         selectedRabbitIds={selectedRabbitIds}
@@ -106,13 +95,15 @@ export function DewormingCatalog({ onSuccess }: Readonly<DewormingCatalogProps>)
       />
 
       {selectedRabbitIds.length > 0 && (
-        <div className="flex justify-end pt-4 mt-6 border-t border-strong">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 shadow-xl border-2 border-primary-500 bg-theme-surface p-3 rounded-2xl flex items-center justify-between gap-6 max-w-[90vw] min-w-[300px]">
+          <span className="text-main font-semibold px-2">{selectedRabbitIds.length} conejo{selectedRabbitIds.length !== 1 ? 's' : ''} seleccionado{selectedRabbitIds.length !== 1 ? 's' : ''}</span>
           <Button
             onClick={handleRegister}
             disabled={selectedRabbitIds.length === 0}
             loading={isCreating}
+            variant="primary"
           >
-            Registrar Desparasitación ({selectedRabbitIds.length} conejo{selectedRabbitIds.length !== 1 ? 's' : ''})
+            Registrar Desparasitación
           </Button>
         </div>
       )}

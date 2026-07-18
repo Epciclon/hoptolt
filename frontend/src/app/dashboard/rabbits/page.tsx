@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
@@ -16,8 +16,8 @@ export default function RabbitsPage() {
       <GalponGuard>
         <Card>
           <CardHeader
-            title="Gestión de Conejos"
-            subtitle="Registra y administra los conejos del criadero"
+            title="Tus Conejos"
+            subtitle="Revisa el historial y la información de cada conejo que tienes"
             actions={
               <Button icon={<Plus size={16} />} onClick={() => setIsCreateOpen(true)}>Nuevo Conejo</Button>
             }

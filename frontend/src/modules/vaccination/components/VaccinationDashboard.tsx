@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { usePersistentTab } from '@/shared/hooks/usePersistentTab';
 import { DashboardTabs } from '@/shared/ui/DashboardTabs';
 import { SectionMessage } from '@/shared/ui/SectionMessage';
@@ -19,7 +19,7 @@ export function VaccinationDashboard() {
 
   return (
     <Card className="min-h-[calc(100vh-7rem)]">
-      <CardHeader title="Control de Vacunación" subtitle="Registra y monitorea las vacunas aplicadas" />
+      <CardHeader title="Vacunas" subtitle="Lleva el control de qué vacunas ha recibido cada conejo" />
       <DashboardTabs
         tabs={[
           { id: 'registro', label: 'Registro Diario', icon: <Syringe size={18} /> },

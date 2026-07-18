@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
@@ -20,8 +20,8 @@ export default function GalponesPage() {
   return (
       <Card>
         <CardHeader
-          title="Gestionar Galpones"
-          subtitle="Administra los galpones del criadero y selecciona tu galpón activo"
+          title="Tus Galpones"
+          subtitle="Configura los galpones de tu granja y elige en cuál vas a trabajar hoy"
           actions={
             <Button icon={<Plus size={16} />} onClick={openCreate}>Nuevo Galpón</Button>
           }

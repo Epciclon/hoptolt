@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { usePersistentTab } from '@/shared/hooks/usePersistentTab';
 import { DashboardTabs } from '@/shared/ui/DashboardTabs';
 import { SectionMessage } from '@/shared/ui/SectionMessage';
@@ -19,7 +19,7 @@ export function MortalityDashboard() {
 
   return (
     <Card className="min-h-[calc(100vh-7rem)]">
-      <CardHeader title="Control de Mortalidad" subtitle="Registra y monitorea las bajas en el galpón" />
+      <CardHeader title="Bajas y Mortalidad" subtitle="Registra si algún conejo fallece para llevar tus estadísticas al día" />
       <DashboardTabs
         tabs={[
           { id: 'registro', label: 'Registro Diario', icon: <Skull size={18} /> },

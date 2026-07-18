@@ -207,8 +207,8 @@ export default function UsersPage() {
     return (
       <>
         <CardHeader 
-          title="Equipo de Trabajo" 
-          subtitle={`Gestiona los trabajadores e invitaciones de ${activeGalpon?.name || 'tu galpón'}`}
+          title="Tu Equipo" 
+          subtitle={`Invita a tus trabajadores y decide qué cosas pueden ver o hacer en ${activeGalpon?.name || 'la granja'}`}
           actions={<Button onClick={() => setIsModalOpen(true)}>+ Invitar Trabajador</Button>}
         />
 

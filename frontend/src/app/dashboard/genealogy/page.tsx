@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { GalponGuard } from '@/modules/galpones/components/GalponGuard';
@@ -21,8 +21,8 @@ export default function GenealogyPage() {
       <GalponGuard>
       <Card>
       <CardHeader
-        title="Gestionar Árbol Genealógico"
-        subtitle="Registra y consulta las relaciones genealógicas de los conejos"
+        title="Familia y Descendencia"
+        subtitle="Descubre quién es el padre, la madre y los hijos de cada conejo"
       />
       <GenealogyCatalog 
         onViewTree={(rabbit) => {

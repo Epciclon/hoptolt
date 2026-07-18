@@ -148,7 +148,7 @@ export default function NotificationsPage() {
         <div className="p-6 md:p-8 border-b border-default bg-card flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-main">Centro de Notificaciones</h1>
-            <p className="text-muted mt-1">Gestiona todas las alertas y actualizaciones del sistema</p>
+            <p className="text-muted mt-1">Revisa los últimos avisos, recordatorios y actividades de tu granja</p>
           </div>
           <div className="flex items-center gap-3">
             <Button variant="outline" onClick={handleMarkAllRead} className="flex items-center gap-2">

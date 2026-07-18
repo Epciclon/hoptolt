@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
@@ -25,8 +25,8 @@ export default function AssignmentsPage() {
       <GalponGuard>
         <Card>
           <CardHeader
-            title="Asignaciones de Conejos"
-            subtitle="Gestiona qué conejo está en cada jaula"
+            title="Mover Conejos"
+            subtitle="Elige en qué jaula debe vivir cada conejo y mantén el orden"
             actions={
               <Button icon={<Plus size={16} />} onClick={openModal}>Asignar Conejo</Button>
             }

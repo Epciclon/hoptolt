@@ -118,8 +118,8 @@ export default function ProfilePage() {
     <div className="max-w-5xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
       <Card className="border-0 shadow-sm ring-1 ring-slate-200/50 overflow-hidden" padding="none">
         <div className="p-6 md:p-8 border-b border-default bg-card">
-          <h1 className="text-2xl font-bold text-main">Mi Perfil</h1>
-          <p className="text-muted mt-1">Administra tus datos personales, seguridad de la cuenta y preferencias</p>
+          <h1 className="text-2xl font-bold text-main">Tu Cuenta</h1>
+          <p className="text-muted mt-1">Cambia tu contraseña, asegura tu perfil y ajusta tus preferencias personales</p>
         </div>
 
         <div className="flex flex-col md:flex-row bg-card min-h-[calc(100vh-12rem)]">

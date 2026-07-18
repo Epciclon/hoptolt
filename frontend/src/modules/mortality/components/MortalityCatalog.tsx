@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useMemo } from 'react';
 import { Button, Dialog, LoadingMessage, CageGroupCard, RabbitSelectableCard } from '@/shared/ui';
@@ -55,19 +55,6 @@ export function MortalityCatalog({ onSuccess }: Readonly<MortalityCatalogProps>)
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-end mb-2">
-        {assignedRabbits.length > 0 && (
-          <Button 
-            type="button" 
-            variant={selectedRabbitIds.length === assignedRabbits.length && assignedRabbits.length > 0 ? 'success' : 'outline'}
-            size="sm" 
-            onClick={selectAllRabbits}
-          >
-            {selectedRabbitIds.length === assignedRabbits.length && assignedRabbits.length > 0 ? 'Deseleccionar todos' : 'Seleccionar todos'}
-          </Button>
-        )}
-      </div>
-
       {cageGroups.length === 0 ? (
         <p className="text-sm text-muted">No hay conejos con jaula asignada disponibles para registrar mortalidad.</p>
       ) : (
@@ -92,11 +79,13 @@ export function MortalityCatalog({ onSuccess }: Readonly<MortalityCatalogProps>)
       )}
 
       {selectedRabbitIds.length > 0 && (
-        <div className="flex justify-end pt-4 mt-6 border-t border-strong">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 shadow-xl border-2 border-primary-500 bg-theme-surface p-3 rounded-2xl flex items-center justify-between gap-6 max-w-[90vw] min-w-[300px]">
+          <span className="text-main font-semibold px-2">{selectedRabbitIds.length} conejo{selectedRabbitIds.length !== 1 ? 's' : ''} seleccionado{selectedRabbitIds.length !== 1 ? 's' : ''}</span>
           <Button
             onClick={() => setIsFormModalOpen(true)}
+            variant="primary"
           >
-            Registrar Baja ({selectedRabbitIds.length} conejo{selectedRabbitIds.length !== 1 ? 's' : ''})
+            Registrar Baja
           </Button>
         </div>
       )}

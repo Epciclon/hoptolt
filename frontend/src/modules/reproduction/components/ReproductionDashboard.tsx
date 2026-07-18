@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { usePersistentTab } from '@/shared/hooks/usePersistentTab';
 import { DashboardTabs } from '@/shared/ui/DashboardTabs';
 import { Heart, Activity, Archive } from 'lucide-react';
@@ -25,7 +25,7 @@ export function ReproductionDashboard() {
 
   return (
     <Card className="min-h-[calc(100vh-7rem)]">
-      <CardHeader title="Control de Reproducción" subtitle="Gestiona y monitorea los ciclos reproductivos" />
+      <CardHeader title="Reproducción y Cría" subtitle="Sigue de cerca las montas, nacimientos y destetes de tus conejas" />
       <DashboardTabs
         tabs={[
           { id: 'montas', label: 'Fase 1: Montas', icon: <Heart size={18} /> },

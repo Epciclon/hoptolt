@@ -381,15 +381,19 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
         />
       )}
 
-      <div className="flex justify-end gap-3 pt-4 sticky bottom-0 bg-card py-4 border-t border-strong">
-        <Button 
-          onClick={handleRegister}
-          disabled={selectedCageNumbers.length === 0 || selectedFoodTypes.length === 0 || isSubmitting}
-          loading={isSubmitting}
-        >
-          Registrar Alimentación ({selectedCageNumbers.length} jaula{selectedCageNumbers.length !== 1 ? 's' : ''})
-        </Button>
-      </div>
+      {selectedCageNumbers.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 shadow-xl border-2 border-primary-500 bg-theme-surface p-3 rounded-2xl flex items-center justify-between gap-6 max-w-[90vw] min-w-[300px]">
+          <span className="text-main font-semibold px-2">{selectedCageNumbers.length} jaula{selectedCageNumbers.length !== 1 ? 's' : ''} seleccionada{selectedCageNumbers.length !== 1 ? 's' : ''}</span>
+          <Button 
+            onClick={handleRegister}
+            disabled={selectedFoodTypes.length === 0 || isSubmitting}
+            loading={isSubmitting}
+            variant="primary"
+          >
+            Registrar Alimentación
+          </Button>
+        </div>
+      )}
 
       <Dialog
         open={showJustificationModal}

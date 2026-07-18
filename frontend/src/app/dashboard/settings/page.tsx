@@ -129,8 +129,8 @@ export default function SettingsPage() {
     <div className="max-w-5xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
       <Card className="border-0 shadow-sm ring-1 ring-slate-200/50 overflow-hidden" padding="none">
         <div className="p-6 md:p-8 border-b border-default bg-card">
-          <h1 className="text-2xl font-bold text-main">Apariencia del Sistema</h1>
-          <p className="text-muted mt-1">Personaliza el aspecto visual para una experiencia más cómoda</p>
+          <h1 className="text-2xl font-bold text-main">Apariencia</h1>
+          <p className="text-muted mt-1">Ajusta los colores y el tamaño de letra a tu gusto para no cansarte la vista</p>
         </div>
 
         <div className="flex flex-col md:flex-row bg-card min-h-[calc(100vh-12rem)]">

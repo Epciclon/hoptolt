@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { usePersistentTab } from '@/shared/hooks/usePersistentTab';
 import { DashboardTabs } from '@/shared/ui/DashboardTabs';
 import { SectionMessage } from '@/shared/ui/SectionMessage';
@@ -18,7 +18,7 @@ export function FeedingDashboard() {
 
   return (
     <Card className="min-h-[calc(100vh-7rem)]">
-      <CardHeader title="Control de Alimentación" subtitle="Registra y monitorea el consumo de alimento" />
+      <CardHeader title="Control de Alimentación" subtitle="Registra qué alimento y en qué momento comieron tus conejos" />
       <DashboardTabs
         tabs={[
           { id: 'registro', label: 'Registro Diario', icon: <Utensils size={18} /> },

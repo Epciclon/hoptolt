@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { GalponGuard } from '@/modules/galpones/components/GalponGuard';
@@ -19,8 +19,8 @@ export default function RacesPage() {
       <GalponGuard requireGalpon={false}>
         <Card>
         <CardHeader
-          title="Gestión de Razas"
-          subtitle="Registra y administra las razas de conejos"
+          title="Razas"
+          subtitle="Define las razas de conejos con las que trabajas en tu criadero"
           actions={
             <Button icon={<Plus size={16} />} onClick={openModal}>Nueva Raza</Button>
           }
