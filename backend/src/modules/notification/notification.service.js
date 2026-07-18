@@ -39,35 +39,8 @@ class NotificationService {
 
             const { notifiedIds, notificationMap } = await this._getNotifiedIds(profileId, 'warning', 'birth');
 
-            for (const r of upcomingReproductions) {
-                const repId = Number(r.id);
-                if (!notifiedIds.has(repId)) {
-                    notifiedIds.add(repId);
-                    const birthDateStr = typeof r.estimatedBirthDate === 'string' ? r.estimatedBirthDate : r.estimatedBirthDate.toISOString().split('T')[0];
-                    const rabbitName = r.female?.name ? " (" + r.female.name + ")" : "";
-                    await Notification.create({
-                        profileId,
-                        type: 'warning',
-                        title: 'Alerta de Parto Pr�ximo',
-                        message: `La coneja con c\xf3digo ${r.female?.code}${rabbitName} tiene un parto estimado para el ${birthDateStr}. \xa1Por favor prepara la jaula con al menos 3 d\xedas de anticipaci\xf3n!`,
-                        data: { type: 'birth_warning', reproductionId: repId, estimatedBirthDate: birthDateStr }
-                    });
-                }
-            }
-
-            if (notifiedIds.size > 0) {
-                const allNotifiedReproductions = await Reproduction.findAll({
-                    where: { id: { [Op.in]: Array.from(notifiedIds) } },
-                    attributes: ['id', 'status']
-                });
-                const statusMap = new Map(allNotifiedReproductions.map(r => [Number(r.id), r.status]));
-                for (const notifiedId of notifiedIds) {
-                    if (statusMap.get(notifiedId) !== 'gestacion') {
-                        const notifId = notificationMap.get(notifiedId);
-                        if (notifId) await Notification.destroy({ where: { id: notifId } });
-                    }
-                }
-            }
+            await this._processUpcomingBirths(upcomingReproductions, profileId, notifiedIds);
+            await this._cleanupStaleBirthNotifications(notifiedIds, notificationMap);
         } catch (error) {
             console.error('Error checking/creating birth notifications:', error);
         }
@@ -105,34 +78,8 @@ class NotificationService {
 
             const { notifiedIds, notificationMap } = await this._getNotifiedIds(profileId, 'warning', 'weaning');
 
-            for (const r of weaningReproductions) {
-                const repId = Number(r.id);
-                if (!notifiedIds.has(repId)) {
-                    notifiedIds.add(repId);
-                    const rabbitName = r.female?.name ? " (" + r.female.name + ")" : "";
-                    await Notification.create({
-                        profileId,
-                        type: 'warning',
-                        title: 'Recordatorio de Destete',
-                        message: `La camada de la coneja ${rabbitName} ya cumpli\xf3 30 d\xedas de lactancia. Es tiempo de realizar el destete.`,
-                        data: { type: 'weaning_alert', reproductionId: repId }
-                    });
-                }
-            }
-
-            if (notifiedIds.size > 0) {
-                const allNotifiedReproductions = await Reproduction.findAll({
-                    where: { id: { [Op.in]: Array.from(notifiedIds) } },
-                    attributes: ['id', 'status']
-                });
-                const statusMap = new Map(allNotifiedReproductions.map(r => [Number(r.id), r.status]));
-                for (const notifiedId of notifiedIds) {
-                    if (statusMap.get(notifiedId) !== 'lactancia') {
-                        const notifId = notificationMap.get(notifiedId);
-                        if (notifId) await Notification.destroy({ where: { id: notifId } });
-                    }
-                }
-            }
+            await this._processWeaningAlerts(weaningReproductions, profileId, notifiedIds);
+            await this._cleanupStaleWeaningNotifications(notifiedIds, notificationMap);
         } catch (error) {
             console.error('Error checking/creating weaning notifications:', error);
         }
@@ -206,43 +153,9 @@ class NotificationService {
 
             const startMs = startDate.getTime();
             const todayMs = today.getTime();
-            const intervals = [];
-
-            for (const assignment of assignments) {
-                const assignedMs = new Date(assignment.assignedAt).getTime();
-                const liberatedMs = (assignment.status === 'liberado' && assignment.updatedAt) 
-                    ? new Date(assignment.updatedAt).getTime() 
-                    : todayMs;
-
-                const overlapStart = Math.max(startMs, assignedMs);
-                const overlapEnd = Math.min(todayMs, liberatedMs);
-
-                if (overlapStart < overlapEnd) {
-                    intervals.push([overlapStart, overlapEnd]);
-                }
-            }
-
-            intervals.sort((a, b) => a[0] - b[0]);
-            const merged = [];
-            for (const [start, end] of intervals) {
-                if (merged.length === 0) {
-                    merged.push([start, end]);
-                } else {
-                    const last = merged[merged.length - 1];
-                    if (start <= last[1]) {
-                        last[1] = Math.max(last[1], end);
-                    } else {
-                        merged.push([start, end]);
-                    }
-                }
-            }
-
-            let totalOccupiedMs = 0;
-            for (const [start, end] of merged) {
-                totalOccupiedMs += (end - start);
-            }
-
-            const daysWithoutCleaning = Math.floor(totalOccupiedMs / (1000 * 60 * 60 * 24));
+            
+            const merged = this._mergeIntervals(assignments, startMs, todayMs);
+            const daysWithoutCleaning = this._calculateDaysWithoutCleaning(merged);
 
             if (daysWithoutCleaning > 3) {
                 if (!notifiedCageIds.has(Number(cage.id))) {
@@ -255,17 +168,56 @@ class NotificationService {
                         data: { type: 'cleaning_warning', cageId: cage.id, cageNumber: cage.number, daysWithoutCleaning }
                     });
                 }
-            } else {
+            } else if (notifiedCageIds.has(Number(cage.id))) {
                 // If it was cleaned, delete the obsolete notification automatically
-                if (notifiedCageIds.has(Number(cage.id))) {
-                    const notifId = notificationMap.get(Number(cage.id));
-                    if (notifId) {
-                        await Notification.destroy({ where: { id: notifId } });
-                        notifiedCageIds.delete(Number(cage.id));
-                    }
+                const notifId = notificationMap.get(Number(cage.id));
+                if (notifId) {
+                    await Notification.destroy({ where: { id: notifId } });
+                    notifiedCageIds.delete(Number(cage.id));
                 }
             }
         }
+    }
+
+    _mergeIntervals(assignments, startMs, todayMs) {
+        const intervals = [];
+        for (const assignment of assignments) {
+            const assignedMs = new Date(assignment.assignedAt).getTime();
+            const liberatedMs = (assignment.status === 'liberado' && assignment.updatedAt) 
+                ? new Date(assignment.updatedAt).getTime() 
+                : todayMs;
+
+            const overlapStart = Math.max(startMs, assignedMs);
+            const overlapEnd = Math.min(todayMs, liberatedMs);
+
+            if (overlapStart < overlapEnd) {
+                intervals.push([overlapStart, overlapEnd]);
+            }
+        }
+
+        intervals.sort((a, b) => a[0] - b[0]);
+        const merged = [];
+        for (const [start, end] of intervals) {
+            if (merged.length === 0) {
+                merged.push([start, end]);
+            } else {
+                const last = merged[merged.length - 1];
+                if (start <= last[1]) {
+                    last[1] = Math.max(last[1], end);
+                } else {
+                    merged.push([start, end]);
+                }
+            }
+        }
+        return merged;
+    }
+
+    _calculateDaysWithoutCleaning(merged) {
+        let totalOccupiedMs = 0;
+        for (const [start, end] of merged) {
+            totalOccupiedMs += (end - start);
+        }
+        return Math.floor(totalOccupiedMs / (1000 * 60 * 60 * 24));
     }
 
     async createNotification(profileId, data) {
@@ -292,7 +244,7 @@ class NotificationService {
             for (const wc of workerCages) {
                 const member = await FarmMember.findByPk(wc.farmMemberId);
                 // Only send to active workers
-                if (!member || member.role !== 'worker' || member.status !== 'active' || !member.profileId) continue;
+                if (member?.role !== 'worker' || member?.status !== 'active' || !member?.profileId) continue;
 
                 const title = isAssigned ? 'Nueva Asignación de Conejo' : 'Conejo Removido';
                 const message = isAssigned 
@@ -393,10 +345,7 @@ class NotificationService {
     }
 
     _addNotifiedId(notifiedIds, notificationMap, notificationId, dataObj, filterType) {
-        if (filterType === 'birth' && dataObj?.reproductionId) {
-            notifiedIds.add(Number(dataObj.reproductionId));
-            notificationMap.set(Number(dataObj.reproductionId), notificationId);
-        } else if (filterType === 'weaning' && dataObj?.type === 'weaning_alert' && dataObj?.reproductionId) {
+        if ((filterType === 'birth' && dataObj?.reproductionId) || (filterType === 'weaning' && dataObj?.type === 'weaning_alert' && dataObj?.reproductionId)) {
             notifiedIds.add(Number(dataObj.reproductionId));
             notificationMap.set(Number(dataObj.reproductionId), notificationId);
         } else if (filterType === 'cleaning' && dataObj?.type === 'cleaning_warning' && dataObj?.cageId) {
@@ -444,11 +393,75 @@ class NotificationService {
             if (!cagesToCheck.some(x => x.id === c.id)) cagesToCheck.push(c);
         }
     }
+
+    async _processUpcomingBirths(upcomingReproductions, profileId, notifiedIds) {
+        for (const r of upcomingReproductions) {
+            const repId = Number(r.id);
+            if (!notifiedIds.has(repId)) {
+                notifiedIds.add(repId);
+                const birthDateStr = typeof r.estimatedBirthDate === 'string' ? r.estimatedBirthDate : r.estimatedBirthDate.toISOString().split('T')[0];
+                const rabbitName = r.female?.name ? " (" + r.female.name + ")" : "";
+                const { Notification } = require('../../domain/models');
+                await Notification.create({
+                    profileId,
+                    type: 'warning',
+                    title: 'Alerta de Parto Próximo',
+                    message: `La coneja con código ${r.female?.code}${rabbitName} tiene un parto estimado para el ${birthDateStr}. ¡Por favor prepara la jaula con al menos 3 días de anticipación!`,
+                    data: { type: 'birth_warning', reproductionId: repId, estimatedBirthDate: birthDateStr }
+                });
+            }
+        }
+    }
+
+    async _cleanupStaleBirthNotifications(notifiedIds, notificationMap) {
+        if (notifiedIds.size === 0) return;
+        const { Reproduction, Notification } = require('../../domain/models');
+        const allNotifiedReproductions = await Reproduction.findAll({
+            where: { id: { [Op.in]: Array.from(notifiedIds) } },
+            attributes: ['id', 'status']
+        });
+        const statusMap = new Map(allNotifiedReproductions.map(r => [Number(r.id), r.status]));
+        for (const notifiedId of notifiedIds) {
+            if (statusMap.get(notifiedId) !== 'gestacion') {
+                const notifId = notificationMap.get(notifiedId);
+                if (notifId) await Notification.destroy({ where: { id: notifId } });
+            }
+        }
+    }
+
+    async _processWeaningAlerts(weaningReproductions, profileId, notifiedIds) {
+        for (const r of weaningReproductions) {
+            const repId = Number(r.id);
+            if (!notifiedIds.has(repId)) {
+                notifiedIds.add(repId);
+                const rabbitName = r.female?.name ? " (" + r.female.name + ")" : "";
+                const { Notification } = require('../../domain/models');
+                await Notification.create({
+                    profileId,
+                    type: 'warning',
+                    title: 'Recordatorio de Destete',
+                    message: `La camada de la coneja ${rabbitName} ya cumplió 30 días de lactancia. Es tiempo de realizar el destete.`,
+                    data: { type: 'weaning_alert', reproductionId: repId }
+                });
+            }
+        }
+    }
+
+    async _cleanupStaleWeaningNotifications(notifiedIds, notificationMap) {
+        if (notifiedIds.size === 0) return;
+        const { Reproduction, Notification } = require('../../domain/models');
+        const allNotifiedReproductions = await Reproduction.findAll({
+            where: { id: { [Op.in]: Array.from(notifiedIds) } },
+            attributes: ['id', 'status']
+        });
+        const statusMap = new Map(allNotifiedReproductions.map(r => [Number(r.id), r.status]));
+        for (const notifiedId of notifiedIds) {
+            if (statusMap.get(notifiedId) !== 'lactancia') {
+                const notifId = notificationMap.get(notifiedId);
+                if (notifId) await Notification.destroy({ where: { id: notifId } });
+            }
+        }
+    }
 }
 
 module.exports = new NotificationService();
-
-
-
-
-

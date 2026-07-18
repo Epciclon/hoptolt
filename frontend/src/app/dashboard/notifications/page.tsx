@@ -78,6 +78,34 @@ export default function NotificationsPage() {
     }
   };
 
+  const routeNotification = (notification: Notification) => {
+    const type = notification.data?.type;
+    
+    if (type === 'worker_action' && notification.data?.module) {
+      router.push(`/dashboard/${notification.data.module}?tab=historial`);
+      return;
+    }
+    
+    if (type === 'reproduction_automated' || type === 'reproduction_manual') {
+      const phase = notification.data?.phase;
+      if (phase === 2) router.push('/dashboard/reproduction?tab=partos');
+      else if (phase === 3) router.push('/dashboard/reproduction?tab=gazapos');
+      else router.push('/dashboard/reproduction?tab=montas');
+      return;
+    }
+    
+    switch (type) {
+      case 'birth_warning': return router.push('/dashboard/reproduction?tab=partos');
+      case 'weaning_alert': return router.push('/dashboard/reproduction?tab=gazapos');
+      case 'cleaning_warning': return router.push('/dashboard/cleaning');
+      case 'growth_summary': return router.push('/dashboard/conejos');
+    }
+
+    if (notification.data?.galponId && (notification.type === 'success' || notification.type === 'invitation')) {
+      router.push('/dashboard/galpones');
+    }
+  };
+
   const handleNotificationClick = async (notification: Notification) => {
     if (!notification.read) {
       try {
@@ -86,26 +114,7 @@ export default function NotificationsPage() {
         console.error('Error al marcar como leída:', error);
       }
     }
-    const type = notification.data?.type;
-
-    if (type === 'worker_action' && notification.data?.module) {
-      router.push(`/dashboard/${notification.data.module}?tab=historial`);
-    } else if (type === 'reproduction_automated' || type === 'reproduction_manual') {
-      const phase = notification.data?.phase;
-      if (phase === 2) router.push('/dashboard/reproduction?tab=partos');
-      else if (phase === 3) router.push('/dashboard/reproduction?tab=gazapos');
-      else router.push('/dashboard/reproduction?tab=montas');
-    } else if (type === 'birth_warning') {
-      router.push('/dashboard/reproduction?tab=partos');
-    } else if (type === 'weaning_alert') {
-      router.push('/dashboard/reproduction?tab=gazapos');
-    } else if (type === 'cleaning_warning') {
-      router.push('/dashboard/cleaning');
-    } else if (type === 'growth_summary') {
-      router.push('/dashboard/conejos');
-    } else if (notification.data?.galponId && (notification.type === 'success' || notification.type === 'invitation')) {
-      router.push('/dashboard/galpones');
-    }
+    routeNotification(notification);
   };
 
   const getIconByType = (type: string) => {
@@ -241,7 +250,7 @@ export default function NotificationsPage() {
                       !notification.read && "bg-blue-50/30"
                     )}
                     onClick={() => handleNotificationClick(notification)}
-                    role="button"
+                    role="button" // NOSONAR
                     tabIndex={0}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
