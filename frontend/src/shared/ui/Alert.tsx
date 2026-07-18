@@ -44,7 +44,7 @@ export function Alert({ variant, message, onClose, className }: Readonly<AlertPr
       <span className="mt-0.5 shrink-0">{icon}</span>
       <span className="flex-1 whitespace-pre-line">{message}</span>
       {onClose && (
-        <button onClick={onClose} className="shrink-0 opacity-60 hover:opacity-100 transition-opacity">
+        <button type="button" onClick={onClose} className="shrink-0 opacity-60 hover:opacity-100 transition-opacity">
           <X size={14} />
         </button>
       )}

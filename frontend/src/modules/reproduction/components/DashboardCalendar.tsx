@@ -196,7 +196,7 @@ export function DashboardCalendar() {
             <div className="h-full bg-primary-500 animate-pulse w-full"></div>
           </div>
         )}
-        <button
+        <button type="button"
           onClick={() => { setCalendarType('births'); setSelectedDate(null); }}
           className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-all ${
             calendarType === 'births' ? 'bg-card text-emerald-700 dark:text-emerald-400 shadow-sm border border-default' : 'text-muted hover:text-main'
@@ -204,7 +204,7 @@ export function DashboardCalendar() {
         >
           {typeConfig.births.icon} <span className="hidden sm:inline">{typeConfig.births.label}</span>
         </button>
-        <button
+        <button type="button"
           onClick={() => { setCalendarType('receptive'); setSelectedDate(null); }}
           className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-all ${
             calendarType === 'receptive' ? 'bg-card text-pink-700 dark:text-pink-400 shadow-sm border border-default' : 'text-muted hover:text-main'
@@ -212,7 +212,7 @@ export function DashboardCalendar() {
         >
           {typeConfig.receptive.icon} <span className="hidden sm:inline">{typeConfig.receptive.label}</span>
         </button>
-        <button
+        <button type="button"
           onClick={() => { setCalendarType('weaning'); setSelectedDate(null); }}
           className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-all ${
             calendarType === 'weaning' ? 'bg-card text-amber-700 dark:text-amber-400 shadow-sm border border-default' : 'text-muted hover:text-main'
@@ -226,7 +226,7 @@ export function DashboardCalendar() {
       <div className="bg-card rounded-xl border border-strong overflow-hidden w-full max-w-3xl mx-auto">
         {/* Header con navegación */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-default bg-theme-surface">
-          <button
+          <button type="button"
             onClick={prevMonth}
             className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors text-muted"
           >
@@ -237,7 +237,7 @@ export function DashboardCalendar() {
               {MONTHS[month - 1]} {year}
             </h3>
           </div>
-          <button
+          <button type="button"
             onClick={nextMonth}
             className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors text-muted"
           >
@@ -273,7 +273,7 @@ export function DashboardCalendar() {
                 const { bgClass, eventTextClass } = getDayStyles(calendarType, hasEvents, isDayToday, canViewReproduction);
 
                 return (
-                  <button
+                  <button type="button"
                     key={dateKey}
                     onClick={() => { if (hasEvents && canViewReproduction) setSelectedDate(dateKey); }}
                     disabled={!hasEvents || !canViewReproduction}

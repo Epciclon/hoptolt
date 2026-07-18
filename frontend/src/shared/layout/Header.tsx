@@ -31,7 +31,7 @@ export function Header() {
       <div className="flex items-center gap-4">
         <NotificationIcon />
         <div className="relative">
-          <button
+          <button type="button"
             onClick={() => setDropdownOpen((v) => !v)}
             className={cn(
               'flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition-colors',
@@ -75,7 +75,7 @@ export function Header() {
                     <Settings size={16} /> Apariencia del Sistema
                   </Link>
                   <div className="border-t border-default mt-1 pt-1">
-                    <button
+                    <button type="button"
                       onClick={handleLogout}
                       className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
                     >

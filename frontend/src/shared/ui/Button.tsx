@@ -32,7 +32,7 @@ const sizeStyles: Record<ButtonSize, string> = {
 
 export const Button = forwardRef<HTMLButtonElement, Readonly<ButtonProps>>(
   ({ variant = 'primary', size = 'md', loading = false, icon, fullWidth, className, children, disabled, ...props }, ref) => (
-    <button
+    <button type="button"
       ref={ref}
       disabled={disabled || loading}
       className={cn(

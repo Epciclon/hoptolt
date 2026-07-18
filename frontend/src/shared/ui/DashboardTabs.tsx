@@ -18,7 +18,7 @@ export function DashboardTabs({ tabs, activeTab, onTabChange }: Readonly<Dashboa
   return (
     <div className="flex border-b border-strong mb-6 px-6 overflow-x-auto hide-scrollbar">
       {tabs.map((tab) => (
-        <button
+        <button type="button"
           key={tab.id}
           onClick={() => onTabChange(tab.id)}
           className={`flex items-center gap-2 px-6 py-3 border-b-2 transition-colors whitespace-nowrap ${

@@ -140,7 +140,7 @@ export default function SettingsPage() {
           <div className="w-full md:w-64 shrink-0 p-4 md:p-6 md:border-r border-default bg-card">
             <nav className="flex flex-row md:flex-col gap-2 overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
               {NAV_ITEMS.map(({ id, label, icon: Icon, ready }) => (
-                <button
+                <button type="button"
                   key={id}
                   onClick={() => ready && setActiveSection(id)}
                   disabled={!ready}
@@ -179,7 +179,7 @@ export default function SettingsPage() {
 
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
                 {FONT_SIZES.map((f) => (
-                  <button
+                  <button type="button"
                     key={f.key}
                     onClick={() => selectSize(f.key)}
                     className={cn(
@@ -225,7 +225,7 @@ export default function SettingsPage() {
 
               <div className="flex flex-col gap-3">
                 {FONT_FAMILIES.map((f) => (
-                  <button
+                  <button type="button"
                     key={f.key}
                     onClick={() => selectFamily(f.key)}
                     className={cn(
@@ -277,7 +277,7 @@ export default function SettingsPage() {
                   { value: false, label: 'Normal', description: 'Peso estándar del texto — predeterminado' },
                   { value: true,  label: 'Negrilla', description: 'Texto más grueso — mayor legibilidad' },
                 ].map((opt) => (
-                  <button
+                  <button type="button"
                     key={String(opt.value)}
                     onClick={() => toggleBold(opt.value)}
                     className={cn(
@@ -321,10 +321,10 @@ export default function SettingsPage() {
                   Cambia la interfaz a colores oscuros para reducir la fatiga visual.
                 </p>
                 <div className="flex gap-4">
-                  <button onClick={() => { if (theme === 'dark') selectTheme('light'); }} className={cn("p-4 border-2 rounded-xl flex-1 text-center font-medium", theme !== 'dark' ? 'border-primary-500 bg-theme-surface text-primary-600' : 'border-default text-muted')}>
+                  <button type="button" onClick={() => { if (theme === 'dark') selectTheme('light'); }} className={cn("p-4 border-2 rounded-xl flex-1 text-center font-medium", theme !== 'dark' ? 'border-primary-500 bg-theme-surface text-primary-600' : 'border-default text-muted')}>
                     Desactivado
                   </button>
-                  <button onClick={() => selectTheme('dark')} className={cn("p-4 border-2 rounded-xl flex-1 text-center font-medium", theme === 'dark' ? 'border-primary-500 bg-theme-surface text-primary-600' : 'border-default text-muted')}>
+                  <button type="button" onClick={() => selectTheme('dark')} className={cn("p-4 border-2 rounded-xl flex-1 text-center font-medium", theme === 'dark' ? 'border-primary-500 bg-theme-surface text-primary-600' : 'border-default text-muted')}>
                     Activado
                   </button>
                 </div>
@@ -343,10 +343,10 @@ export default function SettingsPage() {
                   Usa colores intensos (blanco, negro, amarillo) para máxima legibilidad.
                 </p>
                 <div className="flex gap-4">
-                  <button onClick={() => { if (theme === 'contrast') selectTheme('light'); }} className={cn("p-4 border-2 rounded-xl flex-1 text-center font-medium", theme !== 'contrast' ? 'border-primary-500 bg-theme-surface text-primary-600' : 'border-default text-muted')}>
+                  <button type="button" onClick={() => { if (theme === 'contrast') selectTheme('light'); }} className={cn("p-4 border-2 rounded-xl flex-1 text-center font-medium", theme !== 'contrast' ? 'border-primary-500 bg-theme-surface text-primary-600' : 'border-default text-muted')}>
                     Desactivado
                   </button>
-                  <button onClick={() => selectTheme('contrast')} className={cn("p-4 border-2 rounded-xl flex-1 text-center font-medium", theme === 'contrast' ? 'border-primary-500 bg-theme-surface text-primary-600' : 'border-default text-muted')}>
+                  <button type="button" onClick={() => selectTheme('contrast')} className={cn("p-4 border-2 rounded-xl flex-1 text-center font-medium", theme === 'contrast' ? 'border-primary-500 bg-theme-surface text-primary-600' : 'border-default text-muted')}>
                     Activado
                   </button>
                 </div>

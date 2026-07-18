@@ -26,7 +26,7 @@ export function RabbitDetailsModal({
       <div className="flex flex-col h-full bg-card">
         <div className="border-b border-strong">
           <nav className="flex gap-4 px-6" aria-label="Tabs">
-            <button
+            <button type="button"
               onClick={() => setActiveTab('info')}
               className={`py-4 px-1 inline-flex items-center gap-2 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'info'
@@ -37,7 +37,7 @@ export function RabbitDetailsModal({
               <Info size={16} />
               Información General
             </button>
-            <button
+            <button type="button"
               onClick={() => setActiveTab('medical')}
               className={`py-4 px-1 inline-flex items-center gap-2 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'medical'

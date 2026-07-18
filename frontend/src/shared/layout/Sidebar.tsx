@@ -157,7 +157,7 @@ export function Sidebar({ collapsed, onToggle }: Readonly<SidebarProps>) {
           </h1>
           <p className="text-theme-faint text-xs mt-0.5">Sistema de gestión de crianza</p>
         </div>
-        <button
+        <button type="button"
           onClick={onToggle}
           className="p-1.5 rounded-lg hover:bg-card/10 text-theme-faint hover:text-white transition-colors flex items-center justify-center"
           title="Ocultar menú"
@@ -193,7 +193,7 @@ export function Sidebar({ collapsed, onToggle }: Readonly<SidebarProps>) {
 
           return (
             <div key={item.name} className="mb-1">
-              <button
+              <button type="button"
                 onClick={() => toggleGroup(item.name)}
                 className={cn(
                   'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all',

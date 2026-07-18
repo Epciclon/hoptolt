@@ -32,14 +32,14 @@ export default function DashboardError({
           Si el problema persiste, contacta al administrador del sistema.
         </p>
         <div className="flex gap-3 justify-center">
-          <button
+          <button type="button"
             onClick={reset}
             className="inline-flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white font-semibold px-5 py-2.5 rounded-xl transition-colors text-base"
           >
             <RefreshCw size={16} />
             Reintentar
           </button>
-          <button
+          <button type="button"
             onClick={() => router.push('/dashboard')}
             className="inline-flex items-center gap-2 bg-card border border-strong hover:bg-theme-surface text-main font-semibold px-5 py-2.5 rounded-xl transition-colors text-base"
           >

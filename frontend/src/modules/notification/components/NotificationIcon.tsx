@@ -187,7 +187,7 @@ export function NotificationIcon() {
 
   return (
     <div className="relative">
-      <button
+      <button type="button"
         onClick={() => {
           const newState = !isOpen;
           setIsOpen(newState);
@@ -223,7 +223,7 @@ export function NotificationIcon() {
               <div className="flex justify-between items-center">
                 <h3 className="font-semibold text-main text-base m-0">Notificaciones</h3>
                 {unreadCount > 0 && (
-                  <button
+                  <button type="button"
                     onClick={() => markAllAsRead()}
                     className="text-xs text-primary-600 hover:text-primary-700 flex items-center gap-1 font-medium bg-transparent border-none p-0 cursor-pointer"
                   >
@@ -274,7 +274,7 @@ export function NotificationIcon() {
                           <div className="flex justify-between items-start gap-2">
                             <h4 className="font-medium text-main text-sm">{notification.title}</h4>
                             {!(notification.type === 'warning' || notification.type === 'invitation') && (
-                              <button
+                              <button type="button"
                                 onClick={async (e) => {
                                   e.stopPropagation();
                                   try {

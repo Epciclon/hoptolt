@@ -218,7 +218,7 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
           const assignedCages = member.assignedCages || [];
 
           return (
-            <button
+            <button type="button"
               key={member.id}
               onClick={() => {
                 setSelectedWorker(member);

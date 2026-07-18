@@ -139,7 +139,7 @@ export function PermissionActionModal({ open, onClose, onConfirm, moduleName, is
         
         <div className="flex justify-between items-center mb-3">
           <span className="text-sm text-muted">Acciones permitidas:</span>
-          <button
+          <button type="button"
             onClick={handleToggleAll}
             className="text-xs text-primary-600 hover:text-primary-700"
           >

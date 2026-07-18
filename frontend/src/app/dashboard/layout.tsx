@@ -97,7 +97,7 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
         
         {/* Floating trigger tab visible on both mobile and PC when sidebar is closed */}
         {sidebarCollapsed && (
-          <button
+          <button type="button"
             onClick={toggleSidebar}
             className="fixed left-0 top-24 z-50 bg-sidebar hover:bg-slate-800 text-white rounded-r-full pl-3 pr-4 py-3 shadow-lg border border-l-0 border-white/10 transition-all duration-300 flex items-center justify-center group"
             title="Mostrar menú"

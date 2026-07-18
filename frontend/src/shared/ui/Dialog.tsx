@@ -70,7 +70,7 @@ export function Dialog({ open, onClose, title, description, children, size = 'md
             {description && <p className="mt-0.5 text-sm text-muted">{description}</p>}
           </div>
           {!hideClose && (
-            <button
+            <button type="button"
               onClick={onClose}
               className="ml-4 mt-0.5 text-theme-faint hover:text-muted transition-colors"
             >

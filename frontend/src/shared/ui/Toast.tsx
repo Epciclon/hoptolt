@@ -58,7 +58,7 @@ export function ToastItem({ toast, onClose }: Readonly<ToastProps>) {
     <div className={cn('flex items-center gap-3 p-4 rounded-lg border shadow-lg min-w-80 animate-in slide-in-from-right', getStyles())}>
       {getIcon()}
       <p className="flex-1 text-sm font-medium whitespace-pre-wrap">{toast.message}</p>
-      <button
+      <button type="button"
         onClick={() => onClose(toast.id)}
         className="text-current opacity-60 hover:opacity-100 transition-opacity"
       >

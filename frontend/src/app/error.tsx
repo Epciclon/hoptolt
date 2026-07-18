@@ -28,7 +28,7 @@ export default function GlobalError({
             Ocurrió un error inesperado. Por favor intenta de nuevo o regresa al inicio.
           </p>
           <div className="flex gap-3 justify-center">
-            <button
+            <button type="button"
               onClick={reset}
               className="inline-flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-3 rounded-xl transition-colors text-base"
             >

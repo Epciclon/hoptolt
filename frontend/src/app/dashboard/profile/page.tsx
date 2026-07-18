@@ -126,7 +126,7 @@ export default function ProfilePage() {
           {/* Navigation Tabs */}
           <div className="w-full md:w-64 shrink-0 p-4 md:p-6 md:border-r border-default bg-card">
           <nav className="flex flex-row md:flex-col gap-2 overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
-            <button
+            <button type="button"
               onClick={() => setActiveTab('personal')}
               className={cn(
                 "flex items-center justify-center md:justify-start gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors whitespace-nowrap shrink-0",
@@ -138,7 +138,7 @@ export default function ProfilePage() {
               <User size={18} />
               Datos Personales
             </button>
-            <button
+            <button type="button"
               onClick={() => setActiveTab('password')}
               className={cn(
                 "flex items-center justify-center md:justify-start gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors whitespace-nowrap shrink-0",
@@ -150,7 +150,7 @@ export default function ProfilePage() {
               <Lock size={18} />
               Seguridad
             </button>
-            <button
+            <button type="button"
               onClick={() => setActiveTab('delete')}
               className={cn(
                 "flex items-center justify-center md:justify-start gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors whitespace-nowrap shrink-0",
