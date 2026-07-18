@@ -48,8 +48,8 @@ class NotificationService {
                     await Notification.create({
                         profileId,
                         type: 'warning',
-                        title: 'Alerta de Parto Próximo',
-                        message: La coneja con código  tiene un parto estimado para el . ¡Por favor prepara la jaula con al menos 3 días de anticipación!,
+                        title: 'Alerta de Parto Prï¿½ximo',
+                        message: La coneja con cï¿½digo  tiene un parto estimado para el . ï¿½Por favor prepara la jaula con al menos 3 dï¿½as de anticipaciï¿½n!,
                         data: { type: 'birth_warning', reproductionId: repId, estimatedBirthDate: birthDateStr }
                     });
                 }
@@ -114,7 +114,7 @@ class NotificationService {
                         profileId,
                         type: 'warning',
                         title: 'Recordatorio de Destete',
-                        message: La camada de la coneja  ya cumplió 30 días de lactancia. Es tiempo de realizar el destete.,
+                        message: La camada de la coneja  ya cumpliï¿½ 30 dï¿½as de lactancia. Es tiempo de realizar el destete.,
                         data: { type: 'weaning_alert', reproductionId: repId }
                     });
                 }
