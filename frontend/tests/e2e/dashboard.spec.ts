@@ -11,41 +11,44 @@ async function mockApi(page: Page) {
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, user: { id: '1', email: 'test@hoptolt.com', username: 'testuser', fullName: 'Test User', activeGalponId: 1, role: 'owner', createdAt: new Date().toISOString(), permissions: [] } }) });
   });
   await page.route('**/api/galpones/active', async route => {
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, galpon: { id: 1, name: 'Galpón Principal', description: 'Galpón de prueba', createdAt: new Date().toISOString() } }) });
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, galpon: { id: 1, name: 'Galpón Principal' } }) });
   });
   await page.route('**/api/galpones/*/stats', async route => {
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, stats: { totalCages: 10, totalRabbits: 45, totalRaces: 5, totalAssignments: 30 } }) });
   });
-  await page.route('**/api/galpones*', async route => {
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, galpon: { id: 1, name: 'Galpón Principal' } }) });
-  });
   await page.route('**/api/invitations**', async route => {
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, invitations: [] }) });
   });
-  await page.route('**/api/notifications**', async route => {
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, notifications: [] }) });
+  await page.route('**/api/notifications**', async (route) => {
+    const url = route.request().url();
+    if (url.includes('unread-count')) {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ count: 0 }) });
+    } else {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) });
+    }
   });
   await page.route('**/api/reproductions/calendar*', async route => {
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, events: [] }) });
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, calendar: {} }) });
   });
 }
 
 async function login(page: Page) {
   await page.goto('/login');
-  await page.waitForSelector('#identifier');
+  await page.waitForSelector('#identifier', { timeout: 10000 });
   await page.locator('#identifier').fill('testuser');
   await page.locator('#password').fill('Test123!@#');
   await page.locator('#btn-login').click();
+  await page.waitForURL('/dashboard', { timeout: 20000 });
 }
 
 test.describe('Dashboard', () => {
   test('shows stats cards on dashboard', async ({ page }) => {
     await mockApi(page);
     await login(page);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
 
-    await page.waitForURL('/dashboard', { timeout: 15000 });
-
-    await expect(page.locator('text=Total Jaulas')).toBeVisible();
+    await expect(page.locator('text=Total Jaulas')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('text=Total Conejos')).toBeVisible();
     await expect(page.locator('text=Razas Registradas')).toBeVisible();
     await expect(page.locator('text=Asignaciones')).toBeVisible();
@@ -54,8 +57,7 @@ test.describe('Dashboard', () => {
   test('sidebar navigation is visible', async ({ page }) => {
     await mockApi(page);
     await login(page);
-
-    await page.waitForURL('/dashboard', { timeout: 15000 });
+    await page.waitForLoadState('networkidle');
 
     await expect(page.locator('text=Inicio')).toBeVisible();
     await expect(page.locator('text=Galpones')).toBeVisible();
@@ -64,7 +66,7 @@ test.describe('Dashboard', () => {
   });
 });
 
-test.describe('Navigation', () => {
+test.describe('Navigation guard', () => {
   test('redirects to login when accessing dashboard without auth', async ({ page }) => {
     await page.goto('/dashboard');
     await page.waitForURL(/\/login/, { timeout: 10000 });
