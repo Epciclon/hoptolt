@@ -1,4 +1,4 @@
-﻿export const formatDateTime = (dateString: string) => {
+export const formatDateTime = (dateString: string) => {
   const date = new Date(dateString);
   const ecuadorDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
   const formattedDate = ecuadorDate.toLocaleDateString('es-EC', {
@@ -12,4 +12,18 @@
     hour12: true
   });
   return `${formattedDate} ${formattedTime}`;
+};
+
+export const formatDateString = (dateString: string | null | undefined) => {
+  if (!dateString) return 'N/A';
+  if (dateString.includes('T')) {
+    const date = new Date(dateString);
+    const ecuadorDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
+    return ecuadorDate.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+  const parts = dateString.split('-');
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return dateString;
 };

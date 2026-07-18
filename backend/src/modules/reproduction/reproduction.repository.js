@@ -137,50 +137,10 @@ class ReproductionRepository {
         const startStr = `${year}-${String(month).padStart(2, '0')}-01`;
         const endStr = `${year}-${String(month).padStart(2, '0')}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`;
 
-        const whereClause = {
-            galponId,
-            estimatedBirthDate: {
-                [Op.between]: [startStr, endStr]
-            }
+        const { includeOptions, whereClause } = this._getFindOptionsByDateAndGalpon(galponId, cageIds);
+        whereClause.estimatedBirthDate = {
+            [Op.between]: [startStr, endStr]
         };
-
-        const includeOptions = [
-            {
-                model: Rabbit,
-                as: 'female',
-                attributes: ['id', 'code', 'name', 'imageUrl'],
-                required: true,
-                include: [
-                    {
-                        model: Assignment,
-                        as: 'assignments',
-                        where: { status: 'asignado' },
-                        required: false,
-                        include: [
-                            {
-                                model: Cage,
-                                as: 'cage',
-                                attributes: ['id', 'number', 'type']
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                model: Rabbit,
-                as: 'male',
-                attributes: ['id', 'code', 'name', 'imageUrl'],
-                required: false
-            }
-        ];
-
-        // Si se proporcionan cageIds, filtrar por jaulas (para trabajadores)
-        if (cageIds !== null) {
-            includeOptions[0].include[0].include[0].where = {
-                id: { [Op.in]: cageIds }
-            };
-            includeOptions[0].include[0].include[0].required = true;
-        }
 
         const results = await Reproduction.findAll({
             where: whereClause,
@@ -195,10 +155,20 @@ class ReproductionRepository {
     async findByDayAndGalpon(galponId, year, month, day, cageIds = null) {
         const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
-        const whereClause = {
-            galponId,
-            estimatedBirthDate: dateStr
-        };
+        const { includeOptions, whereClause } = this._getFindOptionsByDateAndGalpon(galponId, cageIds);
+        whereClause.estimatedBirthDate = dateStr;
+
+        const results = await Reproduction.findAll({
+            where: whereClause,
+            include: includeOptions,
+            order: [['estimatedBirthDate', 'ASC']]
+        });
+
+        return results.filter(r => ['monta', 'gestacion'].includes(r.status));
+    }
+
+    _getFindOptionsByDateAndGalpon(galponId, cageIds) {
+        const whereClause = { galponId };
 
         const includeOptions = [
             {
@@ -239,13 +209,7 @@ class ReproductionRepository {
             includeOptions[0].include[0].include[0].required = true;
         }
 
-        const results = await Reproduction.findAll({
-            where: whereClause,
-            include: includeOptions,
-            order: [['estimatedBirthDate', 'ASC']]
-        });
-
-        return results.filter(r => ['monta', 'gestacion'].includes(r.status));
+        return { includeOptions, whereClause };
     }
 
     async findByIdWithDetails(id) {

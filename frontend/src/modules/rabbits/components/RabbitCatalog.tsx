@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useRabbits } from '../hooks/useRabbits';
 import { useRaces } from '../../races/hooks/useRaces';
@@ -12,6 +12,7 @@ import { RabbitForm } from './RabbitForm';
 import { RabbitDetailsModal } from './RabbitDetailsModal';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { useSupabase } from '../../../hooks/useSupabase';
+import { formatRabbitAge, rabbitSexOptions } from '@/shared/utils/rabbitUtils';
 
 interface RabbitCatalogProps {
   onSuccess?: () => void;
@@ -58,19 +59,10 @@ export function RabbitCatalog({ onSuccess }: Readonly<RabbitCatalogProps>) {
   };
 
   const raceOptions = races.map(r => ({ label: r.name, value: r.name }));
-  const sexOptions = [
-    { label: 'Macho', value: 'macho' },
-    { label: 'Hembra', value: 'hembra' }
-  ];
   const purposeOptions = [
     { label: 'Reproducción', value: 'Reproducción' },
     { label: 'Engorde', value: 'Engorde' }
   ];
-
-  const getRabbitAge = (age: number | null | undefined) => {
-    if (age === null || age === undefined) return '-';
-    return `${age} ${age === 1 ? 'mes' : 'meses'}`;
-  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -80,7 +72,7 @@ export function RabbitCatalog({ onSuccess }: Readonly<RabbitCatalogProps>) {
         searchPlaceholder="Buscar por código o nombre..."
         filters={[
           { key: 'race', placeholder: 'Todas las Razas', options: raceOptions, value: filters.race || '', onChange: (val) => { setRace(val); setPage(1); } },
-          { key: 'sex', placeholder: 'Cualquier Sexo', options: sexOptions, value: filters.sex || '', onChange: (val) => { setSex(val); setPage(1); } },
+          { key: 'sex', placeholder: 'Cualquier Sexo', options: rabbitSexOptions, value: filters.sex || '', onChange: (val) => { setSex(val); setPage(1); } },
           { key: 'purpose', placeholder: 'Todo Propósito', options: purposeOptions, value: filters.purpose || '', onChange: (val) => { setPurpose(val); setPage(1); } }
         ]}
       />
@@ -131,7 +123,9 @@ export function RabbitCatalog({ onSuccess }: Readonly<RabbitCatalogProps>) {
                 }
                 details={
                   <>
-                    <div className="flex items-center gap-1"><span className="font-semibold text-main">Edad:</span> {getRabbitAge(rabbit.age)}</div>
+                    <div className="flex items-center gap-1">
+                      <span className="font-semibold text-main">Edad:</span> {formatRabbitAge(rabbit.age)}
+                    </div>
                     {rabbit.weight !== undefined && rabbit.weight !== null && (
                       <>
                         <div className="w-px h-3 bg-slate-300"></div>

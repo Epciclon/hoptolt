@@ -11,6 +11,7 @@ import { useToast } from '@/shared/contexts/ToastContext';
 import { mortalityService } from '@/modules/mortality/services/mortality.service';
 import { WeaningWizard } from './WeaningWizard';
 import { ReproductionForm } from './ReproductionForm';
+import { formatDateString } from '@/shared/utils/dateUtils';
 
 interface GazaposViewProps {
   reproductions: Reproduction[];
@@ -89,19 +90,7 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
 
   const uniqueRaces = Array.from(new Set(reproductions.filter(r => r.status === 'lactancia' && r.femaleRace).map(r => r.femaleRace)));
 
-  const formatDateTime = (dateString: string | null | undefined) => {
-    if (!dateString) return 'N/A';
-    if (dateString.includes('T')) {
-      const date = new Date(dateString);
-      const ecuadorDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
-      return ecuadorDate.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    }
-    const parts = dateString.split('-');
-    if (parts.length === 3) {
-      return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    }
-    return dateString;
-  };
+  const formatDateTime = formatDateString;
 
   const getDaysInLactation = (birthDateString: string | null | undefined) => {
     if (!birthDateString) return 0;

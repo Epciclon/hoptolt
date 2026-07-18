@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Button, Alert, CageCatalog, LoadingMessage } from '@/shared/ui';
+import { Button, Alert, CageCatalog, LoadingMessage, SelectionActionBar } from '@/shared/ui';
 import type { CageItem } from '@/shared/ui';
 import { groupRabbitsByCage } from '@/shared/utils/rabbitUtils';
 import { useCleaning } from '../hooks/useCleaning';
@@ -130,19 +130,13 @@ export function CleaningCatalog({ onSuccess }: Readonly<CleaningCatalogProps>) {
         />
       )}
 
-      {selectedCageNumbers.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 shadow-xl border-2 border-primary-500 bg-theme-surface p-3 rounded-2xl flex items-center justify-between gap-6 max-w-[90vw] min-w-[300px]">
-          <span className="text-main font-semibold px-2">{selectedCageNumbers.length} jaula{selectedCageNumbers.length !== 1 ? 's' : ''} seleccionada{selectedCageNumbers.length !== 1 ? 's' : ''}</span>
-          <Button
-            onClick={handleRegister}
-            loading={submitting}
-            disabled={selectedCageNumbers.length === 0}
-            variant="primary"
-          >
-            Registrar Limpieza
-          </Button>
-        </div>
-      )}
+      <SelectionActionBar
+        count={selectedCageNumbers.length}
+        itemName="jaula"
+        buttonText="Registrar Limpieza"
+        onRegister={handleRegister}
+        isSubmitting={submitting}
+      />
     </div>
   );
 }

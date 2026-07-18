@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useRabbits } from '@/modules/rabbits/hooks/useRabbits';
 import { useRaces } from '@/modules/races/hooks/useRaces';
@@ -8,6 +8,7 @@ import { Badge, Button, LoadingMessage, CatalogCard } from '@/shared/ui';
 import { useState } from 'react';
 import { Network, Edit2 } from 'lucide-react';
 import type { Rabbit } from '@/modules/rabbits/types/rabbit.types';
+import { formatRabbitAge, rabbitSexOptions } from '@/shared/utils/rabbitUtils';
 
 interface GenealogyCatalogProps {
   onViewTree: (rabbit: Rabbit) => void;
@@ -25,15 +26,6 @@ export function GenealogyCatalog({ onViewTree, onEditRelation }: Readonly<Geneal
   };
 
   const raceOptions = races.map(r => ({ label: r.name, value: r.name }));
-  const sexOptions = [
-    { label: 'Macho', value: 'macho' },
-    { label: 'Hembra', value: 'hembra' }
-  ];
-
-  const formatAge = (age: number | null | undefined) => {
-    if (age === null || age === undefined) return '-';
-    return `${age} ${age === 1 ? 'mes' : 'meses'}`;
-  };
 
   const renderContent = () => {
     if (loading) return <LoadingMessage message="Cargando genealogías..." />;
@@ -74,7 +66,7 @@ export function GenealogyCatalog({ onViewTree, onEditRelation }: Readonly<Geneal
             details={
               <>
                 <div className="flex items-center gap-1">
-                  <span className="font-semibold text-main">Edad:</span> {formatAge(rabbit.age)}
+                  <span className="font-semibold text-main">Edad:</span> {formatRabbitAge(rabbit.age)}
                 </div>
                 {rabbit.weight !== undefined && rabbit.weight !== null && (
                   <>
@@ -114,7 +106,7 @@ export function GenealogyCatalog({ onViewTree, onEditRelation }: Readonly<Geneal
         searchPlaceholder="Buscar conejo por código o nombre..."
         filters={[
           { key: 'race', placeholder: 'Todas las Razas', options: raceOptions, value: filters.race || '', onChange: (val) => { setRace(val); setPage(1); } },
-          { key: 'sex', placeholder: 'Cualquier Sexo', options: sexOptions, value: filters.sex || '', onChange: (val) => { setSex(val); setPage(1); } }
+          { key: 'sex', placeholder: 'Cualquier Sexo', options: rabbitSexOptions, value: filters.sex || '', onChange: (val) => { setSex(val); setPage(1); } }
         ]}
       />
 

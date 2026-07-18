@@ -10,6 +10,7 @@ import { ReproductionForm } from './ReproductionForm';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { Input } from '@/shared/ui/Input';
 import { mortalityService } from '@/modules/mortality/services/mortality.service';
+import { formatDateString } from '@/shared/utils/dateUtils';
 
 interface ReproductionCatalogProps {
   reproductions: Reproduction[];
@@ -35,24 +36,7 @@ export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<Repro
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRace, setFilterRace] = useState('');
 
-  const formatDateTime = (dateString: string) => {
-    if (!dateString) return '';
-    if (dateString.includes('T')) {
-      const date = new Date(dateString);
-      const ecuadorDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
-      const formattedDate = ecuadorDate.toLocaleDateString('es-EC', { 
-        day: '2-digit', 
-        month: '2-digit', 
-        year: 'numeric' 
-      });
-      return formattedDate;
-    }
-    const parts = dateString.split('-');
-    if (parts.length === 3) {
-      return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    }
-    return dateString;
-  };
+  const formatDateTime = formatDateString;
 
   const handleConfirmCancel = async () => {
     if (!toCancel?.id || !cancelReason) return;
