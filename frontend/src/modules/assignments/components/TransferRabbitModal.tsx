@@ -93,12 +93,11 @@ export function TransferRabbitModal({ open, onClose, rabbitId, rabbitName, rabbi
                   type="button"
                   onClick={() => setTargetCageId(cage.id)}
                   className={`w-full text-left px-3 py-3 border-b border-strong last:border-b-0 text-sm transition-colors flex items-center justify-between ${
-                    isSelected ? 'bg-blue-50 dark:bg-blue-900/20 ring-1 ring-inset ring-blue-500' : 'hover:bg-theme-hover'
+                    isSelected ? 'bg-green-50 dark:bg-green-900/20 ring-1 ring-inset ring-green-500' : 'hover:bg-theme-hover'
                   }`}
                 >
                   <div>
                     <div className="font-semibold text-main">Jaula #{cage.number} — {cage.type.charAt(0).toUpperCase() + cage.type.slice(1)}</div>
-                    <div className="text-muted text-xs mt-0.5">Espacio disponible: {available} / {cage.capacity}</div>
                   </div>
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${badgeColor}`}>
                     {labelState}

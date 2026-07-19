@@ -158,14 +158,12 @@ export function AssignRabbitForm({ onSuccess, onCancel }: Readonly<AssignRabbitF
   }
 
   const getSubmitLabel = () => {
-    if (selectedRabbits.length === 0) return 'Asignar Conejos';
-    const label = selectedRabbits.length > 1 ? 'conejos' : 'conejo';
-    return `Asignar ${selectedRabbits.length} ${label}`;
+    if (selectedRabbits.length === 0) return 'Asignar';
+    return `Asignar (${selectedRabbits.length})`;
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5 min-h-[320px]">
-
+    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5 min-h-[400px]">
       {warnings.length > 0 && (
         <Alert
           variant="warning"
@@ -174,129 +172,145 @@ export function AssignRabbitForm({ onSuccess, onCancel }: Readonly<AssignRabbitF
         />
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label htmlFor="cageSelect" className="block text-sm font-medium mb-2 text-main">Jaula de destino <span className="text-red-500">*</span></label>
-          <div className="relative" ref={cageDropdownRef}>
-            <Input
-              id="cageSelect"
-              placeholder="Busca por número o tipo de jaula"
-              value={cageSearch}
-              onChange={(e) => {
-                setCageSearch(e.target.value);
-                setShowCageDropdown(true);
-              }}
-              onFocus={handleCageInputFocus}
-            />
-            {showCageDropdown && (
-              <div className="absolute z-50 w-full border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-card mt-1 shadow-xl">
-                {filteredCages.length === 0 ? (
-                  <p className="text-gray-500 text-sm p-3">No hay jaulas disponibles</p>
-                ) : (
-                  filteredCages.map(cage => {
-                    const currentCapacity = cage.assignedCount || 0;
-                    const available = cage.capacity - currentCapacity;
-                    const labelState = cage.occupancyStatus === 'disponible' ? 'Disponible' : 'Uso parcial';
-                    return (
-                      <button
-                        key={cage.id}
-                        type="button"
-                        onClick={() => handleCageSelect(cage)}
-                        className="w-full text-left px-3 py-2 hover:bg-gray-100 border-b last:border-b-0 text-sm"
-                      >
-                        Jaula #{cage.number} — {cage.type.charAt(0).toUpperCase() + cage.type.slice(1)} ({labelState}, {available} disp.)
-                      </button>
-                    );
-                  })
-                )}
-              </div>
+      {!selectedCage ? (
+        <div className="flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-main">Paso 1: Selecciona una jaula destino</h3>
+          </div>
+          <Input
+            id="cageSelect"
+            placeholder="Busca por número o tipo de jaula..."
+            value={cageSearch}
+            onChange={(e) => setCageSearch(e.target.value)}
+          />
+          <div className="border border-strong rounded-md overflow-y-auto bg-card shadow-inner max-h-80 mt-2">
+            {filteredCages.length === 0 ? (
+              <p className="text-gray-500 text-sm p-4 text-center">No se encontraron jaulas con espacio disponible.</p>
+            ) : (
+              filteredCages.map(cage => {
+                const currentCapacity = cage.assignedCount || 0;
+                const available = cage.capacity - currentCapacity;
+                return (
+                  <button
+                    key={cage.id}
+                    type="button"
+                    onClick={() => handleCageSelect(cage)}
+                    className="w-full text-left px-3 py-3 border-b border-strong last:border-b-0 text-sm transition-colors flex items-center justify-between hover:bg-theme-hover"
+                  >
+                    <div>
+                      <div className="font-semibold text-main">Jaula #{cage.number} — {cage.type.charAt(0).toUpperCase() + cage.type.slice(1)}</div>
+                      <div className="text-muted text-xs mt-0.5">Espacio disponible: {available} / {cage.capacity}</div>
+                    </div>
+                  </button>
+                );
+              })
             )}
           </div>
-          {selectedCage && (
-            <div className="flex items-center gap-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 px-2 py-1 rounded text-sm mt-2 w-fit">
-              <span>Jaula #{selectedCage.number} — {selectedCage.type.charAt(0).toUpperCase() + selectedCage.type.slice(1)}</span>
-              <button
-                type="button"
-                onClick={handleCageDeselect}
-                className="text-blue-600 hover:text-blue-800 font-bold"
-              >
-                x
-              </button>
-            </div>
-          )}
           {errors.cageId && <p className="text-red-500 text-sm mt-1">{errors.cageId.message}</p>}
         </div>
+      ) : (
+        <div className="flex flex-col gap-4 animate-in slide-in-from-right-4 duration-300">
+          {/* Header con botón de volver */}
+          <div className="flex items-center gap-3 border-b border-strong pb-3">
+            <button
+              type="button"
+              onClick={handleCageDeselect}
+              className="flex items-center justify-center p-2 rounded-full hover:bg-theme-hover text-muted hover:text-main transition-colors"
+              title="Volver a seleccionar jaula"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m15 18-6-6 6-6"/>
+              </svg>
+            </button>
+            <h3 className="text-lg font-semibold text-main">Jaula #{selectedCage.number}</h3>
+            <span className="text-xs font-medium bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-1 rounded-md ml-auto">
+              {selectedCage.assignedCount || 0} / {selectedCage.capacity} ocupados
+            </span>
+          </div>
 
-        <div>
-          <label htmlFor="rabbitSelect" className="block text-sm font-medium mb-2 text-main">Conejos a asignar <span className="text-red-500">*</span></label>
-          <div className="relative" ref={rabbitDropdownRef}>
-            <Input
-              id="rabbitSelect"
-              placeholder="Busca por código o nombre"
-              value={rabbitSearch}
-              onChange={(e) => {
-                setRabbitSearch(e.target.value);
-                setShowRabbitDropdown(true);
-              }}
-              onFocus={() => setShowRabbitDropdown(true)}
-              disabled={!selectedCage}
-            />
-            {showRabbitDropdown && (
-              <div className="absolute z-50 w-full border border-strong rounded-md max-h-64 overflow-y-auto bg-card mt-1 shadow-lg p-2 flex flex-col gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* Columna Izquierda: Inventario de Conejos */}
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-main">Selecciona los conejos</h3>
+              </div>
+              <Input
+                id="rabbitSelect"
+                placeholder="Buscar conejo por código o nombre..."
+                value={rabbitSearch}
+                onChange={(e) => setRabbitSearch(e.target.value)}
+              />
+              
+              <div className="flex flex-col gap-3 overflow-y-auto pr-1" style={{ maxHeight: '60vh' }}>
                 {filteredRabbits.length === 0 ? (
-                  <p className="text-gray-500 text-sm p-3">No hay conejos disponibles</p>
+                  <p className="text-gray-500 text-sm col-span-full">No hay conejos disponibles que coincidan con la búsqueda.</p>
                 ) : (
                   filteredRabbits.map(rabbit => (
-                    <RabbitSelectableCard
-                      key={rabbit.id}
-                      rabbit={rabbit}
-                      onClick={() => handleRabbitSelect(rabbit)}
-                    />
+                    <div key={rabbit.id} className="cursor-pointer" onClick={() => handleRabbitSelect(rabbit)}>
+                      <RabbitSelectableCard
+                        rabbit={rabbit}
+                        isSelected={selectedRabbits.includes(rabbit.id)}
+                        onClick={() => handleRabbitSelect(rabbit)}
+                      />
+                    </div>
                   ))
                 )}
               </div>
-            )}
-          </div>
-          {selectedRabbits.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-2">
-              {selectedRabbits.map(id => {
-                const rabbit = rabbits.find(r => r.id === id);
-                if (!rabbit) return null;
-                return (
-                  <div key={`rabbit-${id}`} className="flex items-center gap-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 px-2 py-1 rounded text-sm">
-                    <span>{rabbit.name || rabbit.code}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleRabbitToggle(id)}
-                      className="text-blue-600 hover:text-blue-800 font-bold"
-                    >
-                      x
-                    </button>
-                  </div>
-                );
-              })}
             </div>
-          )}
-          {errors.rabbitIds && <p className="text-red-500 text-sm mt-1">{errors.rabbitIds.message}</p>}
-        </div>
-      </div>
 
-      {selectedCage && (
-        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-500/30 rounded-md text-center">
-          <p className="text-sm text-blue-800 dark:text-blue-400 font-medium">
-            Capacidad total: {selectedCage.capacity} | Ya asignados: {currentAssigned}
-          </p>
+            {/* Columna Derecha: La Jaula y Guardar (Carrito) */}
+            <div className="flex flex-col gap-4">
+              <div className="border border-strong rounded-xl bg-card overflow-hidden shadow-sm flex flex-col h-full" style={{ maxHeight: 'calc(60vh + 100px)' }}>
+                {/* Lista de conejos seleccionados */}
+                <div className="p-4 flex-1 overflow-y-auto">
+                  <h4 className="text-sm font-semibold text-main mb-3">Conejos a asignar:</h4>
+                  {selectedRabbits.length === 0 ? (
+                    <p className="text-xs text-muted italic">Aún no has seleccionado conejos de la lista.</p>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      {selectedRabbits.map(id => {
+                        const rabbit = rabbits.find(r => r.id === id);
+                        if (!rabbit) return null;
+                        return (
+                          <div key={`rabbit-${id}`} className="relative group">
+                            <RabbitSelectableCard
+                              rabbit={rabbit}
+                              isSelected={false}
+                              onClick={() => {}}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleRabbitToggle(id)}
+                              className="absolute top-2 right-2 flex items-center justify-center w-6 h-6 bg-card border border-strong rounded-full text-muted hover:text-main shadow-sm opacity-0 group-hover:opacity-100 transition-all z-10"
+                              title="Quitar"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+                              </svg>
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {errors.rabbitIds && <p className="text-red-500 text-sm mt-3">{errors.rabbitIds.message}</p>}
+                </div>
+
+                {/* Footer Guardar */}
+                <div className="p-4 border-t border-strong bg-theme-hover flex flex-col gap-2">
+                  <Button type="submit" loading={isSubmitting} disabled={selectedRabbits.length === 0} className="w-full">
+                    {getSubmitLabel()}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting} className="w-full">
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
-
-      <div className="flex justify-end gap-2 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
-          Cancelar
-        </Button>
-        <Button type="submit" loading={isSubmitting} disabled={selectedRabbits.length === 0 || !selectedCage}>
-          {getSubmitLabel()}
-        </Button>
-      </div>
     </form>
   );
 }

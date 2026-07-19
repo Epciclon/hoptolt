@@ -141,17 +141,6 @@ export function AssignmentTable() {
                   footer={
                     selectedIds.length > 0 ? (
                       <div className="flex gap-2 w-full animate-in fade-in slide-in-from-top-1 duration-200">
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          icon={<LogOut size={12} />}
-                          onClick={() => handleUnassignCage(group.cageId)}
-                          className="w-full"
-                        >
-                          {group.cageType === 'reproducción' 
-                            ? 'Desasignar' 
-                            : `Desasignar (${selectedIds.length})`}
-                        </Button>
                         {selectedIds.length === 1 && group.cageType === 'reproducción' && (
                           <Button
                             variant="outline"
@@ -167,11 +156,22 @@ export function AssignmentTable() {
                                 });
                               }
                             }}
-                            className="w-full"
+                            className="w-full text-main border-strong hover:bg-theme-hover"
                           >
                             Mover
                           </Button>
                         )}
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          icon={<LogOut size={12} />}
+                          onClick={() => handleUnassignCage(group.cageId)}
+                          className="w-full"
+                        >
+                          {group.cageType === 'reproducción' 
+                            ? 'Desasignar' 
+                            : `Desasignar (${selectedIds.length})`}
+                        </Button>
                       </div>
                     ) : undefined
                   }
