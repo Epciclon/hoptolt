@@ -52,11 +52,18 @@ export function MortalityCatalog({ onSuccess }: Readonly<MortalityCatalogProps>)
         <p className="text-sm text-muted">No hay conejos con jaula asignada disponibles para registrar mortalidad.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          {cageGroups.map((group) => (
+          {cageGroups.map((group) => {
+            const hasLactatingRabbit = group.rabbits.some(r => (r as any).isLactating);
+            return (
             <CageGroupCard
               key={group.cageNumber}
               cageNumber={group.cageNumber}
               cageType={group.cageType}
+              headerBadge={hasLactatingRabbit ? (
+                <span className="px-2 py-1 bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 text-[10px] font-medium rounded-full">
+                  Lactancia
+                </span>
+              ) : undefined}
             >
               {group.rabbits.map((rabbit) => (
                 <RabbitSelectableCard
@@ -67,7 +74,8 @@ export function MortalityCatalog({ onSuccess }: Readonly<MortalityCatalogProps>)
                 />
               ))}
             </CageGroupCard>
-          ))}
+            );
+          })}
         </div>
       )}
 

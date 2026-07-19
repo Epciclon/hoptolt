@@ -97,6 +97,7 @@ class MortalityService {
 
     async _processAdultMortality(rabbit, rabbitId, cause, observations, dDate, galponId, profileId) {
         const { Assignment } = require('../../domain/models');
+
         const assignment = await Assignment.findOne({ where: { rabbitId, status: 'asignado' } });
         if (assignment) {
             await assignment.update({ status: 'liberado' });

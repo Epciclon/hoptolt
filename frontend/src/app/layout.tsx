@@ -22,8 +22,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 var theme = localStorage.getItem('theme');
                 
                 if (size) document.documentElement.style.fontSize = size;
-                if (theme === 'dark') document.documentElement.classList.add('theme-dark');
-                else if (theme === 'contrast') document.documentElement.classList.add('theme-contrast');
+                if (theme === 'dark') document.documentElement.classList.add('theme-dark', 'dark');
+                else if (theme === 'contrast') document.documentElement.classList.add('theme-contrast', 'dark');
                 
                 if (family) document.body.style.fontFamily = family;
                 if (bold === 'true') document.documentElement.classList.add('theme-bold');

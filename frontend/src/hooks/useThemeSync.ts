@@ -13,11 +13,11 @@ export function applyThemeToDOM(fontSize: string, fontFamily: string, bold: bool
   } else {
     document.documentElement.classList.remove('theme-bold');
   }
-  document.documentElement.classList.remove('theme-dark', 'theme-contrast');
+  document.documentElement.classList.remove('theme-dark', 'theme-contrast', 'dark');
   if (theme === 'dark') {
-    document.documentElement.classList.add('theme-dark');
+    document.documentElement.classList.add('theme-dark', 'dark');
   } else if (theme === 'contrast') {
-    document.documentElement.classList.add('theme-contrast');
+    document.documentElement.classList.add('theme-contrast', 'dark');
   }
 }
 
