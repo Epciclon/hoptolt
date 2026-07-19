@@ -148,11 +148,13 @@ export function AssignmentTable() {
                           onClick={() => handleUnassignCage(group.cageId)}
                           className="w-full"
                         >
-                          Desasignar ({selectedIds.length})
+                          {group.cageType === 'reproducción' 
+                            ? 'Desasignar' 
+                            : `Desasignar (${selectedIds.length})`}
                         </Button>
-                        {selectedIds.length === 1 && (
+                        {selectedIds.length === 1 && group.cageType === 'reproducción' && (
                           <Button
-                            variant="primary"
+                            variant="outline"
                             size="sm"
                             onClick={() => {
                               const assignment = group.assignments.find(a => a.rabbitId === selectedIds[0]);
@@ -165,7 +167,7 @@ export function AssignmentTable() {
                                 });
                               }
                             }}
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                            className="w-full"
                           >
                             Mover
                           </Button>

@@ -21,23 +21,22 @@ export function TransferRabbitModal({ open, onClose, rabbitId, rabbitName, rabbi
   const [targetCageId, setTargetCageId] = useState<number | null>(null);
   const [search, setSearch] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const availableCages = useMemo(() => {
     return operativeCages.filter(c => 
       c.id !== currentCageId && 
+      c.type === 'reproducción' &&
       (c.number.toString().includes(search) || c.type.toLowerCase().includes(search.toLowerCase()))
     );
   }, [operativeCages, currentCageId, search]);
 
   const handleSubmit = async () => {
     if (!targetCageId) {
-      setError('Debes seleccionar una jaula de destino.');
+      showToast('Debes seleccionar una jaula de destino.', 'error');
       return;
     }
 
     setIsSubmitting(true);
-    setError(null);
 
     try {
       const result = await moveRabbit({ rabbitId, currentCageId, targetCageId });
@@ -47,7 +46,7 @@ export function TransferRabbitModal({ open, onClose, rabbitId, rabbitName, rabbi
       }
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al mover el conejo.');
+      showToast(err instanceof Error ? err.message : 'Error al mover el conejo.', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -56,7 +55,6 @@ export function TransferRabbitModal({ open, onClose, rabbitId, rabbitName, rabbi
   return (
     <Dialog open={open} onClose={onClose} title="Mover Conejo de Jaula" size="md">
       <div className="flex flex-col gap-4">
-        {error && <Alert variant="error" message={error} onClose={() => setError(null)} />}
         
         <div>
           <p className="text-sm text-muted mb-2">
