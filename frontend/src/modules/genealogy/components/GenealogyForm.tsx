@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -167,6 +167,8 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
         }
         showToast('Relación genealógica actualizada exitosamente.', 'success');
         queryClient.invalidateQueries({ queryKey: ['genealogies'] });
+        queryClient.invalidateQueries({ queryKey: ['genealogy'] });
+        queryClient.invalidateQueries({ queryKey: ['genealogyTree'] });
         onSuccess?.();
         reset();
         setSelectedRabbit(null);
@@ -188,6 +190,8 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
         }
         showToast('Relación genealógica registrada exitosamente.', 'success');
         queryClient.invalidateQueries({ queryKey: ['genealogies'] });
+        queryClient.invalidateQueries({ queryKey: ['genealogy'] });
+        queryClient.invalidateQueries({ queryKey: ['genealogyTree'] });
         onSuccess?.();
         reset();
         setSelectedRabbit(null);
@@ -206,6 +210,8 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
     setShowWarningModal(false);
     showToast(editData ? 'Relación genealógica actualizada exitosamente.' : 'Relación genealógica registrada exitosamente.', 'success');
     queryClient.invalidateQueries({ queryKey: ['genealogies'] });
+    queryClient.invalidateQueries({ queryKey: ['genealogy'] });
+    queryClient.invalidateQueries({ queryKey: ['genealogyTree'] });
     onSuccess?.();
     reset();
     setSelectedRabbit(null);
@@ -265,13 +271,15 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
   const filteredFathers = potentialFathers.filter(r =>
     (r.code.toLowerCase().includes(fatherSearch.toLowerCase()) ||
     r.name.toLowerCase().includes(fatherSearch.toLowerCase())) &&
-    r.id !== selectedRabbit?.id
+    r.id !== selectedRabbit?.id &&
+    (!selectedRabbit || r.race === selectedRabbit.race)
   );
 
   const filteredMothers = potentialMothers.filter(r =>
     (r.code.toLowerCase().includes(motherSearch.toLowerCase()) ||
     r.name.toLowerCase().includes(motherSearch.toLowerCase())) &&
-    r.id !== selectedRabbit?.id
+    r.id !== selectedRabbit?.id &&
+    (!selectedRabbit || r.race === selectedRabbit.race)
   );
 
   if (loading) return <LoadingMessage message="Cargando conejos..." />;
