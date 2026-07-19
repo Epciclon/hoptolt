@@ -125,6 +125,76 @@ class AssignmentService {
         return { assignments, warnings };
     }
 
+    async moveRabbit(rabbitId, currentCageId, targetCageId, galponId, profileId) {
+        if (!rabbitId || !currentCageId || !targetCageId) {
+            throw new AppError('Datos incompletos para el movimiento.', 400);
+        }
+
+        const cageRepo = require('../cage/cage.repository');
+        
+        const sourceAssignment = await assignmentRepository.findActiveByRabbitId(rabbitId);
+        if (!sourceAssignment || sourceAssignment.cageId !== currentCageId) {
+            throw new AppError('El conejo no está asignado a la jaula de origen.', 400);
+        }
+
+        const targetCage = await cageRepo.findById(targetCageId);
+        const currentCage = await cageRepo.findById(currentCageId);
+
+        if (!targetCage || targetCage.galponId !== galponId) throw new AppError('La jaula destino no es válida.', 400);
+        if (targetCage.status !== 'operativa') throw new AppError('La jaula destino no está operativa.', 400);
+        if (targetCageId === currentCageId) throw new AppError('El conejo ya está en esa jaula.', 400);
+
+        const targetAssignments = await assignmentRepository.findActiveByCageId(targetCageId);
+        const availableSpace = targetCage.capacity - targetAssignments.length;
+
+        const rabbit = await rabbitRepository.findById(rabbitId);
+
+        if (availableSpace > 0) {
+            // Movimiento normal
+            const existingRabbits = [];
+            for (const a of targetAssignments) {
+                const r = await rabbitRepository.findById(a.rabbitId);
+                if (r) existingRabbits.push(r);
+            }
+            
+            const warnings = this.validateCompatibility(targetCage, [rabbit], existingRabbits);
+            
+            await assignmentRepository.update(sourceAssignment, { cageId: targetCageId });
+            return { message: 'Conejo movido exitosamente.', warnings };
+        } else {
+            // Jaula llena
+            if (targetCage.type === 'engorde') {
+                throw new AppError('La jaula destino está completamente llena, libere un espacio primero.', 400);
+            } else if (targetCage.type === 'reproducción') {
+                // Intercambio 1 a 1
+                const occupantAssignment = targetAssignments[0];
+                const occupantRabbit = await rabbitRepository.findById(occupantAssignment.rabbitId);
+
+                // Validar si el ocupante puede ir a la jaula actual
+                const currentAssignments = await assignmentRepository.findActiveByCageId(currentCageId);
+                const otherCurrentRabbits = [];
+                for (const a of currentAssignments) {
+                    if (a.rabbitId !== rabbitId) {
+                        const r = await rabbitRepository.findById(a.rabbitId);
+                        if (r) otherCurrentRabbits.push(r);
+                    }
+                }
+
+                const warningsToSource = this.validateCompatibility(currentCage, [occupantRabbit], otherCurrentRabbits);
+                const warningsToTarget = this.validateCompatibility(targetCage, [rabbit], []);
+
+                // Hacemos el swap
+                await assignmentRepository.update(sourceAssignment, { cageId: targetCageId });
+                await assignmentRepository.update(occupantAssignment, { cageId: currentCageId });
+
+                const allWarnings = [...warningsToSource, ...warningsToTarget];
+                return { message: 'Intercambio realizado exitosamente.', warnings: allWarnings };
+            }
+        }
+        
+        throw new AppError('No se pudo mover al conejo.', 400);
+    }
+
     async getAssignments(galponId) {
         return assignmentRepository.findByGalponId(galponId);
     }

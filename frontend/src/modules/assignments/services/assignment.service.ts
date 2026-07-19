@@ -1,4 +1,4 @@
-﻿import api from '@/lib/api';
+import api from '@/lib/api';
 import type { Assignment, AssignRabbitDto, UnassignRabbitDto, AssignedRabbit } from '../types/assignment.types';
 import type { Rabbit } from '@/modules/rabbits/types/rabbit.types';
 import type { Cage } from '@/modules/cages/types/cage.types';
@@ -31,6 +31,11 @@ export const assignmentService = {
 
   async unassign(payload: UnassignRabbitDto): Promise<void> {
     await api.post('/unassign', payload);
+  },
+
+  async move(payload: { rabbitId: number; currentCageId: number; targetCageId: number }): Promise<{ message: string; warnings: string[] }> {
+    const { data } = await api.put<{ success: boolean; message: string; warnings: string[] }>('/assignments/move', payload);
+    return { message: data.message, warnings: data.warnings || [] };
   },
 
   async deleteById(id: number): Promise<void> {

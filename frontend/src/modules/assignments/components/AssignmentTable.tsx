@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useMemo } from 'react';
 import { LogOut } from 'lucide-react';
@@ -8,11 +8,13 @@ import { Pagination } from '@/shared/ui/Pagination';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { useAssignments } from '../hooks/useAssignments';
 import type { Assignment } from '../types/assignment.types';
+import { TransferRabbitModal } from './TransferRabbitModal';
 
 export function AssignmentTable() {
   const { assignments, loading, error, unassignRabbit } = useAssignments();
   const { showToast } = useToast();
   const [toUnassign, setToUnassign] = useState<{ cageId: number; rabbitIds: number[] } | null>(null);
+  const [transferRabbitData, setTransferRabbitData] = useState<{ id: number; name: string; code: string; currentCageId: number } | null>(null);
   const [processing, setProcessing] = useState(false);
   const [selectedRabbitsByCage, setSelectedRabbitsByCage] = useState<Record<number, number[]>>({});
 
@@ -138,15 +140,37 @@ export function AssignmentTable() {
                   cageType={group.cageType}
                   footer={
                     selectedIds.length > 0 ? (
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        icon={<LogOut size={12} />}
-                        onClick={() => handleUnassignCage(group.cageId)}
-                        className="w-full animate-in fade-in slide-in-from-top-1 duration-200"
-                      >
-                        Desasignar ({selectedIds.length})
-                      </Button>
+                      <div className="flex gap-2 w-full animate-in fade-in slide-in-from-top-1 duration-200">
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          icon={<LogOut size={12} />}
+                          onClick={() => handleUnassignCage(group.cageId)}
+                          className="w-full"
+                        >
+                          Desasignar ({selectedIds.length})
+                        </Button>
+                        {selectedIds.length === 1 && (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => {
+                              const assignment = group.assignments.find(a => a.rabbitId === selectedIds[0]);
+                              if (assignment) {
+                                setTransferRabbitData({
+                                  id: assignment.rabbitId,
+                                  name: assignment.rabbitName || '',
+                                  code: assignment.rabbitCode || '',
+                                  currentCageId: group.cageId
+                                });
+                              }
+                            }}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                          >
+                            Mover
+                          </Button>
+                        )}
+                      </div>
                     ) : undefined
                   }
                 >
@@ -201,6 +225,20 @@ export function AssignmentTable() {
         confirmLabel="Sí, desasignar"
         variant="danger"
       />
+
+      {transferRabbitData && (
+        <TransferRabbitModal
+          open={!!transferRabbitData}
+          onClose={() => {
+            setTransferRabbitData(null);
+            setSelectedRabbitsByCage(prev => ({ ...prev, [transferRabbitData.currentCageId]: [] }));
+          }}
+          rabbitId={transferRabbitData.id}
+          rabbitName={transferRabbitData.name}
+          rabbitCode={transferRabbitData.code}
+          currentCageId={transferRabbitData.currentCageId}
+        />
+      )}
     </div>
   );
 }

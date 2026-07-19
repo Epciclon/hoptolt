@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { assignmentService } from '../services/assignment.service';
@@ -67,6 +67,21 @@ export function useAssignments() {
     return assignRabbitsMutation.mutateAsync(payload);
   };
 
+  const moveRabbitMutation = useMutation({
+    mutationFn: (payload: { rabbitId: number; currentCageId: number; targetCageId: number }) => assignmentService.move(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['assignments'] });
+      queryClient.invalidateQueries({ queryKey: ['assignedRabbits'] });
+      queryClient.invalidateQueries({ queryKey: ['operativeCages'] });
+      queryClient.invalidateQueries({ queryKey: ['reproductionMales'] });
+      queryClient.invalidateQueries({ queryKey: ['reproductionFemales'] });
+    },
+  });
+
+  const moveRabbit = async (payload: { rabbitId: number; currentCageId: number; targetCageId: number }) => {
+    return moveRabbitMutation.mutateAsync(payload);
+  };
+
   return {
     assignments,
     operativeCages,
@@ -76,5 +91,6 @@ export function useAssignments() {
     fetchAssignments,
     assignRabbits,
     unassignRabbit,
+    moveRabbit,
   };
 }
