@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Button, Alert, Input, LoadingMessage } from '@/shared/ui';
+import { Button, Alert, Input, LoadingMessage, RabbitSelectableCard } from '@/shared/ui';
 import { useToast } from '@/shared/contexts/ToastContext';
 
 import { useAssignments } from '../hooks/useAssignments';
@@ -242,19 +242,16 @@ export function AssignRabbitForm({ onSuccess, onCancel }: Readonly<AssignRabbitF
               disabled={!selectedCage}
             />
             {showRabbitDropdown && (
-              <div className="absolute z-50 w-full border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-card mt-1 shadow-xl">
+              <div className="absolute z-50 w-full border border-strong rounded-md max-h-64 overflow-y-auto bg-card mt-1 shadow-lg p-2 flex flex-col gap-2">
                 {filteredRabbits.length === 0 ? (
                   <p className="text-gray-500 text-sm p-3">No hay conejos disponibles</p>
                 ) : (
                   filteredRabbits.map(rabbit => (
-                    <button
+                    <RabbitSelectableCard
                       key={rabbit.id}
-                      type="button"
+                      rabbit={rabbit}
                       onClick={() => handleRabbitSelect(rabbit)}
-                      className="w-full text-left px-3 py-2 hover:bg-gray-100 border-b last:border-b-0 text-sm"
-                    >
-                      {rabbit.code} — {rabbit.name} ({rabbit.age !== null && rabbit.age !== undefined ? `${rabbit.age} meses` : 'sin edad'}, {rabbit.sex}, {rabbit.purpose})
-                    </button>
+                    />
                   ))
                 )}
               </div>
