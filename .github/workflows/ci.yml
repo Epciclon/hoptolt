@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: Pipeline de Integración Continua
 
 on:
   push:
@@ -8,72 +8,72 @@ on:
 
 jobs:
   frontend-checks:
-    name: Frontend Review
+    name: Revisión del Frontend
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./frontend
 
     steps:
-      - name: Checkout repository
+      - name: Descargar repositorio
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: ./frontend/package-lock.json
 
-      - name: Install dependencies
+      - name: Instalar dependencias
         run: npm ci
 
-      - name: Run Linter
+      - name: Ejecutar Linter
         run: npm run lint
 
-      - name: Run Type Check
+      - name: Revisar Tipado (TypeScript)
         run: npx tsc --noEmit
 
-      - name: Run Unit Tests (Vitest)
+      - name: Ejecutar Pruebas Unitarias (Vitest)
         run: npm run test
 
-      - name: Build Next.js App
+      - name: Compilar App (Build Next.js)
         run: npm run build
 
-      - name: Install Playwright Browsers
+      - name: Instalar Navegadores de Playwright
         run: npx playwright install --with-deps chromium
 
-      - name: Run E2E Tests (Playwright)
+      - name: Ejecutar Pruebas E2E (Playwright)
         run: npm run test:e2e
         
-      - name: Upload Playwright Report
+      - name: Guardar Reporte de Playwright
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: reporte-playwright
           path: frontend/playwright-report/
           retention-days: 10
 
   backend-checks:
-    name: Backend Review
+    name: Revisión del Backend
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./backend
 
     steps:
-      - name: Checkout repository
+      - name: Descargar repositorio
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: ./backend/package-lock.json
 
-      - name: Install dependencies
+      - name: Instalar dependencias
         run: npm ci
 
-      - name: Run Unit/Integration Tests (Jest)
+      - name: Ejecutar Pruebas Unitarias e Integración (Jest)
         run: npm run test
