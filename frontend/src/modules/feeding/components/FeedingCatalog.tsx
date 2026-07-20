@@ -406,7 +406,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
         
         <div className="mb-4">
           <p className="text-sm font-medium text-main mb-2">Jaulas con observaciones en este turno:</p>
-          <ul className="text-sm text-muted space-y-1">
+          <ul className="text-sm text-main space-y-1 max-h-32 overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md p-2">
             {cagesWithIssue.map(cage => (
               <li key={cage.cageNumber} className="flex items-center gap-2">
                 <span className="font-medium">Jaula #{cage.cageNumber} - {cage.cageType.charAt(0).toUpperCase() + cage.cageType.slice(1)}</span>
@@ -420,7 +420,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
           Por favor, explica el motivo de la alimentación adicional.
         </p>
         <div className="mb-4">
-          <label htmlFor="justificationInput" className="block text-sm font-medium text-muted mb-2">Justificación</label>
+          <label htmlFor="justificationInput" className="block text-sm font-medium text-main mb-2">Justificación</label>
           <textarea
             id="justificationInput"
             value={justification}
