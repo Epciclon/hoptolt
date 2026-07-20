@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -218,25 +218,18 @@ export function AssignRabbitForm({ onSuccess, onCancel }: Readonly<AssignRabbitF
                   <p className="text-gray-500 text-sm col-span-full">No hay conejos disponibles que coincidan con la búsqueda.</p>
                 ) : (
                   filteredRabbits.map(rabbit => (
-                    <div 
+                    <button 
                       key={rabbit.id} 
-                      className="cursor-pointer" 
+                      type="button"
+                      className="w-full text-left cursor-pointer" 
                       onClick={() => handleRabbitSelect(rabbit)}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          handleRabbitSelect(rabbit);
-                        }
-                      }}
                     >
                       <RabbitSelectableCard
                         rabbit={rabbit}
                         isSelected={selectedRabbits.includes(rabbit.id)}
                         onClick={() => handleRabbitSelect(rabbit)}
                       />
-                    </div>
+                    </button>
                   ))
                 )}
               </div>

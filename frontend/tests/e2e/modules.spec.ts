@@ -6,6 +6,19 @@ async function mockApi(page: Page) {
   await page.route('**/api/auth/resolve-email*', async route => {
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, email: 'test@hoptolt.com' }) });
   });
+  await page.route('**/auth/v1/token*', async route => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        access_token: 'fake-token',
+        token_type: 'bearer',
+        expires_in: 3600,
+        refresh_token: 'fake-refresh',
+        user: { id: '1', email: 'test@hoptolt.com', user_metadata: { fullName: 'Test User', username: 'testuser' } }
+      })
+    });
+  });
   await page.route('**/api/auth/sync-profile', async route => {
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, user: MOCK_USER }) });
   });
