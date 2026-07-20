@@ -17,7 +17,11 @@ export function FeedingDashboard() {
 
   return (
     <Card className="min-h-[calc(100vh-7rem)]">
-      <CardHeader title="Control de Alimentación" subtitle="Registra qué alimento y en qué momento comieron tus conejos" />
+      <CardHeader 
+        title="Control de Alimentación" 
+        subtitle="Registra qué alimento y en qué momento comieron tus conejos" 
+        tutorialUrl="https://youtu.be/8ZLBXPD7X4g" 
+      />
       <DashboardTabs
         tabs={[
           { id: 'registro', label: 'Registro Diario', icon: <Utensils size={18} /> },

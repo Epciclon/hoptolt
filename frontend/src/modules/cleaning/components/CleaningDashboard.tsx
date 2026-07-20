@@ -18,7 +18,11 @@ export function CleaningDashboard() {
 
   return (
     <Card className="min-h-[calc(100vh-7rem)]">
-      <CardHeader title="Limpieza de Jaulas" subtitle="Marca las jaulas que ya limpiaste para llevar un buen control de higiene" />
+      <CardHeader 
+        title="Limpieza de Jaulas" 
+        subtitle="Marca las jaulas que ya limpiaste para llevar un buen control de higiene" 
+        tutorialUrl="https://youtu.be/LXKorxIwyHo" 
+      />
       <DashboardTabs
         tabs={[
           { id: 'registro', label: 'Registro Diario', icon: <Sparkles size={18} /> },

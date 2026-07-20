@@ -162,7 +162,7 @@ class NotificationService {
         const merged = this._mergeIntervals(assignments, startMs, todayMs);
         const daysWithoutCleaning = this._calculateDaysWithoutCleaning(merged);
 
-        if (daysWithoutCleaning > 3) {
+        if (daysWithoutCleaning >= 1) {
             if (!notifiedCageIds.has(Number(cage.id))) {
                 notifiedCageIds.add(Number(cage.id));
                 await Notification.create({

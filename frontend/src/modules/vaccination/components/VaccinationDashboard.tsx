@@ -18,7 +18,11 @@ export function VaccinationDashboard() {
 
   return (
     <Card className="min-h-[calc(100vh-7rem)]">
-      <CardHeader title="Vacunas" subtitle="Lleva el control de qué vacunas ha recibido cada conejo" />
+      <CardHeader 
+        title="Vacunas" 
+        subtitle="Lleva el control de qué vacunas ha recibido cada conejo" 
+        tutorialUrl="https://youtu.be/kJx7zt_rDPA" 
+      />
       <DashboardTabs
         tabs={[
           { id: 'registro', label: 'Registro Diario', icon: <Syringe size={18} /> },

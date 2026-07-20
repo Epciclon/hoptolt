@@ -18,7 +18,11 @@ export function DewormingDashboard() {
 
   return (
     <Card className="min-h-[calc(100vh-7rem)]">
-      <CardHeader title="Desparasitación" subtitle="Anota y lleva el control de los días en que desparasitas a tus conejos" />
+      <CardHeader 
+        title="Desparasitación" 
+        subtitle="Anota y lleva el control de los días en que desparasitas a tus conejos" 
+        tutorialUrl="https://youtu.be/-fD8vl-BIMQ" 
+      />
       <DashboardTabs
         tabs={[
           { id: 'registro', label: 'Registro Diario', icon: <Pill size={18} /> },
