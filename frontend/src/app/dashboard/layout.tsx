@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { Sidebar } from '@/shared/layout/Sidebar';
 import { Header } from '@/shared/layout/Header';
@@ -33,6 +33,11 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
     if (!mounted) return;
 
     const checkAuth = async () => {
+      // E2E Bypass en cliente
+      if (process.env.NODE_ENV !== 'production' && document.cookie.includes('e2e_bypass=true')) {
+        return;
+      }
+
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
 

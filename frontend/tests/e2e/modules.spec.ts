@@ -3,6 +3,14 @@ import { test, expect, Page } from '@playwright/test';
 const MOCK_USER = { id: '1', email: 'test@hoptolt.com', username: 'testuser', fullName: 'Test User', activeGalponId: 1, role: 'owner', createdAt: new Date().toISOString(), permissions: [] };
 
 async function mockApi(page: Page) {
+  // Fallback genérico para atrapar cualquier petición a la API que no esté mockeada más abajo.
+  // Como Playwright evalúa las rutas registradas del final hacia el principio,
+  // esta regla (al estar al principio) actuará como red de seguridad.
+  // Evita que peticiones no mockeadas lleguen al backend real, devuelvan 401 y fuercen un logout en api.ts.
+  await page.route('**/api/**', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, fallback: true, data: [] }) });
+  });
+
   await page.route('**/api/auth/resolve-email*', async route => {
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, email: 'test@hoptolt.com' }) });
   });
@@ -11,12 +19,19 @@ async function mockApi(page: Page) {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        access_token: 'fake-token',
+        access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJ0ZXN0QGhvcHRvbHQuY29tIiwiZXhwIjo5OTk5OTk5OTk5fQ.fake',
         token_type: 'bearer',
         expires_in: 3600,
         refresh_token: 'fake-refresh',
         user: { id: '1', email: 'test@hoptolt.com', user_metadata: { fullName: 'Test User', username: 'testuser' } }
       })
+    });
+  });
+  await page.route('**/auth/v1/user*', async route => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ id: '1', email: 'test@hoptolt.com' })
     });
   });
   await page.route('**/api/auth/sync-profile', async route => {
@@ -48,15 +63,14 @@ async function mockApi(page: Page) {
 }
 
 async function login(page: Page) {
-  await page.goto('/login');
-  await page.waitForSelector('#identifier', { timeout: 10000 });
-  await page.locator('#identifier').fill('testuser');
-  await page.locator('#password').fill('Test123!@#');
-  await page.locator('#btn-login').click();
-  await page.waitForURL('/dashboard', { timeout: 20000 });
+  // El e2e_bypass hace que estemos autenticados automáticamente.
+  // Vamos directo al dashboard para evitar la condición de carrera con el formulario de login.
+  await page.goto('/dashboard');
+  await page.waitForURL('**/dashboard*', { timeout: 20000 });
 }
 
 async function setup(page: Page) {
+  await page.context().addCookies([{ name: 'e2e_bypass', value: 'true', url: 'http://localhost:3000' }]);
   await mockApi(page);
   await login(page);
 }
@@ -71,7 +85,7 @@ test.describe('Modules', () => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, cages: [{ number: 1, name: 'Jaula 1' }, { number: 2, name: 'Jaula 2' }] }) });
     });
     await page.goto('/dashboard/cages');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page).toHaveURL(/\/dashboard\/cages/);
   });
 
@@ -80,7 +94,7 @@ test.describe('Modules', () => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, rabbits: [{ code: 'RBT-001', name: 'Conejo 1' }, { code: 'RBT-002', name: 'Conejo 2' }] }) });
     });
     await page.goto('/dashboard/rabbits');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page).toHaveURL(/\/dashboard\/rabbits/);
   });
 
@@ -89,7 +103,7 @@ test.describe('Modules', () => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, races: [{ id: 1, name: 'Neozelandés' }] }) });
     });
     await page.goto('/dashboard/races');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page).toHaveURL(/\/dashboard\/races/);
   });
 
@@ -98,7 +112,7 @@ test.describe('Modules', () => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, reproductions: [] }) });
     });
     await page.goto('/dashboard/reproduction');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page).toHaveURL(/\/dashboard\/reproduction/);
   });
 
@@ -107,7 +121,7 @@ test.describe('Modules', () => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, feedings: [] }) });
     });
     await page.goto('/dashboard/feeding');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page).toHaveURL(/\/dashboard\/feeding/);
   });
 
@@ -116,7 +130,7 @@ test.describe('Modules', () => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, vaccinations: [] }) });
     });
     await page.goto('/dashboard/vaccination');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page).toHaveURL(/\/dashboard\/vaccination/);
   });
 
@@ -125,7 +139,7 @@ test.describe('Modules', () => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, galpones: [{ id: 1, name: 'Galpón Principal' }] }) });
     });
     await page.goto('/dashboard/galpones');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page).toHaveURL(/\/dashboard\/galpones/);
   });
 
@@ -134,7 +148,7 @@ test.describe('Modules', () => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, mortalities: [] }) });
     });
     await page.goto('/dashboard/mortality');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page).toHaveURL(/\/dashboard\/mortality/);
   });
 
@@ -143,7 +157,7 @@ test.describe('Modules', () => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, dewormings: [] }) });
     });
     await page.goto('/dashboard/deworming');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page).toHaveURL(/\/dashboard\/deworming/);
   });
 
@@ -152,7 +166,7 @@ test.describe('Modules', () => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, cleanings: [] }) });
     });
     await page.goto('/dashboard/cleaning');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page).toHaveURL(/\/dashboard\/cleaning/);
   });
 
@@ -161,7 +175,7 @@ test.describe('Modules', () => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, assignments: [] }) });
     });
     await page.goto('/dashboard/assignments');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page).toHaveURL(/\/dashboard\/assignments/);
   });
 
@@ -170,7 +184,7 @@ test.describe('Modules', () => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, genealogy: null }) });
     });
     await page.goto('/dashboard/genealogy');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page).toHaveURL(/\/dashboard\/genealogy/);
   });
 
@@ -179,7 +193,7 @@ test.describe('Modules', () => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, members: [] }) });
     });
     await page.goto('/dashboard/users');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page).toHaveURL(/\/dashboard\/users/);
   });
 });

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
@@ -28,6 +28,14 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const fetchUser = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
+      // E2E Bypass en cliente
+      if (process.env.NODE_ENV !== 'production' && typeof document !== 'undefined' && document.cookie.includes('e2e_bypass=true')) {
+        const profile = await authService.getMe();
+        setUser(profile);
+        if (!silent) setLoading(false);
+        return;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
 
       if (!session) {

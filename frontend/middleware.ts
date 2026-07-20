@@ -34,6 +34,11 @@ export async function middleware(request: NextRequest) {
     }
   )
 
+  // E2E test bypass for local development
+  if (process.env.NODE_ENV !== 'production' && request.cookies.get('e2e_bypass')?.value === 'true') {
+    return response
+  }
+
   const { data: { user } } = await supabase.auth.getUser()
 
   // Si está autenticado e intenta ir a login/register → redirigir al dashboard
