@@ -93,7 +93,7 @@ export function CleaningCatalog({ onSuccess }: Readonly<CleaningCatalogProps>) {
       <div className="flex justify-end mb-2">
         <Button 
           type="button" 
-          variant={selectedCageNumbers.length === cageGroups.length && cageGroups.length > 0 ? 'success' : 'outline'}
+          variant={selectedCageNumbers.length === cageGroups.length && cageGroups.length > 0 ? 'success' : 'secondary'}
           size="sm" 
           onClick={selectAllCages}
         >

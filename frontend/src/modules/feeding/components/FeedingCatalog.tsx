@@ -335,7 +335,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
       <div className="flex justify-end mb-2">
         <Button 
           type="button" 
-          variant={selectedCageNumbers.length === cageGroups.length && cageGroups.length > 0 ? 'success' : 'outline'}
+          variant={selectedCageNumbers.length === cageGroups.length && cageGroups.length > 0 ? 'success' : 'secondary'}
           size="sm" 
           onClick={selectAllCages}
         >
@@ -397,10 +397,10 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
         description=""
         size="sm"
       >
-        <div className="p-3 bg-blue-50 border border-blue-200 rounded-md mb-4 mt-2">
-          <h4 className="text-sm font-semibold text-blue-900 mb-2">⚠️ Política de Alimentación</h4>
-          <p className="text-sm text-blue-800">
-            El sistema permite un (1) registro de alimentación sin justificación por turno y por usuario. Estás intentando registrar un segundo alimento en el turno de la <strong>{currentEcuadorShift}</strong>, por lo que es requerido ingresar un motivo.
+        <div className="p-3 bg-slate-50 border border-slate-200 dark:bg-slate-800/50 dark:border-slate-700 rounded-md mb-4 mt-2">
+          <h4 className="text-sm font-semibold text-main mb-2">⚠️ Política de Alimentación</h4>
+          <p className="text-sm text-muted">
+            El sistema permite un registro de alimentación sin justificación por turno y por usuario. Estás intentando registrar un segundo alimento en el turno de la <strong>{currentEcuadorShift}</strong>, por lo que es requerido ingresar un motivo.
           </p>
         </div>
         
@@ -409,7 +409,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
           <ul className="text-sm text-muted space-y-1">
             {cagesWithIssue.map(cage => (
               <li key={cage.cageNumber} className="flex items-center gap-2">
-                <span className="font-medium">Jaula #{cage.cageNumber}  {cage.cageType.charAt(0).toUpperCase() + cage.cageType.slice(1)}</span>
+                <span className="font-medium">Jaula #{cage.cageNumber} - {cage.cageType.charAt(0).toUpperCase() + cage.cageType.slice(1)}</span>
                 <span className="text-red-600">({cage.feedingsToday} registros)</span>
               </li>
             ))}
