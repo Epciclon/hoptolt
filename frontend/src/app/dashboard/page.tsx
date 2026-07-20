@@ -7,6 +7,7 @@ import { useActiveGalpon } from '@/modules/galpones/hooks/useActiveGalpon';
 import { DashboardCalendar } from '@/modules/reproduction/components/DashboardCalendar';
 import { InvitationBanner } from '@/modules/invitation/components/InvitationBanner';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
+import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
 import api from '@/lib/api';
 
 interface GalponStats {
@@ -25,7 +26,9 @@ const statsMeta = [
 
 function DashboardHomeContent() {
   const { user } = useAuthContext();
+  const { hasPermission, loading: permissionsLoading } = usePermissions();
   const { activeGalpon, loading: galponLoading } = useActiveGalpon();
+  const canViewReproduction = !permissionsLoading && hasPermission('reproduction');
   const [stats, setStats] = useState<GalponStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
 
@@ -67,7 +70,8 @@ function DashboardHomeContent() {
       {/* Calendario de Dashboard */}
       <Card>
         <CardHeader 
-          title="Calendario de Eventos" 
+          title={canViewReproduction ? "Calendario de Eventos" : "Calendario General"} 
+          subtitle={canViewReproduction ? "Alterna entre las vistas para ver los partos, destetes o conejas en celo." : undefined}
           tutorialUrl="https://youtu.be/rccFO5ih5o8" 
         />
         <div className="px-1 pb-1">

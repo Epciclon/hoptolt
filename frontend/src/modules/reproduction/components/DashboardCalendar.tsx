@@ -177,16 +177,7 @@ export function DashboardCalendar() {
 
   return (
     <div className="space-y-4 relative px-1">
-      <div className="mb-4">
-        <h3 className="text-lg font-bold text-main">
-          {canViewReproduction ? "Calendario de Eventos" : "Calendario General"}
-        </h3>
-        {canViewReproduction && (
-          <p className="text-sm text-muted mt-0.5">
-            Alterna entre las vistas para ver los partos, destetes o conejas en celo.
-          </p>
-        )}
-      </div>
+
 
       {/* Selector de tipo de calendario */}
       {canViewReproduction && (
