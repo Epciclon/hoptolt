@@ -39,6 +39,10 @@ jobs:
 
       - name: Compilar App (Build Next.js)
         run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: "https://fake.supabase.co"
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "fake_anon_key"
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "fake_pub_key"
 
       - name: Instalar Navegadores de Playwright
         run: npx playwright install --with-deps chromium
