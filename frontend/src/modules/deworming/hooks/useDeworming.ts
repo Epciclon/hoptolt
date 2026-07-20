@@ -11,15 +11,6 @@ export function useDeworming(filters?: { profileId?: string; date?: string }) {
   const { activeGalpon } = useActiveGalpon();
   const galponId = activeGalpon?.id || 'none';
 
-  // Query: Fetch Deworming Types
-  const {
-    data: galponDewormingTypes = [],
-    isLoading: loadingDewormingTypes,
-    error: errorDewormingTypes,
-  } = useQuery({
-    queryKey: ['galponDewormingTypes', galponId],
-    queryFn: () => dewormingService.getTypes(),
-  });
 
   // Query: Fetch Dewormings
   const {
