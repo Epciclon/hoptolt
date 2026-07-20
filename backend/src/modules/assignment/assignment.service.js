@@ -151,45 +151,45 @@ class AssignmentService {
 
         if (availableSpace > 0) {
             // Movimiento normal
-            const existingRabbits = [];
-            for (const a of targetAssignments) {
-                const r = await rabbitRepository.findById(a.rabbitId);
-                if (r) existingRabbits.push(r);
-            }
+            const existingRabbits = (await Promise.all(
+                targetAssignments.map(a => rabbitRepository.findById(a.rabbitId))
+            )).filter(Boolean);
             
             const warnings = this.validateCompatibility(targetCage, [rabbit], existingRabbits);
             
             await assignmentRepository.update(sourceAssignment, { cageId: targetCageId });
             return { message: 'Conejo movido exitosamente.', warnings };
-        } else {
-            // Jaula llena
-            if (targetCage.type === 'engorde') {
-                throw new AppError('La jaula destino está completamente llena, libere un espacio primero.', 400);
-            } else if (targetCage.type === 'reproducción') {
-                // Intercambio 1 a 1
-                const occupantAssignment = targetAssignments[0];
-                const occupantRabbit = await rabbitRepository.findById(occupantAssignment.rabbitId);
+        }
 
-                // Validar si el ocupante puede ir a la jaula actual
-                const currentAssignments = await assignmentRepository.findActiveByCageId(currentCageId);
-                const otherCurrentRabbits = [];
-                for (const a of currentAssignments) {
-                    if (a.rabbitId !== rabbitId) {
-                        const r = await rabbitRepository.findById(a.rabbitId);
-                        if (r) otherCurrentRabbits.push(r);
-                    }
-                }
+        // Jaula llena
+        if (targetCage.type === 'engorde') {
+            throw new AppError('La jaula destino está completamente llena, libere un espacio primero.', 400);
+        }
+        
+        if (targetCage.type === 'reproducción') {
+            // Intercambio 1 a 1
+            const occupantAssignment = targetAssignments[0];
+            const occupantRabbit = await rabbitRepository.findById(occupantAssignment.rabbitId);
 
-                const warningsToSource = this.validateCompatibility(currentCage, [occupantRabbit], otherCurrentRabbits);
-                const warningsToTarget = this.validateCompatibility(targetCage, [rabbit], []);
+            // Validar si el ocupante puede ir a la jaula actual
+            const currentAssignments = await assignmentRepository.findActiveByCageId(currentCageId);
+            const otherCurrentRabbits = (await Promise.all(
+                currentAssignments
+                    .filter(a => a.rabbitId !== rabbitId)
+                    .map(a => rabbitRepository.findById(a.rabbitId))
+            )).filter(Boolean);
 
-                // Hacemos el swap
-                await assignmentRepository.update(sourceAssignment, { cageId: targetCageId });
-                await assignmentRepository.update(occupantAssignment, { cageId: currentCageId });
+            const warningsToSource = this.validateCompatibility(currentCage, [occupantRabbit], otherCurrentRabbits);
+            const warningsToTarget = this.validateCompatibility(targetCage, [rabbit], []);
 
-                const allWarnings = [...warningsToSource, ...warningsToTarget];
-                return { message: 'Intercambio realizado exitosamente.', warnings: allWarnings };
-            }
+            // Hacemos el swap
+            await assignmentRepository.update(sourceAssignment, { cageId: targetCageId });
+            await assignmentRepository.update(occupantAssignment, { cageId: currentCageId });
+
+            return { 
+                message: 'Intercambio realizado exitosamente.', 
+                warnings: [...warningsToSource, ...warningsToTarget] 
+            };
         }
         
         throw new AppError('No se pudo mover al conejo.', 400);

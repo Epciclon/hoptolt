@@ -32,11 +32,6 @@ export function AssignRabbitForm({ onSuccess, onCancel }: Readonly<AssignRabbitF
   const [selectedCage, setSelectedCage] = useState<Cage | null>(null);
   const [cageSearch, setCageSearch] = useState('');
   const [rabbitSearch, setRabbitSearch] = useState('');
-  const [showRabbitDropdown, setShowRabbitDropdown] = useState(false);
-  const [showCageDropdown, setShowCageDropdown] = useState(false);
-
-  const cageDropdownRef = useRef<HTMLDivElement>(null);
-  const rabbitDropdownRef = useRef<HTMLDivElement>(null);
 
   const { handleSubmit, formState: { errors, isSubmitting }, setValue } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -97,14 +92,12 @@ export function AssignRabbitForm({ onSuccess, onCancel }: Readonly<AssignRabbitF
   const handleRabbitSelect = (rabbit: Rabbit) => {
     handleRabbitToggle(rabbit.id);
     setRabbitSearch('');
-    setShowRabbitDropdown(false);
   };
 
   const handleCageSelect = (cage: Cage) => {
     setSelectedCage(cage);
     setValue('cageId', cage.id);
     setCageSearch('');
-    setShowCageDropdown(false);
   };
 
   const handleCageDeselect = () => {
@@ -114,25 +107,6 @@ export function AssignRabbitForm({ onSuccess, onCancel }: Readonly<AssignRabbitF
     setValue('rabbitIds', []);
   };
 
-  const handleCageInputFocus = () => {
-    setShowCageDropdown(true);
-  };
-
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (cageDropdownRef.current && !cageDropdownRef.current.contains(target)) {
-        setShowCageDropdown(false);
-      }
-      if (rabbitDropdownRef.current && !rabbitDropdownRef.current.contains(target)) {
-        setShowRabbitDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const filteredCages = cages.filter(c => {
     const currentCapacity = c.assignedCount || 0;
@@ -149,9 +123,6 @@ export function AssignRabbitForm({ onSuccess, onCancel }: Readonly<AssignRabbitF
     const notSelected = !selectedRabbits.includes(r.id);
     return matchesSearch && notSelected;
   });
-
-  const currentAssigned = selectedCage ? (selectedCage.assignedCount || 0) : 0;
-
 
   if (loadingData) {
     return <LoadingMessage message="Cargando jaulas y conejos disponibles..." />;
@@ -247,7 +218,19 @@ export function AssignRabbitForm({ onSuccess, onCancel }: Readonly<AssignRabbitF
                   <p className="text-gray-500 text-sm col-span-full">No hay conejos disponibles que coincidan con la búsqueda.</p>
                 ) : (
                   filteredRabbits.map(rabbit => (
-                    <div key={rabbit.id} className="cursor-pointer" onClick={() => handleRabbitSelect(rabbit)}>
+                    <div 
+                      key={rabbit.id} 
+                      className="cursor-pointer" 
+                      onClick={() => handleRabbitSelect(rabbit)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleRabbitSelect(rabbit);
+                        }
+                      }}
+                    >
                       <RabbitSelectableCard
                         rabbit={rabbit}
                         isSelected={selectedRabbits.includes(rabbit.id)}

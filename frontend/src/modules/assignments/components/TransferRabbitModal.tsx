@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Dialog, Button, Alert, Input } from '@/shared/ui';
+import { Dialog, Button, Input } from '@/shared/ui';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { useAssignments } from '../hooks/useAssignments';
 
@@ -73,7 +73,6 @@ export function TransferRabbitModal({ open, onClose, rabbitId, rabbitName, rabbi
           ) : (
             availableCages.map(cage => {
               const currentCapacity = cage.assignedCount || 0;
-              const available = cage.capacity - currentCapacity;
               const isSelected = targetCageId === cage.id;
               
               let labelState = 'Disponible';
