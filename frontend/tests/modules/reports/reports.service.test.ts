@@ -106,7 +106,7 @@ describe('reportsService', () => {
       races: 'Raza1',
     } as any);
 
-    const url = (api.get as vi.Mock).mock.calls[0][0];
+    const url = (api.get as any).mock.calls[0][0];
     expect(url).toContain('all=true');
     expect(url).toContain('startDate=2024-01-01');
     expect(url).toContain('endDate=2024-12-31');

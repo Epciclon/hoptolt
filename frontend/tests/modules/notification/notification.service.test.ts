@@ -33,7 +33,7 @@ describe('notificationService', () => {
     const { notificationService } = await import('@/modules/notification/services/notification.service');
     await notificationService.getAll({ unreadOnly: true });
 
-    const url = (api.get as vi.Mock).mock.calls[0][0];
+    const url = (api.get as any).mock.calls[0][0];
     expect(url).toContain('unreadOnly=true');
   });
 

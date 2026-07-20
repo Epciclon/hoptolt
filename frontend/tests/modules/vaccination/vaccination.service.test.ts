@@ -33,7 +33,7 @@ describe('vaccinationService', () => {
     const { vaccinationService } = await import('@/modules/vaccination/services/vaccination.service');
     await vaccinationService.getAll({ profileId: 'abc', startDate: '2024-01-01', endDate: '2024-12-31' });
 
-    const url = (api.get as vi.Mock).mock.calls[0][0];
+    const url = (api.get as any).mock.calls[0][0];
     expect(url).toContain('profileId=abc');
     expect(url).toContain('startDate=2024-01-01');
     expect(url).toContain('endDate=2024-12-31');
