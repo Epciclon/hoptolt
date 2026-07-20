@@ -1,12 +1,25 @@
-﻿'use client';
+'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dewormingService } from '../services/deworming.service';
 import { assignmentService } from '@/modules/assignments/services/assignment.service';
+import { useActiveGalpon } from '@/modules/galpones/hooks/useActiveGalpon';
 
 
 export function useDeworming(filters?: { profileId?: string; date?: string }) {
   const queryClient = useQueryClient();
+  const { activeGalpon } = useActiveGalpon();
+  const galponId = activeGalpon?.id || 'none';
+
+  // Query: Fetch Deworming Types
+  const {
+    data: galponDewormingTypes = [],
+    isLoading: loadingDewormingTypes,
+    error: errorDewormingTypes,
+  } = useQuery({
+    queryKey: ['galponDewormingTypes', galponId],
+    queryFn: () => dewormingService.getTypes(),
+  });
 
   // Query: Fetch Dewormings
   const {
@@ -15,7 +28,7 @@ export function useDeworming(filters?: { profileId?: string; date?: string }) {
     error: errorDewormings,
     refetch: fetchDewormings,
   } = useQuery({
-    queryKey: ['dewormings', filters?.profileId, filters?.date],
+    queryKey: ['dewormings', galponId, filters?.profileId, filters?.date],
     queryFn: () => {
       let startDate, endDate;
       if (filters?.date) {
@@ -32,7 +45,7 @@ export function useDeworming(filters?: { profileId?: string; date?: string }) {
     isLoading: loadingRabbits,
     error: errorRabbits,
   } = useQuery({
-    queryKey: ['assignedRabbits'],
+    queryKey: ['assignedRabbits', galponId],
     queryFn: () => assignmentService.getAssignedRabbits(),
   });
 
@@ -41,7 +54,7 @@ export function useDeworming(filters?: { profileId?: string; date?: string }) {
     data: dewormingPeriodData,
     isLoading: loadingPeriod,
   } = useQuery({
-    queryKey: ['dewormingPeriod'],
+    queryKey: ['dewormingPeriod', galponId],
     queryFn: () => dewormingService.getGalponDewormingPeriod(),
   });
 
