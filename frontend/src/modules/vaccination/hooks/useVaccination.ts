@@ -1,12 +1,15 @@
-﻿'use client';
+'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { vaccinationService } from '../services/vaccination.service';
 import { assignmentService } from '@/modules/assignments/services/assignment.service';
+import { useActiveGalpon } from '@/modules/galpones/hooks/useActiveGalpon';
 
 
 export function useVaccination(filters?: { profileId?: string; date?: string }) {
   const queryClient = useQueryClient();
+  const { activeGalpon } = useActiveGalpon();
+  const galponId = activeGalpon?.id || 'none';
 
   // Query: Fetch Vaccinations
   const {
@@ -15,7 +18,7 @@ export function useVaccination(filters?: { profileId?: string; date?: string }) 
     error: errorVaccinations,
     refetch: fetchVaccinations,
   } = useQuery({
-    queryKey: ['vaccinations', filters?.profileId, filters?.date],
+    queryKey: ['vaccinations', galponId, filters?.profileId, filters?.date],
     queryFn: () => {
       let startDate, endDate;
       if (filters?.date) {
@@ -32,7 +35,7 @@ export function useVaccination(filters?: { profileId?: string; date?: string }) 
     isLoading: loadingRabbits,
     error: errorRabbits,
   } = useQuery({
-    queryKey: ['assignedRabbits'],
+    queryKey: ['assignedRabbits', galponId],
     queryFn: () => assignmentService.getAssignedRabbits(),
   });
 
@@ -42,7 +45,7 @@ export function useVaccination(filters?: { profileId?: string; date?: string }) 
     isLoading: loadingVaccines,
     error: errorVaccines,
   } = useQuery({
-    queryKey: ['galponVaccines'],
+    queryKey: ['galponVaccines', galponId],
     queryFn: () => vaccinationService.getGalponVaccines(),
   });
 
