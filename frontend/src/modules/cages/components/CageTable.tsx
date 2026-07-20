@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
@@ -86,6 +86,7 @@ export function CageTable({ onEdit }: Readonly<CageTableProps>) {
           <Button
             size="sm"
             variant="outline"
+            className="text-main"
             icon={<Pencil size={13} />}
             onClick={() => onEdit?.(row)}
           >

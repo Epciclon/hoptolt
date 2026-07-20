@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -24,6 +24,7 @@ export function Pagination({
       <Button
         variant="outline"
         size="md"
+        className="text-main border-strong"
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage <= 1}
       >
@@ -31,13 +32,14 @@ export function Pagination({
         Anterior
       </Button>
       
-      <span className="text-sm text-muted font-medium">
+      <span className="text-sm text-main font-medium">
         Página {currentPage} de {totalPages}
       </span>
       
       <Button
         variant="outline"
         size="md"
+        className="text-main border-strong"
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage >= totalPages}
       >

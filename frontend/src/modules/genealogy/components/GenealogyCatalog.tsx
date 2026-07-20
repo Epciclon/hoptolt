@@ -81,7 +81,7 @@ export function GenealogyCatalog({ onViewTree, onEditRelation }: Readonly<Geneal
                 type="button"
                 variant="outline"
                 size="sm"
-                className="flex-1 min-w-[80px]"
+                className="flex-1 min-w-[80px] text-main"
                 icon={<Edit2 size={14} />}
                 onClick={(e) => {
                   e.stopPropagation();

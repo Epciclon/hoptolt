@@ -21,8 +21,9 @@ export default function GenealogyPage() {
       <GalponGuard>
       <Card>
       <CardHeader
-        title="Familia y Descendencia"
-        subtitle="Descubre quién es el padre, la madre y los hijos de cada conejo"
+        title="Árbol Genealógico"
+        subtitle="Explora el linaje, busca ancestros y analiza la descendencia de tus conejos"
+        tutorialUrl="https://youtu.be/Pz1LT4eDTJ8"
       />
       <GenealogyCatalog 
         onViewTree={(rabbit) => {

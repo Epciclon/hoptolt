@@ -1,7 +1,7 @@
-﻿'use client';
+'use client';
 
 import { Suspense, useEffect, useState } from 'react';
-import { Card } from '@/shared/ui';
+import { Card, CardHeader } from '@/shared/ui';
 import { Box, Rabbit, Dna, ArrowLeftRight } from 'lucide-react';
 import { useActiveGalpon } from '@/modules/galpones/hooks/useActiveGalpon';
 import { DashboardCalendar } from '@/modules/reproduction/components/DashboardCalendar';
@@ -66,7 +66,11 @@ function DashboardHomeContent() {
 
       {/* Calendario de Dashboard */}
       <Card>
-        <div className="px-1 pb-1 pt-2">
+        <CardHeader 
+          title="Calendario de Eventos" 
+          tutorialUrl="https://youtu.be/rccFO5ih5o8" 
+        />
+        <div className="px-1 pb-1">
           <Suspense fallback={
             <div className="flex items-center justify-center py-20">
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-500" />

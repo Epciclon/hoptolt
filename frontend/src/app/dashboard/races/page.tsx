@@ -20,7 +20,8 @@ export default function RacesPage() {
         <Card>
         <CardHeader
           title="Razas"
-          subtitle="Define las razas de conejos con las que trabajas en tu criadero"
+          subtitle="Gestiona el catálogo de razas de tu galpón"
+          tutorialUrl="https://youtu.be/Ib1lTVUYFrs"
           actions={
             <Button icon={<Plus size={16} />} onClick={openModal}>Nueva Raza</Button>
           }

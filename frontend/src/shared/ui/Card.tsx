@@ -1,5 +1,6 @@
-﻿import { ReactNode } from 'react';
+import { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { TutorialButton } from './TutorialButton';
 
 interface CardProps {
   children: ReactNode;
@@ -12,6 +13,7 @@ interface CardHeaderProps {
   subtitle?: string;
   actions?: ReactNode;
   className?: string;
+  tutorialUrl?: string;
 }
 
 const paddingMap = {
@@ -29,14 +31,21 @@ export function Card({ children, className, padding = 'md' }: Readonly<CardProps
   );
 }
 
-export function CardHeader({ title, subtitle, actions, className }: Readonly<CardHeaderProps>) {
+export function CardHeader({ title, subtitle, actions, className, tutorialUrl }: Readonly<CardHeaderProps>) {
   return (
     <div className={cn('flex items-start justify-between gap-4 mb-5', className)}>
       <div>
-        <h2 className="text-lg font-semibold text-main">{title}</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-semibold text-main">{title}</h2>
+          {tutorialUrl && <TutorialButton videoUrl={tutorialUrl} />}
+        </div>
         {subtitle && <p className="text-sm text-muted mt-0.5">{subtitle}</p>}
       </div>
-      {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
+      {actions && (
+        <div className="flex items-center gap-2 shrink-0">
+          {actions}
+        </div>
+      )}
     </div>
   );
 }

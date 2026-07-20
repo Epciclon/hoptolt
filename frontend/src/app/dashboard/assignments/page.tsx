@@ -25,8 +25,9 @@ export default function AssignmentsPage() {
       <GalponGuard>
         <Card>
           <CardHeader
-            title="Mover Conejos"
-            subtitle="Elige en qué jaula debe vivir cada conejo y mantén el orden"
+            title="Control de Asignaciones"
+            subtitle="Supervisa las asignaciones actuales y revisa la capacidad de tus jaulas"
+            tutorialUrl="https://youtu.be/0MqbR3yMm_8"
             actions={
               <Button icon={<Plus size={16} />} onClick={openModal}>Asignar Conejo</Button>
             }

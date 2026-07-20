@@ -14,7 +14,7 @@ const variantStyles: Record<BadgeVariant, string> = {
   danger:  'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
   warning: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
   info:    'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400',
-  neutral: 'bg-theme-surface border border-default text-muted',
+  neutral: 'bg-theme-surface border border-strong text-main',
 };
 
 export function Badge({ children, variant = 'neutral', className }: Readonly<BadgeProps>) {

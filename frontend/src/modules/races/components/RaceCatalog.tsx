@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useRaces } from '../hooks/useRaces';
 import type { Race } from '../types/race.types';
@@ -84,6 +84,7 @@ export function RaceCatalog({ onSuccess }: Readonly<RaceCatalogProps>) {
                       type="button"
                       variant="outline"
                       size="sm"
+                      className="text-main"
                       icon={<Pencil size={14} />}
                       onClick={(e) => {
                         e.stopPropagation();

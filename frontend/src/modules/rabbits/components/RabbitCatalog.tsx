@@ -140,7 +140,7 @@ export function RabbitCatalog({ onSuccess }: Readonly<RabbitCatalogProps>) {
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="flex-1"
+                      className="flex-1 text-main"
                       icon={<Pencil size={14} />}
                       onClick={(e) => {
                         e.stopPropagation();

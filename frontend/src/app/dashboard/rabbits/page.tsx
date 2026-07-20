@@ -16,8 +16,9 @@ export default function RabbitsPage() {
       <GalponGuard>
         <Card>
           <CardHeader
-            title="Tus Conejos"
-            subtitle="Revisa el historial y la información de cada conejo que tienes"
+            title="Catálogo de Conejos"
+            subtitle="Visualiza, filtra y administra todos tus conejos"
+            tutorialUrl="https://youtu.be/c073zLfxMyA"
             actions={
               <Button icon={<Plus size={16} />} onClick={() => setIsCreateOpen(true)}>Nuevo Conejo</Button>
             }

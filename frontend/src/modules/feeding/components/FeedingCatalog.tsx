@@ -278,14 +278,14 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
 
       <div className="bg-card border border-strong rounded-lg p-4 sticky top-0 z-10 shadow-sm flex flex-col gap-4">
         <div className="flex items-center justify-between border-b border-default pb-3">
-          <span className="text-sm font-medium text-muted">Turno Actual:</span>
+          <span className="text-sm font-medium text-main">Turno Actual:</span>
           <span className={`px-3 py-1 rounded-full text-xs font-bold ${currentEcuadorShift === 'mañana' ? 'bg-emerald-100 text-emerald-800' : 'bg-orange-100 text-orange-800'}`}>
             {currentEcuadorShift === 'mañana' ? 'Mañana' : 'Tarde'}
           </span>
         </div>
 
         <div className="w-full relative z-20" ref={foodDropdownRef}>
-          <span className="block text-sm font-medium text-muted mb-2">Tipos de Alimento</span>
+          <span className="block text-sm font-medium text-main mb-2">Tipos de Alimento</span>
           <Input
             placeholder="Busca y selecciona tipos de alimento"
             value={foodSearch}
@@ -298,7 +298,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
           {showFoodDropdown && (
             <div className="absolute z-10 w-full border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-card mt-1">
               {filteredFoodTypes.length === 0 ? (
-                <p className="text-gray-500 text-sm p-3">No hay tipos de alimento disponibles</p>
+                <p className="text-muted text-sm p-3">No hay tipos de alimento disponibles</p>
               ) : (
                 filteredFoodTypes.map(food => (
                   <button
