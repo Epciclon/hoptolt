@@ -4,6 +4,7 @@ export default defineConfig({
   testDir: './tests/e2e',
   timeout: 60000,
   retries: 1,
+  reporter: 'html',
   use: {
     baseURL: 'http://localhost:3000',
     headless: true,
