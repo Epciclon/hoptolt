@@ -159,7 +159,7 @@ Response HTTP con DTO  ←  o error capturado por error.middleware.js
 
 ```
 # Local (desarrollo)
-DATABASE_URL=postgresql://postgres:root@localhost:5432/postgres
+DATABASE_URL=postgresql://postgres:tu_password_local@localhost:5432/postgres
 
 # Nube (Supabase - producción)
 # DATABASE_URL=postgresql://postgres.[proyecto]:[password]@aws-1-sa-east-1.pooler.supabase.com:6543/postgres
