@@ -1,6 +1,5 @@
 const catchAsync = require('../../common/middlewares/catchAsync');
 const dewormingService = require('./deworming.service');
-const { Galpon } = require('../../domain/models');
 const { toDewormingDTO } = require('../../common/dtos/deworming.dto');
 
 exports.registerDeworming = catchAsync(async (req, res) => {
@@ -25,9 +24,6 @@ exports.getDewormings = catchAsync(async (req, res) => {
 });
 
 exports.getGalponDewormingPeriod = catchAsync(async (req, res) => {
-    const galpon = await Galpon.findByPk(req.galponId);
-    if (!galpon) {
-        return res.status(404).json({ success: false, message: 'Galpón no encontrado.' });
-    }
-    res.status(200).json({ success: true, dewormingPeriod: galpon.dewormingPeriod || 30 });
+    const dewormingPeriod = await dewormingService.getGalponDewormingPeriod(req.galponId);
+    res.status(200).json({ success: true, dewormingPeriod });
 });

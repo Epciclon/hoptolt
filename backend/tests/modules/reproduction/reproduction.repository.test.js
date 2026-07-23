@@ -117,7 +117,7 @@ describe('ReproductionRepository', () => {
     it('calls Reproduction.findAll', async () => {
       Reproduction.findAll.mockResolvedValue([])
       await reproductionRepository.findAll()
-      expect(Reproduction.findAll).toHaveBeenCalledWith()
+      expect(Reproduction.findAll).toHaveBeenCalledWith({})
     })
   })
 

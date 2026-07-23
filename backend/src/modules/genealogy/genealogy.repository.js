@@ -24,6 +24,20 @@ class GenealogyRepository {
         });
     }
 
+    async findChildrenByMother(motherId) {
+        return Genealogy.findAll({
+            where: { motherId },
+            attributes: ['rabbitId', 'fatherId']
+        });
+    }
+
+    async findChildrenByFather(fatherId) {
+        return Genealogy.findAll({
+            where: { fatherId },
+            attributes: ['rabbitId', 'motherId']
+        });
+    }
+
     async findAll() {
         return Genealogy.findAll({
             include: [

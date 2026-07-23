@@ -41,20 +41,20 @@ async function notifyOwnerOnManualPhaseChange(profileId, galponId, reproductionI
 }
 
 async function _notifyWorkersForPhaseChange(WorkerPermission, WorkerCage, Notification, workers, cageId, message, dataPayload) {
-    for (const worker of workers) {
-        if (!worker.profileId) continue;
+    await Promise.all(workers.map(async (worker) => {
+        if (!worker.profileId) return;
 
         const hasPermission = await WorkerPermission.findOne({
             where: { farmMemberId: worker.id, moduleName: 'reproduccionyparto', canRead: true }
         });
         
-        if (!hasPermission) continue;
+        if (!hasPermission) return;
         
         const isAssigned = await WorkerCage.findOne({
             where: { farmMemberId: worker.id, cageId }
         });
         
-        if (!isAssigned) continue;
+        if (!isAssigned) return;
         
         await Notification.create({
             profileId: worker.profileId,
@@ -63,7 +63,7 @@ async function _notifyWorkersForPhaseChange(WorkerPermission, WorkerCage, Notifi
             message,
             data: dataPayload
         });
-    }
+    }));
 }
 
 /**

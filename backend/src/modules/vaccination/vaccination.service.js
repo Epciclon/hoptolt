@@ -71,28 +71,26 @@ class VaccinationService {
 
         const vaccinationErrors = [];
 
-        // Primero validar todos los conejos antes de registrar
-        for (const rabbitId of rabbitIds) {
-            await this._validateSingleRabbitForVaccination(rabbitId, galponId, vaccines, vaccinePeriodMap, vaccinationErrors);
-        }
+        // Primero validar todos los conejos antes de registrar concurrentemente
+        await Promise.all(rabbitIds.map(rabbitId => 
+            this._validateSingleRabbitForVaccination(rabbitId, galponId, vaccines, vaccinePeriodMap, vaccinationErrors)
+        ));
 
         // Si hay errores, no registrar nada
         if (vaccinationErrors.length > 0) {
             throw new AppError(vaccinationErrors.join('\n'), 400);
         }
 
-        // Si todos pasan la validación, registrar todos
-        const createdVaccinations = [];
-        for (const rabbitId of rabbitIds) {
-            const vaccination = await vaccinationRepository.create({
+        // Si todos pasan la validación, registrar todos concurrentemente
+        const createdVaccinations = await Promise.all(rabbitIds.map(rabbitId => 
+            vaccinationRepository.create({
                 rabbitId,
                 vaccines,
                 vaccinationDate: new Date(),
                 galponId,
                 profileId
-            });
-            createdVaccinations.push(vaccination);
-        }
+            })
+        ));
 
         const { notifyOwnerOnWorkerAction } = require('../../common/helpers/notification.helper');
         await notifyOwnerOnWorkerAction(profileId, galponId, 'vaccination', 'Vacunación');
@@ -114,9 +112,15 @@ class VaccinationService {
         const queryOptions = filters.all ? {} : { limit: limitValue, offset };
         
         const vaccinations = await vaccinationRepository.findByGalponId(galponId, queryOptions, filters);
-        const total = await vaccinationRepository.countByGalponId(galponId, filters);
+        const count = filters.all ? vaccinations.length : await vaccinationRepository.countByGalponId(galponId, filters);
 
-        return createPaginatedResponse(vaccinations, filters.all ? 1 : pageValue, filters.all ? vaccinations.length : limitValue, total);
+        return createPaginatedResponse(vaccinations, page, limit, count);
+    }
+
+    async getGalponVaccines(galponId) {
+        const galpon = await Galpon.findByPk(galponId);
+        if (!galpon) throw new AppError('Galpón no encontrado.', 404);
+        return galpon.vaccines || [];
     }
 
     async getVaccinationsByRabbit(rabbitId) {

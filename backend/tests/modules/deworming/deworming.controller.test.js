@@ -77,32 +77,23 @@ describe('DewormingController', () => {
   describe('getGalponDewormingPeriod', () => {
     it('should return deworming period when galpon exists', async () => {
       req = { galponId: 1 };
-      Galpon.findByPk.mockResolvedValue({ id: 1, dewormingPeriod: 45 });
+      dewormingService.getGalponDewormingPeriod.mockResolvedValue(45);
 
       await dewormingController.getGalponDewormingPeriod(req, res, next);
 
-      expect(Galpon.findByPk).toHaveBeenCalledWith(1);
+      expect(dewormingService.getGalponDewormingPeriod).toHaveBeenCalledWith(1);
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({ success: true, dewormingPeriod: 45 });
     });
 
-    it('should return default 30 when galpon has no deworming period', async () => {
+    it('should throw error when galpon not found', async () => {
       req = { galponId: 1 };
-      Galpon.findByPk.mockResolvedValue({ id: 1 });
+      dewormingService.getGalponDewormingPeriod.mockRejectedValue(new Error('Galpón no encontrado.'));
 
       await dewormingController.getGalponDewormingPeriod(req, res, next);
+      await new Promise(process.nextTick);
 
-      expect(res.json).toHaveBeenCalledWith({ success: true, dewormingPeriod: 30 });
-    });
-
-    it('should return 404 when galpon not found', async () => {
-      req = { galponId: 1 };
-      Galpon.findByPk.mockResolvedValue(null);
-
-      await dewormingController.getGalponDewormingPeriod(req, res, next);
-
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ success: false, message: expect.any(String) });
+      expect(next).toHaveBeenCalledWith(expect.any(Error));
     });
   });
 });

@@ -170,8 +170,7 @@ class ReproductionService {
     }
 
     async _getWeaningCalendar(galponId, year, month) {
-        const lactancia = await reproductionRepository.findAll()
-            .then(reps => reps.filter(r => Number(r.galponId) === Number(galponId) && r.status === 'lactancia'));
+        const lactancia = await reproductionRepository.findByGalponAndStatuses(galponId, ['lactancia']);
         
         const results = [];
         for (const r of lactancia) {
@@ -196,8 +195,7 @@ class ReproductionService {
 
     async _getReceptiveCalendar(galponId, year, month, cageIds) {
         const { Op } = require('sequelize');
-        const busyReproductions = await reproductionRepository.findAll()
-            .then(reps => reps.filter(r => Number(r.galponId) === Number(galponId) && ['monta', 'gestacion', 'lactancia'].includes(r.status)));
+        const busyReproductions = await reproductionRepository.findByGalponAndStatuses(galponId, ['monta', 'gestacion', 'lactancia']);
         const busyFemaleIds = busyReproductions.map(r => r.femaleId);
 
         let includeOptions = [{
@@ -215,8 +213,7 @@ class ReproductionService {
             include: includeOptions
         });
 
-        const pastReproductions = await reproductionRepository.findAll()
-            .then(reps => reps.filter(r => Number(r.galponId) === Number(galponId) && ['completado', 'fallido'].includes(r.status)));
+        const pastReproductions = await reproductionRepository.findByGalponAndStatuses(galponId, ['completado', 'fallido']);
 
         return availableFemales.map(female => {
             const femalePast = pastReproductions.filter(r => r.femaleId === female.id).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
@@ -245,14 +242,113 @@ class ReproductionService {
         }).filter(Boolean);
     }
 
-    async getReproductionCalendar(galponId, year, month, type = 'births', cageIds = null) {
-        if (type === 'births') return reproductionRepository.findByMonthAndGalpon(galponId, year, month, cageIds);
-        if (type === 'weaning') return this._getWeaningCalendar(galponId, year, month);
-        if (type === 'receptive') return this._getReceptiveCalendar(galponId, year, month, cageIds);
-        return [];
+    async _getWorkerCageIds(profileId, galponId) {
+        const { FarmMember, Galpon, WorkerCage } = require('../../domain/models');
+        
+        const galpon = await Galpon.findByPk(galponId);
+        if (galpon && galpon.profileId === profileId) return null;
+        
+        const ownerMembership = await FarmMember.findOne({
+            where: { profileId, galponId, role: 'owner' }
+        });
+        if (ownerMembership) return null;
+
+        const membership = await FarmMember.findOne({
+            where: { profileId, galponId, role: 'worker' },
+            include: [{ model: WorkerCage, as: 'assignedCages', attributes: ['cageId'] }]
+        });
+        
+        return membership?.assignedCages ? membership.assignedCages.map(wc => wc.cageId) : [];
     }
 
-    async getReproductionByDay(galponId, year, month, day, cageIds = null) {
+    async getReproductionCalendar(galponId, profileId, year, month, type = 'births') {
+        const cageIds = await this._getWorkerCageIds(profileId, galponId);
+        let records = [];
+        if (type === 'births') {
+            records = await reproductionRepository.findByMonthAndGalpon(galponId, year, month, cageIds);
+        } else if (type === 'weaning') {
+            records = await this._getWeaningCalendar(galponId, year, month);
+        } else if (type === 'receptive') {
+            records = await this._getReceptiveCalendar(galponId, year, month, cageIds);
+        }
+        
+        const { toCalendarEntryDTO } = require('../../common/dtos/reproduction.dto');
+        const formatEcuador = (d) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guayaquil', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+        
+        const _getDateKey = (val) => {
+            if (!val) return null;
+            if (val instanceof Date) return formatEcuador(val);
+            if (typeof val === 'string') return val.split('T')[0];
+            return String(val);
+        };
+
+        const grouped = {};
+        for (const r of records) {
+            let valToFormat = type === 'births' ? r.estimatedBirthDate : (type === 'weaning' ? r.estimatedWeaningDate : r.receptiveDate);
+            const dateKey = _getDateKey(valToFormat);
+            if (!dateKey) continue;
+
+            let assignment = r.type !== 'receptive' ? (r.female?.assignments?.[0] || null) : null;
+            const cage = assignment?.cage || null;
+
+            if (!grouped[dateKey]) grouped[dateKey] = [];
+            grouped[dateKey].push(toCalendarEntryDTO(r, type, cage));
+        }
+        return grouped;
+    }
+
+    async getReproductionByDay(galponId, profileId, year, month, day) {
+        const cageIds = await this._getWorkerCageIds(profileId, galponId);
+        return reproductionRepository.findByDayAndGalpon(galponId, year, month, day, cageIds);
+    }
+
+    async getReproductionFemales(galponId) {
+        const { Assignment, Rabbit, Cage } = require('../../domain/models');
+        const assignments = await Assignment.findAll({
+            where: { galponId, status: 'asignado' },
+            include: [
+                { model: Rabbit, as: 'rabbit', where: { sex: 'hembra' }, required: true },
+                { model: Cage, as: 'cage', where: { type: 'reproducción' }, required: true }
+            ]
+        });
+        return assignments.map(assignment => ({
+            id: assignment.rabbit.id,
+            code: assignment.rabbit.code,
+            name: assignment.rabbit.name,
+            race: assignment.rabbit.race,
+            imageUrl: assignment.rabbit.imageUrl,
+            age: assignment.rabbit.age,
+            weight: assignment.rabbit.weight,
+            cageNumber: assignment.cage.number,
+            cageType: assignment.cage.type,
+            cageId: assignment.cage.id
+        }));
+    }
+
+    async getReproductionMales(galponId) {
+        const { Assignment, Rabbit, Cage } = require('../../domain/models');
+        const assignments = await Assignment.findAll({
+            where: { galponId, status: 'asignado' },
+            include: [
+                { model: Rabbit, as: 'rabbit', where: { sex: 'macho' }, required: true },
+                { model: Cage, as: 'cage', required: true }
+            ]
+        });
+        return assignments.map(assignment => ({
+            id: assignment.rabbit.id,
+            code: assignment.rabbit.code,
+            name: assignment.rabbit.name,
+            race: assignment.rabbit.race,
+            imageUrl: assignment.rabbit.imageUrl,
+            age: assignment.rabbit.age,
+            weight: assignment.rabbit.weight,
+            cageNumber: assignment.cage.number,
+            cageType: assignment.cage.type,
+            cageId: assignment.cage.id
+        }));
+    }
+
+    async getReproductionByDayAndCageIds(galponId, year, month, day, cageIds = null) {
         return reproductionRepository.findByDayAndGalpon(galponId, year, month, day, cageIds);
     }
 
@@ -287,8 +383,7 @@ class ReproductionService {
         const male = await Rabbit.findByPk(maleId);
         if (!male) throw new AppError('Macho no encontrado.', 404);
 
-        const busyReproductions = await reproductionRepository.findAll()
-            .then(reps => reps.filter(r => Number(r.galponId) === Number(galponId) && ['monta', 'gestacion', 'lactancia'].includes(r.status)));
+        const busyReproductions = await reproductionRepository.findByGalponAndStatuses(galponId, ['monta', 'gestacion', 'lactancia']);
         const busyFemaleIds = busyReproductions.map(r => r.femaleId);
 
         const females = await Rabbit.findAll({
@@ -342,9 +437,17 @@ class ReproductionService {
         const mountDateString = `${y}-${m}-${d}`;
 
         // Limitar a 2 montas por macho por día (salud animal)
-        const todaysMatings = await reproductionRepository.findAll().then(reps => 
-            reps.filter(r => r.maleId === maleId && new Date(r.mountDate).toISOString().startsWith(mountDateString) && r.status !== 'fallido')
-        );
+        const { Op } = require('sequelize');
+        const todaysMatings = await reproductionRepository.findAll({
+            where: {
+                maleId,
+                status: { [Op.ne]: 'fallido' },
+                mountDate: { 
+                    [Op.gte]: new Date(`${mountDateString}T00:00:00-05:00`), 
+                    [Op.lte]: new Date(`${mountDateString}T23:59:59-05:00`) 
+                }
+            }
+        });
         if (todaysMatings.length >= 2) {
             throw new AppError('Este macho ha alcanzado su límite de montas por hoy (2/2). Déjalo descansar.', 400);
         }

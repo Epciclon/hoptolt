@@ -129,8 +129,14 @@ class ReproductionRepository {
         return Reproduction.findByPk(id);
     }
 
-    async findAll() {
-        return Reproduction.findAll();
+    async findAll(options = {}) {
+        return Reproduction.findAll(options);
+    }
+
+    async findByGalponAndStatuses(galponId, statuses) {
+        return Reproduction.findAll({
+            where: { galponId, status: { [Op.in]: statuses } }
+        });
     }
 
     async findByMonthAndGalpon(galponId, year, month, cageIds = null) {

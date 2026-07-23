@@ -23,6 +23,8 @@ describe('GenealogyService', () => {
       });
       genealogyRepository.findByRabbitId.mockResolvedValue(null);
       genealogyRepository.findAll.mockResolvedValue([]);
+      genealogyRepository.findChildrenByMother.mockResolvedValue([]);
+      genealogyRepository.findChildrenByFather.mockResolvedValue([]);
       genealogyRepository.create = jest.fn().mockResolvedValue({ id: 1, rabbitId: 1, fatherId: 2, motherId: 3, galponId: 1, toJSON: () => ({ id: 1, rabbitId: 1, fatherId: 2, motherId: 3, galponId: 1 }) });
     });
 
@@ -108,6 +110,8 @@ describe('GenealogyService', () => {
         return rabbits[id] || null;
       });
       genealogyRepository.findAll.mockResolvedValue([]);
+      genealogyRepository.findChildrenByMother.mockResolvedValue([]);
+      genealogyRepository.findChildrenByFather.mockResolvedValue([]);
       genealogyRepository.findByRabbitId.mockResolvedValue({ id: 1, rabbitId: 1, fatherId: null, motherId: null, save: jest.fn().mockResolvedValue({ toJSON: () => ({ id: 1, rabbitId: 1, fatherId: 2, motherId: 3 }) }), changed: jest.fn() });
       const result = await genealogyService.editGenealogy(1, { fatherId: 2, motherId: 3 });
       expect(result.rabbitId).toBe(1);

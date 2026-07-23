@@ -91,25 +91,23 @@ class GenealogyService {
     }
 
     async checkMotherMultiplePartners(motherId, currentFatherId, excludeRabbitId = null) {
-        const allGenealogies = await genealogyRepository.findAll();
-        const mothersChildren = allGenealogies.filter(g =>
-            g.motherId === motherId && g.rabbitId !== excludeRabbitId
-        );
+        const mothersChildren = await genealogyRepository.findChildrenByMother(motherId);
         const fatherIds = new Set();
         mothersChildren.forEach(g => {
-            if (g.fatherId) fatherIds.add(g.fatherId);
+            if (g.rabbitId !== excludeRabbitId && g.fatherId) {
+                fatherIds.add(g.fatherId);
+            }
         });
         return fatherIds.size > 1;
     }
 
     async checkFatherMultiplePartners(fatherId, currentMotherId, excludeRabbitId = null) {
-        const allGenealogies = await genealogyRepository.findAll();
-        const fathersChildren = allGenealogies.filter(g =>
-            g.fatherId === fatherId && g.rabbitId !== excludeRabbitId
-        );
+        const fathersChildren = await genealogyRepository.findChildrenByFather(fatherId);
         const motherIds = new Set();
         fathersChildren.forEach(g => {
-            if (g.motherId) motherIds.add(g.motherId);
+            if (g.rabbitId !== excludeRabbitId && g.motherId) {
+                motherIds.add(g.motherId);
+            }
         });
         return motherIds.size > 1;
     }
@@ -189,13 +187,13 @@ class GenealogyService {
                 parents: {}
             };
 
-            if (genealogy.fatherId) {
-                tree.parents.father = await buildTree(genealogy.fatherId, currentLevel - 1);
-            }
+            const [fatherTree, motherTree] = await Promise.all([
+                genealogy.fatherId ? buildTree(genealogy.fatherId, currentLevel - 1) : Promise.resolve(null),
+                genealogy.motherId ? buildTree(genealogy.motherId, currentLevel - 1) : Promise.resolve(null)
+            ]);
 
-            if (genealogy.motherId) {
-                tree.parents.mother = await buildTree(genealogy.motherId, currentLevel - 1);
-            }
+            if (fatherTree) tree.parents.father = fatherTree;
+            if (motherTree) tree.parents.mother = motherTree;
 
             return tree;
         };

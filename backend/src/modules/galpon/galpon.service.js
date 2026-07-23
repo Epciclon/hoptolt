@@ -182,6 +182,22 @@ class GalponService {
         return galpon;
     }
 
+    async getGalponStats(galponId) {
+        const galpon = await galponRepository.findById(galponId);
+        if (!galpon) throw new AppError('Galpón no encontrado', 404);
+
+        const { Cage, Rabbit, Race, Assignment } = require('../../domain/models');
+        
+        const [totalCages, totalRabbits, totalRaces, totalAssignments] = await Promise.all([
+            Cage.count({ where: { galponId } }),
+            Rabbit.count({ where: { galponId } }),
+            Race.count({ where: { profileId: galpon.profileId } }),
+            Assignment.count({ where: { galponId, status: 'asignado' } })
+        ]);
+        
+        return { totalCages, totalRabbits, totalRaces, totalAssignments };
+    }
+
     async _assertOwner(galponId, profileId) {
         const membership = await FarmMember.findOne({
             where: { profileId, galponId, role: 'owner', status: 'active' }

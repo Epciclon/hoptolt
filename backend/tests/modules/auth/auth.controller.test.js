@@ -108,13 +108,12 @@ describe('AuthController', () => {
       expect(res.json).toHaveBeenCalledWith({ success: true, email: 'user@test.com' });
     });
 
-    it('should return 400 when identifier is missing', async () => {
+    it('should throw error when identifier is missing', async () => {
       req = { query: {} };
 
       await authController.resolveEmail(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ success: false, message: expect.any(String) });
+      expect(next).toHaveBeenCalledWith(expect.any(Error));
     });
   });
 
@@ -144,13 +143,12 @@ describe('AuthController', () => {
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
     });
 
-    it('should return 400 when password is missing', async () => {
+    it('should throw error when password is missing', async () => {
       req = { body: {}, user: { id: 'user1' } };
 
       await authController.deleteAccount(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ success: false, message: expect.any(String) });
+      expect(next).toHaveBeenCalledWith(expect.any(Error));
     });
   });
 });

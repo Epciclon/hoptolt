@@ -1,13 +1,14 @@
 const notificationService = require('./notification.service');
 const { createNotificationSchema } = require('./notification.validator');
 const catchAsync = require('../../common/middlewares/catchAsync');
+const AppError = require('../../errors/AppError');
 
 class NotificationController {
     // Crear notificación (solo para uso interno del sistema)
     createNotification = catchAsync(async (req, res) => {
         const { error } = createNotificationSchema.validate(req.body);
         if (error) {
-            return res.status(400).json({ error: error.details[0].message });
+            throw new AppError(error.details[0].message, 400);
         }
 
         const notification = await notificationService.createNotification(
@@ -46,7 +47,7 @@ class NotificationController {
         const notification = await notificationService.markAsRead(id);
         
         if (!notification) {
-            return res.status(404).json({ error: 'Notificación no encontrada' });
+            throw new AppError('Notificación no encontrada', 404);
         }
 
         res.json(notification);
@@ -64,7 +65,7 @@ class NotificationController {
         const deleted = await notificationService.deleteNotification(id);
         
         if (!deleted) {
-            return res.status(404).json({ error: 'Notificación no encontrada' });
+            throw new AppError('Notificación no encontrada', 404);
         }
 
         res.json({ success: true });

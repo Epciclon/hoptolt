@@ -14,26 +14,24 @@ class DewormingService {
 
         const dewormingErrors = [];
 
-        for (const rabbitId of rabbitIds) {
-            await this._validateRabbitForDeworming(rabbitId, galponId, dewormingPeriod, dewormingErrors);
-        }
+        await Promise.all(rabbitIds.map(rabbitId => 
+            this._validateRabbitForDeworming(rabbitId, galponId, dewormingPeriod, dewormingErrors)
+        ));
 
         // Si hay errores, no registrar nada
         if (dewormingErrors.length > 0) {
             throw new AppError(dewormingErrors.join('\n'), 400);
         }
 
-        // Si todos pasan la validación, registrar todos
-        const createdDewormings = [];
-        for (const rabbitId of rabbitIds) {
-            const deworming = await dewormingRepository.create({
+        // Si todos pasan la validación, registrar todos concurrentemente
+        const createdDewormings = await Promise.all(rabbitIds.map(rabbitId => 
+            dewormingRepository.create({
                 rabbitId,
                 dewormingDate: new Date(),
                 galponId,
                 profileId
-            });
-            createdDewormings.push(deworming);
-        }
+            })
+        ));
 
         const { notifyOwnerOnWorkerAction } = require('../../common/helpers/notification.helper');
         await notifyOwnerOnWorkerAction(profileId, galponId, 'deworming', 'Desparasitación');
@@ -100,9 +98,15 @@ class DewormingService {
         const queryOptions = filters.all ? {} : { limit: limitValue, offset };
         
         const dewormings = await dewormingRepository.findByGalponId(galponId, queryOptions, filters);
-        const total = await dewormingRepository.countByGalponId(galponId, filters);
+        const count = filters.all ? dewormings.length : await dewormingRepository.countByGalponId(galponId, filters);
 
-        return createPaginatedResponse(dewormings, filters.all ? 1 : pageValue, filters.all ? dewormings.length : limitValue, total);
+        return createPaginatedResponse(dewormings, page, limit, count);
+    }
+
+    async getGalponDewormingPeriod(galponId) {
+        const galpon = await Galpon.findByPk(galponId);
+        if (!galpon) throw new AppError('Galpón no encontrado.', 404);
+        return galpon.dewormingPeriod || 30;
     }
 
     async getDewormingsByRabbit(rabbitId) {

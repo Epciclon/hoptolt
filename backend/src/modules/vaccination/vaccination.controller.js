@@ -1,6 +1,5 @@
 const catchAsync = require('../../common/middlewares/catchAsync');
 const vaccinationService = require('./vaccination.service');
-const galponRepository = require('../galpon/galpon.repository');
 const { toVaccinationDTO } = require('../../common/dtos/vaccination.dto');
 
 exports.registerVaccination = catchAsync(async (req, res) => {
@@ -25,9 +24,6 @@ exports.getVaccinations = catchAsync(async (req, res) => {
 });
 
 exports.getGalponVaccines = catchAsync(async (req, res) => {
-    const galpon = await galponRepository.findById(req.galponId);
-    if (!galpon) {
-        return res.status(404).json({ success: false, message: 'Galpón no encontrado.' });
-    }
-    res.status(200).json({ success: true, vaccines: galpon.vaccines || [] });
+    const vaccines = await vaccinationService.getGalponVaccines(req.galponId);
+    res.status(200).json({ success: true, vaccines });
 });

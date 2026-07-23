@@ -29,14 +29,11 @@ class FeedingService {
             finalShift = currentHourEcuador < 12 ? 'mañana' : 'tarde';
         }
 
-        const createdFeedings = [];
-
-        for (const cageId of cageIds) {
+        const createdFeedings = await Promise.all(cageIds.map(async (cageId) => {
             const cage = await Cage.findByPk(cageId);
             if (!cage) throw new AppError(`La jaula con ID ${cageId} no existe.`, 404);
             if (cage.galponId !== galponId) throw new AppError(`La jaula con ID ${cageId} no pertenece al galpón activo.`, 400);
 
-            // Obtener conejos asignados a esta jaula
             const { Rabbit } = require('../../domain/models');
             const assignments = await Assignment.findAll({
                 where: { cageId, status: 'asignado' },
@@ -55,7 +52,7 @@ class FeedingService {
                 throw new AppError(`Ya tienes un registro de alimentación en el turno de la ${finalShift} para la jaula ${cage.number}. Se requiere justificación.`, 400);
             }
 
-            const feeding = await feedingRepository.create({
+            return feedingRepository.create({
                 cageId,
                 foodTypes,
                 justification: justification || null,
@@ -65,9 +62,7 @@ class FeedingService {
                 profileId,
                 rabbitsSnapshot
             });
-
-            createdFeedings.push(feeding);
-        }
+        }));
 
         const { notifyOwnerOnWorkerAction } = require('../../common/helpers/notification.helper');
         await notifyOwnerOnWorkerAction(profileId, galponId, 'feeding', 'Alimentación');

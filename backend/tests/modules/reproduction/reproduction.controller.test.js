@@ -172,16 +172,15 @@ describe('ReproductionController', () => {
   describe('getReproductionFemales', () => {
     it('should return assigned females in reproduction cages', async () => {
       req = { galponId: 1 };
-      Assignment.findAll.mockResolvedValue([
+      reproductionService.getReproductionFemales.mockResolvedValue([
         {
-          rabbit: { id: 1, code: 'R1', name: 'Luna', race: 'Rex', imageUrl: null, age: 12, weight: 3.5 },
-          cage: { id: 1, number: 'C1', type: 'reproducción' }
+          id: 1, code: 'R1', name: 'Luna', race: 'Rex', imageUrl: null, age: 12, weight: 3.5, cageNumber: 'C1', cageType: 'reproducción'
         }
       ]);
 
       await reproductionController.getReproductionFemales(req, res, next);
 
-      expect(Assignment.findAll).toHaveBeenCalled();
+      expect(reproductionService.getReproductionFemales).toHaveBeenCalledWith(1);
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, females: expect.any(Array) }));
     });
@@ -190,15 +189,15 @@ describe('ReproductionController', () => {
   describe('getReproductionMales', () => {
     it('should return assigned males', async () => {
       req = { galponId: 1 };
-      Assignment.findAll.mockResolvedValue([
+      reproductionService.getReproductionMales.mockResolvedValue([
         {
-          rabbit: { id: 2, code: 'R2', name: 'Thor', race: 'Mini Lop', imageUrl: null, age: 10, weight: 4.0 },
-          cage: { id: 2, number: 'C2', type: 'individual' }
+          id: 2, code: 'R2', name: 'Thor', race: 'Mini Lop', imageUrl: null, age: 10, weight: 4.0, cageNumber: 'C2', cageType: 'individual'
         }
       ]);
 
       await reproductionController.getReproductionMales(req, res, next);
 
+      expect(reproductionService.getReproductionMales).toHaveBeenCalledWith(1);
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, males: expect.any(Array) }));
     });
@@ -279,12 +278,12 @@ describe('ReproductionController', () => {
 
     it('should return 404 when not found', async () => {
       req = { params: { id: 'rep1' } };
-      reproductionService.getReproductionById.mockResolvedValue(null);
+      reproductionService.getReproductionById.mockRejectedValue(new Error('Monta no encontrada.'));
 
       await reproductionController.getReproductionById(req, res, next);
+      await new Promise(process.nextTick);
 
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ success: false, message: expect.any(String) });
+      expect(next).toHaveBeenCalledWith(expect.any(Error));
     });
   });
 

@@ -1,5 +1,6 @@
 const growthService = require('./growth.service');
 const AppError = require('../../errors/AppError');
+const { toGrowthDTO } = require('../../common/dtos/growth.dto');
 
 class GrowthController {
     async getHistory(req, res, next) {
@@ -9,7 +10,7 @@ class GrowthController {
             
             res.status(200).json({
                 status: 'success',
-                data: history
+                data: history.map(toGrowthDTO)
             });
         } catch (error) {
             next(error);

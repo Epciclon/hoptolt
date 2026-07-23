@@ -167,16 +167,12 @@ describe('GalponController', () => {
   describe('getGalponStats', () => {
     it('should return galpon stats when galpon exists', async () => {
       req = { params: { id: '1' } };
-      Galpon.findByPk.mockResolvedValue({ id: 1, profileId: 'owner1' });
-      Cage.count.mockResolvedValue(10);
-      Rabbit.count.mockResolvedValue(50);
-      Race.count.mockResolvedValue(5);
-      Assignment.count.mockResolvedValue(40);
+      galponService.getGalponStats.mockResolvedValue({ totalCages: 10, totalRabbits: 50, totalRaces: 5, totalAssignments: 40 });
 
       await galponController.getGalponStats(req, res, next);
       await flushPromises();
 
-      expect(Galpon.findByPk).toHaveBeenCalledWith(1);
+      expect(galponService.getGalponStats).toHaveBeenCalledWith(1);
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({
         success: true,
@@ -184,14 +180,14 @@ describe('GalponController', () => {
       });
     });
 
-    it('should throw 404 when galpon not found', async () => {
+    it('should throw error when service fails', async () => {
       req = { params: { id: '1' } };
-      Galpon.findByPk.mockResolvedValue(null);
+      galponService.getGalponStats.mockRejectedValue(new Error('Galpón no encontrado'));
 
       await galponController.getGalponStats(req, res, next);
       await flushPromises();
 
-      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 404 }));
+      expect(next).toHaveBeenCalledWith(expect.any(Error));
     });
   });
 });

@@ -1,7 +1,6 @@
 const catchAsync = require('../../common/middlewares/catchAsync');
 const galponService = require('./galpon.service');
 const { toGalponDTO } = require('../../common/dtos/galpon.dto');
-const { Cage, Rabbit, Race, Assignment, Galpon } = require('../../domain/models');
 const AppError = require('../../errors/AppError');
 
 exports.registerGalpon = catchAsync(async (req, res) => {
@@ -53,17 +52,10 @@ exports.setActiveGalpon = catchAsync(async (req, res) => {
 
 exports.getGalponStats = catchAsync(async (req, res) => {
     const galponId = Number.parseInt(req.params.id);
-    const galpon = await Galpon.findByPk(galponId);
-    if (!galpon) throw new AppError('Galpón no encontrado', 404);
-
-    const [totalCages, totalRabbits, totalRaces, totalAssignments] = await Promise.all([
-        Cage.count({ where: { galponId } }),
-        Rabbit.count({ where: { galponId } }),
-        Race.count({ where: { profileId: galpon.profileId } }),
-        Assignment.count({ where: { galponId, status: 'asignado' } })
-    ]);
+    const stats = await galponService.getGalponStats(galponId);
+    
     res.status(200).json({
         success: true,
-        stats: { totalCages, totalRabbits, totalRaces, totalAssignments }
+        stats
     });
 });

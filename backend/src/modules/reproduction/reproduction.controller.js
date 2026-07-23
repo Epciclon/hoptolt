@@ -1,8 +1,6 @@
 const catchAsync = require('../../common/middlewares/catchAsync');
 const reproductionService = require('./reproduction.service');
-const { Rabbit, Assignment, Cage, Reproduction } = require('../../domain/models');
-const { Op } = require('sequelize');
-const { toAvailableRabbitDTO, toReproductionDTO, toCalendarEntryDTO } = require('../../common/dtos/reproduction.dto');
+const { toReproductionDTO, toAvailableRabbitDTO } = require('../../common/dtos/reproduction.dto');
 
 exports.registerReproduction = catchAsync(async (req, res) => {
     const galponId = req.galponId;
@@ -61,88 +59,13 @@ exports.getAllReproductions = catchAsync(async (req, res) => {
 });
 
 exports.getReproductionFemales = catchAsync(async (req, res) => {
-    const galponId = req.galponId;
-
-    try {
-        const assignments = await Assignment.findAll({
-            where: {
-                galponId,
-                status: 'asignado'
-            },
-            include: [
-                {
-                    model: Rabbit,
-                    as: 'rabbit',
-                    where: { sex: 'hembra' },
-                    required: true
-                },
-                {
-                    model: Cage,
-                    as: 'cage',
-                    where: { type: 'reproducción' },
-                    required: true
-                }
-            ]
-        });
-        const females = assignments.map(assignment => ({
-            id: assignment.rabbit.id,
-            code: assignment.rabbit.code,
-            name: assignment.rabbit.name,
-            race: assignment.rabbit.race,
-            imageUrl: assignment.rabbit.imageUrl,
-            age: assignment.rabbit.age,
-            weight: assignment.rabbit.weight,
-            cageNumber: assignment.cage.number,
-            cageType: assignment.cage.type,
-            cageId: assignment.cage.id
-        }));
-        res.status(200).json({ success: true, females });
-    } catch (error) {
-        console.error('Error en getReproductionFemales:', error);
-        throw error;
-    }
+    const females = await reproductionService.getReproductionFemales(req.galponId);
+    res.status(200).json({ success: true, females });
 });
 
 exports.getReproductionMales = catchAsync(async (req, res) => {
-    const galponId = req.galponId;
-
-    try {
-        const assignments = await Assignment.findAll({
-            where: {
-                galponId,
-                status: 'asignado'
-            },
-            include: [
-                {
-                    model: Rabbit,
-                    as: 'rabbit',
-                    where: { sex: 'macho' },
-                    required: true
-                },
-                {
-                    model: Cage,
-                    as: 'cage',
-                    required: true
-                }
-            ]
-        });
-        const males = assignments.map(assignment => ({
-            id: assignment.rabbit.id,
-            code: assignment.rabbit.code,
-            name: assignment.rabbit.name,
-            race: assignment.rabbit.race,
-            imageUrl: assignment.rabbit.imageUrl,
-            age: assignment.rabbit.age,
-            weight: assignment.rabbit.weight,
-            cageNumber: assignment.cage.number,
-            cageType: assignment.cage.type,
-            cageId: assignment.cage.id
-        }));
-        res.status(200).json({ success: true, males });
-    } catch (error) {
-        console.error('Error en getReproductionMales:', error);
-        throw error;
-    }
+    const males = await reproductionService.getReproductionMales(req.galponId);
+    res.status(200).json({ success: true, males });
 });
 
 exports.editReproduction = catchAsync(async (req, res) => {
@@ -155,101 +78,29 @@ exports.deleteReproduction = catchAsync(async (req, res) => {
     res.status(200).json({ success: true, message: 'Monta eliminada exitosamente.' });
 });
 
-// Helper
-async function getWorkerCageIds(userId, galponId) {
-    const { FarmMember, Galpon, WorkerCage } = require('../../domain/models');
-    
-    const galpon = await Galpon.findByPk(galponId);
-    if (galpon && galpon.profileId === userId) return null;
-    
-    const ownerMembership = await FarmMember.findOne({
-        where: { profileId: userId, galponId: galponId, role: 'owner' }
-    });
-    if (ownerMembership) return null;
-
-    const membership = await FarmMember.findOne({
-        where: { profileId: userId, galponId: galponId, role: 'worker' },
-        include: [{ model: WorkerCage, as: 'assignedCages', attributes: ['cageId'] }]
-    });
-    
-    return membership?.assignedCages ? membership.assignedCages.map(wc => wc.cageId) : [];
-}
-
 exports.getReproductionCalendar = catchAsync(async (req, res) => {
     const galponId = req.galponId;
     const year  = Number.parseInt(req.query.year)  || new Date().getFullYear();
-    const month = Number.parseInt(req.query.month) || (new Date().getMonth() + 1); // 1-12
+    const month = Number.parseInt(req.query.month) || (new Date().getMonth() + 1);
     const type  = req.query.type || 'births';
 
-    const cageIds = await getWorkerCageIds(req.user.id, galponId);
-
-    const records = await reproductionService.getReproductionCalendar(galponId, year, month, type, cageIds);
-
-    const formatEcuador = (d) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guayaquil', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
-    
-    const _getDateKey = (val) => {
-        if (!val) return null;
-        if (val instanceof Date) return formatEcuador(val);
-        if (typeof val === 'string') return val.split('T')[0];
-        return String(val);
-    };
-
-    // _buildCalendarEntry movido a reproduction.dto.js
-
-    // Group by date string (YYYY-MM-DD)
-    const grouped = {};
-    for (const r of records) {
-        let valToFormat;
-        if (type === 'births') {
-            valToFormat = r.estimatedBirthDate;
-        } else if (type === 'weaning') {
-            valToFormat = r.estimatedWeaningDate;
-        } else {
-            valToFormat = r.receptiveDate;
-        }
-        const dateKey = _getDateKey(valToFormat);
-
-        if (!dateKey) continue;
-
-        let assignment = null;
-        if (r.type !== 'receptive') {
-            assignment = r.female?.assignments?.[0] || null;
-        }
-        
-        const cage = assignment?.cage || null;
-
-        if (!grouped[dateKey]) grouped[dateKey] = [];
-        grouped[dateKey].push(toCalendarEntryDTO(r, type, cage));
-    }
-
+    const grouped = await reproductionService.getReproductionCalendar(galponId, req.user.id, year, month, type);
     res.status(200).json({ success: true, calendar: grouped });
 });
 
 exports.getReproductionByDay = catchAsync(async (req, res) => {
     const galponId = req.galponId;
     const year  = Number.parseInt(req.query.year)  || new Date().getFullYear();
-    const month = Number.parseInt(req.query.month) || (new Date().getMonth() + 1); // 1-12
+    const month = Number.parseInt(req.query.month) || (new Date().getMonth() + 1);
     const day   = Number.parseInt(req.query.day)   || new Date().getDate();
 
-    const cageIds = await getWorkerCageIds(req.user.id, galponId);
-
-    const records = await reproductionService.getReproductionByDay(galponId, year, month, day, cageIds);
-
-    const reproductions = records.map(toReproductionDTO);
-
-    res.status(200).json({ success: true, reproductions });
+    const records = await reproductionService.getReproductionByDay(galponId, req.user.id, year, month, day);
+    res.status(200).json({ success: true, reproductions: records.map(toReproductionDTO) });
 });
 
 exports.getReproductionById = catchAsync(async (req, res) => {
     const reproduction = await reproductionService.getReproductionById(req.params.id);
-    
-    if (!reproduction) {
-        return res.status(404).json({ success: false, message: 'Monta no encontrada.' });
-    }
-
-    const response = toReproductionDTO(reproduction);
-
-    res.status(200).json({ success: true, reproduction: response });
+    res.status(200).json({ success: true, reproduction: toReproductionDTO(reproduction) });
 });
 
 exports.registerBirth = catchAsync(async (req, res) => {

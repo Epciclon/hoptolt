@@ -219,16 +219,19 @@ class FarmMemberService {
 
     async _validateOccupiedCages(cageIds, galponId) {
         if (!cageIds || cageIds.length === 0) return;
-        for (const cageId of cageIds) {
+        
+        await Promise.all(cageIds.map(async (cageId) => {
             const cage = await Cage.findOne({ where: { id: cageId, galponId } });
             if (!cage) throw new AppError(`La jaula ${cageId} no pertenece a este galpón.`, 400);
+            
             const rabbitCount = await Assignment.count({ 
                 where: { cageId, status: 'asignado' }
             });
+            
             if (rabbitCount === 0) {
                 throw new AppError(`La jaula #${cage.number} no tiene conejos asignados. Solo se pueden asignar jaulas ocupadas.`, 400);
             }
-        }
+        }));
     }
 }
 

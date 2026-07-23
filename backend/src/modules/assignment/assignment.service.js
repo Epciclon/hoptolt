@@ -50,8 +50,7 @@ class AssignmentService {
     }
 
     async validateAndGetRabbits(rabbitIds, galponId) {
-        const rabbits = [];
-        for (const id of rabbitIds) {
+        return Promise.all(rabbitIds.map(async (id) => {
             const rabbit = await rabbitRepository.findById(id);
             if (!rabbit) throw new AppError(`El conejo con ID ${id} no existe.`, 404);
 
@@ -62,12 +61,11 @@ class AssignmentService {
             const existingAssignment = await assignmentRepository.findActiveByRabbitId(id);
             if (existingAssignment) throw new AppError(`El conejo con ID ${id} ya está asignado a una jaula.`, 400);
 
-            rabbits.push(rabbit);
-        }
-        return rabbits;
+            return rabbit;
+        }));
     }
 
-    async assignRabbits(data, galponId) {
+    async assignRabbits(data, galponId, profileId) {
         const { cageId, rabbitIds } = data;
 
         if (!Array.isArray(rabbitIds) || rabbitIds.length === 0) {
@@ -92,37 +90,34 @@ class AssignmentService {
             throw new AppError(`La jaula no tiene suficiente capacidad. Disponible: ${cage.capacity - currentCount}.`, 400);
         }
 
-        // Get existing rabbits in the cage for compatibility validation
         const existingAssignments = await assignmentRepository.findActiveByCageId(cageId);
         const existingRabbitIds = existingAssignments.map(a => a.rabbitId);
-        const existingRabbits = [];
-        for (const rabbitId of existingRabbitIds) {
-            const rabbit = await rabbitRepository.findById(rabbitId);
-            if (rabbit) existingRabbits.push(rabbit);
-        }
+        const existingRabbits = await Promise.all(existingRabbitIds.map(async (rabbitId) => {
+            return rabbitRepository.findById(rabbitId);
+        })).then(rabbits => rabbits.filter(Boolean));
 
         const warnings = this.validateCompatibility(cage, rabbits, existingRabbits);
 
-        const assignments = [];
         const notificationService = require('../notification/notification.service');
-        for (const id of rabbitIds) {
+        
+        const createdAssignments = await Promise.all(rabbits.map(async (rabbit) => {
             const assignment = await assignmentRepository.create({
-                cageId,
-                rabbitId: id,
+                rabbitId: rabbit.id,
+                rabbitCode: rabbit.code,
+                cageId: cage.id,
+                cageNumber: cage.number,
                 galponId,
                 status: 'asignado',
-                assignedAt: new Date()
+                profileId
             });
-            assignments.push(assignment);
             
-            const rabbit = rabbits.find(r => r.id === id);
-            if (rabbit) {
-                const rabbitIdentifier = rabbit.name ? `${rabbit.code} - ${rabbit.name}` : rabbit.code;
-                await notificationService.createRabbitAssignmentNotification(cageId, rabbitIdentifier, true);
-            }
-        }
+            const rabbitIdentifier = rabbit.name ? `${rabbit.code} - ${rabbit.name}` : rabbit.code;
+            await notificationService.createRabbitAssignmentNotification(cage.id, rabbitIdentifier, true);
+            
+            return assignment;
+        }));
 
-        return { assignments, warnings };
+        return { assignments: createdAssignments, warnings };
     }
 
     async moveRabbit(rabbitId, currentCageId, targetCageId, galponId, profileId) {

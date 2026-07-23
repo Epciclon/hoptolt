@@ -77,19 +77,18 @@ class CageService {
         const cages = await cageRepository.findByGalponId(galponId, options);
         const total = await cageRepository.countByGalponId(galponId, { where });
 
-        const enrichedCages = [];
-        for (const cage of cages) {
+        const enrichedCages = await Promise.all(cages.map(async (cage) => {
             const count = await assignmentRepository.countActiveByCageId(cage.id);
             let occupancyStatus = 'disponible';
             if (count >= cage.capacity) occupancyStatus = 'llena';
             else if (count > 0) occupancyStatus = 'parcial';
 
-            enrichedCages.push({
+            return {
                 ...cage.get({ plain: true }),
                 assignedCount: count,
                 occupancyStatus
-            });
-        }
+            };
+        }));
 
         return createPaginatedResponse(enrichedCages, pageValue, limitValue, total);
     }

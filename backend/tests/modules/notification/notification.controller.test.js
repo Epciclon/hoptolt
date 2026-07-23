@@ -40,16 +40,16 @@ describe('NotificationController', () => {
       expect(res.json).toHaveBeenCalledWith({ id: 'n1', title: 'Test' });
     });
 
-    it('should return 400 when validation fails', async () => {
+    it('should throw error when validation fails', async () => {
       req = { user: { id: 'user1' }, body: {} };
       createNotificationSchema.validate.mockReturnValue({
         error: { details: [{ message: 'Title is required' }] }
       });
 
       await notificationController.createNotification(req, res, next);
+      await new Promise(process.nextTick);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Title is required' });
+      expect(next).toHaveBeenCalledWith(expect.any(Error));
       expect(notificationService.createNotification).not.toHaveBeenCalled();
     });
   });
@@ -102,14 +102,14 @@ describe('NotificationController', () => {
       expect(res.json).toHaveBeenCalledWith({ id: 'n1', readAt: expect.any(Date) });
     });
 
-    it('should return 404 when notification not found', async () => {
+    it('should throw error when notification not found', async () => {
       req = { params: { id: 'n1' } };
       notificationService.markAsRead.mockResolvedValue(null);
 
       await notificationController.markAsRead(req, res, next);
+      await new Promise(process.nextTick);
 
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ error: expect.any(String) });
+      expect(next).toHaveBeenCalledWith(expect.any(Error));
     });
   });
 
@@ -136,14 +136,14 @@ describe('NotificationController', () => {
       expect(res.json).toHaveBeenCalledWith({ success: true });
     });
 
-    it('should return 404 when notification not found', async () => {
+    it('should throw error when notification not found', async () => {
       req = { params: { id: 'n1' } };
       notificationService.deleteNotification.mockResolvedValue(false);
 
       await notificationController.deleteNotification(req, res, next);
+      await new Promise(process.nextTick);
 
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ error: expect.any(String) });
+      expect(next).toHaveBeenCalledWith(expect.any(Error));
     });
   });
 });

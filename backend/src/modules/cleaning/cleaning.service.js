@@ -88,17 +88,14 @@ class CleaningService {
 
     async _clearCleaningWarnings(cageId, Notification) {
         const warnings = await Notification.findAll({
-            where: { type: 'warning' }
+            where: { 
+                type: 'warning',
+                title: 'Alerta de Limpieza Requerida'
+            }
         });
         for (const w of warnings) {
             if (!w.data) continue;
-            let dataObj = w.data;
-            if (typeof dataObj === 'string') {
-                try { dataObj = JSON.parse(dataObj); } catch (e) { 
-                    console.error('Error parsing warning data', e);
-                    continue; 
-                }
-            }
+            let dataObj = typeof w.data === 'string' ? JSON.parse(w.data) : w.data;
             if (dataObj?.type === 'cleaning_warning' && Number(dataObj.cageId) === Number(cageId)) {
                 await w.destroy();
             }

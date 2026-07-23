@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cleaningService } from '../services/cleaning.service';
@@ -85,12 +85,12 @@ export function useCleaning(filters?: { profileId?: string; date?: string }) {
   }
   const error = errorStr;
 
-  // Mutation: Create Cleaning
   const createCleaningMutation = useMutation({
     mutationFn: (payload: CreateCleaningDto) => cleaningService.create(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cleanings'] });
       queryClient.invalidateQueries({ queryKey: ['active-dates'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
   });
 

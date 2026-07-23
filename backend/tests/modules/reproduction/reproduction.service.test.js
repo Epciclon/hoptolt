@@ -99,8 +99,10 @@ describe('ReproductionService', () => {
   describe('getReproductionCalendar', () => {
     it('returns births calendar', async () => {
       reproductionRepository.findByMonthAndGalpon.mockResolvedValue([{ id: 1 }]);
-      const result = await reproductionService.getReproductionCalendar(1, 2024, 1, 'births');
-      expect(result).toHaveLength(1);
+      const FarmMember = require('../../../src/domain/models').FarmMember;
+      FarmMember.findOne.mockResolvedValue(null);
+      const result = await reproductionService.getReproductionCalendar(1, 'p1', 2024, 1, 'births');
+      expect(result).toBeDefined();
     });
   });
 

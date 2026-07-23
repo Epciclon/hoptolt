@@ -51,7 +51,7 @@ exports.setActiveGalpon = catchAsync(async (req, res) => {
 exports.resolveEmail = catchAsync(async (req, res) => {
     const { identifier } = req.query;
     if (!identifier) {
-        return res.status(400).json({ success: false, message: 'Se requiere el parámetro identifier.' });
+        throw new AppError('Se requiere el parámetro identifier.', 400);
     }
     const email = await authService.resolveEmail(identifier);
     res.status(200).json({ success: true, email });
@@ -78,7 +78,7 @@ exports.updateProfile = catchAsync(async (req, res) => {
 exports.deleteAccount = catchAsync(async (req, res) => {
     const { currentPassword } = req.body;
     if (!currentPassword) {
-        return res.status(400).json({ success: false, message: 'Se requiere la contraseña para confirmar la eliminación.' });
+        throw new AppError('Se requiere la contraseña para confirmar la eliminación.', 400);
     }
     await authService.deleteAccount(req.user.id, currentPassword);
     res.status(200).json({

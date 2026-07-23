@@ -76,23 +76,23 @@ describe('VaccinationController', () => {
   describe('getGalponVaccines', () => {
     it('should return galpon vaccines when galpon exists', async () => {
       req = { galponId: 1 };
-      galponRepository.findById.mockResolvedValue({ id: 1, vaccines: ['Mixomatosis', 'RHD'] });
+      vaccinationService.getGalponVaccines.mockResolvedValue(['Mixomatosis', 'RHD']);
 
       await vaccinationController.getGalponVaccines(req, res, next);
 
-      expect(galponRepository.findById).toHaveBeenCalledWith(1);
+      expect(vaccinationService.getGalponVaccines).toHaveBeenCalledWith(1);
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({ success: true, vaccines: ['Mixomatosis', 'RHD'] });
     });
 
-    it('should return 404 when galpon not found', async () => {
+    it('should throw error when galpon not found', async () => {
       req = { galponId: 1 };
-      galponRepository.findById.mockResolvedValue(null);
+      vaccinationService.getGalponVaccines.mockRejectedValue(new Error('Galpón no encontrado.'));
 
       await vaccinationController.getGalponVaccines(req, res, next);
+      await new Promise(process.nextTick);
 
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ success: false, message: expect.any(String) });
+      expect(next).toHaveBeenCalledWith(expect.any(Error));
     });
   });
 });
