@@ -107,7 +107,7 @@ class VaccinationService {
         });
         if (!membership) throw new AppError('No tienes acceso a este galpón.', 403);
 
-        const { limit: limitValue, offset, page: pageValue } = getPaginationParams(page, limit);
+        const { limit: limitValue, offset } = getPaginationParams(page, limit);
         
         const queryOptions = filters.all ? {} : { limit: limitValue, offset };
         

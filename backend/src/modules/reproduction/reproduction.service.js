@@ -284,7 +284,9 @@ class ReproductionService {
 
         const grouped = {};
         for (const r of records) {
-            let valToFormat = type === 'births' ? r.estimatedBirthDate : (type === 'weaning' ? r.estimatedWeaningDate : r.receptiveDate);
+            let valToFormat = r.receptiveDate;
+            if (type === 'births') valToFormat = r.estimatedBirthDate;
+            else if (type === 'weaning') valToFormat = r.estimatedWeaningDate;
             const dateKey = _getDateKey(valToFormat);
             if (!dateKey) continue;
 
