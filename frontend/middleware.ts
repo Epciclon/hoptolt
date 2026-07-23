@@ -41,9 +41,14 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Si está autenticado e intenta ir a login/register → redirigir al dashboard
-  if (user && isPublic) {
+  // Si está autenticado e intenta acceder a la raíz → redirigir al dashboard
+  if (user && pathname === '/') {
     return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  // Si está autenticado e intenta ir a login/register → redirigir a /active-session
+  if (user && isPublic) {
+    return NextResponse.redirect(new URL('/active-session', request.url))
   }
 
   // Si NO está autenticado e intenta acceder a una ruta protegida → redirigir a login

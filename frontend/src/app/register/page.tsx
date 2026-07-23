@@ -56,37 +56,6 @@ export default function RegisterPage() {
     }
   };
 
-  if (user) {
-    return (
-      <AuthLayout>
-        <div className="text-center animate-fade-in-right p-6">
-          <h2 className="text-3xl font-bold text-main mb-6">Confirmar</h2>
-          <p className="text-muted mb-8 text-lg leading-relaxed">
-            Actualmente ha iniciado sesión como <span className="font-semibold text-main uppercase">{user.fullName || user.email}</span>, necesita salir antes de volver a entrar con un usuario diferente.
-          </p>
-          <div className="flex gap-4 justify-center">
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="px-6 py-3 border-2 border-teal-500 text-teal-600 font-semibold rounded-xl hover:bg-teal-50 transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={async () => {
-                await authService.logout();
-                window.location.reload();
-              }}
-              className="px-6 py-3 bg-red-500 text-white font-semibold rounded-xl hover:bg-red-600 transition-colors shadow-md hover:-translate-y-0.5"
-            >
-              Cerrar sesión
-            </button>
-          </div>
-        </div>
-      </AuthLayout>
-    );
-  }
-
-
 
   return (
     <AuthLayout>
