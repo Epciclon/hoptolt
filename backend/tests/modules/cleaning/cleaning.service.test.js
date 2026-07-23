@@ -14,13 +14,13 @@ describe('CleaningService', () => {
     jest.clearAllMocks();
   });
 
-  describe('registerCleaning', () => {
+    describe('registerCleaning', () => {
     beforeEach(() => {
       Profile.findByPk.mockResolvedValue({ id: 'p1', fullName: 'Juan Pérez', username: 'juan', email: 'j@e.com' });
       FarmMember.findOne.mockResolvedValue({ id: 1, role: 'owner', status: 'active' });
-      Cage.findByPk = jest.fn().mockResolvedValue({ id: 1, number: 5, galponId: 1 });
-      Assignment.findAll = jest.fn().mockResolvedValue([{ rabbit: { id: 1, code: 'R001', name: 'Bunny', race: 'X', imageUrl: null } }]);
-      WorkerCage.findOne = jest.fn().mockResolvedValue(null);
+      Cage.findAll = jest.fn().mockResolvedValue([{ id: 1, number: 5, galponId: 1 }]);
+      Assignment.findAll = jest.fn().mockResolvedValue([{ cageId: 1, rabbit: { id: 1, code: 'R001', name: 'Bunny', race: 'X', imageUrl: null } }]);
+      WorkerCage.findAll = jest.fn().mockResolvedValue([]);
       cleaningRepository.create.mockResolvedValue({ id: 1, cageId: 1, toJSON: () => ({ id: 1, cageId: 1 }) });
       Notification.findAll = jest.fn().mockResolvedValue([]);
     });
@@ -47,12 +47,12 @@ describe('CleaningService', () => {
 
     it('throws when worker tries to clean unassigned cage', async () => {
       FarmMember.findOne.mockResolvedValue({ id: 1, role: 'worker', status: 'active' });
-      WorkerCage.findOne.mockResolvedValue(null);
+      WorkerCage.findAll = jest.fn().mockResolvedValue([]);
       await expect(cleaningService.registerCleaning({ cageIds: [1] }, 1, 'p1')).rejects.toMatchObject({ statusCode: 403 });
     });
 
     it('throws when cage not found', async () => {
-      Cage.findByPk = jest.fn().mockResolvedValue(null);
+      Cage.findAll = jest.fn().mockResolvedValue([]);
       await expect(cleaningService.registerCleaning({ cageIds: [1] }, 1, 'p1')).rejects.toMatchObject({ statusCode: 404 });
     });
   });

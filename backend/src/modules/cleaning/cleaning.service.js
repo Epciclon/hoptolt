@@ -33,16 +33,81 @@ class CleaningService {
         });
         if (!membership) throw new AppError('No tienes acceso a este galpón.', 403);
 
+        const { Cage, WorkerCage, Assignment, Rabbit, Notification } = require('../../domain/models');
+        const { Op } = require('sequelize');
+
+        // Precarga de Jaulas
+        const cages = await Cage.findAll({ where: { id: { [Op.in]: cageIds } } });
+        const cageMap = new Map();
+        for (const c of cages) cageMap.set(c.id, c);
+
+        // Precarga de Permisos (si es worker)
+        const workerCagesSet = new Set();
+        if (membership.role === 'worker') {
+            const workerCages = await WorkerCage.findAll({
+                where: { farmMemberId: membership.id, cageId: { [Op.in]: cageIds } }
+            });
+            for (const wc of workerCages) workerCagesSet.add(wc.cageId);
+        }
+
+        // Precarga de Asignaciones y Conejos
+        const assignments = await Assignment.findAll({
+            where: { cageId: { [Op.in]: cageIds }, status: 'asignado' },
+            include: [{ model: Rabbit, as: 'rabbit', attributes: ['id', 'code', 'name', 'race', 'imageUrl'] }]
+        });
+        const assignmentsMap = new Map();
+        for (const a of assignments) {
+            if (!assignmentsMap.has(a.cageId)) assignmentsMap.set(a.cageId, []);
+            assignmentsMap.get(a.cageId).push(a);
+        }
+
         const createdCleanings = [];
         const processedCageIds = [];
-        const { Notification } = require('../../domain/models');
+        const toCreate = [];
 
+        // Validación en memoria
         for (const cageId of cageIds) {
-            const cleaningJson = await this._processCageCleaning(cageId, galponId, membership, profileId, responsibleName);
-            if (cleaningJson) {
-                createdCleanings.push(cleaningJson);
-                processedCageIds.push(cageId);
+            const cage = cageMap.get(cageId);
+            if (!cage) throw new AppError(`La jaula con ID ${cageId} no existe.`, 404);
+            if (cage.galponId !== galponId) throw new AppError(`La jaula #${cage.number} no pertenece al galpón activo.`, 400);
+
+            if (membership.role === 'worker' && !workerCagesSet.has(cageId)) {
+                throw new AppError(`No tienes asignada la jaula #${cage.number} para registrar su limpieza.`, 403);
             }
+
+            const cageAssignments = assignmentsMap.get(cageId) || [];
+            const rabbitsSnapshot = cageAssignments.map(a => a.rabbit).filter(Boolean);
+
+            toCreate.push({
+                cageId,
+                cageNumber: cage.number,
+                cleaningDate: new Date(),
+                galponId,
+                profileId,
+                rabbitsSnapshot,
+                responsibleName // Propiedad temporal para construir el JSON después
+            });
+        }
+
+        // Inserción masiva/concurrente
+        const createdRecords = await Promise.all(toCreate.map(data => 
+            cleaningRepository.create({
+                cageId: data.cageId,
+                cageNumber: data.cageNumber,
+                cleaningDate: data.cleaningDate,
+                galponId: data.galponId,
+                profileId: data.profileId,
+                rabbitsSnapshot: data.rabbitsSnapshot
+            })
+        ));
+
+        // Formateo de respuesta
+        for (let i = 0; i < createdRecords.length; i++) {
+            const cleaningJson = createdRecords[i].toJSON();
+            cleaningJson.responsible = toCreate[i].responsibleName;
+            cleaningJson.rabbits = toCreate[i].rabbitsSnapshot;
+            createdCleanings.push(cleaningJson);
+            processedCageIds.push(toCreate[i].cageId);
         }
 
         // Limpieza de advertencias en batch (background) para evitar cuellos de botella de N+1
@@ -52,44 +117,6 @@ class CleaningService {
         await notifyOwnerOnWorkerAction(profileId, galponId, 'cleaning', 'Limpieza');
 
         return createdCleanings;
-    }
-
-    async _processCageCleaning(cageId, galponId, membership, profileId, responsibleName) {
-        const { Cage, WorkerCage, Assignment, Rabbit } = require('../../domain/models');
-        
-        const cage = await Cage.findByPk(cageId);
-        if (!cage) throw new AppError(`La jaula con ID ${cageId} no existe.`, 404);
-        if (cage.galponId !== galponId) throw new AppError(`La jaula #${cage.number} no pertenece al galpón activo.`, 400);
-
-        if (membership.role === 'worker') {
-            const workerCage = await WorkerCage.findOne({
-                where: { farmMemberId: membership.id, cageId }
-            });
-            if (!workerCage) {
-                throw new AppError(`No tienes asignada la jaula #${cage.number} para registrar su limpieza.`, 403);
-            }
-        }
-
-        const assignments = await Assignment.findAll({
-            where: { cageId: cage.id, status: 'asignado' },
-            include: [{ model: Rabbit, as: 'rabbit', attributes: ['id', 'code', 'name', 'race', 'imageUrl'] }]
-        });
-        const rabbitsSnapshot = assignments.map(a => a.rabbit).filter(Boolean);
-
-        const cleaning = await cleaningRepository.create({
-            cageId,
-            cageNumber: cage.number,
-            cleaningDate: new Date(),
-            galponId,
-            profileId,
-            rabbitsSnapshot
-        });
-
-        const cleaningJson = cleaning.toJSON();
-        cleaningJson.responsible = responsibleName;
-        cleaningJson.rabbits = rabbitsSnapshot;
-
-        return cleaningJson;
     }
 
     async _bulkClearCleaningWarnings(cageIds, galponId, Notification) {
