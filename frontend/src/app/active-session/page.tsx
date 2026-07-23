@@ -36,12 +36,14 @@ export default function ActiveSessionPage() {
         </p>
         <div className="flex gap-4 justify-center">
           <button
+            type="button"
             onClick={() => router.push('/dashboard')}
             className="px-6 py-3 border-2 border-teal-500 text-teal-600 font-semibold rounded-xl hover:bg-teal-50 transition-colors"
           >
             Ir al Dashboard
           </button>
           <button
+            type="button"
             onClick={async () => {
               await authService.logout();
               await refetchUser();

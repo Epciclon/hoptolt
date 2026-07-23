@@ -20,7 +20,7 @@ type FormValues = z.infer<typeof schema>;
 
 export default function LoginPage() {
   const router = useRouter();
-  const { user, refetchUser } = useAuthContext();
+  const { refetchUser } = useAuthContext();
   const { showToast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
 
