@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { authService } from '@/modules/auth/services/auth.service';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 import { AuthLayout } from '@/modules/auth/components/AuthLayout';
+import { useToast } from '@/shared/contexts/ToastContext';
 
 const schema = z.object({
   identifier: z.string().min(1, 'El usuario o correo es obligatorio.'),
@@ -20,28 +21,51 @@ type FormValues = z.infer<typeof schema>;
 export default function LoginPage() {
   const router = useRouter();
   const { user, refetchUser } = useAuthContext();
-  const [error, setError] = useState('');
+  const { showToast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      router.replace('/dashboard');
-    }
-  }, [user, router]);
+  if (user) {
+    return (
+      <AuthLayout>
+        <div className="text-center animate-fade-in-right p-6">
+          <h2 className="text-3xl font-bold text-main mb-6">Confirmar</h2>
+          <p className="text-muted mb-8 text-lg leading-relaxed">
+            Actualmente ha iniciado sesión como <span className="font-semibold text-main uppercase">{user.fullName || user.email}</span>, necesita salir antes de volver a entrar con un usuario diferente.
+          </p>
+          <div className="flex gap-4 justify-center">
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="px-6 py-3 border-2 border-teal-500 text-teal-600 font-semibold rounded-xl hover:bg-teal-50 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={async () => {
+                await authService.logout();
+                await refetchUser();
+              }}
+              className="px-6 py-3 bg-red-500 text-white font-semibold rounded-xl hover:bg-red-600 transition-colors shadow-md hover:-translate-y-0.5"
+            >
+              Cerrar sesión
+            </button>
+          </div>
+        </div>
+      </AuthLayout>
+    );
+  }
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
   });
 
   const onSubmit = async (values: FormValues) => {
-    setError('');
     try {
       await authService.login(values);
       await refetchUser();
       router.push('/dashboard');
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al iniciar sesión.');
+      showToast(err instanceof Error ? err.message : 'Error al iniciar sesión.', 'error');
     }
   };
 
@@ -53,12 +77,6 @@ export default function LoginPage() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 animate-fade-in-right" style={{ animationDelay: '0.4s' }}>
-        {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-center text-red-600">
-            <span className="text-xl mr-3">⚠️</span>
-            <span className="text-sm">{error}</span>
-          </div>
-        )}
 
         {/* Usuario o Email */}
         <div>
