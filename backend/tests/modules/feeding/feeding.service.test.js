@@ -31,10 +31,12 @@ describe('FeedingService', () => {
 
   describe('registerFeeding', () => {
     beforeEach(() => {
-      Cage.findByPk.mockResolvedValue({ id: 1, number: 5, galponId: 1 });
-      Assignment.findAll = jest.fn().mockResolvedValue([{ rabbit: { id: 1, code: 'R001', name: 'Bunny', race: 'X', imageUrl: null } }]);
-      feedingRepository.countByUniqueAttributes.mockResolvedValue(0);
+      Cage.findAll = jest.fn().mockResolvedValue([{ id: 1, number: 5, galponId: 1 }]);
+      Assignment.findAll = jest.fn().mockResolvedValue([{ cageId: 1, rabbit: { id: 1, code: 'R001', name: 'Bunny', race: 'X', imageUrl: null } }]);
+      const { Feeding } = require('../../../src/domain/models');
+      Feeding.findAll = jest.fn().mockResolvedValue([]);
       feedingRepository.create.mockResolvedValue({ id: 1, cageId: 1, foodTypes: ['pellets'], shift: 'mañana' });
+      feedingRepository._getEcuadorDayBounds = jest.fn().mockReturnValue({ startOfDay: new Date(), endOfDay: new Date() });
     });
 
     it('registers feeding for a cage', async () => {
@@ -49,12 +51,12 @@ describe('FeedingService', () => {
     });
 
     it('throws when cage not found', async () => {
-      Cage.findByPk.mockResolvedValue(null);
+      Cage.findAll = jest.fn().mockResolvedValue([]);
       await expect(feedingService.registerFeeding({ cageIds: [999], foodTypes: ['pellets'], shift: 'mañana' }, 1, 'p1')).rejects.toMatchObject({ statusCode: 404 });
     });
 
     it('throws when cage does not belong to galpon', async () => {
-      Cage.findByPk.mockResolvedValue({ id: 1, galponId: 999 });
+      Cage.findAll = jest.fn().mockResolvedValue([{ id: 1, galponId: 999 }]);
       await expect(feedingService.registerFeeding({ cageIds: [1], foodTypes: ['pellets'], shift: 'mañana' }, 1, 'p1')).rejects.toMatchObject({ statusCode: 400 });
     });
 
@@ -64,7 +66,8 @@ describe('FeedingService', () => {
     });
 
     it('requires justification for duplicate feeding in same shift', async () => {
-      feedingRepository.countByUniqueAttributes.mockResolvedValue(1);
+      const { Feeding } = require('../../../src/domain/models');
+      Feeding.findAll = jest.fn().mockResolvedValue([{ cageId: 1 }]);
       await expect(feedingService.registerFeeding({ cageIds: [1], foodTypes: ['pellets'], shift: 'mañana' }, 1, 'p1')).rejects.toMatchObject({ statusCode: 400 });
     });
   });

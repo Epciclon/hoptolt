@@ -45,21 +45,58 @@ class GrowthService {
                 const today = new Date();
                 const todayStr = today.toLocaleDateString('sv', { timeZone: 'America/Guayaquil' });
                 
-                const updates = [];
+                const updatesResult = { messages: [], rabbitsToUpdate: [] };
 
                 for (const rabbit of rabbits) {
-                    const msg = await this._processRabbitGrowth(rabbit, today);
-                    if (msg) updates.push(msg);
+                    this._processRabbitGrowthSync(rabbit, today, updatesResult);
                 }
 
-                if (updates.length > 0) {
+                if (updatesResult.rabbitsToUpdate.length > 0) {
+                    const auditLogs = [];
+                    const growthRecords = [];
+                    const rabbitPromises = [];
+
+                    for (const u of updatesResult.rabbitsToUpdate) {
+                        const rabbit = rabbits.find(r => r.id === u.rabbitId);
+                        const updateData = { age: u.age };
+                        
+                        auditLogs.push({
+                            action: 'age_update_auto',
+                            entity: 'Rabbit',
+                            entityId: rabbit.id,
+                            details: { oldAge: rabbit.age, newAge: u.age, updatedBy: 'system' }
+                        });
+
+                        if (u.weight !== undefined) {
+                            updateData.weight = u.weight;
+                            growthRecords.push({ rabbitId: rabbit.id, weight: u.weight, recordDate: today });
+                            auditLogs.push({
+                                action: 'weight_update_auto',
+                                entity: 'Rabbit',
+                                entityId: rabbit.id,
+                                details: { oldWeight: u.oldWeight, newWeight: u.weight, source: 'system_estimation' }
+                            });
+                        }
+                        
+                        // Concurrent rabbit updates
+                        rabbitPromises.push(rabbit.update(updateData));
+                    }
+                    
+                    await Promise.all(rabbitPromises);
+                    if (auditLogs.length > 0) {
+                        await AuditLog.bulkCreate(auditLogs);
+                    }
+                    if (growthRecords.length > 0) {
+                        await Growth.bulkCreate(growthRecords);
+                    }
+
                     // Check if already notified for today
                     const summaryNotifs = await Notification.findAll({
                         where: { profileId, title: `Resumen de Crecimiento - ${todayStr}` }
                     });
                     
                     if (summaryNotifs.length === 0) {
-                        let message = `El sistema ha actualizado automáticamente la edad y peso de ${updates.length} conejos.`;
+                        let message = `El sistema ha actualizado automáticamente la edad y peso de ${updatesResult.rabbitsToUpdate.length} conejos.`;
 
                         await Notification.create({
                             profileId,
@@ -68,8 +105,8 @@ class GrowthService {
                             message: message,
                             data: {
                                 type: 'growth_summary',
-                                updatesCount: updates.length,
-                                details: updates
+                                updatesCount: updatesResult.rabbitsToUpdate.length,
+                                details: updatesResult.messages
                             }
                         });
                     }
@@ -98,7 +135,7 @@ class GrowthService {
         return history;
     }
 
-    async _processRabbitGrowth(rabbit, today) {
+    _processRabbitGrowthSync(rabbit, today, updatesResult) {
         const birthDate = new Date(rabbit.birthDate);
         let months = (today.getFullYear() - birthDate.getFullYear()) * 12;
         months -= birthDate.getMonth();
@@ -107,37 +144,25 @@ class GrowthService {
         if (months < 0) months = 0;
 
         const maxAge = rabbit.purpose === 'Engorde' ? 8 : 12;
-        if (rabbit.age === months) return null;
+        if (rabbit.age === months) return;
 
-        await rabbit.update({ age: months });
-        await AuditLog.create({
-            action: 'age_update_auto',
-            entity: 'Rabbit',
-            entityId: rabbit.id,
-            details: { oldAge: rabbit.age, newAge: months, updatedBy: 'system' }
-        });
-        
+        const updates = { rabbitId: rabbit.id, age: months };
         let msg = `${rabbit.code} - ${rabbit.name || 'Sin nombre'} cumplió ${months} meses`;
 
         if (months <= maxAge) {
             const estimatedWeight = this.calculateEstimatedWeight(rabbit.purpose, months);
             if (Number.parseFloat(rabbit.weight) !== estimatedWeight) {
-                const oldWeight = Number.parseFloat(rabbit.weight);
-                await Growth.create({ rabbitId: rabbit.id, weight: estimatedWeight, recordDate: new Date() });
-                await rabbit.update({ weight: estimatedWeight });
-                await AuditLog.create({
-                    action: 'weight_update_auto',
-                    entity: 'Rabbit',
-                    entityId: rabbit.id,
-                    details: { oldWeight, newWeight: estimatedWeight, source: 'system_estimation' }
-                });
+                updates.weight = estimatedWeight;
+                updates.oldWeight = Number.parseFloat(rabbit.weight);
             }
             msg += ` y su peso estimado es ${estimatedWeight.toFixed(2)} kg.`;
             if (months === maxAge) {
                 msg += ` (Este es el último peso estimado por el sistema. A partir de aquí se estabiliza el peso y quedará en manos del usuario si desea actualizarlo).`;
             }
         }
-        return msg;
+        
+        updatesResult.messages.push(msg);
+        updatesResult.rabbitsToUpdate.push(updates);
     }
 }
 

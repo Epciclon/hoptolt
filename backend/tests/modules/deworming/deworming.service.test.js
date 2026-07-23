@@ -17,10 +17,11 @@ describe('DewormingService', () => {
   describe('registerDeworming', () => {
     beforeEach(() => {
       Galpon.findByPk.mockResolvedValue({ id: 1, dewormingPeriod: 30 });
-      Rabbit.findByPk.mockResolvedValue({ id: 1, code: 'R001', name: 'Bunny', galponId: 1 });
-      Assignment.findOne = jest.fn().mockResolvedValue({ id: 1, status: 'asignado' });
-      Reproduction.findOne = jest.fn().mockResolvedValue(null);
-      dewormingRepository.findLastDewormingByRabbit.mockResolvedValue(null);
+      Rabbit.findAll = jest.fn().mockResolvedValue([{ id: 1, code: 'R001', name: 'Bunny', galponId: 1 }]);
+      Assignment.findAll = jest.fn().mockResolvedValue([{ rabbitId: 1, status: 'asignado' }]);
+      Reproduction.findAll = jest.fn().mockResolvedValue([]);
+      const { Deworming } = require('../../../src/domain/models');
+      Deworming.findAll = jest.fn().mockResolvedValue([]);
       dewormingRepository.create.mockResolvedValue({ id: 1, rabbitId: 1 });
     });
 
@@ -36,17 +37,17 @@ describe('DewormingService', () => {
     });
 
     it('throws when rabbit does not exist', async () => {
-      Rabbit.findByPk.mockResolvedValue(null);
+      Rabbit.findAll = jest.fn().mockResolvedValue([]);
       await expect(dewormingService.registerDeworming({ rabbitIds: [1] }, 1, 'p1')).rejects.toMatchObject({ statusCode: 400 });
     });
 
     it('throws when rabbit is not assigned', async () => {
-      Assignment.findOne = jest.fn().mockResolvedValue(null);
+      Assignment.findAll = jest.fn().mockResolvedValue([]);
       await expect(dewormingService.registerDeworming({ rabbitIds: [1] }, 1, 'p1')).rejects.toMatchObject({ statusCode: 400 });
     });
 
     it('throws when rabbit is lactating', async () => {
-      Reproduction.findOne = jest.fn().mockResolvedValue({ id: 1, status: 'lactancia' });
+      Reproduction.findAll = jest.fn().mockResolvedValue([{ femaleId: 1, status: 'lactancia' }]);
       await expect(dewormingService.registerDeworming({ rabbitIds: [1] }, 1, 'p1')).rejects.toMatchObject({ statusCode: 400 });
     });
   });

@@ -34,11 +34,19 @@ class CleaningService {
         if (!membership) throw new AppError('No tienes acceso a este galpón.', 403);
 
         const createdCleanings = [];
+        const processedCageIds = [];
+        const { Notification } = require('../../domain/models');
 
         for (const cageId of cageIds) {
             const cleaningJson = await this._processCageCleaning(cageId, galponId, membership, profileId, responsibleName);
-            if (cleaningJson) createdCleanings.push(cleaningJson);
+            if (cleaningJson) {
+                createdCleanings.push(cleaningJson);
+                processedCageIds.push(cageId);
+            }
         }
+
+        // Limpieza de advertencias en batch (background) para evitar cuellos de botella de N+1
+        this._bulkClearCleaningWarnings(processedCageIds, galponId, Notification).catch(err => console.error("Error clearing warnings:", err));
 
         const { notifyOwnerOnWorkerAction } = require('../../common/helpers/notification.helper');
         await notifyOwnerOnWorkerAction(profileId, galponId, 'cleaning', 'Limpieza');
@@ -47,7 +55,7 @@ class CleaningService {
     }
 
     async _processCageCleaning(cageId, galponId, membership, profileId, responsibleName) {
-        const { Cage, WorkerCage, Assignment, Rabbit, Notification } = require('../../domain/models');
+        const { Cage, WorkerCage, Assignment, Rabbit } = require('../../domain/models');
         
         const cage = await Cage.findByPk(cageId);
         if (!cage) throw new AppError(`La jaula con ID ${cageId} no existe.`, 404);
@@ -81,24 +89,35 @@ class CleaningService {
         cleaningJson.responsible = responsibleName;
         cleaningJson.rabbits = rabbitsSnapshot;
 
-        await this._clearCleaningWarnings(cageId, Notification);
-        
         return cleaningJson;
     }
 
-    async _clearCleaningWarnings(cageId, Notification) {
-        const warnings = await Notification.findAll({
-            where: { 
-                type: 'warning',
-                title: 'Alerta de Limpieza Requerida'
-            }
-        });
+    async _bulkClearCleaningWarnings(cageIds, galponId, Notification) {
+        if (!cageIds || cageIds.length === 0) return;
+        const { FarmMember } = require('../../domain/models');
+        const owner = await FarmMember.findOne({ where: { galponId, role: 'owner', status: 'active' }});
+        
+        const whereClause = {
+            type: 'warning',
+            title: 'Alerta de Limpieza Requerida'
+        };
+        if (owner) {
+            whereClause.profileId = owner.profileId;
+        }
+
+        const warnings = await Notification.findAll({ where: whereClause });
+        const toDestroy = [];
+        
         for (const w of warnings) {
             if (!w.data) continue;
             let dataObj = typeof w.data === 'string' ? JSON.parse(w.data) : w.data;
-            if (dataObj?.type === 'cleaning_warning' && Number(dataObj.cageId) === Number(cageId)) {
-                await w.destroy();
+            if (dataObj?.type === 'cleaning_warning' && cageIds.includes(Number(dataObj.cageId))) {
+                toDestroy.push(w.id);
             }
+        }
+
+        if (toDestroy.length > 0) {
+            await Notification.destroy({ where: { id: toDestroy } });
         }
     }
 

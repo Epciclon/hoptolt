@@ -23,14 +23,21 @@ export function applyThemeToDOM(fontSize: string, fontFamily: string, bold: bool
 
 export function useThemeSync() {
   useEffect(() => {
+    const applyCurrentTheme = () => {
+      const size = localStorage.getItem('fontSize') ?? '16px';
+      const family = localStorage.getItem('fontFamily') ?? '';
+      const bld = localStorage.getItem('fontBold') === 'true';
+      const thm = localStorage.getItem('theme') ?? 'light';
+      applyThemeToDOM(size, family, bld, thm);
+    };
+
+    // Apply immediately on mount (fixes soft-navigation and BfCache class resets)
+    applyCurrentTheme();
+
     const handleStorage = (e: StorageEvent) => {
       // Sync styles if any relevant key changes
       if (['fontSize', 'fontFamily', 'fontBold', 'theme'].includes(e.key || '')) {
-        const size = localStorage.getItem('fontSize') ?? '16px';
-        const family = localStorage.getItem('fontFamily') ?? '';
-        const bld = localStorage.getItem('fontBold') === 'true';
-        const thm = localStorage.getItem('theme') ?? 'light';
-        applyThemeToDOM(size, family, bld, thm);
+        applyCurrentTheme();
       }
     };
     

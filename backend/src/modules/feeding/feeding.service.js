@@ -29,30 +29,61 @@ class FeedingService {
             finalShift = currentHourEcuador < 12 ? 'mañana' : 'tarde';
         }
 
-        const createdFeedings = await Promise.all(cageIds.map(async (cageId) => {
-            const cage = await Cage.findByPk(cageId);
+        const { Op } = require('sequelize');
+        const { Cage, Assignment, Rabbit, Feeding } = require('../../domain/models');
+
+        // Precarga de Jaulas
+        const cages = await Cage.findAll({ where: { id: { [Op.in]: cageIds } } });
+        const cageMap = new Map();
+        for (const c of cages) cageMap.set(c.id, c);
+
+        // Precarga de Asignaciones
+        const assignments = await Assignment.findAll({
+            where: { cageId: { [Op.in]: cageIds }, status: 'asignado' },
+            include: [{ model: Rabbit, as: 'rabbit', attributes: ['id', 'code', 'name', 'race', 'imageUrl'] }]
+        });
+        const assignmentsMap = new Map();
+        for (const a of assignments) {
+            if (!assignmentsMap.has(a.cageId)) assignmentsMap.set(a.cageId, []);
+            assignmentsMap.get(a.cageId).push(a);
+        }
+
+        // Precarga de registros existentes (para validación de duplicados en el turno)
+        const { startOfDay, endOfDay } = feedingRepository._getEcuadorDayBounds(now);
+        const existingFeedings = await Feeding.findAll({
+            where: {
+                cageId: { [Op.in]: cageIds },
+                shift: finalShift,
+                profileId,
+                feedingDate: { [Op.between]: [startOfDay, endOfDay] }
+            },
+            attributes: ['cageId']
+        });
+        const existingCountMap = new Map();
+        for (const ef of existingFeedings) {
+            existingCountMap.set(ef.cageId, (existingCountMap.get(ef.cageId) || 0) + 1);
+        }
+
+        // Validación en memoria
+        const toCreate = [];
+        for (const cageId of cageIds) {
+            const cage = cageMap.get(cageId);
             if (!cage) throw new AppError(`La jaula con ID ${cageId} no existe.`, 404);
             if (cage.galponId !== galponId) throw new AppError(`La jaula con ID ${cageId} no pertenece al galpón activo.`, 400);
 
-            const { Rabbit } = require('../../domain/models');
-            const assignments = await Assignment.findAll({
-                where: { cageId, status: 'asignado' },
-                include: [{ model: Rabbit, as: 'rabbit', attributes: ['id', 'code', 'name', 'race', 'imageUrl'] }]
-            });
-
-            if (assignments.length === 0) {
+            const cageAssignments = assignmentsMap.get(cageId) || [];
+            if (cageAssignments.length === 0) {
                 throw new AppError(`La jaula con ID ${cageId} no tiene conejos asignados.`, 400);
             }
 
-            const rabbitsSnapshot = assignments.map(a => a.rabbit).filter(Boolean);
-
-            const feedingsByThisUserThisShift = await feedingRepository.countByUniqueAttributes(cageId, now, finalShift, profileId);
-            
-            if (feedingsByThisUserThisShift >= 1 && !justification) {
+            const feedingsCount = existingCountMap.get(cageId) || 0;
+            if (feedingsCount >= 1 && !justification) {
                 throw new AppError(`Ya tienes un registro de alimentación en el turno de la ${finalShift} para la jaula ${cage.number}. Se requiere justificación.`, 400);
             }
 
-            return feedingRepository.create({
+            const rabbitsSnapshot = cageAssignments.map(a => a.rabbit).filter(Boolean);
+
+            toCreate.push({
                 cageId,
                 foodTypes,
                 justification: justification || null,
@@ -62,7 +93,10 @@ class FeedingService {
                 profileId,
                 rabbitsSnapshot
             });
-        }));
+        }
+
+        // Inserción concurrente rápida
+        const createdFeedings = await Promise.all(toCreate.map(data => feedingRepository.create(data)));
 
         const { notifyOwnerOnWorkerAction } = require('../../common/helpers/notification.helper');
         await notifyOwnerOnWorkerAction(profileId, galponId, 'feeding', 'Alimentación');

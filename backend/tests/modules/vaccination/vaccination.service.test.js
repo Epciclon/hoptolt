@@ -17,10 +17,11 @@ describe('VaccinationService', () => {
   describe('registerVaccination', () => {
     beforeEach(() => {
       Galpon.findByPk.mockResolvedValue({ id: 1, vaccines: [{ name: 'Mixomatosis', period: 180 }] });
-      Rabbit.findByPk.mockResolvedValue({ id: 1, code: 'R001', name: 'Bunny', galponId: 1 });
-      Assignment.findOne = jest.fn().mockResolvedValue({ id: 1, status: 'asignado' });
-      Reproduction.findOne = jest.fn().mockResolvedValue(null);
-      vaccinationRepository.findLastVaccinationByRabbitAndVaccine.mockResolvedValue(null);
+      Rabbit.findAll = jest.fn().mockResolvedValue([{ id: 1, code: 'R001', name: 'Bunny', galponId: 1 }]);
+      Assignment.findAll = jest.fn().mockResolvedValue([{ rabbitId: 1, status: 'asignado' }]);
+      Reproduction.findAll = jest.fn().mockResolvedValue([]);
+      const { Vaccination } = require('../../../src/domain/models');
+      Vaccination.findAll = jest.fn().mockResolvedValue([]);
       vaccinationRepository.create.mockResolvedValue({ id: 1, rabbitId: 1, vaccines: ['Mixomatosis'] });
     });
 
@@ -36,12 +37,12 @@ describe('VaccinationService', () => {
     });
 
     it('throws when rabbit is lactating', async () => {
-      Reproduction.findOne = jest.fn().mockResolvedValue({ id: 1, status: 'lactancia' });
+      Reproduction.findAll = jest.fn().mockResolvedValue([{ femaleId: 1, status: 'lactancia' }]);
       await expect(vaccinationService.registerVaccination({ rabbitIds: [1], vaccines: ['Mixomatosis'] }, 1, 'p1')).rejects.toMatchObject({ statusCode: 400 });
     });
 
     it('throws when rabbit is not assigned', async () => {
-      Assignment.findOne = jest.fn().mockResolvedValue(null);
+      Assignment.findAll = jest.fn().mockResolvedValue([]);
       await expect(vaccinationService.registerVaccination({ rabbitIds: [1], vaccines: ['Mixomatosis'] }, 1, 'p1')).rejects.toMatchObject({ statusCode: 400 });
     });
   });
