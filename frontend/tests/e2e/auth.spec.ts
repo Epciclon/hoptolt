@@ -6,7 +6,12 @@ test.describe('Login Page', () => {
   });
 
   test('renders login form with all elements', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: 'Iniciar Sesión' })).toBeVisible();
+    try {
+      await expect(page.getByRole('heading', { name: 'Iniciar Sesión' })).toBeVisible();
+    } catch (e) {
+      console.log('DOM CONTENT:', await page.content());
+      throw e;
+    }
     await expect(page.locator('label[for="identifier"]')).toBeVisible();
     await expect(page.locator('label[for="password"]')).toBeVisible();
     await expect(page.locator('#identifier')).toBeVisible();

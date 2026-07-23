@@ -24,6 +24,21 @@ export default function LoginPage() {
   const { showToast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
 
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+  });
+
+  const onSubmit = async (values: FormValues) => {
+    try {
+      await authService.login(values);
+      await refetchUser();
+      router.push('/dashboard');
+      router.refresh();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Error al iniciar sesión.', 'error');
+    }
+  };
+
   if (user) {
     return (
       <AuthLayout>
@@ -54,20 +69,7 @@ export default function LoginPage() {
     );
   }
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
-    resolver: zodResolver(schema),
-  });
 
-  const onSubmit = async (values: FormValues) => {
-    try {
-      await authService.login(values);
-      await refetchUser();
-      router.push('/dashboard');
-      router.refresh();
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Error al iniciar sesión.', 'error');
-    }
-  };
 
   return (
     <AuthLayout>

@@ -42,6 +42,20 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+  });
+
+  const onSubmit = async (values: FormValues) => {
+    try {
+      await authService.register(values);
+      // Redirigimos a login con un mensaje informativo.
+      router.push('/login?registered=true');
+    } catch (err: any) {
+      showToast(err instanceof Error ? err.message : 'Error al registrar la cuenta.', 'error');
+    }
+  };
+
   if (user) {
     return (
       <AuthLayout>
@@ -72,19 +86,7 @@ export default function RegisterPage() {
     );
   }
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
-    resolver: zodResolver(schema),
-  });
 
-  const onSubmit = async (values: FormValues) => {
-    try {
-      await authService.register(values);
-      // Redirigimos a login con un mensaje informativo.
-      router.push('/login?registered=true');
-    } catch (err: any) {
-      showToast(err instanceof Error ? err.message : 'Error al registrar la cuenta.', 'error');
-    }
-  };
 
   return (
     <AuthLayout>

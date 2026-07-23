@@ -7,8 +7,7 @@ import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import { ToastProvider } from '@/shared/contexts/ToastContext';
-import { ToastContainer } from '@/shared/ui/ToastContainer';
+
 
 import { PermissionGuard } from '@/shared/guards/PermissionGuard';
 
@@ -96,8 +95,7 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
   }
 
   return (
-    <ToastProvider>
-      <div className="flex min-h-screen bg-page relative overflow-x-hidden">
+    <div className="flex min-h-screen bg-page relative overflow-x-hidden">
         <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
         
         {/* Floating trigger tab visible on both mobile and PC when sidebar is closed */}
@@ -130,8 +128,6 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
             </PermissionGuard>
           </main>
         </div>
-        <ToastContainer />
       </div>
-    </ToastProvider>
   );
 }
