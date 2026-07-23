@@ -10,6 +10,24 @@ const apiLimiter = rateLimit({
     }
 });
 
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    max: 5, // 5 intentos
+    message: {
+        success: false,
+        message: 'Demasiados intentos de autenticación desde esta IP. Intente nuevamente en 15 minutos.'
+    }
+});
+
+const registerLimiter = rateLimit({
+    windowMs: 30 * 60 * 1000, // 30 minutos
+    max: 3, // 3 intentos de registro por IP
+    message: {
+        success: false,
+        message: 'Demasiados intentos de registro desde esta IP. Intente nuevamente en 30 minutos.'
+    }
+});
+
 const helmetConfig = helmet({
     contentSecurityPolicy: {
         directives: {
@@ -54,4 +72,4 @@ const inputSanitizer = (req, res, next) => {
     next();
 };
 
-module.exports = { apiLimiter, helmetConfig, inputSanitizer };
+module.exports = { apiLimiter, authLimiter, registerLimiter, helmetConfig, inputSanitizer };

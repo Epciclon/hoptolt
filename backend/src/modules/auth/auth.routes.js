@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authController = require('./auth.controller');
 const { authenticate } = require('../../common/middlewares/auth.middleware');
+const { authLimiter, registerLimiter } = require('../../common/middlewares/security.middleware');
 
 // ─── Rutas públicas ───────────────────────────────────────────────────────────
 
@@ -10,13 +11,13 @@ const { authenticate } = require('../../common/middlewares/auth.middleware');
  * El frontend llama a esta ruta tras un signUp exitoso en Supabase para
  * garantizar que el perfil local existe en la base de datos.
  */
-router.post('/auth/sync-profile', authController.syncProfile);
+router.post('/auth/sync-profile', registerLimiter, authController.syncProfile);
 
 /**
  * GET /api/auth/resolve-email?identifier=username_o_email
  * Traduce un username a su email para poder hacer signIn en Supabase.
  */
-router.get('/auth/resolve-email', authController.resolveEmail);
+router.get('/auth/resolve-email', authLimiter, authController.resolveEmail);
 
 // ─── Rutas protegidas (requieren JWT de Supabase) ─────────────────────────────
 
