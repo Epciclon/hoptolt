@@ -41,8 +41,8 @@ class RabbitRepository {
         });
     }
 
-    async findAll() {
-        return Rabbit.findAll();
+    async findAll(options = {}) {
+        return Rabbit.findAll(options);
     }
 
     async create(data) {

@@ -50,19 +50,30 @@ class AssignmentService {
     }
 
     async validateAndGetRabbits(rabbitIds, galponId) {
-        return Promise.all(rabbitIds.map(async (id) => {
-            const rabbit = await rabbitRepository.findById(id);
-            if (!rabbit) throw new AppError(`El conejo con ID ${id} no existe.`, 404);
+        const { Op } = require('sequelize');
+        
+        const rabbits = await rabbitRepository.findAll({ where: { id: { [Op.in]: rabbitIds } } });
+        if (rabbits.length !== rabbitIds.length) {
+            const foundIds = rabbits.map(r => r.id);
+            const missingIds = rabbitIds.filter(id => !foundIds.includes(id));
+            throw new AppError(`Los siguientes conejos no existen: ${missingIds.join(', ')}`, 404);
+        }
 
+        const activeAssignments = await assignmentRepository.findAll({
+            where: { rabbitId: { [Op.in]: rabbitIds }, status: 'asignado' }
+        });
+        const activeIds = new Set(activeAssignments.map(a => a.rabbitId));
+
+        for (const rabbit of rabbits) {
             if (rabbit.galponId !== galponId) {
-                throw new AppError(`El conejo con ID ${id} no pertenece al galpón activo.`, 400);
+                throw new AppError(`El conejo con ID ${rabbit.id} no pertenece al galpón activo.`, 400);
             }
-
-            const existingAssignment = await assignmentRepository.findActiveByRabbitId(id);
-            if (existingAssignment) throw new AppError(`El conejo con ID ${id} ya está asignado a una jaula.`, 400);
-
-            return rabbit;
-        }));
+            if (activeIds.has(rabbit.id)) {
+                throw new AppError(`El conejo con ID ${rabbit.id} ya está asignado a una jaula.`, 400);
+            }
+        }
+        
+        return rabbits;
     }
 
     async assignRabbits(data, galponId, profileId) {
@@ -92,30 +103,40 @@ class AssignmentService {
 
         const existingAssignments = await assignmentRepository.findActiveByCageId(cageId);
         const existingRabbitIds = existingAssignments.map(a => a.rabbitId);
-        const existingRabbits = await Promise.all(existingRabbitIds.map(async (rabbitId) => {
-            return rabbitRepository.findById(rabbitId);
-        })).then(rabbits => rabbits.filter(Boolean));
+        
+        const { Op } = require('sequelize');
+        let existingRabbits = [];
+        if (existingRabbitIds.length > 0) {
+            existingRabbits = await rabbitRepository.findAll({ where: { id: { [Op.in]: existingRabbitIds } } });
+        }
 
         const warnings = this.validateCompatibility(cage, rabbits, existingRabbits);
 
         const notificationService = require('../notification/notification.service');
         
-        const createdAssignments = await Promise.all(rabbits.map(async (rabbit) => {
-            const assignment = await assignmentRepository.create({
-                rabbitId: rabbit.id,
-                rabbitCode: rabbit.code,
-                cageId: cage.id,
-                cageNumber: cage.number,
-                galponId,
-                status: 'asignado',
-                profileId
-            });
-            
-            const rabbitIdentifier = rabbit.name ? `${rabbit.code} - ${rabbit.name}` : rabbit.code;
-            await notificationService.createRabbitAssignmentNotification(cage.id, rabbitIdentifier, true);
-            
-            return assignment;
+        const toCreate = rabbits.map(rabbit => ({
+            rabbitId: rabbit.id,
+            rabbitCode: rabbit.code,
+            cageId: cage.id,
+            cageNumber: cage.number,
+            galponId,
+            status: 'asignado',
+            profileId
         }));
+        
+        // Uso de model.bulkCreate a través del repository
+        const createdAssignments = await assignmentRepository.bulkCreate(toCreate);
+        
+        // Batch notificaciones si aplica
+        const notificationsToCreate = rabbits.map(rabbit => {
+            const rabbitIdentifier = rabbit.name ? `${rabbit.code} - ${rabbit.name}` : rabbit.code;
+            return { cageId: cage.id, rabbitIdentifier };
+        });
+        
+        // Lo disparamos asíncronamente en background
+        Promise.all(notificationsToCreate.map(n => 
+            notificationService.createRabbitAssignmentNotification(n.cageId, n.rabbitIdentifier, true)
+        )).catch(err => console.error("Error creating notifications:", err));
 
         return { assignments: createdAssignments, warnings };
     }
@@ -141,14 +162,16 @@ class AssignmentService {
 
         const targetAssignments = await assignmentRepository.findActiveByCageId(targetCageId);
         const availableSpace = targetCage.capacity - targetAssignments.length;
-
         const rabbit = await rabbitRepository.findById(rabbitId);
+        const { Op } = require('sequelize');
 
         if (availableSpace > 0) {
             // Movimiento normal
-            const existingRabbits = (await Promise.all(
-                targetAssignments.map(a => rabbitRepository.findById(a.rabbitId))
-            )).filter(Boolean);
+            let existingRabbits = [];
+            const existingIds = targetAssignments.map(a => a.rabbitId);
+            if (existingIds.length > 0) {
+                existingRabbits = await rabbitRepository.findAll({ where: { id: { [Op.in]: existingIds } } });
+            }
             
             const warnings = this.validateCompatibility(targetCage, [rabbit], existingRabbits);
             
@@ -166,24 +189,23 @@ class AssignmentService {
             const occupantAssignment = targetAssignments[0];
             const occupantRabbit = await rabbitRepository.findById(occupantAssignment.rabbitId);
 
-            // Validar si el ocupante puede ir a la jaula actual
+            // Validar si el occupant puede ir a la jaula actual
             const currentAssignments = await assignmentRepository.findActiveByCageId(currentCageId);
-            const otherCurrentRabbits = (await Promise.all(
-                currentAssignments
-                    .filter(a => a.rabbitId !== rabbitId)
-                    .map(a => rabbitRepository.findById(a.rabbitId))
-            )).filter(Boolean);
+            const otherIds = currentAssignments.filter(a => a.rabbitId !== rabbitId).map(a => a.rabbitId);
+            let otherCurrentRabbits = [];
+            if (otherIds.length > 0) {
+                otherCurrentRabbits = await rabbitRepository.findAll({ where: { id: { [Op.in]: otherIds } } });
+            }
 
             const warningsToSource = this.validateCompatibility(currentCage, [occupantRabbit], otherCurrentRabbits);
             const warningsToTarget = this.validateCompatibility(targetCage, [rabbit], []);
 
-            // Hacemos el swap
-            await assignmentRepository.update(sourceAssignment, { cageId: targetCageId });
             await assignmentRepository.update(occupantAssignment, { cageId: currentCageId });
+            await assignmentRepository.update(sourceAssignment, { cageId: targetCageId });
 
             return { 
-                message: 'Intercambio realizado exitosamente.', 
-                warnings: [...warningsToSource, ...warningsToTarget] 
+                message: 'Jaula llena. Se realizó un intercambio con el ocupante actual exitosamente.', 
+                warnings: [...warningsToSource, ...warningsToTarget]
             };
         }
         

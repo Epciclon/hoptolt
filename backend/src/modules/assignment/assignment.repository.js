@@ -39,12 +39,16 @@ class AssignmentRepository {
         });
     }
 
-    async findAll() {
-        return Assignment.findAll();
+    async findAll(options = {}) {
+        return Assignment.findAll(options);
     }
 
     async create(data) {
         return Assignment.create(data);
+    }
+
+    async bulkCreate(dataArray) {
+        return Assignment.bulkCreate(dataArray);
     }
 
     async update(assignment, data) {

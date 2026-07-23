@@ -29,13 +29,13 @@ describe('NotificationService', () => {
     beforeEach(() => {
       Cage.findByPk = jest.fn().mockResolvedValue({ id: 1, number: 5 });
       WorkerCage.findAll = jest.fn().mockResolvedValue([{ farmMemberId: 1 }]);
-      FarmMember.findByPk = jest.fn().mockResolvedValue({ id: 1, role: 'worker', status: 'active', profileId: 'w1' });
-      notificationRepository.create.mockResolvedValue({ id: 1 });
+      FarmMember.findAll = jest.fn().mockResolvedValue([{ id: 1, role: 'worker', status: 'active', profileId: 'w1' }]);
+      Notification.bulkCreate = jest.fn().mockResolvedValue([{ id: 1 }]);
     });
 
     it('notifies workers about rabbit assignment', async () => {
       await notificationService.createRabbitAssignmentNotification(1, 'R001', true);
-      expect(notificationRepository.create).toHaveBeenCalled();
+      expect(Notification.bulkCreate).toHaveBeenCalled();
     });
 
     it('does nothing when cage not found', async () => {
@@ -48,6 +48,8 @@ describe('NotificationService', () => {
     beforeEach(() => {
       FarmMember.findAll = jest.fn().mockResolvedValue([]);
       Galpon.findAll = jest.fn().mockResolvedValue([]);
+      Assignment.findAll = jest.fn().mockResolvedValue([]);
+      Notification.findAll = jest.fn().mockResolvedValue([]);
       notificationRepository.findByProfileId.mockResolvedValue([{ id: 1, type: 'info', title: 'Test', message: 'Hello', data: null, read: false, createdAt: '2024-01-01' }]);
     });
 
@@ -59,11 +61,15 @@ describe('NotificationService', () => {
   });
 
   describe('getUnreadCount', () => {
-    it('returns unread count', async () => {
+    beforeEach(() => {
       FarmMember.findAll = jest.fn().mockResolvedValue([]);
       Galpon.findAll = jest.fn().mockResolvedValue([]);
+      Assignment.findAll = jest.fn().mockResolvedValue([]);
+      Notification.findAll = jest.fn().mockResolvedValue([]);
       notificationRepository.countUnread.mockResolvedValue(3);
+    });
 
+    it('returns unread count', async () => {
       const result = await notificationService.getUnreadCount('p1');
       expect(result).toBe(3);
     });
@@ -109,7 +115,7 @@ describe('NotificationService', () => {
     it('checks and creates birth notifications', async () => {
       Reproduction.findAll = jest.fn().mockResolvedValue([]);
       Notification.findAll = jest.fn().mockResolvedValue([]);
-      Notification.create = jest.fn().mockResolvedValue({});
+      Notification.bulkCreate = jest.fn().mockResolvedValue([]);
 
       await expect(notificationService.checkAndCreateBirthNotifications('p1')).resolves.not.toThrow();
     });
@@ -124,7 +130,7 @@ describe('NotificationService', () => {
     it('checks and creates weaning notifications', async () => {
       Reproduction.findAll = jest.fn().mockResolvedValue([]);
       Notification.findAll = jest.fn().mockResolvedValue([]);
-      Notification.create = jest.fn().mockResolvedValue({});
+      Notification.bulkCreate = jest.fn().mockResolvedValue([]);
 
       await expect(notificationService.checkAndCreateWeaningNotifications('p1')).resolves.not.toThrow();
     });
@@ -139,9 +145,10 @@ describe('NotificationService', () => {
 
     it('checks and creates cleaning notifications', async () => {
       Cage.findAll = jest.fn().mockResolvedValue([{ id: 1, number: 5 }]);
-      Cleaning.findOne = jest.fn().mockResolvedValue({ cleaningDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000) });
+      Cleaning.findAll = jest.fn().mockResolvedValue([{ cageId: 1, cleaningDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000) }]);
+      Assignment.findAll = jest.fn().mockResolvedValue([{ cageId: 1 }]);
       Notification.findAll = jest.fn().mockResolvedValue([]);
-      Notification.create = jest.fn().mockResolvedValue({});
+      Notification.bulkCreate = jest.fn().mockResolvedValue([]);
 
       await expect(notificationService.checkAndCreateCleaningNotifications('p1')).resolves.not.toThrow();
     });

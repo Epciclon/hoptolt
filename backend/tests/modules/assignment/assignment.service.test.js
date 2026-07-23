@@ -65,11 +65,13 @@ describe('AssignmentService', () => {
   describe('assignRabbits', () => {
     beforeEach(() => {
       cageRepository.findById.mockResolvedValue({ id: 1, galponId: 1, status: 'operativa', capacity: 8 });
+      rabbitRepository.findAll = jest.fn().mockResolvedValue([{ id: 1, code: 'R001', name: 'Bunny', galponId: 1, purpose: 'Engorde', sex: 'macho', birthDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() }]);
       rabbitRepository.findById.mockResolvedValue({ id: 1, code: 'R001', name: 'Bunny', galponId: 1, purpose: 'Engorde', sex: 'macho', birthDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() });
       assignmentRepository.countActiveByCageId.mockResolvedValue(0);
+      assignmentRepository.findAll = jest.fn().mockResolvedValue([]);
       assignmentRepository.findActiveByRabbitId.mockResolvedValue(null);
       assignmentRepository.findActiveByCageId.mockResolvedValue([]);
-      assignmentRepository.create.mockResolvedValue({ id: 1, cageId: 1, rabbitId: 1, status: 'asignado' });
+      assignmentRepository.bulkCreate = jest.fn().mockResolvedValue([{ id: 1, cageId: 1, rabbitId: 1, status: 'asignado' }]);
     });
 
     it('assigns rabbits to cage', async () => {
