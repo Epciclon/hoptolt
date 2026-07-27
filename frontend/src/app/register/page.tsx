@@ -7,7 +7,6 @@ import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { authService } from '@/modules/auth/services/auth.service';
-import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 import { Eye, EyeOff } from 'lucide-react';
 import { AuthLayout } from '@/modules/auth/components/AuthLayout';
 import { useToast } from '@/shared/contexts/ToastContext';
