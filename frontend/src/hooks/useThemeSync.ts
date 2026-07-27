@@ -22,6 +22,8 @@ export function applyThemeToDOM(fontSize: string, fontFamily: string, bold: bool
 }
 
 export function useThemeSync() {
+  const pathname = require('next/navigation').usePathname();
+  
   useEffect(() => {
     const applyCurrentTheme = () => {
       const size = localStorage.getItem('fontSize') ?? '16px';
@@ -31,7 +33,7 @@ export function useThemeSync() {
       applyThemeToDOM(size, family, bld, thm);
     };
 
-    // Apply immediately on mount (fixes soft-navigation and BfCache class resets)
+    // Apply immediately on mount and on route change (fixes soft-navigation and BfCache class resets)
     applyCurrentTheme();
 
     const handleStorage = (e: StorageEvent) => {
@@ -44,5 +46,5 @@ export function useThemeSync() {
     // Listen for changes from other tabs
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);
-  }, []);
+  }, [pathname]);
 }

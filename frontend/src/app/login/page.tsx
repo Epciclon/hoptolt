@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -20,15 +20,9 @@ type FormValues = z.infer<typeof schema>;
 
 export default function LoginPage() {
   const router = useRouter();
-  const { user, refetchUser, loading } = useAuthContext();
+  const { refetchUser } = useAuthContext();
   const { showToast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
-
-  useEffect(() => {
-    if (!loading && user) {
-      router.replace('/active-session');
-    }
-  }, [user, loading, router]);
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
