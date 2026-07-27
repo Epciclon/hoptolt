@@ -12,7 +12,8 @@ class CleaningService {
         return 'Sistema';
     }
 
-    _buildCleaningPayloads(cageIds, cageMap, assignmentsMap, workerCagesSet, membership, galponId, profileId, responsibleName) {
+    _buildCleaningPayloads(params) {
+        const { cageIds, cageMap, assignmentsMap, workerCagesSet, membership, galponId, profileId, responsibleName } = params;
         const toCreate = [];
         for (const cageId of cageIds) {
             const cage = cageMap.get(cageId);
@@ -84,7 +85,7 @@ class CleaningService {
 
         const createdCleanings = [];
         const processedCageIds = [];
-        const toCreate = this._buildCleaningPayloads(cageIds, cageMap, assignmentsMap, workerCagesSet, membership, galponId, profileId, responsibleName);
+        const toCreate = this._buildCleaningPayloads({ cageIds, cageMap, assignmentsMap, workerCagesSet, membership, galponId, profileId, responsibleName });
 
         // Inserción masiva/concurrente
         const createdRecords = await Promise.all(toCreate.map(data => 

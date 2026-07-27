@@ -4,45 +4,51 @@ const AppError = require('../../errors/AppError');
 const { getPaginationParams, createPaginatedResponse } = require('../../common/helpers/pagination.helper');
 
 class DewormingService {
-    _validateDewormings(rabbitIds, rabbitMap, assignmentSet, lactatingSet, prevDewMap, galponId, dewormingPeriod, currentDate) {
-        const dewormingErrors = [];
-        for (const rabbitId of rabbitIds) {
-            const rabbit = rabbitMap.get(rabbitId);
-            if (!rabbit) {
-                dewormingErrors.push(`El conejo con ID ${rabbitId} no existe.`);
-                continue;
-            }
+    _validateSingleDeworming(rabbitId, params, dewormingErrors) {
+        const { rabbitMap, assignmentSet, lactatingSet, prevDewMap, galponId, dewormingPeriod, currentDate } = params;
+        
+        const rabbit = rabbitMap.get(rabbitId);
+        if (!rabbit) {
+            dewormingErrors.push(`El conejo con ID ${rabbitId} no existe.`);
+            return;
+        }
+        
+        const nameSuffix = rabbit.name ? ' — ' + rabbit.name : '';
+        if (rabbit.galponId !== galponId) {
+            dewormingErrors.push(`El conejo ${rabbit.code}${nameSuffix} no pertenece al galpón activo.`);
+            return;
+        }
+
+        if (!assignmentSet.has(rabbitId)) {
+            dewormingErrors.push(`El conejo ${rabbit.code}${nameSuffix} no está asignado a una jaula.`);
+            return;
+        }
+
+        if (lactatingSet.has(rabbitId)) {
+            dewormingErrors.push(`El conejo ${rabbit.code}${nameSuffix} está en período de lactancia. No se puede administrar desparasitante hasta que finalice esta etapa, verifique en el módulo de Reproducción y Partos.`);
+            return;
+        }
+
+        const lastDeworming = prevDewMap.get(rabbitId);
+        if (lastDeworming) {
+            const lastDate = new Date(lastDeworming.dewormingDate);
+            const daysSinceLast = Math.floor((currentDate - lastDate) / (1000 * 60 * 60 * 24));
             
-            const nameSuffix = rabbit.name ? ' — ' + rabbit.name : '';
-            if (rabbit.galponId !== galponId) {
-                dewormingErrors.push(`El conejo ${rabbit.code}${nameSuffix} no pertenece al galpón activo.`);
-                continue;
+            if (daysSinceLast < dewormingPeriod) {
+                const daysRemaining = dewormingPeriod - daysSinceLast;
+                dewormingErrors.push(
+                    `El conejo ${rabbit.code}${nameSuffix} no puede recibir desparasitación aún. ` +
+                    `Última aplicación: ${lastDate.toLocaleDateString('es-EC')}. ` +
+                    `Faltan ${daysRemaining} días para cumplir el período de desparasitación.`
+                );
             }
+        }
+    }
 
-            if (!assignmentSet.has(rabbitId)) {
-                dewormingErrors.push(`El conejo ${rabbit.code}${nameSuffix} no está asignado a una jaula.`);
-                continue;
-            }
-
-            if (lactatingSet.has(rabbitId)) {
-                dewormingErrors.push(`El conejo ${rabbit.code}${nameSuffix} está en período de lactancia. No se puede administrar desparasitante hasta que finalice esta etapa, verifique en el módulo de Reproducción y Partos.`);
-                continue;
-            }
-
-            const lastDeworming = prevDewMap.get(rabbitId);
-            if (lastDeworming) {
-                const lastDate = new Date(lastDeworming.dewormingDate);
-                const daysSinceLast = Math.floor((currentDate - lastDate) / (1000 * 60 * 60 * 24));
-                
-                if (daysSinceLast < dewormingPeriod) {
-                    const daysRemaining = dewormingPeriod - daysSinceLast;
-                    dewormingErrors.push(
-                        `El conejo ${rabbit.code}${nameSuffix} no puede recibir desparasitación aún. ` +
-                        `Última aplicación: ${lastDate.toLocaleDateString('es-EC')}. ` +
-                        `Faltan ${daysRemaining} días para cumplir el período de desparasitación.`
-                    );
-                }
-            }
+    _validateDewormings(params) {
+        const dewormingErrors = [];
+        for (const rabbitId of params.rabbitIds) {
+            this._validateSingleDeworming(rabbitId, params, dewormingErrors);
         }
         if (dewormingErrors.length > 0) {
             throw new AppError(dewormingErrors.join('\n'), 400);
@@ -81,7 +87,7 @@ class DewormingService {
 
         const currentDate = new Date();
 
-        this._validateDewormings(rabbitIds, rabbitMap, assignmentSet, lactatingSet, prevDewMap, galponId, dewormingPeriod, currentDate);
+        this._validateDewormings({ rabbitIds, rabbitMap, assignmentSet, lactatingSet, prevDewMap, galponId, dewormingPeriod, currentDate });
 
         // Si todos pasan la validación, registrar todos concurrentemente
         const toCreate = rabbitIds.map(rabbitId => ({

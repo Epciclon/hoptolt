@@ -11,7 +11,8 @@ class FeedingService {
         return galpon.foodTypes || [];
     }
 
-    _buildFeedingPayloads(cageIds, cageMap, assignmentsMap, existingCountMap, galponId, finalShift, justification, foodTypes, now, profileId) {
+    _buildFeedingPayloads(params) {
+        const { cageIds, cageMap, assignmentsMap, existingCountMap, galponId, finalShift, justification, foodTypes, now, profileId } = params;
         const toCreate = [];
         for (const cageId of cageIds) {
             const cage = cageMap.get(cageId);
@@ -97,7 +98,7 @@ class FeedingService {
             existingCountMap.set(ef.cageId, (existingCountMap.get(ef.cageId) || 0) + 1);
         }
 
-        const toCreate = this._buildFeedingPayloads(cageIds, cageMap, assignmentsMap, existingCountMap, galponId, finalShift, justification, foodTypes, now, profileId);
+        const toCreate = this._buildFeedingPayloads({ cageIds, cageMap, assignmentsMap, existingCountMap, galponId, finalShift, justification, foodTypes, now, profileId });
 
         // Inserción concurrente rápida
         const createdFeedings = await Promise.all(toCreate.map(data => feedingRepository.create(data)));

@@ -10,51 +10,57 @@ class VaccinationService {
 
 
 
-    _validateVaccinations(rabbitIds, rabbitMap, assignmentSet, lactatingSet, prevVacMap, vaccinePeriodMap, vaccines, galponId, currentDate) {
+    _validateSingleVaccination(rabbitId, params, vaccinationErrors) {
+        const { rabbitMap, assignmentSet, lactatingSet, prevVacMap, vaccinePeriodMap, vaccines, galponId, currentDate } = params;
+        
+        const rabbit = rabbitMap.get(rabbitId);
+        if (!rabbit) {
+            vaccinationErrors.push(`El conejo con ID ${rabbitId} no existe.`);
+            return;
+        }
+        if (rabbit.galponId !== galponId) {
+            vaccinationErrors.push(`El conejo ${rabbit.code}${this._getRabbitNameStr(rabbit)} no pertenece al galpón activo.`);
+            return;
+        }
+        if (!assignmentSet.has(rabbitId)) {
+            vaccinationErrors.push(`El conejo ${rabbit.code}${this._getRabbitNameStr(rabbit)} no está asignado a una jaula.`);
+            return;
+        }
+        if (lactatingSet.has(rabbitId)) {
+            vaccinationErrors.push(`El conejo ${rabbit.code}${this._getRabbitNameStr(rabbit)} está en período de lactancia. No se pueden administrar vacunas hasta que finalice esta etapa.`);
+            return;
+        }
+
+        const rabbitVaccinations = prevVacMap.get(rabbitId) || [];
+        
+        for (const vaccine of vaccines) {
+            const period = vaccinePeriodMap.get(vaccine);
+            if (!period) {
+                vaccinationErrors.push(`La vacuna "${vaccine}" no está configurada en el galpón activo.`);
+                continue;
+            }
+
+            const lastVac = rabbitVaccinations.find(v => Array.isArray(v.vaccines) && v.vaccines.includes(vaccine));
+            if (lastVac) {
+                const lastDate = new Date(lastVac.vaccinationDate);
+                const daysSinceLast = Math.floor((currentDate - lastDate) / (1000 * 60 * 60 * 24));
+                
+                if (daysSinceLast < period) {
+                    const daysRemaining = period - daysSinceLast;
+                    vaccinationErrors.push(
+                        `El conejo ${rabbit.code}${this._getRabbitNameStr(rabbit)} no puede recibir la vacuna "${vaccine}" aún. ` +
+                        `Última aplicación: ${lastDate.toLocaleDateString('es-EC')}. ` +
+                        `Faltan ${daysRemaining} días para cumplir el período de revacunación.`
+                    );
+                }
+            }
+        }
+    }
+
+    _validateVaccinations(params) {
         const vaccinationErrors = [];
-        for (const rabbitId of rabbitIds) {
-            const rabbit = rabbitMap.get(rabbitId);
-            if (!rabbit) {
-                vaccinationErrors.push(`El conejo con ID ${rabbitId} no existe.`);
-                continue;
-            }
-            if (rabbit.galponId !== galponId) {
-                vaccinationErrors.push(`El conejo ${rabbit.code}${this._getRabbitNameStr(rabbit)} no pertenece al galpón activo.`);
-                continue;
-            }
-            if (!assignmentSet.has(rabbitId)) {
-                vaccinationErrors.push(`El conejo ${rabbit.code}${this._getRabbitNameStr(rabbit)} no está asignado a una jaula.`);
-                continue;
-            }
-            if (lactatingSet.has(rabbitId)) {
-                vaccinationErrors.push(`El conejo ${rabbit.code}${this._getRabbitNameStr(rabbit)} está en período de lactancia. No se pueden administrar vacunas hasta que finalice esta etapa.`);
-                continue;
-            }
-
-            const rabbitVaccinations = prevVacMap.get(rabbitId) || [];
-            
-            for (const vaccine of vaccines) {
-                const period = vaccinePeriodMap.get(vaccine);
-                if (!period) {
-                    vaccinationErrors.push(`La vacuna "${vaccine}" no está configurada en el galpón activo.`);
-                    continue;
-                }
-
-                const lastVac = rabbitVaccinations.find(v => Array.isArray(v.vaccines) && v.vaccines.includes(vaccine));
-                if (lastVac) {
-                    const lastDate = new Date(lastVac.vaccinationDate);
-                    const daysSinceLast = Math.floor((currentDate - lastDate) / (1000 * 60 * 60 * 24));
-                    
-                    if (daysSinceLast < period) {
-                        const daysRemaining = period - daysSinceLast;
-                        vaccinationErrors.push(
-                            `El conejo ${rabbit.code}${this._getRabbitNameStr(rabbit)} no puede recibir la vacuna "${vaccine}" aún. ` +
-                            `Última aplicación: ${lastDate.toLocaleDateString('es-EC')}. ` +
-                            `Faltan ${daysRemaining} días para cumplir el período de revacunación.`
-                        );
-                    }
-                }
-            }
+        for (const rabbitId of params.rabbitIds) {
+            this._validateSingleVaccination(rabbitId, params, vaccinationErrors);
         }
 
         if (vaccinationErrors.length > 0) {
@@ -97,7 +103,7 @@ class VaccinationService {
 
         const currentDate = new Date();
 
-        this._validateVaccinations(rabbitIds, rabbitMap, assignmentSet, lactatingSet, prevVacMap, vaccinePeriodMap, vaccines, galponId, currentDate);
+        this._validateVaccinations({ rabbitIds, rabbitMap, assignmentSet, lactatingSet, prevVacMap, vaccinePeriodMap, vaccines, galponId, currentDate });
 
         const toCreate = rabbitIds.map(rabbitId => ({
             rabbitId,

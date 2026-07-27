@@ -124,43 +124,49 @@ class NotificationService {
         }
     }
 
-    _processCageCleanings(cagesToCheck, cleaningMap, assignmentMap, todayMs, notifiedCageIds, notificationMap, profileId, notificationsToCreate, notificationIdsToDelete) {
-        for (const cage of cagesToCheck) {
-            const lastCleaning = cleaningMap.get(cage.id);
-            const cageAssignments = assignmentMap.get(cage.id) || [];
+    _processSingleCageCleaning(cage, params) {
+        const { cleaningMap, assignmentMap, todayMs, notifiedCageIds, notificationMap, profileId, notificationsToCreate, notificationIdsToDelete } = params;
+        
+        const lastCleaning = cleaningMap.get(cage.id);
+        const cageAssignments = assignmentMap.get(cage.id) || [];
 
-            let startDate = null;
-            if (lastCleaning?.cleaningDate) {
-                startDate = new Date(lastCleaning.cleaningDate);
-            } else if (cageAssignments.length > 0) {
-                const firstAssignment = cageAssignments[0];
-                startDate = firstAssignment?.assignedAt ? new Date(firstAssignment.assignedAt) : null;
+        let startDate = null;
+        if (lastCleaning?.cleaningDate) {
+            startDate = new Date(lastCleaning.cleaningDate);
+        } else if (cageAssignments.length > 0) {
+            const firstAssignment = cageAssignments[0];
+            startDate = firstAssignment?.assignedAt ? new Date(firstAssignment.assignedAt) : null;
+        }
+
+        if (!startDate) return;
+
+        const startMs = startDate.getTime();
+        const merged = this._mergeIntervals(cageAssignments, startMs, todayMs);
+        const daysWithoutCleaning = this._calculateDaysWithoutCleaning(merged);
+
+        if (daysWithoutCleaning >= 3) {
+            if (!notifiedCageIds.has(Number(cage.id))) {
+                notifiedCageIds.add(Number(cage.id));
+                notificationsToCreate.push({
+                    profileId,
+                    type: 'warning',
+                    title: 'Alerta de Limpieza Requerida',
+                    message: `La jaula #${cage.number} acumula ${daysWithoutCleaning} días de ocupación sin limpieza. ¡Por favor realiza la limpieza lo antes posible!`,
+                    data: { type: 'cleaning_warning', cageId: cage.id, cageNumber: cage.number, daysWithoutCleaning }
+                });
             }
-
-            if (!startDate) continue;
-
-            const startMs = startDate.getTime();
-            const merged = this._mergeIntervals(cageAssignments, startMs, todayMs);
-            const daysWithoutCleaning = this._calculateDaysWithoutCleaning(merged);
-
-            if (daysWithoutCleaning >= 3) {
-                if (!notifiedCageIds.has(Number(cage.id))) {
-                    notifiedCageIds.add(Number(cage.id));
-                    notificationsToCreate.push({
-                        profileId,
-                        type: 'warning',
-                        title: 'Alerta de Limpieza Requerida',
-                        message: `La jaula #${cage.number} acumula ${daysWithoutCleaning} días de ocupación sin limpieza. ¡Por favor realiza la limpieza lo antes posible!`,
-                        data: { type: 'cleaning_warning', cageId: cage.id, cageNumber: cage.number, daysWithoutCleaning }
-                    });
-                }
-            } else if (notifiedCageIds.has(Number(cage.id))) {
-                const notifId = notificationMap.get(Number(cage.id));
-                if (notifId) {
-                    notificationIdsToDelete.push(notifId);
-                    notifiedCageIds.delete(Number(cage.id));
-                }
+        } else if (notifiedCageIds.has(Number(cage.id))) {
+            const notifId = notificationMap.get(Number(cage.id));
+            if (notifId) {
+                notificationIdsToDelete.push(notifId);
+                notifiedCageIds.delete(Number(cage.id));
             }
+        }
+    }
+
+    _processCageCleanings(params) {
+        for (const cage of params.cagesToCheck) {
+            this._processSingleCageCleaning(cage, params);
         }
     }
 
@@ -196,7 +202,7 @@ class NotificationService {
         const notificationsToCreate = [];
         const notificationIdsToDelete = [];
 
-        this._processCageCleanings(cagesToCheck, cleaningMap, assignmentMap, todayMs, notifiedCageIds, notificationMap, profileId, notificationsToCreate, notificationIdsToDelete);
+        this._processCageCleanings({ cagesToCheck, cleaningMap, assignmentMap, todayMs, notifiedCageIds, notificationMap, profileId, notificationsToCreate, notificationIdsToDelete });
 
         if (notificationsToCreate.length > 0) {
             await Notification.bulkCreate(notificationsToCreate);
