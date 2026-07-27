@@ -50,67 +50,8 @@ class GrowthService {
                 for (const rabbit of rabbits) {
                     this._processRabbitGrowthSync(rabbit, today, updatesResult);
                 }
-
-                if (updatesResult.rabbitsToUpdate.length > 0) {
-                    const auditLogs = [];
-                    const growthRecords = [];
-                    const rabbitPromises = [];
-
-                    for (const u of updatesResult.rabbitsToUpdate) {
-                        const rabbit = rabbits.find(r => r.id === u.rabbitId);
-                        const updateData = { age: u.age };
-                        
-                        auditLogs.push({
-                            action: 'age_update_auto',
-                            entity: 'Rabbit',
-                            entityId: rabbit.id,
-                            details: { oldAge: rabbit.age, newAge: u.age, updatedBy: 'system' }
-                        });
-
-                        if (u.weight !== undefined) {
-                            updateData.weight = u.weight;
-                            growthRecords.push({ rabbitId: rabbit.id, weight: u.weight, recordDate: today });
-                            auditLogs.push({
-                                action: 'weight_update_auto',
-                                entity: 'Rabbit',
-                                entityId: rabbit.id,
-                                details: { oldWeight: u.oldWeight, newWeight: u.weight, source: 'system_estimation' }
-                            });
-                        }
-                        
-                        // Concurrent rabbit updates
-                        rabbitPromises.push(rabbit.update(updateData));
-                    }
-                    
-                    await Promise.all(rabbitPromises);
-                    if (auditLogs.length > 0) {
-                        await AuditLog.bulkCreate(auditLogs);
-                    }
-                    if (growthRecords.length > 0) {
-                        await Growth.bulkCreate(growthRecords);
-                    }
-
-                    // Check if already notified for today
-                    const summaryNotifs = await Notification.findAll({
-                        where: { profileId, title: `Resumen de Crecimiento - ${todayStr}` }
-                    });
-                    
-                    if (summaryNotifs.length === 0) {
-                        let message = `El sistema ha actualizado automáticamente la edad y peso de ${updatesResult.rabbitsToUpdate.length} conejos.`;
-
-                        await Notification.create({
-                            profileId,
-                            type: 'info',
-                            title: `Resumen de Crecimiento - ${todayStr}`,
-                            message: message,
-                            data: {
-                                type: 'growth_summary',
-                                updatesCount: updatesResult.rabbitsToUpdate.length,
-                                details: updatesResult.messages
-                            }
-                        });
-                    }
-                }
+
+                await this._applyGrowthUpdates(updatesResult, rabbits, profileId, today, todayStr, AuditLog, Growth, Notification);
 
             } catch (error) {
                 console.error('Error processing daily growth:', error);

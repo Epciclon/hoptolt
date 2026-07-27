@@ -54,8 +54,8 @@ class AssignmentService {
         
         const rabbits = await rabbitRepository.findAll({ where: { id: { [Op.in]: rabbitIds } } });
         if (rabbits.length !== rabbitIds.length) {
-            const foundIds = rabbits.map(r => r.id);
-            const missingIds = rabbitIds.filter(id => !foundIds.includes(id));
+            const foundIds = new Set(rabbits.map(r => r.id));
+            const missingIds = rabbitIds.filter(id => !foundIds.has(id));
             throw new AppError(`Los siguientes conejos no existen: ${missingIds.join(', ')}`, 404);
         }
 

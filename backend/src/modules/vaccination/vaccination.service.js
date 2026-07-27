@@ -10,44 +10,8 @@ class VaccinationService {
 
 
 
-    async registerVaccination(data, galponId, profileId) {
-        const { rabbitIds, vaccines } = data;
-        const { Op } = require('sequelize');
-        const { Rabbit, Assignment, Reproduction, Vaccination } = require('../../domain/models');
-
-        const galpon = await Galpon.findByPk(galponId);
-        if (!galpon) throw new AppError('Galpón no encontrado.', 404);
-
-        const galponVaccines = galpon.vaccines || [];
-        const vaccinePeriodMap = new Map();
-        galponVaccines.forEach(v => vaccinePeriodMap.set(v.name, v.period));
-
+    _validateVaccinations(rabbitIds, rabbitMap, assignmentSet, lactatingSet, prevVacMap, vaccinePeriodMap, vaccines, galponId, currentDate) {
         const vaccinationErrors = [];
-
-        // Precarga masiva en batch para evitar N+1
-        const rabbits = await Rabbit.findAll({ where: { id: { [Op.in]: rabbitIds } } });
-        const rabbitMap = new Map();
-        rabbits.forEach(r => rabbitMap.set(r.id, r));
-
-        const assignments = await Assignment.findAll({ where: { rabbitId: { [Op.in]: rabbitIds }, status: 'asignado' } });
-        const assignmentSet = new Set(assignments.map(a => a.rabbitId));
-
-        const lactatingReps = await Reproduction.findAll({ where: { femaleId: { [Op.in]: rabbitIds }, status: 'lactancia' } });
-        const lactatingSet = new Set(lactatingReps.map(r => r.femaleId));
-
-        const previousVaccinations = await Vaccination.findAll({ 
-            where: { rabbitId: { [Op.in]: rabbitIds } },
-            order: [['vaccinationDate', 'DESC']]
-        });
-        const prevVacMap = new Map(); // rabbitId -> array of vaccinations
-        previousVaccinations.forEach(v => {
-            if (!prevVacMap.has(v.rabbitId)) prevVacMap.set(v.rabbitId, []);
-            prevVacMap.get(v.rabbitId).push(v);
-        });
-
-        const currentDate = new Date();
-
-        // Validación en memoria (0 consultas)
         for (const rabbitId of rabbitIds) {
             const rabbit = rabbitMap.get(rabbitId);
             if (!rabbit) {
@@ -96,6 +60,44 @@ class VaccinationService {
         if (vaccinationErrors.length > 0) {
             throw new AppError(vaccinationErrors.join('\n'), 400);
         }
+    }
+
+    async registerVaccination(data, galponId, profileId) {
+        const { rabbitIds, vaccines } = data;
+        const { Op } = require('sequelize');
+        const { Rabbit, Assignment, Reproduction, Vaccination } = require('../../domain/models');
+
+        const galpon = await Galpon.findByPk(galponId);
+        if (!galpon) throw new AppError('Galpón no encontrado.', 404);
+
+        const galponVaccines = galpon.vaccines || [];
+        const vaccinePeriodMap = new Map();
+        galponVaccines.forEach(v => vaccinePeriodMap.set(v.name, v.period));
+
+        // Precarga masiva en batch para evitar N+1
+        const rabbits = await Rabbit.findAll({ where: { id: { [Op.in]: rabbitIds } } });
+        const rabbitMap = new Map();
+        rabbits.forEach(r => rabbitMap.set(r.id, r));
+
+        const assignments = await Assignment.findAll({ where: { rabbitId: { [Op.in]: rabbitIds }, status: 'asignado' } });
+        const assignmentSet = new Set(assignments.map(a => a.rabbitId));
+
+        const lactatingReps = await Reproduction.findAll({ where: { femaleId: { [Op.in]: rabbitIds }, status: 'lactancia' } });
+        const lactatingSet = new Set(lactatingReps.map(r => r.femaleId));
+
+        const previousVaccinations = await Vaccination.findAll({ 
+            where: { rabbitId: { [Op.in]: rabbitIds } },
+            order: [['vaccinationDate', 'DESC']]
+        });
+        const prevVacMap = new Map(); // rabbitId -> array of vaccinations
+        previousVaccinations.forEach(v => {
+            if (!prevVacMap.has(v.rabbitId)) prevVacMap.set(v.rabbitId, []);
+            prevVacMap.get(v.rabbitId).push(v);
+        });
+
+        const currentDate = new Date();
+
+        this._validateVaccinations(rabbitIds, rabbitMap, assignmentSet, lactatingSet, prevVacMap, vaccinePeriodMap, vaccines, galponId, currentDate);
 
         const toCreate = rabbitIds.map(rabbitId => ({
             rabbitId,

@@ -4,40 +4,8 @@ const AppError = require('../../errors/AppError');
 const { getPaginationParams, createPaginatedResponse } = require('../../common/helpers/pagination.helper');
 
 class DewormingService {
-    async registerDeworming(data, galponId, profileId) {
-        const { rabbitIds } = data;
-        const { Op } = require('sequelize');
-        const { Rabbit, Assignment, Reproduction, Deworming } = require('../../domain/models');
-
-        const galpon = await Galpon.findByPk(galponId);
-        if (!galpon) throw new AppError('Galpón no encontrado.', 404);
-
-        const dewormingPeriod = galpon.dewormingPeriod || 30;
+    _validateDewormings(rabbitIds, rabbitMap, assignmentSet, lactatingSet, prevDewMap, galponId, dewormingPeriod, currentDate) {
         const dewormingErrors = [];
-
-        // Precarga masiva en batch para evitar N+1
-        const rabbits = await Rabbit.findAll({ where: { id: { [Op.in]: rabbitIds } } });
-        const rabbitMap = new Map();
-        rabbits.forEach(r => rabbitMap.set(r.id, r));
-
-        const assignments = await Assignment.findAll({ where: { rabbitId: { [Op.in]: rabbitIds }, status: 'asignado' } });
-        const assignmentSet = new Set(assignments.map(a => a.rabbitId));
-
-        const lactatingReps = await Reproduction.findAll({ where: { femaleId: { [Op.in]: rabbitIds }, status: 'lactancia' } });
-        const lactatingSet = new Set(lactatingReps.map(r => r.femaleId));
-
-        const previousDewormings = await Deworming.findAll({
-            where: { rabbitId: { [Op.in]: rabbitIds } },
-            order: [['dewormingDate', 'DESC']]
-        });
-        const prevDewMap = new Map();
-        previousDewormings.forEach(d => {
-            if (!prevDewMap.has(d.rabbitId)) prevDewMap.set(d.rabbitId, d); // Solo necesitamos el último (por DESC)
-        });
-
-        const currentDate = new Date();
-
-        // Validación en memoria
         for (const rabbitId of rabbitIds) {
             const rabbit = rabbitMap.get(rabbitId);
             if (!rabbit) {
@@ -76,11 +44,44 @@ class DewormingService {
                 }
             }
         }
-
-        // Si hay errores, no registrar nada
         if (dewormingErrors.length > 0) {
             throw new AppError(dewormingErrors.join('\n'), 400);
         }
+    }
+
+    async registerDeworming(data, galponId, profileId) {
+        const { rabbitIds } = data;
+        const { Op } = require('sequelize');
+        const { Rabbit, Assignment, Reproduction, Deworming } = require('../../domain/models');
+
+        const galpon = await Galpon.findByPk(galponId);
+        if (!galpon) throw new AppError('Galpón no encontrado.', 404);
+
+        const dewormingPeriod = galpon.dewormingPeriod || 30;
+
+        // Precarga masiva en batch para evitar N+1
+        const rabbits = await Rabbit.findAll({ where: { id: { [Op.in]: rabbitIds } } });
+        const rabbitMap = new Map();
+        rabbits.forEach(r => rabbitMap.set(r.id, r));
+
+        const assignments = await Assignment.findAll({ where: { rabbitId: { [Op.in]: rabbitIds }, status: 'asignado' } });
+        const assignmentSet = new Set(assignments.map(a => a.rabbitId));
+
+        const lactatingReps = await Reproduction.findAll({ where: { femaleId: { [Op.in]: rabbitIds }, status: 'lactancia' } });
+        const lactatingSet = new Set(lactatingReps.map(r => r.femaleId));
+
+        const previousDewormings = await Deworming.findAll({
+            where: { rabbitId: { [Op.in]: rabbitIds } },
+            order: [['dewormingDate', 'DESC']]
+        });
+        const prevDewMap = new Map();
+        previousDewormings.forEach(d => {
+            if (!prevDewMap.has(d.rabbitId)) prevDewMap.set(d.rabbitId, d); // Solo necesitamos el último (por DESC)
+        });
+
+        const currentDate = new Date();
+
+        this._validateDewormings(rabbitIds, rabbitMap, assignmentSet, lactatingSet, prevDewMap, galponId, dewormingPeriod, currentDate);
 
         // Si todos pasan la validación, registrar todos concurrentemente
         const toCreate = rabbitIds.map(rabbitId => ({

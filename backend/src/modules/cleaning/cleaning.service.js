@@ -4,68 +4,16 @@ const AppError = require('../../errors/AppError');
 const { getPaginationParams, createPaginatedResponse } = require('../../common/helpers/pagination.helper');
 
 class CleaningService {
-    async registerCleaning(data, galponId, profileId) {
-        const { cageIds } = data;
+    _getResponsibleName(profile) {
+        if (!profile) return 'Sistema';
+        if (profile.fullName && profile.fullName.trim() !== '') return profile.fullName.trim();
+        if (profile.username && profile.username.trim() !== '') return profile.username.trim();
+        if (profile.email && profile.email.trim() !== '') return profile.email.trim();
+        return 'Sistema';
+    }
 
-        if (!Array.isArray(cageIds) || cageIds.length === 0) {
-            throw new AppError('Debe seleccionar al menos una jaula.', 400);
-        }
-
-        const { Profile } = require('../../domain/models');
-
-        // Obtener el nombre del responsable desde su perfil de usuario
-        const profile = await Profile.findByPk(profileId);
-        if (!profile) throw new AppError('Usuario no encontrado.', 404);
-        
-        let responsibleName = 'Sistema';
-        if (profile.fullName && profile.fullName.trim() !== '') {
-            responsibleName = profile.fullName;
-        } else if (profile.username && profile.username.trim() !== '') {
-            responsibleName = profile.username;
-        } else if (profile.email && profile.email.trim() !== '') {
-            responsibleName = profile.email;
-        }
-        responsibleName = responsibleName.trim();
-
-        // Obtener el miembro del galpón
-        const membership = await FarmMember.findOne({
-            where: { profileId, galponId, status: 'active' }
-        });
-        if (!membership) throw new AppError('No tienes acceso a este galpón.', 403);
-
-        const { Cage, WorkerCage, Assignment, Rabbit, Notification } = require('../../domain/models');
-        const { Op } = require('sequelize');
-
-        // Precarga de Jaulas
-        const cages = await Cage.findAll({ where: { id: { [Op.in]: cageIds } } });
-        const cageMap = new Map();
-        for (const c of cages) cageMap.set(c.id, c);
-
-        // Precarga de Permisos (si es worker)
-        const workerCagesSet = new Set();
-        if (membership.role === 'worker') {
-            const workerCages = await WorkerCage.findAll({
-                where: { farmMemberId: membership.id, cageId: { [Op.in]: cageIds } }
-            });
-            for (const wc of workerCages) workerCagesSet.add(wc.cageId);
-        }
-
-        // Precarga de Asignaciones y Conejos
-        const assignments = await Assignment.findAll({
-            where: { cageId: { [Op.in]: cageIds }, status: 'asignado' },
-            include: [{ model: Rabbit, as: 'rabbit', attributes: ['id', 'code', 'name', 'race', 'imageUrl'] }]
-        });
-        const assignmentsMap = new Map();
-        for (const a of assignments) {
-            if (!assignmentsMap.has(a.cageId)) assignmentsMap.set(a.cageId, []);
-            assignmentsMap.get(a.cageId).push(a);
-        }
-
-        const createdCleanings = [];
-        const processedCageIds = [];
+    _buildCleaningPayloads(cageIds, cageMap, assignmentsMap, workerCagesSet, membership, galponId, profileId, responsibleName) {
         const toCreate = [];
-
-        // Validación en memoria
         for (const cageId of cageIds) {
             const cage = cageMap.get(cageId);
             if (!cage) throw new AppError(`La jaula con ID ${cageId} no existe.`, 404);
@@ -88,6 +36,55 @@ class CleaningService {
                 responsibleName // Propiedad temporal para construir el JSON después
             });
         }
+        return toCreate;
+    }
+
+    async registerCleaning(data, galponId, profileId) {
+        const { cageIds } = data;
+
+        if (!Array.isArray(cageIds) || cageIds.length === 0) {
+            throw new AppError('Debe seleccionar al menos una jaula.', 400);
+        }
+
+        const { Profile } = require('../../domain/models');
+        const profile = await Profile.findByPk(profileId);
+        if (!profile) throw new AppError('Usuario no encontrado.', 404);
+        
+        const responsibleName = this._getResponsibleName(profile);
+
+        const membership = await FarmMember.findOne({
+            where: { profileId, galponId, status: 'active' }
+        });
+        if (!membership) throw new AppError('No tienes acceso a este galpón.', 403);
+
+        const { Cage, WorkerCage, Assignment, Rabbit, Notification } = require('../../domain/models');
+        const { Op } = require('sequelize');
+
+        const cages = await Cage.findAll({ where: { id: { [Op.in]: cageIds } } });
+        const cageMap = new Map();
+        for (const c of cages) cageMap.set(c.id, c);
+
+        const workerCagesSet = new Set();
+        if (membership.role === 'worker') {
+            const workerCages = await WorkerCage.findAll({
+                where: { farmMemberId: membership.id, cageId: { [Op.in]: cageIds } }
+            });
+            for (const wc of workerCages) workerCagesSet.add(wc.cageId);
+        }
+
+        const assignments = await Assignment.findAll({
+            where: { cageId: { [Op.in]: cageIds }, status: 'asignado' },
+            include: [{ model: Rabbit, as: 'rabbit', attributes: ['id', 'code', 'name', 'race', 'imageUrl'] }]
+        });
+        const assignmentsMap = new Map();
+        for (const a of assignments) {
+            if (!assignmentsMap.has(a.cageId)) assignmentsMap.set(a.cageId, []);
+            assignmentsMap.get(a.cageId).push(a);
+        }
+
+        const createdCleanings = [];
+        const processedCageIds = [];
+        const toCreate = this._buildCleaningPayloads(cageIds, cageMap, assignmentsMap, workerCagesSet, membership, galponId, profileId, responsibleName);
 
         // Inserción masiva/concurrente
         const createdRecords = await Promise.all(toCreate.map(data => 

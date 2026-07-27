@@ -124,38 +124,7 @@ class NotificationService {
         }
     }
 
-    async _processCleaningNotifications(profileId, cagesToCheck, notifiedCageIds, notificationMap) {
-        if (!cagesToCheck || cagesToCheck.length === 0) return;
-
-        const { Cleaning, Notification, Assignment } = require('../../domain/models');
-        const { Op } = require('sequelize');
-        const today = new Date();
-        const todayMs = today.getTime();
-
-        const cageIds = cagesToCheck.map(c => c.id);
-
-        const cleanings = await Cleaning.findAll({
-            where: { cageId: { [Op.in]: cageIds } },
-            order: [['cleaningDate', 'DESC']]
-        });
-        const cleaningMap = new Map();
-        for (const c of cleanings) {
-            if (!cleaningMap.has(c.cageId)) cleaningMap.set(c.cageId, c);
-        }
-
-        const assignments = await Assignment.findAll({
-            where: { cageId: { [Op.in]: cageIds } },
-            order: [['assignedAt', 'ASC']]
-        });
-        const assignmentMap = new Map();
-        for (const a of assignments) {
-            if (!assignmentMap.has(a.cageId)) assignmentMap.set(a.cageId, []);
-            assignmentMap.get(a.cageId).push(a);
-        }
-
-        const notificationsToCreate = [];
-        const notificationIdsToDelete = [];
-
+    _processCageCleanings(cagesToCheck, cleaningMap, assignmentMap, todayMs, notifiedCageIds, notificationMap, profileId, notificationsToCreate, notificationIdsToDelete) {
         for (const cage of cagesToCheck) {
             const lastCleaning = cleaningMap.get(cage.id);
             const cageAssignments = assignmentMap.get(cage.id) || [];
@@ -193,6 +162,41 @@ class NotificationService {
                 }
             }
         }
+    }
+
+    async _processCleaningNotifications(profileId, cagesToCheck, notifiedCageIds, notificationMap) {
+        if (!cagesToCheck || cagesToCheck.length === 0) return;
+
+        const { Cleaning, Notification, Assignment } = require('../../domain/models');
+        const { Op } = require('sequelize');
+        const today = new Date();
+        const todayMs = today.getTime();
+
+        const cageIds = cagesToCheck.map(c => c.id);
+
+        const cleanings = await Cleaning.findAll({
+            where: { cageId: { [Op.in]: cageIds } },
+            order: [['cleaningDate', 'DESC']]
+        });
+        const cleaningMap = new Map();
+        for (const c of cleanings) {
+            if (!cleaningMap.has(c.cageId)) cleaningMap.set(c.cageId, c);
+        }
+
+        const assignments = await Assignment.findAll({
+            where: { cageId: { [Op.in]: cageIds } },
+            order: [['assignedAt', 'ASC']]
+        });
+        const assignmentMap = new Map();
+        for (const a of assignments) {
+            if (!assignmentMap.has(a.cageId)) assignmentMap.set(a.cageId, []);
+            assignmentMap.get(a.cageId).push(a);
+        }
+
+        const notificationsToCreate = [];
+        const notificationIdsToDelete = [];
+
+        this._processCageCleanings(cagesToCheck, cleaningMap, assignmentMap, todayMs, notifiedCageIds, notificationMap, profileId, notificationsToCreate, notificationIdsToDelete);
 
         if (notificationsToCreate.length > 0) {
             await Notification.bulkCreate(notificationsToCreate);

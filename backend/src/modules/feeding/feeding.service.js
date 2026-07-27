@@ -11,6 +11,39 @@ class FeedingService {
         return galpon.foodTypes || [];
     }
 
+    _buildFeedingPayloads(cageIds, cageMap, assignmentsMap, existingCountMap, galponId, finalShift, justification, foodTypes, now, profileId) {
+        const toCreate = [];
+        for (const cageId of cageIds) {
+            const cage = cageMap.get(cageId);
+            if (!cage) throw new AppError(`La jaula con ID ${cageId} no existe.`, 404);
+            if (cage.galponId !== galponId) throw new AppError(`La jaula con ID ${cageId} no pertenece al galpón activo.`, 400);
+
+            const cageAssignments = assignmentsMap.get(cageId) || [];
+            if (cageAssignments.length === 0) {
+                throw new AppError(`La jaula con ID ${cageId} no tiene conejos asignados.`, 400);
+            }
+
+            const feedingsCount = existingCountMap.get(cageId) || 0;
+            if (feedingsCount >= 1 && !justification) {
+                throw new AppError(`Ya tienes un registro de alimentación en el turno de la ${finalShift} para la jaula ${cage.number}. Se requiere justificación.`, 400);
+            }
+
+            const rabbitsSnapshot = cageAssignments.map(a => a.rabbit).filter(Boolean);
+
+            toCreate.push({
+                cageId,
+                foodTypes,
+                justification: justification || null,
+                feedingDate: now,
+                shift: finalShift,
+                galponId,
+                profileId,
+                rabbitsSnapshot
+            });
+        }
+        return toCreate;
+    }
+
     async registerFeeding(data, galponId, profileId) {
         const { cageIds, foodTypes, justification, shift } = data;
 
@@ -64,36 +97,7 @@ class FeedingService {
             existingCountMap.set(ef.cageId, (existingCountMap.get(ef.cageId) || 0) + 1);
         }
 
-        // Validación en memoria
-        const toCreate = [];
-        for (const cageId of cageIds) {
-            const cage = cageMap.get(cageId);
-            if (!cage) throw new AppError(`La jaula con ID ${cageId} no existe.`, 404);
-            if (cage.galponId !== galponId) throw new AppError(`La jaula con ID ${cageId} no pertenece al galpón activo.`, 400);
-
-            const cageAssignments = assignmentsMap.get(cageId) || [];
-            if (cageAssignments.length === 0) {
-                throw new AppError(`La jaula con ID ${cageId} no tiene conejos asignados.`, 400);
-            }
-
-            const feedingsCount = existingCountMap.get(cageId) || 0;
-            if (feedingsCount >= 1 && !justification) {
-                throw new AppError(`Ya tienes un registro de alimentación en el turno de la ${finalShift} para la jaula ${cage.number}. Se requiere justificación.`, 400);
-            }
-
-            const rabbitsSnapshot = cageAssignments.map(a => a.rabbit).filter(Boolean);
-
-            toCreate.push({
-                cageId,
-                foodTypes,
-                justification: justification || null,
-                feedingDate: now,
-                shift: finalShift,
-                galponId,
-                profileId,
-                rabbitsSnapshot
-            });
-        }
+        const toCreate = this._buildFeedingPayloads(cageIds, cageMap, assignmentsMap, existingCountMap, galponId, finalShift, justification, foodTypes, now, profileId);
 
         // Inserción concurrente rápida
         const createdFeedings = await Promise.all(toCreate.map(data => feedingRepository.create(data)));
