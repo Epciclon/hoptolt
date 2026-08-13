@@ -265,7 +265,14 @@ export function NotificationIcon() {
                               </button>
                             )}
                           </div>
-                          <p className="text-sm text-muted mt-1">{notification.message}</p>
+                          <p className="text-sm text-muted mt-1">
+                            {notification.message.split(/(\*\*.*?\*\*)/g).map((part: string, i: number) => {
+                              if (part.startsWith('**') && part.endsWith('**')) {
+                                return <strong key={i} className="font-semibold text-main">{part.slice(2, -2)}</strong>;
+                              }
+                              return part;
+                            })}
+                          </p>
                           <p className="text-xs text-theme-faint mt-2">{formatTime(notification.createdAt)}</p>
                           {notification.type === 'invitation' && (
                             <div className="flex gap-2 mt-3">

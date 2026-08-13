@@ -8,7 +8,7 @@ const toGrowthDTO = (growth) => {
         id: data.id,
         rabbitId: data.rabbitId,
         weight: data.weight,
-        date: data.date,
+        recordDate: data.recordDate,
         isAutomatic: data.isAutomatic
     };
 };

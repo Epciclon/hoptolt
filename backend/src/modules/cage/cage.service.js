@@ -107,6 +107,29 @@ class CageService {
             }
         }
 
+        if (data.type && data.type !== cage.type) {
+            const activeAssignments = await assignmentRepository.findActiveByCageId(id);
+            if (activeAssignments.length > 0) {
+                const rabbitRepo = require('../rabbit/rabbit.repository');
+                const assignmentService = require('../assignment/assignment.service');
+                const { Op } = require('sequelize');
+                
+                const rabbitIds = activeAssignments.map(a => a.rabbitId);
+                const rabbits = await rabbitRepo.findAll({ where: { id: { [Op.in]: rabbitIds } } });
+                
+                const simulatedCage = { ...cage.get({ plain: true }), type: data.type };
+                const service = new assignmentService();
+                
+                if (data.type === 'reproducción' && rabbits.length > 1) {
+                     throw new AppError('No puedes cambiar esta jaula a reproducción porque actualmente tiene más de 1 conejo asignado.', 400);
+                }
+                
+                // Validate compatibility using the simulated cage type against the currently assigned rabbits
+                // We pass them as `rabbits` and [] as existing since we are validating the whole group
+                service.validateCompatibility(simulatedCage, rabbits, []);
+            }
+        }
+
         return cageRepository.update(cage, data);
     }
 

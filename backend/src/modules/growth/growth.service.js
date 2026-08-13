@@ -105,6 +105,46 @@ class GrowthService {
         updatesResult.messages.push(msg);
         updatesResult.rabbitsToUpdate.push(updates);
     }
+
+    async _applyGrowthUpdates(updatesResult, rabbits, profileId, today, todayStr, AuditLog, Growth, Notification) {
+        const { messages, rabbitsToUpdate } = updatesResult;
+
+        if (rabbitsToUpdate.length > 0) {
+            const rabbitMap = new Map(rabbits.map(r => [r.id, r]));
+
+            await Promise.all(rabbitsToUpdate.map(async update => {
+                const rabbit = rabbitMap.get(update.rabbitId);
+                rabbit.age = update.age;
+                if (update.weight !== undefined) rabbit.weight = update.weight;
+                await rabbit.save();
+                
+                await AuditLog.create({
+                    profileId: profileId,
+                    action: 'Cálculo Automático',
+                    details: `Edad actualizada a ${update.age} meses` + (update.weight ? ` y peso a ${update.weight} kg` : '') + ` para el conejo ${rabbit.code}.`,
+                    module: 'Rabbits'
+                });
+
+                await Growth.create({
+                    rabbitId: rabbit.id,
+                    weight: update.weight !== undefined ? update.weight : rabbit.weight,
+                    oldWeight: update.oldWeight || rabbit.weight,
+                    recordDate: todayStr,
+                    recordedBy: profileId
+                });
+            }));
+        }
+
+        if (messages.length > 0) {
+            await Notification.create({
+                profileId,
+                type: 'info',
+                title: 'Resumen de Crecimiento',
+                message: messages.join('\n'),
+                data: { type: 'growth_summary' }
+            });
+        }
+    }
 }
 
 module.exports = new GrowthService();

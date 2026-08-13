@@ -97,7 +97,7 @@ class NotificationService {
             const { Assignment, Notification } = require('../../domain/models');
             const activeAssignments = await Assignment.findAll({ where: { status: 'asignado' } });
             const assignedCageIds = new Set(activeAssignments.map(a => Number(a.cageId)));
-            
+
             const { notifiedIds, notificationMap } = await this._getNotifiedIds(profileId, 'warning', 'cleaning');
 
             let cagesToCheck = [];
@@ -126,7 +126,7 @@ class NotificationService {
 
     _processSingleCageCleaning(cage, params) {
         const { cleaningMap, assignmentMap, todayMs, notifiedCageIds, notificationMap, profileId, notificationsToCreate, notificationIdsToDelete } = params;
-        
+
         const lastCleaning = cleaningMap.get(cage.id);
         const cageAssignments = assignmentMap.get(cage.id) || [];
 
@@ -167,6 +167,97 @@ class NotificationService {
     _processCageCleanings(params) {
         for (const cage of params.cagesToCheck) {
             this._processSingleCageCleaning(cage, params);
+        }
+    }
+
+    async checkAndCreateMaturityNotifications(profileId) {
+        if (ongoingChecks.has(`${profileId}_maturity`)) return ongoingChecks.get(`${profileId}_maturity`);
+        const promise = this._runMaturityCheck(profileId).finally(() => ongoingChecks.delete(`${profileId}_maturity`));
+        ongoingChecks.set(`${profileId}_maturity`, promise);
+        return promise;
+    }
+
+    async _runMaturityCheck(profileId) {
+        try {
+            const { Assignment, Cage, Rabbit, Notification, FarmMember, Galpon } = require('../../domain/models');
+            const { Op } = require('sequelize');
+
+            // Find all active assignments for rabbits in engorde cages
+            const assignments = await Assignment.findAll({
+                where: { status: 'asignado' },
+                include: [
+                    { 
+                        model: Cage, 
+                        as: 'cage',
+                        where: { type: 'engorde' },
+                        required: true
+                    },
+                    {
+                        model: Rabbit,
+                        as: 'rabbit',
+                        where: { purpose: 'Reproducción' },
+                        required: true
+                    }
+                ]
+            });
+
+            // Filter rabbits that are >= 4 months old
+            const today = new Date();
+            const maturityMs = 4 * 30.44 * 24 * 60 * 60 * 1000;
+            const matureAssignments = assignments.filter(a => {
+                const birthDate = new Date(a.rabbit.birthDate);
+                return (today - birthDate) >= maturityMs;
+            });
+
+            if (matureAssignments.length === 0) return;
+
+            // Only notify for those in the user's galpones/access
+            const memberships = await FarmMember.findAll({ where: { profileId, status: 'active' } });
+            const ownedGalpones = await Galpon.findAll({ where: { profileId } });
+            const allowedGalponIds = new Set([
+                ...ownedGalpones.map(g => g.id),
+                ...memberships.map(m => m.galponId)
+            ]);
+
+            const relevantAssignments = matureAssignments.filter(a => allowedGalponIds.has(a.cage.galponId));
+
+            const { notifiedIds, notificationMap } = await this._getNotifiedIds(profileId, 'info', 'maturity');
+            const notificationsToCreate = [];
+
+            for (const a of relevantAssignments) {
+                const rabbitId = Number(a.rabbit.id);
+                if (!notifiedIds.has(rabbitId)) {
+                    notifiedIds.add(rabbitId);
+                    notificationsToCreate.push({
+                        profileId,
+                        type: 'info',
+                        title: 'Pie de Cría Listo',
+                        message: `El conejo de pie de cría ${a.rabbit.name} (${a.rabbit.code}) en la jaula #${a.cage.number} ha cumplido 4 meses. Se sugiere moverlo a una jaula individual de reproducción.`,
+                        data: { type: 'maturity_info', rabbitId: rabbitId, cageId: a.cage.id }
+                    });
+                }
+            }
+
+            if (notificationsToCreate.length > 0) {
+                await Notification.bulkCreate(notificationsToCreate);
+            }
+            
+            // Cleanup stale (if they were moved or no longer mature/exist)
+            if (notifiedIds.size > 0) {
+                const currentRelevantRabbitIds = new Set(relevantAssignments.map(a => Number(a.rabbit.id)));
+                const notificationIdsToDelete = [];
+                for (const notifiedId of notifiedIds) {
+                    if (!currentRelevantRabbitIds.has(notifiedId)) {
+                        const notifId = notificationMap.get(notifiedId);
+                        if (notifId) notificationIdsToDelete.push(notifId);
+                    }
+                }
+                if (notificationIdsToDelete.length > 0) {
+                    await Notification.destroy({ where: { id: { [Op.in]: notificationIdsToDelete } } });
+                }
+            }
+        } catch (error) {
+            console.error('Error checking/creating maturity notifications:', error);
         }
     }
 
@@ -216,8 +307,8 @@ class NotificationService {
         const intervals = [];
         for (const assignment of assignments) {
             const assignedMs = new Date(assignment.assignedAt).getTime();
-            const liberatedMs = (assignment.status === 'liberado' && assignment.updatedAt) 
-                ? new Date(assignment.updatedAt).getTime() 
+            const liberatedMs = (assignment.status === 'liberado' && assignment.updatedAt)
+                ? new Date(assignment.updatedAt).getTime()
                 : todayMs;
 
             const overlapStart = Math.max(startMs, assignedMs);
@@ -268,7 +359,7 @@ class NotificationService {
         try {
             const { WorkerCage, FarmMember, Cage, Notification } = require('../../domain/models');
             const { Op } = require('sequelize');
-            
+
             const cage = await Cage.findByPk(cageId);
             if (!cage) return;
 
@@ -284,7 +375,7 @@ class NotificationService {
                 if (member?.role !== 'worker' || member?.status !== 'active' || !member?.profileId) continue;
 
                 const title = isAssigned ? 'Nueva Asignación de Conejo' : 'Conejo Removido';
-                const message = isAssigned 
+                const message = isAssigned
                     ? `El conejo con código ${rabbitCode} ha sido asignado a tu jaula #${cage.number}.`
                     : `El conejo con código ${rabbitCode} ha sido removido de tu jaula #${cage.number}.`;
 
@@ -309,6 +400,7 @@ class NotificationService {
         await this.checkAndCreateBirthNotifications(profileId);
         await this.checkAndCreateCleaningNotifications(profileId);
         await this.checkAndCreateWeaningNotifications(profileId);
+        await this.checkAndCreateMaturityNotifications(profileId);
         await growthService.processDailyGrowth(profileId);
     }
 
@@ -356,7 +448,7 @@ class NotificationService {
                 const hasPermission = await WorkerPermission.findOne({
                     where: { farmMemberId: m.id, moduleName: 'reproduccionyparto', canRead: true }
                 });
-                
+
                 if (hasPermission) {
                     const workerCages = await WorkerCage.findAll({ where: { farmMemberId: m.id } });
                     const cageIds = workerCages.map(wc => wc.cageId);
@@ -393,6 +485,9 @@ class NotificationService {
         } else if (filterType === 'cleaning' && dataObj?.type === 'cleaning_warning' && dataObj?.cageId) {
             notifiedIds.add(Number(dataObj.cageId));
             notificationMap.set(Number(dataObj.cageId), notificationId);
+        } else if (filterType === 'maturity' && dataObj?.type === 'maturity_info' && dataObj?.rabbitId) {
+            notifiedIds.add(Number(dataObj.rabbitId));
+            notificationMap.set(Number(dataObj.rabbitId), notificationId);
         }
     }
 
@@ -486,7 +581,7 @@ class NotificationService {
             const repId = Number(r.id);
             if (!notifiedIds.has(repId)) {
                 notifiedIds.add(repId);
-                const rabbitName = r.female?.name ? " (" + r.female.name + ")" : "";
+                const rabbitName = r.female?.name ? ` **${r.female.name}**` : "";
                 notificationsToCreate.push({
                     profileId,
                     type: 'warning',

@@ -43,3 +43,4 @@ export * from './LoadingMessage';
 export * from './AuditHistoryView';
 export * from './SelectionActionBar';
 export * from './TutorialButton';
+export * from './RabbitAvatar';

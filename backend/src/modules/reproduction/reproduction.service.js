@@ -99,6 +99,7 @@ class ReproductionService {
         
         const queryOptions = filters.all ? {} : { limit: limitValue, offset };
         if (filters.status) queryOptions.status = filters.status;
+        if (filters.search) queryOptions.search = filters.search;
         
         const reproductions = await reproductionRepository.findByGalponId(galponId, queryOptions, filters);
         const total = await reproductionRepository.countByGalponId(galponId, queryOptions, filters);
@@ -218,8 +219,11 @@ class ReproductionService {
         return availableFemales.map(female => {
             const femalePast = pastReproductions.filter(r => r.femaleId === female.id).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
             let receptiveDate;
+            const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guayaquil', year: 'numeric', month: '2-digit', day: '2-digit' });
+            
             if (femalePast.length > 0) {
-                receptiveDate = new Date(femalePast[0].updatedAt);
+                const updatedStr = formatter.format(new Date(femalePast[0].updatedAt));
+                receptiveDate = new Date(updatedStr + 'T00:00:00-05:00');
             } else if (female.birthDate) {
                 const bdStr = female.birthDate instanceof Date ? female.birthDate.toISOString().split('T')[0] : String(female.birthDate).split('T')[0];
                 receptiveDate = new Date(bdStr + 'T00:00:00-05:00');
@@ -227,7 +231,14 @@ class ReproductionService {
             } else return null;
 
             if (receptiveDate) {
-                const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guayaquil', year: 'numeric', month: '2-digit', day: '2-digit' });
+                const todayStr = formatter.format(new Date());
+                const todayDate = new Date(todayStr + 'T00:00:00-05:00');
+
+                // Lógica de "escoba": si la fecha de celo es anterior a hoy, se arrastra a hoy.
+                if (receptiveDate < todayDate) {
+                    receptiveDate = todayDate;
+                }
+
                 const receptiveDateStr = formatter.format(receptiveDate);
                 const [ry, rm] = receptiveDateStr.split('-');
                 if (Number(ry) === Number(year) && Number(rm) === Number(month)) {

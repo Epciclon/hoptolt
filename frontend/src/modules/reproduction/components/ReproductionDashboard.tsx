@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import { usePersistentTab } from '@/shared/hooks/usePersistentTab';
 import { DashboardTabs } from '@/shared/ui/DashboardTabs';
 import { Heart, Activity, Archive } from 'lucide-react';
@@ -14,7 +15,7 @@ import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 
 export function ReproductionDashboard() {
   const { activeTab, handleTabChange, isInitialized } = usePersistentTab('reproduction', 'montas');
-  const { reproductions, fetchReproductions } = useReproduction();
+  const [searchTerm, setSearchTerm] = useState('');
   const { user } = useAuthContext();
   const isOwner = user?.role === 'owner';
 
@@ -38,13 +39,13 @@ export function ReproductionDashboard() {
       
       <div className="p-6 pt-0">
         {currentTab === 'montas' && (
-          <MontasView reproductions={reproductions} onSuccess={fetchReproductions} />
+          <MontasView searchTerm={searchTerm} onSearchChange={setSearchTerm} />
         )}
         {currentTab === 'partos' && (
-          <ReproductionCatalog reproductions={reproductions} onSuccess={fetchReproductions} />
+          <ReproductionCatalog searchTerm={searchTerm} onSearchChange={setSearchTerm} />
         )}
         {currentTab === 'gazapos' && (
-          <GazaposView reproductions={reproductions} onSuccess={fetchReproductions} />
+          <GazaposView searchTerm={searchTerm} onSearchChange={setSearchTerm} />
         )}
         {isOwner && currentTab === 'history' && (
           <AuditHistoryView

@@ -1,4 +1,4 @@
-﻿import { createClient } from './client'
+import { createClient } from './client'
 
 export async function uploadImage(file: File, bucket: string, folder: string): Promise<string> {
   const supabase = createClient()
@@ -17,11 +17,8 @@ export async function uploadImage(file: File, bucket: string, folder: string): P
     throw new Error(`Error uploading image: ${error.message}`)
   }
 
-  const { data: publicData } = supabase.storage
-    .from(bucket)
-    .getPublicUrl(data.path)
-
-  return publicData.publicUrl
+  // Devuelve la ruta local de nuestro proxy, ya que los buckets ahora son privados
+  return `/storage/${bucket}/${data.path}`
 }
 
 export async function deleteImage(bucket: string, filePath: string): Promise<void> {

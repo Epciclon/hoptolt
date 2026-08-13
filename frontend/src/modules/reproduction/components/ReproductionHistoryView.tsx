@@ -2,7 +2,7 @@
 
 import type { Reproduction } from '../types/reproduction.types';
 import { FilterBar } from '@/shared/ui/FilterBar';
-import { Table, Column } from '@/shared/ui/Table';
+import { Table, Column, RabbitAvatar } from '@/shared/ui';
 import { Dialog, DateTimeBadge } from '@/shared/ui';
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -180,13 +180,7 @@ function RabbitProfileCard({
     <div className="bg-theme-surface border border-strong rounded-lg p-3">
       <p className="text-xs text-muted font-medium mb-1">Coneja</p>
       <div className="flex items-center gap-3 mt-2">
-        {imageUrl ? (
-          <img src={imageUrl} alt="Coneja" className="w-10 h-10 rounded-full object-cover shadow-sm border border-strong" />
-        ) : (
-          <div className="w-10 h-10 rounded-full bg-theme-surface border border-default flex items-center justify-center text-[10px] text-theme-faint border border-strong">
-            Sin foto
-          </div>
-        )}
+        <RabbitAvatar imageUrl={imageUrl} alt="Coneja" size="md" />
         <div className="flex flex-col leading-tight">
           <span className="text-sm font-bold text-main">{name || code}</span>
           {name && <span className="text-xs text-muted">{code}</span>}
@@ -207,13 +201,7 @@ function PartnerProfileCard({
     <div className="bg-theme-surface border border-strong rounded-lg p-3">
       <p className="text-xs text-muted font-medium mb-1">Pareja</p>
       <div className="flex items-center gap-3 mt-2">
-        {imageUrl ? (
-          <img src={imageUrl} alt="Pareja" className="w-10 h-10 rounded-full object-cover shadow-sm border border-strong" />
-        ) : (
-          <div className="w-10 h-10 rounded-full bg-theme-surface border border-default flex items-center justify-center text-[10px] text-theme-faint border border-strong text-center leading-none">
-            Sin foto
-          </div>
-        )}
+        <RabbitAvatar imageUrl={imageUrl} alt="Pareja" size="md" />
         <div className="flex flex-col leading-tight">
           {code ? (
             <>

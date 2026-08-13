@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useQuery } from '@tanstack/react-query';
 import { growthService } from '../services/growth.service';
@@ -7,9 +7,10 @@ import { LineChart, TrendingUp, Calendar, Scale } from 'lucide-react';
 
 interface RabbitGrowthHistoryProps {
   rabbitId: number;
+  rabbitBirthDate?: string | Date | null;
 }
 
-export function RabbitGrowthHistory({ rabbitId }: Readonly<RabbitGrowthHistoryProps>) {
+export function RabbitGrowthHistory({ rabbitId, rabbitBirthDate }: Readonly<RabbitGrowthHistoryProps>) {
   const { data: growths = [], isLoading: loading, error: queryError } = useQuery({
     queryKey: ['growths', rabbitId],
     queryFn: () => growthService.getHistory(rabbitId),
@@ -48,6 +49,17 @@ export function RabbitGrowthHistory({ rabbitId }: Readonly<RabbitGrowthHistoryPr
           const date = new Date(growth.recordDate);
           const isLatest = index === 0;
 
+          let ageText = '';
+          if (rabbitBirthDate) {
+            const birthDate = new Date(rabbitBirthDate);
+            const months = (date.getFullYear() - birthDate.getFullYear()) * 12 + (date.getMonth() - birthDate.getMonth());
+            if (months > 0) {
+              ageText = `A los ${months} meses`;
+            } else {
+              ageText = `Al nacer`;
+            }
+          }
+
           return (
             <div key={growth.id} className="relative">
               {/* Timeline dot */}
@@ -63,6 +75,12 @@ export function RabbitGrowthHistory({ rabbitId }: Readonly<RabbitGrowthHistoryPr
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-2xl font-bold text-main">{Number(growth.weight).toFixed(2)}</span>
                         <span className="text-sm font-medium text-muted">kg</span>
+                        {ageText && (
+                          <>
+                            <span className="mx-1 opacity-50 text-sm text-muted">•</span>
+                            <span className="text-sm font-bold text-main">{ageText}</span>
+                          </>
+                        )}
                       </div>
                       <div className="flex items-center gap-1.5 text-xs text-theme-faint font-medium">
                         <Calendar size={12} />

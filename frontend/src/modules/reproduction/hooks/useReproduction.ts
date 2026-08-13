@@ -1,15 +1,16 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { reproductionService } from '../services/reproduction.service';
 
 
-export function useReproduction(filters?: { profileId?: string; date?: string; status?: string | null }) {
+export function useReproduction(filters?: { profileId?: string; date?: string; status?: string | null; search?: string; limit?: number }) {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(12);
+  const [limit, setLimit] = useState(filters?.limit || 12);
   const [status, setStatus] = useState<string | null>(filters?.status || null);
+  const [search, setSearch] = useState<string>(filters?.search || '');
 
   // Query: Fetch Reproductions
   const {
@@ -18,7 +19,7 @@ export function useReproduction(filters?: { profileId?: string; date?: string; s
     error: errorReproductions,
     refetch: fetchReproductions,
   } = useQuery({
-    queryKey: ['reproductions', page, limit, status, filters?.profileId, filters?.date],
+    queryKey: ['reproductions', page, limit, status, search, filters?.profileId, filters?.date],
     queryFn: () => {
       let startDate, endDate;
       if (filters?.date) {
@@ -30,6 +31,7 @@ export function useReproduction(filters?: { profileId?: string; date?: string; s
         limit, 
         status, 
         profileId: filters?.profileId, 
+        search,
         startDate, 
         endDate 
       });
@@ -160,5 +162,6 @@ export function useReproduction(filters?: { profileId?: string; date?: string; s
     setPage,
     setLimit,
     setStatus,
+    setSearch,
   };
 }

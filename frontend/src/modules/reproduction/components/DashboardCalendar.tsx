@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { RabbitAvatar } from '@/shared/ui';
 import { ChevronLeft, ChevronRight, Baby, Heart, CalendarDays } from 'lucide-react';
 import { Alert, Dialog, Button, FilterBar } from '@/shared/ui';
 import { useSearchParams } from 'next/navigation';
@@ -61,11 +62,11 @@ function getDayStyles(
   canViewReproduction: boolean
 ): { bgClass: string; eventTextClass: string } {
   if (hasEvents && canViewReproduction) {
-    if (calendarType === 'births') return { bgClass: 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold', eventTextClass: 'text-emerald-600' };
-    if (calendarType === 'receptive') return { bgClass: 'bg-pink-50 hover:bg-pink-100 text-pink-800 font-semibold', eventTextClass: 'text-pink-600' };
-    return { bgClass: 'bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold', eventTextClass: 'text-amber-600' };
+    if (calendarType === 'births') return { bgClass: 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/40 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 font-semibold', eventTextClass: 'text-emerald-600 dark:text-emerald-400' };
+    if (calendarType === 'receptive') return { bgClass: 'bg-pink-50 hover:bg-pink-100 dark:bg-pink-900/40 dark:hover:bg-pink-900/60 text-pink-800 dark:text-pink-200 font-semibold', eventTextClass: 'text-pink-600 dark:text-pink-400' };
+    return { bgClass: 'bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/40 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-200 font-semibold', eventTextClass: 'text-amber-600 dark:text-amber-400' };
   }
-  if (isDayToday) return { bgClass: 'bg-slate-200/80 hover:bg-slate-200 text-main font-bold', eventTextClass: 'text-muted' };
+  if (isDayToday) return { bgClass: 'bg-slate-200/80 hover:bg-slate-200 dark:bg-slate-700/80 dark:hover:bg-slate-700 text-main font-bold', eventTextClass: 'text-muted' };
   if (!hasEvents) return { bgClass: 'opacity-50 cursor-default bg-theme-surface hover:bg-theme-surface', eventTextClass: 'text-muted' };
   return { bgClass: 'hover:bg-theme-surface border border-default text-main', eventTextClass: 'text-muted' };
 }
@@ -326,13 +327,7 @@ export function DashboardCalendar() {
                       ${isHighlighted ? 'border-primary-500 ring-2 ring-primary-500/20' : 'border-strong'}
                     `}
                   >
-                    {entry.femaleImageUrl ? (
-                      <img src={entry.femaleImageUrl} alt={entry.femaleName || entry.femaleCode} className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 rounded-full object-cover shadow-sm border border-strong" />
-                    ) : (
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 bg-theme-surface border border-default rounded-full flex items-center justify-center border border-strong">
-                        <span className="text-theme-faint text-xs font-medium text-center leading-tight">Sin Foto</span>
-                      </div>
-                    )}
+                    <RabbitAvatar imageUrl={entry.femaleImageUrl} alt={entry.femaleName || entry.femaleCode} size="xl" className="sm:w-20 sm:h-20" />
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start">
@@ -388,13 +383,7 @@ export function DashboardCalendar() {
 
                       {entry.maleCode && calendarType !== 'receptive' && (
                         <div className="mt-3 flex items-center gap-2 border-t border-default pt-3 min-w-0">
-                          {entry.maleImageUrl ? (
-                            <img src={entry.maleImageUrl} alt={entry.maleName || entry.maleCode} className="w-10 h-10 flex-shrink-0 rounded-full object-cover shadow-sm border border-strong" />
-                          ) : (
-                            <div className="w-10 h-10 flex-shrink-0 bg-theme-surface border border-default rounded-full flex items-center justify-center border border-strong">
-                              <span className="text-theme-faint text-[8px] font-medium uppercase text-center leading-tight">Sin Foto</span>
-                            </div>
-                          )}
+                          <RabbitAvatar imageUrl={entry.maleImageUrl} alt={entry.maleName || entry.maleCode} size="md" />
                           <div className="min-w-0 flex-1">
                             <p className="text-[10px] uppercase tracking-wider text-theme-faint font-bold mb-0.5 truncate">Pareja (Macho)</p>
                             <p className="text-xs text-main font-medium truncate">

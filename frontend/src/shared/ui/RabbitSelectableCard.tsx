@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import type { AssignedRabbit } from '@/modules/assignments/types/assignment.types';
 import { X } from 'lucide-react';
+import { RabbitAvatar } from './RabbitAvatar';
 
 interface RabbitSelectableCardProps {
   rabbit: AssignedRabbit;
@@ -46,13 +47,7 @@ export function RabbitSelectableCard({
 
       <div className="flex justify-between items-start mb-2 gap-2">
         <div className="flex items-center gap-3 relative z-0 min-w-0 flex-1">
-          {rabbit.imageUrl ? (
-            <img src={rabbit.imageUrl} alt={rabbit.code} className="w-10 h-10 flex-shrink-0 rounded-full object-cover shadow-sm border border-strong" />
-          ) : (
-            <div className="w-10 h-10 flex-shrink-0 rounded-full bg-theme-surface border border-default flex items-center justify-center text-theme-faint border border-strong text-[9px] text-center leading-tight px-1">
-              Sin foto
-            </div>
-          )}
+          <RabbitAvatar imageUrl={rabbit.imageUrl} alt={rabbit.code} size="md" />
           <div className="min-w-0">
             {rabbit.name ? (
               <>

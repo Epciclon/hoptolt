@@ -1,14 +1,15 @@
-﻿import api from '@/lib/api';
+import api from '@/lib/api';
 import type { Reproduction, CreateReproductionDto, StartMatingDto, MatingRabbit, ReproductionFemale, ReproductionMale } from '../types/reproduction.types';
 
 export const reproductionService = {
-  async getAll(options?: { page?: number, limit?: number, status?: string | null, profileId?: string, startDate?: string, endDate?: string }): Promise<{ reproductions: Reproduction[]; pagination: any }> {
+  async getAll(options?: { page?: number, limit?: number, status?: string | null, profileId?: string, search?: string, startDate?: string, endDate?: string }): Promise<{ reproductions: Reproduction[]; pagination: any }> {
     const params = new URLSearchParams({
       page: (options?.page || 1).toString(),
       limit: (options?.limit || 10).toString(),
     });
     if (options?.status) params.append('status', options.status);
     if (options?.profileId) params.append('profileId', options.profileId);
+    if (options?.search) params.append('search', options.search);
     if (options?.startDate) params.append('startDate', options.startDate);
     if (options?.endDate) params.append('endDate', options.endDate);
 
@@ -24,6 +25,11 @@ export const reproductionService = {
   async update(id: number, payload: Partial<CreateReproductionDto>): Promise<Reproduction> {
     const { data } = await api.put<{ success: boolean; reproduction: Reproduction }>(`/reproductions/${id}`, payload);
     return data.reproduction;
+  },
+
+  async getByFemaleId(femaleId: number): Promise<Reproduction[]> {
+    const { data } = await api.get<{ success: boolean; reproductions: Reproduction[] }>(`/reproductions/female/${femaleId}`);
+    return data.reproductions;
   },
 
   async delete(id: number): Promise<void> {

@@ -1,7 +1,7 @@
 'use client';
 import { useEffect } from 'react';
 
-export function applyThemeToDOM(fontSize: string, fontFamily: string, bold: boolean, theme: string = 'light') {
+export function applyThemeToDOM(fontSize: string, fontFamily: string, bold: boolean, theme: string = 'light', avatarScale: string = '1') {
   document.documentElement.style.fontSize = fontSize;
   if (fontFamily) {
     document.body.style.fontFamily = fontFamily;
@@ -19,6 +19,7 @@ export function applyThemeToDOM(fontSize: string, fontFamily: string, bold: bool
   } else if (theme === 'contrast') {
     document.documentElement.classList.add('theme-contrast', 'dark');
   }
+  document.documentElement.style.setProperty('--avatar-scale', avatarScale);
 }
 
 export function useThemeSync() {
@@ -30,7 +31,8 @@ export function useThemeSync() {
       const family = localStorage.getItem('fontFamily') ?? '';
       const bld = localStorage.getItem('fontBold') === 'true';
       const thm = localStorage.getItem('theme') ?? 'light';
-      applyThemeToDOM(size, family, bld, thm);
+      const avScale = localStorage.getItem('avatarScale') ?? '1';
+      applyThemeToDOM(size, family, bld, thm, avScale);
     };
 
     // Apply immediately on mount and on route change (fixes soft-navigation and BfCache class resets)
@@ -38,7 +40,7 @@ export function useThemeSync() {
 
     const handleStorage = (e: StorageEvent) => {
       // Sync styles if any relevant key changes
-      if (['fontSize', 'fontFamily', 'fontBold', 'theme'].includes(e.key || '')) {
+      if (['fontSize', 'fontFamily', 'fontBold', 'theme', 'avatarScale'].includes(e.key || '')) {
         applyCurrentTheme();
       }
     };

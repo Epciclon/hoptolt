@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Dialog, Button, Alert, ConfirmDialog } from '@/shared/ui';
+import { Button, Dialog, ConfirmDialog, RabbitAvatar, Alert } from '@/shared/ui';
 import { FilterBar } from '@/shared/ui/FilterBar';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { reproductionService } from '../services/reproduction.service';
@@ -119,13 +119,7 @@ export function MatingModal({ male, onClose, onSuccess }: Readonly<MatingModalPr
             {filteredFemales.map(female => (
               <div key={female.id} className="border border-strong bg-card rounded-lg p-3 hover:border-primary-300 transition-colors flex items-center justify-between shadow-sm">
             <div className="flex items-center gap-3">
-              {female.imageUrl ? (
-                <img src={female.imageUrl} alt={female.code} className="w-10 h-10 flex-shrink-0 rounded-full object-cover" />
-              ) : (
-                <div className="w-10 h-10 flex-shrink-0 rounded-full bg-theme-surface border border-default flex items-center justify-center text-theme-faint text-[10px] text-center leading-tight px-1">
-                  Sin foto
-                </div>
-              )}
+              <RabbitAvatar imageUrl={female.imageUrl} alt={female.code} size="md" />
               <div>
                 <h5 className="font-medium text-main">
                   {female.name ? `${female.name}  ${female.code}` : female.code}
@@ -155,13 +149,7 @@ export function MatingModal({ male, onClose, onSuccess }: Readonly<MatingModalPr
   return (
     <Dialog open={true} onClose={onClose} title="Seleccionar Hembra para Monta" size="3xl">
       <div className="mb-6 bg-theme-surface border border-strong rounded-lg p-4 flex gap-4 items-center">
-        {male.imageUrl ? (
-          <img src={male.imageUrl} alt={male.code} className="w-16 h-16 rounded-full object-cover shadow-sm border-2 border-primary-100" />
-        ) : (
-          <div className="w-16 h-16 rounded-full bg-slate-200 flex items-center justify-center text-muted font-medium">
-            Macho
-          </div>
-        )}
+        <RabbitAvatar imageUrl={male.imageUrl} alt={male.code} size="xl" ring />
         <div>
           <h4 className="font-semibold text-main text-lg">{male.code} {male.name ? `- ${male.name}` : ''}</h4>
           <p className="text-sm text-muted">Raza: <span className="font-medium capitalize">{male.race}</span> | Jaula: <span className="font-medium">#{male.cageNumber}</span></p>

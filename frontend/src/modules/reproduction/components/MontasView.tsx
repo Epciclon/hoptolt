@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Button, ConfirmDialog, RabbitSelectableCard, CageGroupCard } from '@/shared/ui';
+import { Button, CageGroupCard, RabbitSelectableCard, RabbitAvatar, ConfirmDialog } from '@/shared/ui';
 import { FilterBar } from '@/shared/ui/FilterBar';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { reproductionService } from '../services/reproduction.service';
 import type { Reproduction, MatingRabbit } from '../types/reproduction.types';
+import { useReproduction } from '../hooks/useReproduction';
+import { Pagination } from '@/shared/ui/Pagination';
 import { Heart, Clock, Trash2 } from 'lucide-react';
 import { MatingModal } from './MatingModal';
 
@@ -24,11 +26,11 @@ const getRemainingTime = (createdAt?: string) => {
 };
 
 interface MontasViewProps {
-  reproductions: Reproduction[];
-  onSuccess: () => void;
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
 }
 
-export function MontasView({ reproductions, onSuccess }: Readonly<MontasViewProps>) {
+export function MontasView({ searchTerm, onSearchChange }: Readonly<MontasViewProps>) {
   const { showToast } = useToast();
 
   const { data: allMales = [], isLoading: loadingMales } = useQuery({
@@ -44,9 +46,13 @@ export function MontasView({ reproductions, onSuccess }: Readonly<MontasViewProp
     staleTime: 5 * 60 * 1000
   });
 
+  const { reproductions, fetchReproductions } = useReproduction({ status: 'monta', limit: 1000 });
+  const onSuccess = fetchReproductions;
+
   // Filtros
-  const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const limit = 12;
 
   // Modales
   const [selectedMale, setSelectedMale] = useState<MatingRabbit | null>(null);
@@ -98,11 +104,11 @@ export function MontasView({ reproductions, onSuccess }: Readonly<MontasViewProp
     };
   });
 
-  const filteredMales = malesWithStatus.filter(male => {
+  const filteredMales = malesWithStatus.filter((male) => {
     const safeCode = male.code ? male.code.toLowerCase() : '';
     const safeName = male.name ? male.name.toLowerCase() : '';
     const safeCage = male.cageNumber ? male.cageNumber.toString() : '';
-    const safeSearch = search ? search.toLowerCase() : '';
+    const safeSearch = searchTerm ? searchTerm.toLowerCase() : '';
 
     const matchesSearch = 
       safeCode.includes(safeSearch) || 
@@ -115,6 +121,18 @@ export function MontasView({ reproductions, onSuccess }: Readonly<MontasViewProp
 
     return matchesSearch && matchesStatus;
   });
+
+  type GroupedMale = { cageNumber: number; cageType: string; machos: typeof filteredMales };
+  const groupedMales = (Object.values(filteredMales.reduce((acc: Record<number, GroupedMale>, macho) => {
+    const cageNumber = macho.cageNumber || 0;
+    if (!acc[cageNumber]) {
+      acc[cageNumber] = { cageNumber, cageType: macho.cageType || 'reproducción', machos: [] };
+    }
+    acc[cageNumber].machos.push(macho);
+    return acc;
+  }, {} as Record<number, GroupedMale>)) as GroupedMale[]).sort((a,b) => a.cageNumber - b.cageNumber);
+
+  const paginatedGroups = groupedMales.slice((page - 1) * limit, page * limit);
 
   let content;
   if (loadingMales) {
@@ -132,14 +150,7 @@ export function MontasView({ reproductions, onSuccess }: Readonly<MontasViewProp
   } else {
     content = (
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
-        {Object.values(filteredMales.reduce((acc, macho) => {
-          const cageNumber = macho.cageNumber || 0;
-          if (!acc[cageNumber]) {
-            acc[cageNumber] = { cageNumber, cageType: macho.cageType || 'reproducción', machos: [] };
-          }
-          acc[cageNumber].machos.push(macho);
-          return acc;
-        }, {} as Record<number, { cageNumber: number; cageType: string; machos: typeof filteredMales }>)).sort((a,b) => a.cageNumber - b.cageNumber).map(group => (
+        {paginatedGroups.map(group => (
           <CageGroupCard 
             key={group.cageNumber} 
             cageNumber={group.cageNumber} 
@@ -157,7 +168,7 @@ export function MontasView({ reproductions, onSuccess }: Readonly<MontasViewProp
             }
           >
             <div className="flex flex-col gap-3">
-              {group.machos.map(macho => (
+              {group.machos.map((macho) => (
           <RabbitSelectableCard
             key={macho.id}
             rabbit={{
@@ -180,13 +191,7 @@ export function MontasView({ reproductions, onSuccess }: Readonly<MontasViewProp
                 
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex items-center gap-3">
-                    {macho.activeMonta.imageUrl ? (
-                      <img src={macho.activeMonta.imageUrl} alt={macho.activeMonta.femaleCode} className="w-10 h-10 flex-shrink-0 rounded-full object-cover shadow-sm border border-strong" />
-                    ) : (
-                      <div className="w-10 h-10 flex-shrink-0 rounded-full bg-theme-surface border border-default flex items-center justify-center text-theme-faint border border-strong text-[9px] text-center leading-tight px-1">
-                        Sin foto
-                      </div>
-                    )}
+                    <RabbitAvatar imageUrl={macho.activeMonta.imageUrl} alt={macho.activeMonta.femaleCode} size="md" />
                     <div>
                       {macho.activeMonta.femaleName ? (
                         <>
@@ -275,13 +280,16 @@ export function MontasView({ reproductions, onSuccess }: Readonly<MontasViewProp
         <p className="text-base font-medium text-main">En esta fase se encuentran los machos iguales o mayores de 4 meses.</p>
       </div>
       <FilterBar
-        searchValue={search}
-        onSearchChange={setSearch}
-        searchPlaceholder="Buscar por código, nombre o N° de jaula..."
+        searchPlaceholder="Buscar macho por código, nombre o jaula..."
+        searchValue={searchTerm}
+        onSearchChange={(val) => {
+          onSearchChange(val);
+          setPage(1);
+        }}
         filters={[
           {
             key: 'status',
-            placeholder: 'Filtrar por estado',
+            placeholder: 'Todos los estados',
             options: [
               { label: 'Disponibles', value: 'disponible' },
               { label: 'En Monta (Ocupados)', value: 'en_monta' }
@@ -293,6 +301,14 @@ export function MontasView({ reproductions, onSuccess }: Readonly<MontasViewProp
       />
 
       {content}
+
+      {groupedMales.length > 0 && (
+        <Pagination
+          currentPage={page}
+          totalPages={Math.max(1, Math.ceil(groupedMales.length / limit))}
+          onPageChange={setPage}
+        />
+      )}
 
       <ConfirmDialog
         open={!!finishingReproduction}

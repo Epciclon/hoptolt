@@ -1,10 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { Dialog, Button } from '@/shared/ui';
+import { useState, useEffect } from 'react';
+import { Dialog, Button, RabbitAvatar } from '@/shared/ui';
 import { Activity, Info } from 'lucide-react';
 import { Rabbit } from '../types/rabbit.types';
 import { RabbitGrowthHistory } from '@/modules/growth/components/RabbitGrowthHistory';
+import { RabbitReproductionHistory } from './RabbitReproductionHistory';
+
+import { RabbitMedicalOverview } from './RabbitMedicalOverview';
+import { RabbitReproductionStats } from './RabbitReproductionStats';
 
 interface RabbitDetailsModalProps {
   open: boolean;
@@ -17,9 +21,17 @@ export function RabbitDetailsModal({
   onClose,
   rabbit,
 }: Readonly<RabbitDetailsModalProps>) {
-  const [activeTab, setActiveTab] = useState<'info' | 'medical'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'medical' | 'partos'>('info');
+
+  useEffect(() => {
+    if (open) {
+      setActiveTab('info');
+    }
+  }, [open, rabbit?.id]);
 
   if (!rabbit) return null;
+
+  const showPartosTab = rabbit.sex === 'hembra' && (rabbit.age ?? 0) >= 4;
 
   return (
     <Dialog open={open} onClose={onClose} title={`Detalles: ${rabbit.code} - ${rabbit.name || 'Sin Nombre'}`} size="xl">
@@ -46,8 +58,21 @@ export function RabbitDetailsModal({
               }`}
             >
               <Activity size={16} />
-              Historial Médico
+              Historial de Crecimiento
             </button>
+            {showPartosTab && (
+              <button type="button"
+                onClick={() => setActiveTab('partos')}
+                className={`py-4 px-1 inline-flex items-center gap-2 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'partos'
+                    ? 'border-primary-500 text-primary-600'
+                    : 'border-transparent text-muted hover:text-main hover:border-slate-300'
+                }`}
+              >
+                <Activity size={16} />
+                Partos
+              </button>
+            )}
           </nav>
         </div>
 
@@ -55,13 +80,7 @@ export function RabbitDetailsModal({
           {activeTab === 'info' && (
             <div className="space-y-6">
               <div className="flex flex-col items-center justify-center pb-2">
-                <div className="h-24 w-24 rounded-full overflow-hidden bg-theme-surface border border-default flex items-center justify-center border-4 border-white shadow-md mb-3">
-                  {rabbit.imageUrl ? (
-                    <img src={rabbit.imageUrl} alt={rabbit.name || rabbit.code} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-sm text-theme-faint font-medium">Sin foto</span>
-                  )}
-                </div>
+                  <RabbitAvatar imageUrl={rabbit.imageUrl} alt={rabbit.name || rabbit.code} size="2xl" ring />
                 <h3 className="text-xl font-bold text-main">{rabbit.name || 'Sin nombre'}</h3>
                 <span className="text-sm text-muted font-medium">{rabbit.code}</span>
               </div>
@@ -100,15 +119,24 @@ export function RabbitDetailsModal({
                       <span className="text-muted">Fecha de Nacimiento:</span>
                       <span className="font-medium text-main">{rabbit.birthDate ? new Date(rabbit.birthDate).toLocaleDateString() : 'N/A'}</span>
                     </div>
+                    {showPartosTab && <RabbitReproductionStats rabbitId={rabbit.id} />}
                   </div>
                 </div>
+                
+                <RabbitMedicalOverview rabbit={rabbit} />
               </div>
             </div>
           )}
 
           {activeTab === 'medical' && (
             <div className="bg-card p-6 rounded-xl border border-strong shadow-sm min-h-[300px]">
-              <RabbitGrowthHistory rabbitId={rabbit.id} />
+              <RabbitGrowthHistory rabbitId={rabbit.id} rabbitBirthDate={rabbit.birthDate} />
+            </div>
+          )}
+
+          {activeTab === 'partos' && showPartosTab && (
+            <div className="bg-card p-6 rounded-xl border border-strong shadow-sm min-h-[300px]">
+              <RabbitReproductionHistory rabbitId={rabbit.id} />
             </div>
           )}
         </div>

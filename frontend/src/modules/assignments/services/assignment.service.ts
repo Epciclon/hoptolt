@@ -33,9 +33,14 @@ export const assignmentService = {
     await api.post('/unassign', payload);
   },
 
-  async move(payload: { rabbitId: number; currentCageId: number; targetCageId: number }): Promise<{ message: string; warnings: string[] }> {
-    const { data } = await api.put<{ success: boolean; message: string; warnings: string[] }>('/assignments/move', payload);
-    return { message: data.message, warnings: data.warnings || [] };
+  async move(payload: { rabbitId: number; currentCageId: number; targetCageId: number }): Promise<{ warnings: string[] }> {
+    const { data } = await api.put<{ warnings: string[] }>('/assignments/move', payload);
+    return { warnings: data.warnings || [] };
+  },
+
+  async moveBatch(payload: { rabbitIds: number[]; currentCageId: number; targetCageId: number }): Promise<{ warnings: string[] }> {
+    const { data } = await api.put<{ warnings: string[] }>('/assignments/move-batch', payload);
+    return { warnings: data.warnings || [] };
   },
 
   async deleteById(id: number): Promise<void> {

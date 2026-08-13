@@ -46,10 +46,6 @@ sequelize.authenticate()
     .then(async () => {
         console.log('✅ Supabase PostgreSQL conectado exitosamente');
 
-        // Sincronizar específicamente las tablas modificadas (comentado temporalmente para agilizar inicio)
-        // const { Feeding } = require('./domain/models');
-        // await Feeding.sync({ alter: true });
-
         // Iniciar cron jobs
         startReproductionCron();
     })
@@ -57,6 +53,8 @@ sequelize.authenticate()
         console.error('❌ Error al inicializar la base de datos:', err);
         process.exit(1);
     });
+
+
 
 app.use('/api', apiRoutes);
 

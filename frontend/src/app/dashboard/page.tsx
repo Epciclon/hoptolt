@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { Card, CardHeader } from '@/shared/ui';
-import { Box, Rabbit, Dna, ArrowLeftRight } from 'lucide-react';
+import { Box, Rabbit, Activity, Heart, Baby } from 'lucide-react';
 import { useActiveGalpon } from '@/modules/galpones/hooks/useActiveGalpon';
 import { DashboardCalendar } from '@/modules/reproduction/components/DashboardCalendar';
 import { InvitationBanner } from '@/modules/invitation/components/InvitationBanner';
@@ -11,17 +11,17 @@ import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
 import api from '@/lib/api';
 
 interface GalponStats {
-  totalCages: number;
-  totalRabbits: number;
-  totalRaces: number;
-  totalAssignments: number;
+  assignedRabbits: number;
+  plannedBirths: number;
+  lactatingFemales: number;
+  matingFemales: number;
 }
 
 const statsMeta = [
-  { key: 'totalCages' as keyof GalponStats, label: 'Total Jaulas', icon: Box, color: 'text-primary-500', bg: 'bg-primary-50' },
-  { key: 'totalRabbits' as keyof GalponStats, label: 'Total Conejos', icon: Rabbit, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-  { key: 'totalRaces' as keyof GalponStats, label: 'Razas Registradas', icon: Dna, color: 'text-blue-500', bg: 'bg-blue-50' },
-  { key: 'totalAssignments' as keyof GalponStats, label: 'Asignaciones', icon: ArrowLeftRight, color: 'text-amber-500', bg: 'bg-amber-50' },
+  { key: 'assignedRabbits' as keyof GalponStats, label: 'Conejos en Jaulas', icon: Rabbit, color: 'text-emerald-500 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/40' },
+  { key: 'plannedBirths' as keyof GalponStats, label: 'Partos Planeados', icon: Baby, color: 'text-blue-500 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/40' },
+  { key: 'lactatingFemales' as keyof GalponStats, label: 'Conejas en Lactancia', icon: Activity, color: 'text-pink-500 dark:text-pink-400', bg: 'bg-pink-50 dark:bg-pink-900/40' },
+  { key: 'matingFemales' as keyof GalponStats, label: 'Conejas en Monta', icon: Heart, color: 'text-amber-500 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/40' },
 ];
 
 function DashboardHomeContent() {

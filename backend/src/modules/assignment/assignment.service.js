@@ -31,16 +31,18 @@ class AssignmentService {
             const ages = allRabbits.map(r => {
                 const birthDate = new Date(r.birthDate);
                 const today = new Date();
-                return (today - birthDate) / (1000 * 60 * 60 * 24 * 30.44);
+                const exactAge = (today - birthDate) / (1000 * 60 * 60 * 24 * 30.44);
+                return exactAge;
             });
 
-            const hasOver3Months = ages.some(age => age > 3);
+            const hasOver3Months = ages.some(age => age > 3.1); // pequeña tolerancia para recién cumplidos
             if (hasOver3Months) {
                 throw new AppError('No se permiten conejos mayores de 3 meses en jaulas de engorde grupales. A partir de esa edad alcanzan la madurez sexual y muestran comportamientos territoriales muy agresivos.', 400);
             }
 
-            const minAge = Math.min(...ages);
-            const maxAge = Math.max(...ages);
+            const flooredAges = ages.map(age => Math.floor(age));
+            const minAge = Math.min(...flooredAges);
+            const maxAge = Math.max(...flooredAges);
             if (maxAge - minAge > 1) {
                 throw new AppError('Los conejos de engorde deben tener edades similares (máximo 1 mes de diferencia) para evitar peleas por territorialidad y dominancia.', 400);
             }
@@ -210,6 +212,63 @@ class AssignmentService {
         }
         
         throw new AppError('No se pudo mover al conejo.', 400);
+    }
+
+    async moveRabbits(rabbitIds, currentCageId, targetCageId, galponId, profileId) {
+        if (!Array.isArray(rabbitIds) || rabbitIds.length === 0 || !currentCageId || !targetCageId) {
+            throw new AppError('Datos incompletos para el movimiento por lote.', 400);
+        }
+
+        const cageRepo = require('../cage/cage.repository');
+        const { Op } = require('sequelize');
+        
+        const sourceAssignments = await assignmentRepository.findAll({
+            where: { rabbitId: { [Op.in]: rabbitIds }, cageId: currentCageId, status: 'asignado' }
+        });
+
+        if (sourceAssignments.length !== rabbitIds.length) {
+            throw new AppError('Algunos conejos no están asignados a la jaula de origen.', 400);
+        }
+
+        const targetCage = await cageRepo.findById(targetCageId);
+        const currentCage = await cageRepo.findById(currentCageId);
+
+        if (!targetCage || targetCage.galponId !== galponId) throw new AppError('La jaula destino no es válida.', 400);
+        if (targetCage.status !== 'operativa') throw new AppError('La jaula destino no está operativa.', 400);
+        if (targetCageId === currentCageId) throw new AppError('Los conejos ya están en esa jaula.', 400);
+
+        const targetAssignments = await assignmentRepository.findActiveByCageId(targetCageId);
+        const availableSpace = targetCage.capacity - targetAssignments.length;
+        
+        const rabbits = await rabbitRepository.findAll({ where: { id: { [Op.in]: rabbitIds } } });
+
+        if (targetCage.type === 'reproducción' && rabbitIds.length > 1) {
+            throw new AppError('No puedes mover múltiples conejos a una jaula de reproducción simultáneamente.', 400);
+        }
+
+        if (availableSpace >= rabbitIds.length) {
+            let existingRabbits = [];
+            const existingIds = targetAssignments.map(a => a.rabbitId);
+            if (existingIds.length > 0) {
+                existingRabbits = await rabbitRepository.findAll({ where: { id: { [Op.in]: existingIds } } });
+            }
+            
+            const warnings = this.validateCompatibility(targetCage, rabbits, existingRabbits);
+            
+            await Promise.all(sourceAssignments.map(a => assignmentRepository.update(a, { cageId: targetCageId })));
+            return { message: 'Conejos movidos exitosamente.', warnings };
+        }
+
+        if (targetCage.type === 'engorde') {
+            throw new AppError(`La jaula destino no tiene espacio suficiente (Espacio disponible: ${availableSpace}).`, 400);
+        }
+        
+        if (targetCage.type === 'reproducción' && rabbitIds.length === 1) {
+            // Reutilizar la lógica de intercambio 1 a 1 para reproducción
+            return this.moveRabbit(rabbitIds[0], currentCageId, targetCageId, galponId, profileId);
+        }
+        
+        throw new AppError('No se pudo mover a los conejos.', 400);
     }
 
     async getAssignments(galponId) {

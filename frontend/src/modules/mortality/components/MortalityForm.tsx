@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Button, Input, Dialog } from '@/shared/ui';
 import { useMortality } from '../hooks/useMortality';
 import { useToast } from '@/shared/contexts/ToastContext';
+import { RabbitAvatar } from '@/shared/ui';
 import type { AssignedRabbit } from '@/modules/assignments/types/assignment.types';
 
 interface MortalityFormProps {
@@ -150,13 +151,7 @@ export function MortalityForm({ selectedRabbits, onSuccess, onCancel }: Readonly
               key={r.id}
               className="flex items-center gap-2 bg-card border border-strong rounded-full pr-3 pl-1 py-1 shadow-sm"
             >
-              {r.imageUrl ? (
-                <img src={r.imageUrl} alt={r.code} className="w-6 h-6 rounded-full object-cover" />
-              ) : (
-                <div className="w-7 h-7 rounded-full bg-theme-surface border border-default border border-strong flex items-center justify-center text-center">
-                  <span className="text-[7px] leading-[8px] font-bold text-theme-faint px-0.5">Sin foto</span>
-                </div>
-              )}
+              <RabbitAvatar imageUrl={r.imageUrl} alt={r.code} size="xs" />
               <div className="flex flex-col leading-tight justify-center">
                 <span className="text-sm font-semibold text-main">
                   {r.name || r.code}

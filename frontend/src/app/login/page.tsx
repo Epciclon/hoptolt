@@ -10,6 +10,7 @@ import { authService } from '@/modules/auth/services/auth.service';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 import { AuthLayout } from '@/modules/auth/components/AuthLayout';
 import { useToast } from '@/shared/contexts/ToastContext';
+import { useEffect } from 'react';
 
 const schema = z.object({
   identifier: z.string().min(1, 'El usuario o correo es obligatorio.'),
@@ -20,9 +21,16 @@ type FormValues = z.infer<typeof schema>;
 
 export default function LoginPage() {
   const router = useRouter();
-  const { refetchUser } = useAuthContext();
+  const { user, loading, refetchUser } = useAuthContext();
   const { showToast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  useEffect(() => {
+    if (!loading && user && !isLoggingIn) {
+      router.replace('/active-session');
+    }
+  }, [user, loading, router, isLoggingIn]);
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -30,14 +38,26 @@ export default function LoginPage() {
 
   const onSubmit = async (values: FormValues) => {
     try {
+      setIsLoggingIn(true);
       await authService.login(values);
       await refetchUser();
       router.push('/dashboard');
       router.refresh();
     } catch (err) {
+      setIsLoggingIn(false);
       showToast(err instanceof Error ? err.message : 'Error al iniciar sesión.', 'error');
     }
   };
+
+  if ((loading || user) && !isLoggingIn) {
+    return (
+      <AuthLayout>
+        <div className="flex items-center justify-center p-6 h-full min-h-[50vh]">
+          <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout>
@@ -138,7 +158,7 @@ export default function LoginPage() {
           </Link>
         </p>
         <div className="flex items-center justify-center gap-3 text-theme-faint text-xs">
-          <span>v2.0.0</span>
+          <span>v3.0.0</span>
           <span>•</span>
           <span>© 2025 Hoptolt Ecuador</span>
         </div>

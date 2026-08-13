@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { Dialog, Alert, LoadingMessage } from '@/shared/ui';
+import { Dialog, Alert, LoadingMessage, RabbitAvatar } from '@/shared/ui';
 import { genealogyService } from '../services/genealogy.service';
 import type { Rabbit } from '@/modules/rabbits/types/rabbit.types';
 import type { GenealogyTree } from '../types/genealogy.types';
@@ -93,13 +93,7 @@ export function GenealogyTreeModal({ rabbit, onClose }: Readonly<GenealogyTreeMo
               <div key={uid} className="flex flex-col items-center">
                 <div className={`${padding} border-2 rounded-lg ${fontSize} ${bgColor} ${minW} text-center shadow-sm`}>
                   <div className="flex justify-center mb-2">
-                    {node.imageUrl ? (
-                      <img src={node.imageUrl} alt={node.name} className="w-10 h-10 rounded-full object-cover border border-slate-300 shadow-sm" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-theme-surface border border-default border border-slate-300 flex items-center justify-center text-[8px] text-theme-faint text-center leading-tight px-0.5 shadow-sm">
-                        Sin foto
-                      </div>
-                    )}
+                    <RabbitAvatar imageUrl={node.imageUrl} alt={node.name} size="md" />
                   </div>
                   <div className="font-semibold">{node.code}</div>
                   <div className="text-muted truncate">{node.name}</div>

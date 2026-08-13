@@ -186,6 +186,40 @@ class RabbitService {
         const oldWeight = Number.parseFloat(rabbit.weight);
         const newWeight = data.weight !== undefined ? Number.parseFloat(data.weight) : oldWeight;
 
+        // Validar si el conejo está asignado y el cambio rompería las reglas
+        if (data.birthDate || data.sex || data.purpose) {
+            const assignmentRepository = require('../assignment/assignment.repository');
+            const cageRepository = require('../cage/cage.repository');
+            const assignmentService = require('../assignment/assignment.service');
+            
+            const activeAssignment = await assignmentRepository.findActiveByRabbitId(id);
+            if (activeAssignment) {
+                const cage = await cageRepository.findById(activeAssignment.cageId);
+                const activeAssignments = await assignmentRepository.findActiveByCageId(cage.id);
+                
+                const { Op } = require('sequelize');
+                const otherRabbitIds = activeAssignments.filter(a => a.rabbitId !== id).map(a => a.rabbitId);
+                const otherRabbits = otherRabbitIds.length > 0 
+                    ? await rabbitRepository.findAll({ where: { id: { [Op.in]: otherRabbitIds } } })
+                    : [];
+                
+                // Simular el conejo actualizado
+                const simulatedRabbit = { 
+                    ...rabbit.get({ plain: true }), 
+                    ...data 
+                };
+                
+                const service = new assignmentService();
+                
+                if (cage.type === 'reproducción' && simulatedRabbit.purpose === 'Engorde') {
+                    throw new AppError('No puedes cambiar el propósito a Engorde porque este conejo está en una jaula de reproducción. Desasígnalo primero.', 400);
+                }
+                
+                // Validate against other rabbits in the same cage
+                service.validateCompatibility(cage, [simulatedRabbit], otherRabbits);
+            }
+        }
+
         const updatedRabbit = await rabbitRepository.update(rabbit, data);
 
         if (newWeight !== oldWeight) {

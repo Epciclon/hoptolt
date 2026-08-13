@@ -21,7 +21,7 @@ export const routeNotification = (notification: Notification, router: AppRouterI
     case 'birth_warning': return router.push('/dashboard/reproduction?tab=partos');
     case 'weaning_alert': return router.push('/dashboard/reproduction?tab=gazapos');
     case 'cleaning_warning': return router.push('/dashboard/cleaning');
-    case 'growth_summary': return router.push('/dashboard/conejos');
+    case 'growth_summary': return router.push('/dashboard/rabbits');
   }
 
   if (notification.data?.galponId && (notification.type === 'success' || notification.type === 'invitation')) {

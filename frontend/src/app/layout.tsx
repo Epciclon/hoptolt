@@ -20,10 +20,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 var family = localStorage.getItem('fontFamily');
                 var bold = localStorage.getItem('fontBold');
                 var theme = localStorage.getItem('theme');
+                var avatarScale = localStorage.getItem('avatarScale');
                 
                 if (size) document.documentElement.style.fontSize = size;
                 if (theme === 'dark') document.documentElement.classList.add('theme-dark', 'dark');
                 else if (theme === 'contrast') document.documentElement.classList.add('theme-contrast', 'dark');
+                if (avatarScale) document.documentElement.style.setProperty('--avatar-scale', avatarScale);
                 
                 if (family) document.body.style.fontFamily = family;
                 if (bold === 'true') document.documentElement.classList.add('theme-bold');

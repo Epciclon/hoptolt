@@ -3,8 +3,9 @@
 import { cn } from '@/lib/utils';
 import { useReproduction } from '../hooks/useReproduction';
 import type { Reproduction } from '../types/reproduction.types';
-import { Button, Dialog, Input, Select, RabbitSelectableCard, CageGroupCard } from '@/shared/ui';
+import { Button, Dialog, Input, Select, RabbitSelectableCard, CageGroupCard, RabbitAvatar } from '@/shared/ui';
 import { FilterBar } from '@/shared/ui/FilterBar';
+import { Pagination } from '@/shared/ui/Pagination';
 import { useState, useEffect, useRef } from 'react';
 import { AlertTriangle, Trash2, Pencil } from 'lucide-react';
 import { useToast } from '@/shared/contexts/ToastContext';
@@ -14,14 +15,14 @@ import { ReproductionForm } from './ReproductionForm';
 import { formatDateString } from '@/shared/utils/dateUtils';
 
 interface GazaposViewProps {
-  reproductions: Reproduction[];
-  onSuccess?: () => void;
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
 }
 
-export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewProps>) {
-  const { cancelReproduction, finishLactation, registerBirth } = useReproduction();
+export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposViewProps>) {
+  const { reproductions, pagination, setPage, cancelReproduction, finishLactation, registerBirth, fetchReproductions } = useReproduction({ status: 'lactancia', search: searchTerm });
+  const onSuccess = fetchReproductions;
   const { showToast } = useToast();
-  const [searchTerm, setSearchTerm] = useState('');
   const [filterRace, setFilterRace] = useState<string>('');
   
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -78,10 +79,14 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
   const lactancias = reproductions.filter(r => {
     if (r.status !== 'lactancia') return false;
     if (r.isFemaleDeleted) return false;
-    const matchesSearch = 
-      r.femaleName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.femaleCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.cageNumber?.toString().includes(searchTerm);
+    let matchesSearch = true;
+    if (searchTerm) {
+      const q = searchTerm.toLowerCase();
+      matchesSearch = 
+        Boolean(r.femaleName?.toLowerCase().includes(q)) ||
+        Boolean(r.femaleCode.toLowerCase().includes(q)) ||
+        Boolean(r.cageNumber?.toString().includes(q));
+    }
       
     const matchesRace = filterRace ? String(r.femaleRace).toLowerCase() === filterRace.toLowerCase() : true;
 
@@ -255,7 +260,10 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
       </div>
       <FilterBar
         searchValue={searchTerm}
-        onSearchChange={setSearchTerm}
+        onSearchChange={(val) => {
+          onSearchChange(val);
+          setPage(1);
+        }}
         searchPlaceholder="Buscar por nombre, código o jaula..."
         filters={[
           {
@@ -329,17 +337,7 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
                   <div className="bg-theme-surface border border-default p-2 rounded mt-2 mb-2 text-xs">
                     <p className="text-muted mb-2">Última pareja</p>
                     <div className="flex items-center gap-2">
-                      {reproduction.maleImageUrl ? (
-                        <img
-                          src={reproduction.maleImageUrl}
-                          alt={reproduction.maleCode ?? ''}
-                          className="w-8 h-8 rounded-full object-cover border border-strong shrink-0 shadow-sm"
-                        />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-theme-surface border border-default border border-strong shrink-0 flex items-center justify-center text-theme-faint text-[8px] text-center leading-tight px-0.5">
-                          Sin foto
-                        </div>
-                      )}
+                      <RabbitAvatar imageUrl={reproduction.maleImageUrl} alt={reproduction.maleCode ?? ''} size="sm" />
                       <div>
                         {reproduction.maleName ? (
                           <>
@@ -463,6 +461,14 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
         </div>
       )}
 
+      {reproductions.length > 0 && (
+        <Pagination
+          currentPage={pagination.page}
+          totalPages={pagination.totalPages}
+          onPageChange={setPage}
+        />
+      )}
+
       {/* Modal: Finalizar Lactancia con Wizard */}
       {toFinish && (
         <WeaningWizard
@@ -567,13 +573,7 @@ export function GazaposView({ reproductions, onSuccess }: Readonly<GazaposViewPr
             </p>
             <div className="flex flex-wrap gap-2">
               <div className="flex items-center gap-2 bg-card border border-strong rounded-full pr-3 pl-1 py-1 shadow-sm">
-                {toRegisterMortality?.imageUrl ? (
-                  <img src={toRegisterMortality.imageUrl} alt={toRegisterMortality.femaleCode} className="w-6 h-6 rounded-full object-cover" />
-                ) : (
-                  <div className="w-7 h-7 rounded-full bg-theme-surface border border-default border border-strong flex items-center justify-center text-center">
-                    <span className="text-[7px] leading-[8px] font-bold text-theme-faint px-0.5">Sin foto</span>
-                  </div>
-                )}
+                <RabbitAvatar imageUrl={toRegisterMortality?.imageUrl} alt={toRegisterMortality?.femaleCode} size="xs" />
                 <div className="flex flex-col leading-tight justify-center">
                   {toRegisterMortality?.femaleName && (
                     <span className="text-xs font-bold text-main">{toRegisterMortality.femaleName}</span>

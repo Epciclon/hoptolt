@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Dialog } from './Dialog';
 import { formatDateTimeText } from './DateTimeBadge';
+import { RabbitAvatar } from './RabbitAvatar';
 
 export interface ProfileInfo {
   fullName?: string | null;
@@ -117,17 +118,7 @@ export function EventDetailsModal({
               {rabbits.length > 0 ? (
                 rabbits.map((rabbit) => (
                   <div key={rabbit.code || rabbit.id} className="flex items-center gap-3 bg-card border border-default rounded-lg p-2">
-                    {rabbit.imageUrl ? (
-                      <img 
-                        src={rabbit.imageUrl} 
-                        alt="Conejo" 
-                        className="w-10 h-10 flex-shrink-0 rounded-full object-cover shadow-sm border border-strong"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 flex-shrink-0 rounded-full bg-theme-surface border border-default flex items-center justify-center text-theme-faint border border-strong text-[9px] text-center leading-tight px-1">
-                        Sin foto
-                      </div>
-                    )}
+                    <RabbitAvatar imageUrl={rabbit.imageUrl} alt="Conejo" size="md" />
                     <div className="flex flex-col leading-tight">
                       <span className="font-semibold text-main text-sm">
                         {rabbit.name || 'Sin nombre'}

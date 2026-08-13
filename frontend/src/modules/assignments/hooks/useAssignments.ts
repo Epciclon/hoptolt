@@ -82,6 +82,21 @@ export function useAssignments() {
     return moveRabbitMutation.mutateAsync(payload);
   };
 
+  const moveRabbitsMutation = useMutation({
+    mutationFn: (payload: { rabbitIds: number[]; currentCageId: number; targetCageId: number }) => assignmentService.moveBatch(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['assignments'] });
+      queryClient.invalidateQueries({ queryKey: ['assignedRabbits'] });
+      queryClient.invalidateQueries({ queryKey: ['operativeCages'] });
+      queryClient.invalidateQueries({ queryKey: ['reproductionMales'] });
+      queryClient.invalidateQueries({ queryKey: ['reproductionFemales'] });
+    },
+  });
+
+  const moveRabbits = async (payload: { rabbitIds: number[]; currentCageId: number; targetCageId: number }) => {
+    return moveRabbitsMutation.mutateAsync(payload);
+  };
+
   return {
     assignments,
     operativeCages,
@@ -92,5 +107,6 @@ export function useAssignments() {
     assignRabbits,
     unassignRabbit,
     moveRabbit,
+    moveRabbits,
   };
 }

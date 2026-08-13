@@ -4,7 +4,19 @@ const { buildCommonFilters } = require('../../common/helpers/repository.helper')
 
 class ReproductionRepository {
     async findByFemaleId(femaleId) {
-        return Reproduction.findAll({ where: { femaleId } });
+        return Reproduction.findAll({ 
+            where: { femaleId },
+            include: [
+                {
+                    model: Rabbit,
+                    as: 'male',
+                    attributes: ['id', 'code', 'name', 'imageUrl', 'race'],
+                    required: false,
+                    paranoid: false
+                }
+            ],
+            order: [['mountDate', 'DESC']]
+        });
     }
 
     async findLactatingFemaleIds(galponId) {

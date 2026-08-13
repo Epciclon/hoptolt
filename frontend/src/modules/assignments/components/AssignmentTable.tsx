@@ -14,7 +14,11 @@ export function AssignmentTable() {
   const { assignments, loading, error, unassignRabbit } = useAssignments();
   const { showToast } = useToast();
   const [toUnassign, setToUnassign] = useState<{ cageId: number; rabbitIds: number[] } | null>(null);
-  const [transferRabbitData, setTransferRabbitData] = useState<{ id: number; name: string; code: string; currentCageId: number } | null>(null);
+  const [transferRabbitData, setTransferRabbitData] = useState<{ 
+    rabbits: { id: number; name: string; code: string; age?: number; purpose?: string }[];
+    currentCageId: number;
+    cageType: string;
+  } | null>(null);
   const [processing, setProcessing] = useState(false);
   const [selectedRabbitsByCage, setSelectedRabbitsByCage] = useState<Record<number, number[]>>({});
 
@@ -141,24 +145,27 @@ export function AssignmentTable() {
                   footer={
                     selectedIds.length > 0 ? (
                       <div className="flex gap-2 w-full animate-in fade-in slide-in-from-top-1 duration-200">
-                        {selectedIds.length === 1 && group.cageType === 'reproducción' && (
+                        {selectedIds.length > 0 && (
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              const assignment = group.assignments.find(a => a.rabbitId === selectedIds[0]);
-                              if (assignment) {
-                                setTransferRabbitData({
-                                  id: assignment.rabbitId,
-                                  name: assignment.rabbitName || '',
-                                  code: assignment.rabbitCode || '',
-                                  currentCageId: group.cageId
-                                });
-                              }
+                              const selectedAssignments = group.assignments.filter(a => selectedIds.includes(a.rabbitId));
+                              setTransferRabbitData({
+                                rabbits: selectedAssignments.map(a => ({
+                                  id: a.rabbitId,
+                                  name: a.rabbitName || '',
+                                  code: a.rabbitCode || '',
+                                  age: a.rabbitAge,
+                                  purpose: (a as any).rabbitPurpose
+                                })),
+                                currentCageId: group.cageId,
+                                cageType: group.cageType
+                              });
                             }}
                             className="w-full text-main border-strong hover:bg-theme-hover"
                           >
-                            Mover
+                            {selectedIds.length === 1 ? 'Mover' : `Mover (${selectedIds.length})`}
                           </Button>
                         )}
                         <Button
@@ -235,10 +242,9 @@ export function AssignmentTable() {
             setTransferRabbitData(null);
             setSelectedRabbitsByCage(prev => ({ ...prev, [transferRabbitData.currentCageId]: [] }));
           }}
-          rabbitId={transferRabbitData.id}
-          rabbitName={transferRabbitData.name}
-          rabbitCode={transferRabbitData.code}
+          rabbits={transferRabbitData.rabbits}
           currentCageId={transferRabbitData.currentCageId}
+          sourceCageType={transferRabbitData.cageType}
         />
       )}
     </div>

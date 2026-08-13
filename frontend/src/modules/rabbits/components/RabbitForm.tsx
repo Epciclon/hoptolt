@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
@@ -117,6 +117,9 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
         setImageUrl(undefined);
         queryClient.invalidateQueries({ queryKey: ['rabbits'] });
         queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
+        queryClient.invalidateQueries({ queryKey: ['assignments'] });
+        queryClient.invalidateQueries({ queryKey: ['assignedRabbits'] });
+        queryClient.invalidateQueries({ queryKey: ['availableRabbits'] });
         onSuccess?.(createdRabbit);
       } else {
         const updateData: any = {
@@ -141,6 +144,9 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
         queryClient.invalidateQueries({ queryKey: ['rabbits'] });
         queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
         queryClient.invalidateQueries({ queryKey: ['rabbitGrowth', rabbitId] });
+        queryClient.invalidateQueries({ queryKey: ['assignments'] });
+        queryClient.invalidateQueries({ queryKey: ['assignedRabbits'] });
+        queryClient.invalidateQueries({ queryKey: ['availableRabbits'] });
         onSuccess?.();
       }
     } catch (err) {

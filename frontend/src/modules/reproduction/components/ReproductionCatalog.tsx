@@ -2,8 +2,9 @@
 
 import { useReproduction } from '../hooks/useReproduction';
 import { FilterBar } from '@/shared/ui/FilterBar';
+import { Pagination } from '@/shared/ui/Pagination';
 import type { Reproduction } from '../types/reproduction.types';
-import { Dialog, Select, RabbitSelectableCard, CageGroupCard, Button } from '@/shared/ui';
+import { Dialog, Select, RabbitSelectableCard, CageGroupCard, Button, RabbitAvatar } from '@/shared/ui';
 import { useState } from 'react';
 import { Trash2, Calendar } from 'lucide-react';
 import { ReproductionForm } from './ReproductionForm';
@@ -13,12 +14,13 @@ import { mortalityService } from '@/modules/mortality/services/mortality.service
 import { formatDateString } from '@/shared/utils/dateUtils';
 
 interface ReproductionCatalogProps {
-  reproductions: Reproduction[];
-  onSuccess?: () => void;
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
 }
 
-export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<ReproductionCatalogProps>) {
-  const { cancelReproduction, registerBirth } = useReproduction();
+export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<ReproductionCatalogProps>) {
+  const { reproductions, pagination, loading, setPage, cancelReproduction, registerBirth, fetchReproductions } = useReproduction({ status: 'gestacion', search: searchTerm });
+  const onSuccess = fetchReproductions;
   const { showToast } = useToast();
   const [toCancel, setToCancel] = useState<Reproduction | null>(null);
   const [canceling, setCanceling] = useState(false);
@@ -33,7 +35,6 @@ export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<Repro
   const [showEditModal, setShowEditModal] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   
-  const [searchTerm, setSearchTerm] = useState('');
   const [filterRace, setFilterRace] = useState('');
 
   const formatDateTime = formatDateString;
@@ -127,10 +128,14 @@ export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<Repro
       if (r.status !== 'gestacion') return false;
       if (r.isFemaleDeleted) return false;
       
-      const matchesSearch = 
-        r.femaleName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.femaleCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.cageNumber?.toString().includes(searchTerm);
+      let matchesSearch = true;
+      if (searchTerm) {
+        const q = searchTerm.toLowerCase();
+        matchesSearch = 
+          Boolean(r.femaleName?.toLowerCase().includes(q)) ||
+          Boolean(r.femaleCode.toLowerCase().includes(q)) ||
+          Boolean(r.cageNumber?.toString().includes(q));
+      }
         
       const matchesRace = filterRace ? r.femaleRace === filterRace : true;
       
@@ -146,7 +151,10 @@ export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<Repro
       </div>
       <FilterBar
         searchValue={searchTerm}
-        onSearchChange={setSearchTerm}
+        onSearchChange={(val) => {
+          onSearchChange(val);
+          setPage(1);
+        }}
         searchPlaceholder="Buscar por nombre, código o jaula..."
         filters={[
           {
@@ -215,17 +223,7 @@ export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<Repro
                     <div className="bg-theme-surface border border-default p-2 rounded">
                       <p className="text-muted mb-2">Última pareja</p>
                       <div className="flex items-center gap-2">
-                        {reproduction.maleImageUrl ? (
-                          <img
-                            src={reproduction.maleImageUrl}
-                            alt={reproduction.maleCode ?? ''}
-                            className="w-8 h-8 rounded-full object-cover border border-strong shrink-0 shadow-sm"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-theme-surface border border-default border border-strong shrink-0 flex items-center justify-center text-theme-faint text-[8px] text-center leading-tight px-0.5">
-                            Sin foto
-                          </div>
-                        )}
+                        <RabbitAvatar imageUrl={reproduction.maleImageUrl} alt={reproduction.maleCode ?? ''} size="sm" />
                         <div>
                           {reproduction.maleName ? (
                             <>
@@ -319,6 +317,14 @@ export function ReproductionCatalog({ reproductions, onSuccess }: Readonly<Repro
             </CageGroupCard>
           ))}
         </div>
+      )}
+
+      {reproductions.length > 0 && (
+        <Pagination
+          currentPage={pagination.page}
+          totalPages={pagination.totalPages}
+          onPageChange={setPage}
+        />
       )}
 
       {/* Modal de Cancelación/Eliminación */}

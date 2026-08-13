@@ -9,6 +9,7 @@ router.use('/assignments', authenticate); // Protect all routes in this router
 
 router.post('/assignments', requirePermission('assignments', 'canCreate'), galponContext, assignmentController.assignRabbits);
 router.put('/assignments/move', requirePermission('assignments', 'canCreate'), galponContext, assignmentController.moveRabbit);
+router.put('/assignments/move-batch', requirePermission('assignments', 'canCreate'), galponContext, assignmentController.moveRabbits);
 router.get('/assignments', requirePermission('assignments', 'canRead'), galponContext, assignmentController.getAssignments);
 router.get('/assignments/assigned-rabbits', requirePermission('assignments', 'canRead'), galponContext, assignmentController.getAssignedRabbits);
 router.get('/assignments/available-rabbits', requirePermission('assignments', 'canRead'), galponContext, assignmentController.getAvailableRabbits);

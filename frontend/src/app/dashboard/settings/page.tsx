@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, Button } from '@/shared/ui';
 import { useToast } from '@/shared/contexts/ToastContext';
-import { Type, Bold, Moon, Contrast, ALargeSmall } from 'lucide-react';
+import { Type, Bold, Moon, Contrast, ALargeSmall, Image as ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // ── Datos de opciones ────────────────────────────────────────────────────────
@@ -15,6 +15,14 @@ const FONT_SIZES = [
   { key: '20px', label: 'Muy grande'   },
   { key: '22px', label: 'Extra grande' },
   { key: '24px', label: 'Máxima'       },
+];
+
+const AVATAR_SIZES = [
+  { key: '1',    label: 'Pequeño' },
+  { key: '1.25', label: 'Mediano' },
+  { key: '1.5',  label: 'Grande' },
+  { key: '1.75', label: 'Extra Grande' },
+  { key: '2',    label: 'Gigante' },
 ];
 
 const FONT_FAMILIES = [
@@ -31,7 +39,7 @@ import { applyThemeToDOM as applyToDOM } from '@/hooks/useThemeSync';
 
 // ── Tipos de sección ──────────────────────────────────────────────────────────
 
-type Section = 'size' | 'family' | 'bold' | 'dark' | 'contrast';
+type Section = 'size' | 'family' | 'bold' | 'dark' | 'contrast' | 'avatar';
 
 interface NavItem {
   readonly id: Section;
@@ -42,6 +50,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { id: 'size',     label: 'Tamaño de Letra',   icon: ALargeSmall, ready: true  },
+  { id: 'avatar',   label: 'Tamaño de Avatares', icon: ImageIcon, ready: true  },
   { id: 'family',   label: 'Tipo de Letra',      icon: Type,        ready: true  },
   { id: 'bold',     label: 'Texto en Negrilla',  icon: Bold,        ready: true  },
   { id: 'dark',     label: 'Modo Oscuro',         icon: Moon,        ready: true },
@@ -65,62 +74,74 @@ export default function SettingsPage() {
 
   const [activeSection, setActiveSection] = useState<Section>('size');
   const [fontSize,   setFontSize]   = useState('16px');
+  const [avatarScale, setAvatarScale] = useState('1');
   const [fontFamily, setFontFamily] = useState('');
   const [bold,       setBold]       = useState(false);
   const [theme,      setTheme]      = useState<'light' | 'dark' | 'contrast'>('light');
 
   useEffect(() => {
     const size   = localStorage.getItem('fontSize')   ?? '16px';
+    const avScale = localStorage.getItem('avatarScale') ?? '1';
     const family = localStorage.getItem('fontFamily') ?? '';
     const bld    = localStorage.getItem('fontBold')   === 'true';
     const thm    = (localStorage.getItem('theme') as any) ?? 'light';
     setFontSize(size);
+    setAvatarScale(avScale);
     setFontFamily(family);
     setBold(bld);
     setTheme(thm);
-    applyToDOM(size, family, bld, thm);
+    applyToDOM(size, family, bld, thm, avScale);
   }, []);
 
   const selectSize = useCallback((key: string) => {
     setFontSize(key);
-    applyToDOM(key, fontFamily, bold, theme);
+    applyToDOM(key, fontFamily, bold, theme, avatarScale);
     localStorage.setItem('fontSize', key);
     showToast('Tamaño de letra actualizado', 'success');
-  }, [fontFamily, bold, theme, showToast]);
+  }, [fontFamily, bold, theme, avatarScale, showToast]);
+
+  const selectAvatarScale = useCallback((key: string) => {
+    setAvatarScale(key);
+    applyToDOM(fontSize, fontFamily, bold, theme, key);
+    localStorage.setItem('avatarScale', key);
+    showToast('Tamaño de avatares actualizado', 'success');
+  }, [fontSize, fontFamily, bold, theme, showToast]);
 
   const selectFamily = useCallback((key: string) => {
     setFontFamily(key);
-    applyToDOM(fontSize, key, bold, theme);
+    applyToDOM(fontSize, key, bold, theme, avatarScale);
     if (key) localStorage.setItem('fontFamily', key);
     else localStorage.removeItem('fontFamily');
     showToast('Tipo de letra actualizado', 'success');
-  }, [fontSize, bold, theme, showToast]);
+  }, [fontSize, bold, theme, avatarScale, showToast]);
 
   const toggleBold = useCallback((opt: boolean) => {
     setBold(opt);
-    applyToDOM(fontSize, fontFamily, opt, theme);
+    applyToDOM(fontSize, fontFamily, opt, theme, avatarScale);
     localStorage.setItem('fontBold', String(opt));
     showToast(opt ? 'Negrilla activada' : 'Negrilla desactivada', 'success');
-  }, [fontSize, fontFamily, theme, showToast]);
+  }, [fontSize, fontFamily, theme, avatarScale, showToast]);
 
   const selectTheme = useCallback((thm: 'light' | 'dark' | 'contrast') => {
     setTheme(thm);
-    applyToDOM(fontSize, fontFamily, bold, thm);
+    applyToDOM(fontSize, fontFamily, bold, thm, avatarScale);
     localStorage.setItem('theme', thm);
     
     let msg = 'Modo normal activado';
     if (thm === 'dark') msg = 'Modo oscuro activado';
     else if (thm === 'contrast') msg = 'Alto contraste activado';
     showToast(msg, 'success');
-  }, [fontSize, fontFamily, bold, theme, showToast]);
+  }, [fontSize, fontFamily, bold, theme, avatarScale, showToast]);
 
   const resetDefaults = () => {
     setFontSize('16px');
+    setAvatarScale('1');
     setFontFamily('');
     setBold(false);
     setTheme('light');
-    applyToDOM('16px', '', false, 'light');
+    applyToDOM('16px', '', false, 'light', '1');
     localStorage.setItem('fontSize', '16px');
+    localStorage.setItem('avatarScale', '1');
     localStorage.removeItem('fontFamily');
     localStorage.removeItem('fontBold');
     localStorage.removeItem('theme');
@@ -208,6 +229,46 @@ export default function SettingsPage() {
                 <p style={{ fontSize }} className="text-main font-medium">
                   Hoptolt - Sistema de gestión de crianza de conejos
                 </p>
+              </div>
+
+              <SaveBar onReset={resetDefaults} />
+            </Card>
+          )}
+
+          {/* ── Tamaño de Avatares ── */}
+          {activeSection === 'avatar' && (
+            <Card>
+              <h3 className="text-lg font-bold text-main mb-1 flex items-center gap-2">
+                <ImageIcon className="text-primary-500" size={20} />
+                Tamaño de Avatares (Mini-fotos)
+              </h3>
+              <p className="text-sm text-muted mb-6">Ajusta el tamaño global de las fotos de los conejos en todo el sistema.</p>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {AVATAR_SIZES.map((f) => (
+                  <button type="button"
+                    key={f.key}
+                    onClick={() => selectAvatarScale(f.key)}
+                    className={cn(
+                      'relative flex flex-col items-center gap-2 p-6 rounded-xl border-2 transition-all text-center',
+                      avatarScale === f.key
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 shadow-sm'
+                        : 'border-strong bg-card hover:border-primary-300 dark:hover:border-primary-700/50 hover:bg-theme-surface dark:hover:bg-slate-800/50',
+                    )}
+                  >
+                    {avatarScale === f.key && (
+                      <span className="absolute top-2 right-2 w-4 h-4 bg-primary-500 rounded-full flex items-center justify-center">
+                        <CheckIcon />
+                      </span>
+                    )}
+                    <div style={{ transform: `scale(${f.key})` }} className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 border border-strong flex items-center justify-center text-[10px] text-theme-faint mb-2 transition-transform">
+                      Sin foto
+                    </div>
+                    <span className="font-semibold text-main leading-none mt-2">
+                      {f.label}
+                    </span>
+                  </button>
+                ))}
               </div>
 
               <SaveBar onReset={resetDefaults} />

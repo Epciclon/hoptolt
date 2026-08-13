@@ -14,7 +14,7 @@ exports.getRaceById = catchAsync(async (req, res) => {
 
 exports.getAllRaces = catchAsync(async (req, res) => {
     const page = Number.parseInt(req.query.page) || 1;
-    const limit = Number.parseInt(req.query.limit) || 10;
+    const limit = Number.parseInt(req.query.limit) || 12;
     const filters = { search: req.query.search };
     
     // Si hay un galpón activo (trabajador o dueño en vista de galpón), usamos el profileId del dueño.

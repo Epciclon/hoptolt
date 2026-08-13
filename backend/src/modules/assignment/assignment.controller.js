@@ -27,6 +27,18 @@ exports.moveRabbit = catchAsync(async (req, res) => {
     });
 });
 
+exports.moveRabbits = catchAsync(async (req, res) => {
+    const galponId = req.galponId;
+    const profileId = req.user.id;
+    const { rabbitIds, currentCageId, targetCageId } = req.body;
+    const result = await assignmentService.moveRabbits(rabbitIds, currentCageId, targetCageId, galponId, profileId);
+    res.status(200).json({
+        success: true,
+        message: result.message || 'Conejos movidos exitosamente.',
+        warnings: result.warnings || []
+    });
+});
+
 exports.getAssignments = catchAsync(async (req, res) => {
     const galponId = req.galponId;
     const assignments = await assignmentService.getAssignments(galponId);

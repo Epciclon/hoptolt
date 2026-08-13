@@ -37,10 +37,10 @@ exports.getReproductionByFemaleId = catchAsync(async (req, res) => {
 
 exports.getAllReproductions = catchAsync(async (req, res) => {
     const page = Number.parseInt(req.query.page) || 1;
-    const limit = Number.parseInt(req.query.limit) || 10;
-    const { startDate, endDate, races, status, profileId, all } = req.query;
+    const limit = Number.parseInt(req.query.limit) || 12;
+    const { startDate, endDate, races, status, profileId, all, search } = req.query;
 
-    const filters = { startDate, endDate, races, status, profileId, all: all === 'true' };
+    const filters = { startDate, endDate, races, status, profileId, all: all === 'true', search };
 
     try {
         const result = await reproductionService.getAllReproductions(req.galponId, req.user.id, page, limit, filters);

@@ -238,7 +238,14 @@ export default function NotificationsPage() {
                               <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
                             )}
                           </h4>
-                          <p className="text-muted mt-1 whitespace-pre-wrap">{notification.message}</p>
+                          <p className="text-muted mt-1 whitespace-pre-wrap">
+                            {notification.message.split(/(\*\*.*?\*\*)/g).map((part: string, i: number) => {
+                              if (part.startsWith('**') && part.endsWith('**')) {
+                                return <strong key={i} className="font-semibold text-main">{part.slice(2, -2)}</strong>;
+                              }
+                              return part;
+                            })}
+                          </p>
                         </div>
                         <div className="text-sm text-theme-faint flex flex-col items-end gap-2 shrink-0">
                           <span>{formatTime(notification.createdAt)}</span>

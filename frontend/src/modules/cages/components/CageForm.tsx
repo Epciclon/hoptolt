@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -83,6 +83,9 @@ export function CageForm({ defaultValues, cageId, mode, onSuccess, onCancel }: R
         showToast('Jaula actualizada exitosamente.', 'success');
       }
       queryClient.invalidateQueries({ queryKey: ['cages'] });
+      queryClient.invalidateQueries({ queryKey: ['operativeCages'] });
+      queryClient.invalidateQueries({ queryKey: ['assignments'] });
+      queryClient.invalidateQueries({ queryKey: ['assignedRabbits'] });
       onSuccess?.();
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Error inesperado.', 'error');

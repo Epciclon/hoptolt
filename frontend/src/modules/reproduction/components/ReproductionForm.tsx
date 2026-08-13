@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState, useEffect } from 'react';
-import { Input, Button } from '@/shared/ui';
+import { Input, Button, RabbitAvatar } from '@/shared/ui';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { useReproduction } from '../hooks/useReproduction';
 import type { Reproduction } from '../types/reproduction.types';
@@ -97,13 +97,7 @@ export function ReproductionForm({ onSuccess, onCancel, editingReproduction }: R
       <div className="flex items-center justify-center gap-6 p-5 border border-strong/80 rounded-xl">
         {/* Hembra */}
         <div className="flex flex-col items-center gap-2 text-center w-28">
-          {femaleRabbit?.imageUrl ? (
-            <img src={femaleRabbit.imageUrl} alt={femaleRabbit.code} className="w-16 h-16 rounded-full object-cover shadow-md border-2 border-primary-100 dark:border-primary-900/30" />
-          ) : (
-            <div className="w-16 h-16 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-muted font-semibold text-xs border border-slate-300 dark:border-slate-700">
-              Sin foto
-            </div>
-          )}
+          <RabbitAvatar imageUrl={femaleRabbit?.imageUrl} alt={femaleRabbit?.code} size="xl" ring />
           <div>
             <span className="px-2 py-0.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 text-[10px] font-semibold rounded-full">Hembra</span>
             <h5 className="font-bold text-main text-sm mt-1">{editingReproduction.femaleCode}</h5>
@@ -121,13 +115,7 @@ export function ReproductionForm({ onSuccess, onCancel, editingReproduction }: R
 
         {/* Macho */}
         <div className="flex flex-col items-center gap-2 text-center w-28">
-          {maleRabbit?.imageUrl ? (
-            <img src={maleRabbit.imageUrl} alt={maleRabbit.code} className="w-16 h-16 rounded-full object-cover shadow-md border-2 border-violet-100 dark:border-violet-900/30" />
-          ) : (
-            <div className="w-16 h-16 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-muted font-semibold text-xs border border-slate-300 dark:border-slate-700">
-              Sin foto
-            </div>
-          )}
+          <RabbitAvatar imageUrl={maleRabbit?.imageUrl} alt={maleRabbit?.code} size="xl" ring />
           <div>
             <span className="px-2 py-0.5 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 text-[10px] font-semibold rounded-full">Macho</span>
             <h5 className="font-bold text-main text-sm mt-1">{editingReproduction.maleCode || 'N/A'}</h5>

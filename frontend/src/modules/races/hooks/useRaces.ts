@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { raceService, GetRacesParams } from '../services/race.service';
 
@@ -41,7 +41,7 @@ export function useRaces(initialParams?: GetRacesParams) {
 
   return {
     races: data?.races || [],
-    pagination: data?.pagination || { total: 0, page: 1, limit: 10, totalPages: 1 },
+    pagination: data?.pagination || { total: 0, page: 1, limit: 12, totalPages: 1 },
     loading,
     error: queryError ? (queryError as Error).message : null,
     fetchRaces,
