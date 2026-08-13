@@ -401,7 +401,7 @@ export function ReproductionHistoryView({ profileId, date }: Readonly<Reproducti
     },
   });
   
-  const reproductions = historyReproductions || [];
+  const reproductions = useMemo(() => historyReproductions || [], [historyReproductions]);
 
   const { data: kitMortalitiesData, isLoading: loadingMortalities } = useQuery({
     queryKey: ['kitMortalitiesHistory', profileId, date],
@@ -414,7 +414,7 @@ export function ReproductionHistoryView({ profileId, date }: Readonly<Reproducti
       return mortalityService.getAll({ isKits: true, profileId, startDate, endDate });
     },
   });
-  const kitMortalities = kitMortalitiesData || [];
+  const kitMortalities = useMemo(() => kitMortalitiesData || [], [kitMortalitiesData]);
 
   const historico = useMemo(() => getFilteredReproductions(reproductions, searchTerm, filterStatus), [reproductions, searchTerm, filterStatus]);
 

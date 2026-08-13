@@ -49,7 +49,7 @@ export default function UsersPage() {
       // We don't need to manually pass the ID to a refetch function anymore.
       // If we wanted to force refetch, we would call fetchWorkers() without arguments.
     }
-  }, [activeGalpon?.id, isOwner]);
+  }, [activeGalpon, isOwner]);
 
   const onInvite = async (data: { email: string }) => {
     setSubmitting(true);

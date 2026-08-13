@@ -1,9 +1,9 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useState, useEffect, useRef } from 'react';
 import { Button, Input, Dialog, LoadingMessage, RabbitSelectableCard } from '@/shared/ui';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { genealogyService } from '../services/genealogy.service';
@@ -55,9 +55,9 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
     enabled: !!rabbitId,
   });
 
-  const rabbits = allRabbitsData || [];
-  const potentialFathers = fathersData || [];
-  const potentialMothers = mothersData || [];
+  const rabbits = useMemo(() => allRabbitsData || [], [allRabbitsData]);
+  const potentialFathers = useMemo(() => fathersData || [], [fathersData]);
+  const potentialMothers = useMemo(() => mothersData || [], [mothersData]);
   const loading = loadingRabbits || loadingFathers || loadingMothers || loadingGenealogy;
   const editData = existingGenealogy;
 

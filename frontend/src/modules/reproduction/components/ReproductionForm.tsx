@@ -62,7 +62,7 @@ export function ReproductionForm({ onSuccess, onCancel, editingReproduction }: R
       }
     };
     fetchRabbitDetails();
-  }, [editingReproduction]);
+  }, [editingReproduction, showToast]);
 
 
   const onSubmit = async (values: FormValues) => {

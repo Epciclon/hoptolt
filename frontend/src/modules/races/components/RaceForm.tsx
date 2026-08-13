@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -44,7 +44,7 @@ export function RaceForm({ mode, defaultValues, raceId, onSuccess, onCancel }: R
       setImageUrl(defaultValues.imageUrl);
       setOriginalImageUrl(defaultValues.imageUrl);
     }
-  }, [mode, defaultValues?.name]);
+  }, [mode, defaultValues]);
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),

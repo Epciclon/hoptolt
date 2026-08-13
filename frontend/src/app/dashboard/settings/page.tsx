@@ -131,7 +131,7 @@ export default function SettingsPage() {
     if (thm === 'dark') msg = 'Modo oscuro activado';
     else if (thm === 'contrast') msg = 'Alto contraste activado';
     showToast(msg, 'success');
-  }, [fontSize, fontFamily, bold, theme, avatarScale, showToast]);
+  }, [fontSize, fontFamily, bold, avatarScale, showToast]);
 
   const resetDefaults = () => {
     setFontSize('16px');
