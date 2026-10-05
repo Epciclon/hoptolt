@@ -5,7 +5,7 @@ export const reproductionService = {
   async getAll(options?: { page?: number, limit?: number, status?: string | null, profileId?: string, search?: string, startDate?: string, endDate?: string }): Promise<{ reproductions: Reproduction[]; pagination: any }> {
     const params = new URLSearchParams({
       page: (options?.page || 1).toString(),
-      limit: (options?.limit || 10).toString(),
+      limit: (options?.limit || 12).toString(),
     });
     if (options?.status) params.append('status', options.status);
     if (options?.profileId) params.append('profileId', options.profileId);

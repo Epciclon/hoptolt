@@ -35,7 +35,7 @@ export function RabbitGrowthHistory({ rabbitId, rabbitBirthDate }: Readonly<Rabb
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3 border-b border-default pb-4">
-        <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center text-primary-600">
+        <div className="w-10 h-10 rounded-full bg-primary-50 dark:bg-primary-900 flex items-center justify-center text-primary-600 dark:text-primary-400">
           <LineChart size={20} />
         </div>
         <div>
@@ -44,7 +44,7 @@ export function RabbitGrowthHistory({ rabbitId, rabbitBirthDate }: Readonly<Rabb
         </div>
       </div>
 
-      <div className="relative pl-6 border-l-2 border-green-100 space-y-8 py-2 ml-4">
+      <div className="relative pl-6 border-l-2 border-primary-200 dark:border-primary-900/50 space-y-8 py-2 ml-4">
         {growths.map((growth, index) => {
           const date = new Date(growth.recordDate);
           const isLatest = index === 0;
@@ -65,10 +65,10 @@ export function RabbitGrowthHistory({ rabbitId, rabbitBirthDate }: Readonly<Rabb
               {/* Timeline dot */}
               <div className={`absolute -left-[35px] w-4 h-4 rounded-full border-4 border-white shadow-sm flex items-center justify-center ${isLatest ? 'bg-primary-500 scale-125' : 'bg-slate-300'}`} />
               
-              <div className={`bg-card rounded-xl border p-4 shadow-sm transition-all ${isLatest ? 'border-primary-200 ring-1 ring-green-50' : 'border-default hover:border-strong'}`}>
+              <div className={`bg-card rounded-xl border p-4 shadow-sm transition-all ${isLatest ? 'border-primary-200 dark:border-primary-800 ring-1 ring-primary-50 dark:ring-primary-900' : 'border-default hover:border-strong'}`}>
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
-                    <div className={`p-3 rounded-lg flex items-center justify-center ${isLatest ? 'bg-primary-50 text-primary-600' : 'bg-theme-surface text-muted'}`}>
+                    <div className={`p-3 rounded-lg flex items-center justify-center ${isLatest ? 'bg-primary-50 dark:bg-primary-900 text-primary-600 dark:text-primary-400' : 'bg-theme-surface text-muted'}`}>
                       <Scale size={24} />
                     </div>
                     <div>
@@ -90,7 +90,7 @@ export function RabbitGrowthHistory({ rabbitId, rabbitBirthDate }: Readonly<Rabb
                   </div>
                   
                   {isLatest && (
-                    <span className="px-3 py-1 bg-primary-50 text-primary-700 rounded-full text-xs font-semibold whitespace-nowrap">
+                    <span className="px-3 py-1 bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-400 rounded-full text-xs font-semibold whitespace-nowrap">
                       Peso Actual
                     </span>
                   )}

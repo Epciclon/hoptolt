@@ -10,11 +10,11 @@ exports.registerMortality = catchAsync(async (req, res) => {
 
 exports.getMortalities = catchAsync(async (req, res) => {
     const page = Number.parseInt(req.query.page) || 1;
-    const limit = Number.parseInt(req.query.limit) || 10;
+    const limit = Number.parseInt(req.query.limit) || 12;
     const isKits = req.query.isKits !== undefined ? req.query.isKits === 'true' : null;
-    const { startDate, endDate, races, causes, profileId, all } = req.query;
+    const { startDate, endDate, races, causes, profileId, all, search } = req.query;
 
-    const filters = { startDate, endDate, races, causes, profileId, all: all === 'true' };
+    const filters = { startDate, endDate, races, causes, profileId, all: all === 'true', search };
 
     const result = await mortalityService.getMortalities(req.galponId, req.user.id, page, limit, isKits, filters);
     

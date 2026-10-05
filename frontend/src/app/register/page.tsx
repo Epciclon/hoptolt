@@ -20,12 +20,7 @@ const schema = z.object({
     .max(50, 'Máximo 50 caracteres')
     .regex(/^\w+$/, 'Solo letras, números y guión bajo'),
   email: z.string()
-    .email('Ingresa un correo válido')
-    .refine(val => {
-      const allowedDomains = ['gmail.com', 'outlook.com', 'hotmail.com', 'yahoo.com', 'hotmail.es', 'yahoo.es', 'live.com', 'icloud.com'];
-      const domain = val.split('@')[1];
-      return allowedDomains.includes(domain?.toLowerCase());
-    }, 'Por seguridad, solo aceptamos correos reales (Gmail, Outlook, Hotmail, Yahoo o iCloud)'),
+    .email('Ingresa un correo válido'),
   fullName: z
     .string()
     .min(1, 'El nombre es obligatorio')
@@ -58,9 +53,11 @@ export default function RegisterPage() {
     }
   }, [user, loading, router]);
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
+  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
   });
+
+  const termsAccepted = watch('terms');
 
   const onSubmit = async (values: FormValues) => {
     try {
@@ -101,7 +98,7 @@ export default function RegisterPage() {
             <input
               {...register('fullName')}
               id="fullName"
-              className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-all text-base ${errors.fullName ? 'border-red-500 bg-red-50' : 'border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
+              className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-all text-base ${errors.fullName ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : 'border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
                 }`}
               placeholder="Darwin P"
             />
@@ -112,7 +109,7 @@ export default function RegisterPage() {
             <input
               {...register('username')}
               id="username"
-              className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-all text-base ${errors.username ? 'border-red-500 bg-red-50' : 'border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
+              className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-all text-base ${errors.username ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : 'border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
                 }`}
               placeholder="DarwinP"
             />
@@ -127,7 +124,7 @@ export default function RegisterPage() {
             {...register('email')}
             id="email"
             type="email"
-            className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-all text-base ${errors.email ? 'border-red-500 bg-red-50' : 'border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
+            className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-all text-base ${errors.email ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : 'border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
               }`}
             placeholder="javierjacome0w0@gmail.com"
           />
@@ -143,7 +140,7 @@ export default function RegisterPage() {
                 {...register('password')}
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                className={`w-full px-4 py-3 pr-12 border-2 rounded-xl outline-none transition-all text-base ${errors.password ? 'border-red-500 bg-red-50' : 'border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
+                className={`w-full px-4 py-3 pr-12 border-2 rounded-xl outline-none transition-all text-base ${errors.password ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : 'border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
                   }`}
                 placeholder="••••••"
               />
@@ -164,7 +161,7 @@ export default function RegisterPage() {
                 {...register('confirmPassword')}
                 id="confirmPassword"
                 type={showConfirmPassword ? 'text' : 'password'}
-                className={`w-full px-4 py-3 pr-12 border-2 rounded-xl outline-none transition-all text-base ${errors.confirmPassword ? 'border-red-500 bg-red-50' : 'border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
+                className={`w-full px-4 py-3 pr-12 border-2 rounded-xl outline-none transition-all text-base ${errors.confirmPassword ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : 'border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
                   }`}
                 placeholder="••••••"
               />
@@ -200,8 +197,12 @@ export default function RegisterPage() {
         <button
           type="submit"
           id="btn-register"
-          disabled={isSubmitting}
-          className="w-full py-3 bg-gradient-to-r from-teal-500 to-teal-600 text-white font-semibold rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all disabled:opacity-60 disabled:cursor-not-allowed mt-4"
+          disabled={isSubmitting || !termsAccepted}
+          className={`w-full py-3 font-semibold rounded-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed mt-4 ${
+            !termsAccepted 
+              ? 'bg-slate-300 text-slate-500 dark:bg-slate-700 dark:text-slate-400' 
+              : 'bg-gradient-to-r from-teal-500 to-teal-600 text-white hover:shadow-lg hover:-translate-y-0.5'
+          }`}
         >
           {isSubmitting ? (
             <span className="flex items-center justify-center gap-2">

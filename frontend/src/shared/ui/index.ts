@@ -44,3 +44,4 @@ export * from './AuditHistoryView';
 export * from './SelectionActionBar';
 export * from './TutorialButton';
 export * from './RabbitAvatar';
+export { FullScreenLoader } from './FullScreenLoader';

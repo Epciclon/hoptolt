@@ -37,7 +37,11 @@ const Growth = sequelize.define('Growth', {
     }
 }, {
     tableName: 'growths',
-    timestamps: true
+    timestamps: true,
+    indexes: [
+        { fields: ['rabbitId'] },
+        { fields: ['recordDate'] }
+    ]
 });
 
 module.exports = Growth;

@@ -8,7 +8,6 @@ import { vaccinationService } from '../services/vaccination.service';
 import { VaccinationCatalog } from './VaccinationCatalog';
 import { Card, CardHeader, AuditHistoryView } from '@/shared/ui';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
-
 export function VaccinationDashboard() {
   const { activeTab, handleTabChange, isInitialized } = usePersistentTab('vaccination', 'registro');
   const { user } = useAuthContext();
@@ -21,7 +20,7 @@ export function VaccinationDashboard() {
       <CardHeader 
         title="Vacunas" 
         subtitle="Lleva el control de qué vacunas ha recibido cada conejo" 
-        tutorialUrl="https://youtu.be/kJx7zt_rDPA" 
+        tutorialUrl="https://youtu.be/kJx7zt_rDPA"
       />
       <DashboardTabs
         tabs={[

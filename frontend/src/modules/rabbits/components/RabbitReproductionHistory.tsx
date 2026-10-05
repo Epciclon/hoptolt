@@ -38,7 +38,7 @@ export function RabbitReproductionHistory({ rabbitId }: RabbitReproductionHistor
     switch (status) {
       case 'monta': return <Heart size={20} className="text-pink-500" />;
       case 'gestacion': return <Calendar size={20} className="text-amber-500" />;
-      case 'lactancia': return <Baby size={20} className="text-blue-500" />;
+      case 'lactancia': return <Baby size={20} className="text-slate-800 dark:text-white" />;
       default: return <Clock size={20} className="text-muted" />;
     }
   };
@@ -68,7 +68,7 @@ export function RabbitReproductionHistory({ rabbitId }: RabbitReproductionHistor
               <div key={r.id} className="bg-card p-4 rounded-xl border border-default hover:border-strong transition-colors shadow-sm">
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="bg-amber-100 p-2.5 rounded-xl">
+                    <div className="bg-amber-100 dark:bg-amber-500/20 p-2.5 rounded-xl">
                       {getPhaseIcon(r.status)}
                     </div>
                     <div>
@@ -82,7 +82,7 @@ export function RabbitReproductionHistory({ rabbitId }: RabbitReproductionHistor
                     </div>
                   </div>
                 </div>
-                <div className="space-y-2 mt-4 text-sm border-t border-black/5 pt-3">
+                <div className="space-y-2 mt-4 text-sm border-t border-black/5 dark:border-white/5 pt-3">
                   <div className="flex justify-between">
                     <span className="text-muted">Fecha de Monta:</span>
                     <span className="font-medium text-main">{new Date(r.mountDate).toLocaleDateString('es-EC')}</span>
@@ -124,7 +124,7 @@ export function RabbitReproductionHistory({ rabbitId }: RabbitReproductionHistor
               <div key={r.id} className="bg-card p-4 rounded-xl border border-default hover:border-strong transition-colors shadow-sm">
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="bg-emerald-50 text-emerald-600 p-2.5 rounded-xl">
+                    <div className="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 p-2.5 rounded-xl">
                       <CheckCircle2 size={20} />
                     </div>
                     <div>
@@ -138,7 +138,7 @@ export function RabbitReproductionHistory({ rabbitId }: RabbitReproductionHistor
                     </div>
                   </div>
                 </div>
-                <div className="space-y-2 mt-4 text-sm border-t border-black/5 pt-3">
+                <div className="space-y-2 mt-4 text-sm border-t border-black/5 dark:border-white/5 pt-3">
                   <div className="flex justify-between">
                     <span className="text-muted">Fecha de Monta:</span>
                     <span className="font-medium text-main">{new Date(r.mountDate).toLocaleDateString('es-EC')}</span>

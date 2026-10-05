@@ -1,6 +1,6 @@
-﻿'use client';
+'use client';
 
-import { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import type { Toast, ToastType } from '@/shared/ui/Toast';
 
 interface ToastContextType {
@@ -18,6 +18,14 @@ export function ToastProvider({ children }: Readonly<{ children: React.ReactNode
     const id = crypto.randomUUID();
     setToasts(prev => [...prev, { id, type, message, duration }]);
   }, []);
+
+  useEffect(() => {
+    const flashToast = sessionStorage.getItem('flash_toast');
+    if (flashToast) {
+      showToast(flashToast, 'success');
+      sessionStorage.removeItem('flash_toast');
+    }
+  }, [showToast]);
 
   const removeToast = useCallback((id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id));

@@ -117,11 +117,11 @@ const historyColumns: Column<HistoryRecord>[] = [
     render: (row) => {
       if (row.type === 'reproduction') {
         if (row.status === 'completado') {
-          return <span className="px-2.5 py-1 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full border border-emerald-200">Completado</span>;
+          return <span className="px-2.5 py-1 bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs font-medium rounded-full border border-emerald-200 dark:border-emerald-500/20">Completado</span>;
         }
-        return <span className="px-2.5 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full border border-red-200">Fallido</span>;
+        return <span className="px-2.5 py-1 bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400 text-xs font-medium rounded-full border border-red-200 dark:border-red-500/20">Fallido</span>;
       } else {
-        return <span className="px-2.5 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full border border-blue-200">Baja Parcial</span>;
+        return <span className="px-2.5 py-1 bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 text-xs font-medium rounded-full border border-blue-200 dark:border-blue-500/20">Baja Parcial</span>;
       }
     }
   },

@@ -78,7 +78,7 @@ export default function LoginPage() {
             type="text"
             id="identifier"
             className={`w-full px-4 py-4 border-2 rounded-xl outline-none transition-all ${errors.identifier
-                ? 'border-red-500 bg-red-50'
+                ? 'border-red-500 bg-red-50 dark:bg-red-500/10'
                 : 'border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
               }`}
             placeholder="Ingrese su usuario o correo"
@@ -98,7 +98,7 @@ export default function LoginPage() {
               type={showPassword ? 'text' : 'password'}
               id="password"
               className={`w-full px-4 py-4 pr-12 border-2 rounded-xl outline-none transition-all ${errors.password
-                  ? 'border-red-500 bg-red-50'
+                  ? 'border-red-500 bg-red-50 dark:bg-red-500/10'
                   : 'border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
                 }`}
               placeholder="Ingrese su contraseña"

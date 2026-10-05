@@ -8,6 +8,7 @@ import { useActiveGalpon } from '../hooks/useActiveGalpon';
 import { useToast } from '@/shared/contexts/ToastContext';
 import type { Galpon } from '../types/galpon.types';
 import { getGalponBaseColumns } from '../utils/galponUtils';
+import { FullScreenLoader } from '@/shared/ui';
 
 export function SelectActiveGalpon() {
   const { galpones, loading } = useGalpones();
@@ -17,10 +18,7 @@ export function SelectActiveGalpon() {
 
   const handleSelectGalpon = async (galpon: Galpon) => {
     setSelecting(true);
-    const success = await setActive(galpon.id);
-    if (success) {
-      showToast(`Galpón "${galpon.name}" seleccionado como activo.`, 'success');
-    }
+    await setActive(galpon.id);
     setSelecting(false);
   };
 
@@ -59,7 +57,7 @@ export function SelectActiveGalpon() {
   return (
     <div className="space-y-4">
       {selecting && (
-        <div className="fixed inset-0 z-50 bg-card/40 cursor-wait"></div>
+        <FullScreenLoader message="Cambiando galpón..." />
       )}
 
       {activeGalpon && (

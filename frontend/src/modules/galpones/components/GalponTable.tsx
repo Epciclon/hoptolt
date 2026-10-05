@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
@@ -11,6 +11,8 @@ import { useToast } from '@/shared/contexts/ToastContext';
 import type { Galpon } from '../types/galpon.types';
 import { galponService } from '../services/galpon.service';
 import { getGalponBaseColumns } from '../utils/galponUtils';
+import { FilterBar } from '@/shared/ui/FilterBar';
+import { FullScreenLoader } from '@/shared/ui';
 
 interface GalponTableProps {
   onEdit?: (galpon: Galpon) => void;
@@ -24,6 +26,13 @@ export function GalponTable({ onEdit }: Readonly<GalponTableProps>) {
   const [toDelete, setToDelete] = useState<Galpon | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [selecting, setSelecting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredGalpones = galpones.filter(g => 
+    !searchTerm || 
+    g.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (g.location && g.location.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
   const handleConfirmDelete = async () => {
     if (!toDelete) return;
@@ -42,10 +51,7 @@ export function GalponTable({ onEdit }: Readonly<GalponTableProps>) {
 
   const handleSelectGalpon = async (galpon: Galpon) => {
     setSelecting(true);
-    const success = await setActive(galpon.id);
-    if (success) {
-      showToast(`Galpón "${galpon.name}" seleccionado como activo.`, 'success');
-    }
+    await setActive(galpon.id);
     setSelecting(false);
   };
 
@@ -88,11 +94,20 @@ export function GalponTable({ onEdit }: Readonly<GalponTableProps>) {
   return (
     <>
       {selecting && (
-        <div className="fixed inset-0 z-50 bg-card/40 cursor-wait"></div>
+        <FullScreenLoader message="Cambiando galpón..." />
       )}
+
+      <div className="mb-4">
+        <FilterBar
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          searchPlaceholder="Buscar por nombre o ubicación..."
+        />
+      </div>
+
       <Table<Galpon>
         columns={columns}
-        data={galpones}
+        data={filteredGalpones}
         loading={loading}
         rowKey={(row) => row.id}
         emptyMessage="No hay galpones registrados."

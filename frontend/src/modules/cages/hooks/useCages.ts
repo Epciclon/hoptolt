@@ -8,7 +8,7 @@ export function useCages(initialParams?: GetCagesParams) {
   const queryClient = useQueryClient();
 
   const [page, setPage] = useState(initialParams?.page || 1);
-  const [limit, setLimit] = useState(initialParams?.limit || 10);
+  const [limit, setLimit] = useState(initialParams?.limit || 12);
   const [search, setSearch] = useState(initialParams?.search || '');
   const [type, setType] = useState(initialParams?.type || '');
   const [status, setStatus] = useState(initialParams?.status || '');

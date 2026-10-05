@@ -13,18 +13,36 @@ class MortalityRepository {
         if (isKits !== null) {
             where.isKits = isKits;
         }
+        
+        let includeRabbit = {
+            model: Rabbit,
+            as: 'rabbit',
+            attributes: ['code', 'name', 'race', 'imageUrl'],
+            paranoid: false,
+            where: Object.keys(rabbitWhere).length > 0 ? rabbitWhere : undefined,
+            required: Object.keys(rabbitWhere).length > 0
+        };
+
+        if (filters.search) {
+            const search = `%${filters.search}%`;
+            // Search either the cause or the rabbit code/name
+            const searchConditions = [
+                { cause: { [Op.like]: search } },
+                { '$rabbit.code$': { [Op.like]: search } },
+                { '$rabbit.name$': { [Op.like]: search } }
+            ];
+            if (where[Op.or]) {
+                where[Op.and] = [ { [Op.or]: searchConditions } ];
+            } else {
+                where[Op.or] = searchConditions;
+            }
+            includeRabbit.required = true;
+        }
 
         return Mortality.findAll({
             where,
             include: [
-                {
-                    model: Rabbit,
-                    as: 'rabbit',
-                    attributes: ['code', 'name', 'race', 'imageUrl'],
-                    paranoid: false,
-                    where: Object.keys(rabbitWhere).length > 0 ? rabbitWhere : undefined,
-                    required: Object.keys(rabbitWhere).length > 0
-                },
+                includeRabbit,
                 {
                     model: Profile,
                     as: 'profile',
@@ -47,16 +65,33 @@ class MortalityRepository {
             where.isKits = isKits;
         }
 
-        if (filters.races) {
+        let includeRabbit = {
+            model: Rabbit,
+            as: 'rabbit',
+            where: Object.keys(rabbitWhere).length > 0 ? rabbitWhere : undefined,
+            paranoid: false,
+            required: Object.keys(rabbitWhere).length > 0
+        };
+
+        if (filters.search) {
+            const search = `%${filters.search}%`;
+            const searchConditions = [
+                { cause: { [Op.like]: search } },
+                { '$rabbit.code$': { [Op.like]: search } },
+                { '$rabbit.name$': { [Op.like]: search } }
+            ];
+            if (where[Op.or]) {
+                where[Op.and] = [ { [Op.or]: searchConditions } ];
+            } else {
+                where[Op.or] = searchConditions;
+            }
+            includeRabbit.required = true;
+        }
+
+        if (filters.races || filters.search) {
             return Mortality.count({
                 where,
-                include: [{
-                    model: Rabbit,
-                    as: 'rabbit',
-                    where: rabbitWhere,
-                    paranoid: false,
-                    required: true
-                }]
+                include: [includeRabbit]
             });
         }
 

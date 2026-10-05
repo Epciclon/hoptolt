@@ -30,7 +30,7 @@ export function RabbitSelectableCard({
       onClick={isSelectable ? onClick : undefined}
       className={cn(
         'border rounded-lg p-3 transition-all duration-150 bg-card text-left w-full block relative',
-        isSelectable && 'cursor-pointer focus-within:ring-2 focus-within:ring-primary-500 focus-within:ring-offset-1',
+        isSelectable && 'cursor-pointer pointer-events-auto focus-within:ring-2 focus-within:ring-primary-500 focus-within:ring-offset-1',
         (() => {
           if (isSelected) return 'border-primary-500 ring-1 ring-primary-500 shadow-sm';
           if (isSelectable) return 'border-slate-300 shadow-sm hover:border-primary-400';

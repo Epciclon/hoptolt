@@ -62,9 +62,9 @@ function getDayStyles(
   canViewReproduction: boolean
 ): { bgClass: string; eventTextClass: string } {
   if (hasEvents && canViewReproduction) {
-    if (calendarType === 'births') return { bgClass: 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/40 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 font-semibold', eventTextClass: 'text-emerald-600 dark:text-emerald-400' };
-    if (calendarType === 'receptive') return { bgClass: 'bg-pink-50 hover:bg-pink-100 dark:bg-pink-900/40 dark:hover:bg-pink-900/60 text-pink-800 dark:text-pink-200 font-semibold', eventTextClass: 'text-pink-600 dark:text-pink-400' };
-    return { bgClass: 'bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/40 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-200 font-semibold', eventTextClass: 'text-amber-600 dark:text-amber-400' };
+    if (calendarType === 'births') return { bgClass: 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/20 dark:hover:bg-emerald-500/30 text-emerald-800 dark:text-emerald-200 font-semibold', eventTextClass: 'text-emerald-600 dark:text-emerald-400' };
+    if (calendarType === 'receptive') return { bgClass: 'bg-pink-50 hover:bg-pink-100 dark:bg-pink-500/20 dark:hover:bg-pink-500/30 text-pink-800 dark:text-pink-200 font-semibold', eventTextClass: 'text-pink-600 dark:text-pink-400' };
+    return { bgClass: 'bg-amber-50 hover:bg-amber-100 dark:bg-amber-500/20 dark:hover:bg-amber-500/30 text-amber-800 dark:text-amber-200 font-semibold', eventTextClass: 'text-amber-600 dark:text-amber-400' };
   }
   if (isDayToday) return { bgClass: 'bg-slate-200/80 hover:bg-slate-200 dark:bg-slate-700/80 dark:hover:bg-slate-700 text-main font-bold', eventTextClass: 'text-muted' };
   if (!hasEvents) return { bgClass: 'opacity-50 cursor-default bg-theme-surface hover:bg-theme-surface', eventTextClass: 'text-muted' };
@@ -220,7 +220,7 @@ export function DashboardCalendar() {
         <div className="flex items-center justify-between px-5 py-4 border-b border-default bg-theme-surface">
           <button type="button"
             onClick={prevMonth}
-            className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors text-muted"
+            className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors text-muted"
           >
             <ChevronLeft size={20} />
           </button>
@@ -231,7 +231,7 @@ export function DashboardCalendar() {
           </div>
           <button type="button"
             onClick={nextMonth}
-            className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors text-muted"
+            className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors text-muted"
           >
             <ChevronRight size={20} />
           </button>

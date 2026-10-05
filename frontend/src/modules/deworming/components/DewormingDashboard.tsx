@@ -8,7 +8,6 @@ import { dewormingService } from '../services/deworming.service';
 import { DewormingCatalog } from './DewormingCatalog';
 import { Card, CardHeader, AuditHistoryView } from '@/shared/ui';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
-
 export function DewormingDashboard() {
   const { activeTab, handleTabChange, isInitialized } = usePersistentTab('deworming', 'registro');
   const { user } = useAuthContext();
@@ -21,7 +20,7 @@ export function DewormingDashboard() {
       <CardHeader 
         title="Desparasitación" 
         subtitle="Anota y lleva el control de los días en que desparasitas a tus conejos" 
-        tutorialUrl="https://youtu.be/-fD8vl-BIMQ" 
+        tutorialUrl="https://youtu.be/-fD8vl-BIMQ"
       />
       <DashboardTabs
         tabs={[

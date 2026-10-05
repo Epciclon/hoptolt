@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { galponService } from '../services/galpon.service';
@@ -25,10 +25,10 @@ export function useActiveGalpon() {
       return galpon;
     },
     onSuccess: (galpon) => {
-      queryClient.removeQueries({
-        predicate: (query) => query.queryKey[0] !== 'galpones' && query.queryKey[0] !== 'activeGalpon'
-      });
-      queryClient.setQueryData(['activeGalpon'], galpon);
+      // Guardamos el mensaje en sessionStorage para que ToastContext lo muestre al recargar
+      sessionStorage.setItem('flash_toast', `Galpón "${galpon.name}" seleccionado como activo.`);
+      // Un reload completo limpia el caché y estados viejos instantáneamente
+      window.location.reload();
     }
   });
 

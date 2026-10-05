@@ -3,10 +3,13 @@
 import { useState, useRef, useEffect } from 'react';
 
 import { Input, LoadingMessage, CageGroupGrid, SelectionActionBar } from '@/shared/ui';
+import { Pagination } from '@/shared/ui/Pagination';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { useVaccination } from '../hooks/useVaccination';
 import { useCageSelection } from '@/shared/hooks/useCageSelection';
 import { formatDateTime } from '@/shared/utils/dateUtils';
+
+import { FilterBar } from '@/shared/ui/FilterBar';
 
 interface VaccinationCatalogProps {
   onSuccess?: () => void;
@@ -15,15 +18,19 @@ interface VaccinationCatalogProps {
 const VACCINES_STORAGE_KEY = 'vaccination_selected_vaccines';
 
 export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogProps>) {
+  const [searchTerm, setSearchTerm] = useState('');
   const { assignedRabbits, galponVaccines, loading, createVaccination, vaccinations, isCreating } = useVaccination();
   const { showToast } = useToast();
   
   const {
     selectedRabbitIds,
     toggleRabbit,
-    cageGroups,
+    paginatedGroups,
+    currentPage,
+    totalPages,
+    setCurrentPage,
     clearSelection
-  } = useCageSelection(assignedRabbits);
+  } = useCageSelection(assignedRabbits, searchTerm);
 
   const [selectedVaccines, setSelectedVaccines] = useState<string[]>(() => {
     if (typeof window !== 'undefined') {
@@ -120,7 +127,6 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
   return (
     <div className="flex flex-col gap-4">
 
-
       <div>
         <span className="block text-sm font-medium mb-2">Vacunas</span>
         <div className="relative z-20" ref={vaccineDropdownRef}>
@@ -170,27 +176,46 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
         )}
       </div>
 
-      <CageGroupGrid
-        cageGroups={cageGroups}
-        selectedRabbitIds={selectedRabbitIds}
-        onToggleRabbit={toggleRabbit}
-        renderExtras={(rabbit) => {
-          const lastVaccination = getRabbitLastVaccination(rabbit.id);
-          return (
-            <>
-              <p className="text-[10px] text-muted mb-0.5">Última vacunación:</p>
-              <p className="text-xs font-medium text-main truncate" title={lastVaccination ? lastVaccination.vaccines.join(', ') : 'Nunca'}>
-                {lastVaccination ? lastVaccination.vaccines.join(', ') : 'Nunca'}
-              </p>
-              {lastVaccination && (
-                <p className="text-[10px] text-muted mt-0.5">
-                  {formatDateTime(lastVaccination.vaccinationDate)}
+      <div className="w-full relative z-20">
+        <FilterBar
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          searchPlaceholder="Buscar por nombre, código o jaula..."
+        />
+      </div>
+
+      <>
+        <CageGroupGrid
+          cageGroups={paginatedGroups}
+          selectedRabbitIds={selectedRabbitIds}
+          onToggleRabbit={toggleRabbit}
+          renderExtras={(rabbit) => {
+            const lastVaccination = getRabbitLastVaccination(rabbit.id);
+            return (
+              <>
+                <p className="text-[10px] text-muted mb-0.5">ltima vacunación:</p>
+                <p className="text-xs font-medium text-main truncate" title={lastVaccination ? lastVaccination.vaccines.join(', ') : 'Nunca'}>
+                  {lastVaccination ? lastVaccination.vaccines.join(', ') : 'Nunca'}
                 </p>
-              )}
-            </>
-          );
-        }}
-      />
+                {lastVaccination && (
+                  <p className="text-[10px] text-muted mt-0.5">
+                    {formatDateTime(lastVaccination.vaccinationDate)}
+                  </p>
+                )}
+              </>
+            );
+          }}
+        />
+        {totalPages > 1 && (
+          <div className="mt-6 flex justify-center">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          </div>
+        )}
+      </>
 
       <SelectionActionBar
         count={selectedRabbitIds.length}

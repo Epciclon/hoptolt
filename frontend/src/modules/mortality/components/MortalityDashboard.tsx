@@ -8,7 +8,6 @@ import { mortalityService } from '../services/mortality.service';
 import { MortalityCatalog } from './MortalityCatalog';
 import { Card, CardHeader, AuditHistoryView } from '@/shared/ui';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
-
 export function MortalityDashboard() {
   const { activeTab, handleTabChange, isInitialized } = usePersistentTab('mortality', 'registro');
   const { user } = useAuthContext();
@@ -18,7 +17,10 @@ export function MortalityDashboard() {
 
   return (
     <Card className="min-h-[calc(100vh-7rem)]">
-      <CardHeader title="Bajas y Mortalidad" subtitle="Registra si algún conejo fallece para llevar tus estadísticas al día" />
+      <CardHeader 
+        title="Bajas y Mortalidad" 
+        subtitle="Registra si algún conejo fallece para llevar tus estadísticas al día" 
+      />
       <DashboardTabs
         tabs={[
           { id: 'registro', label: 'Registro Diario', icon: <Skull size={18} /> },

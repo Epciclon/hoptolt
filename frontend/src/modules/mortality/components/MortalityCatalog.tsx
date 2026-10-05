@@ -2,16 +2,22 @@
 
 import { useState, useMemo } from 'react';
 import { Button, Dialog, LoadingMessage, CageGroupCard, RabbitSelectableCard } from '@/shared/ui';
+import { Pagination } from '@/shared/ui/Pagination';
 import { groupRabbitsByCage } from '@/shared/utils/rabbitUtils';
 import { useMortality } from '../hooks/useMortality';
 import { MortalityForm } from './MortalityForm';
+
+import { FilterBar } from '@/shared/ui/FilterBar';
 
 interface MortalityCatalogProps {
   onSuccess?: () => void;
 }
 
 export function MortalityCatalog({ onSuccess }: Readonly<MortalityCatalogProps>) {
+  const [searchTerm, setSearchTerm] = useState('');
   const { assignedRabbits, loading } = useMortality();
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
 
   const [selectedRabbitIds, setSelectedRabbitIds] = useState<number[]>([]);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -36,9 +42,28 @@ export function MortalityCatalog({ onSuccess }: Readonly<MortalityCatalogProps>)
   };
 
   const cageGroups = useMemo(() => {
-    const grouped = groupRabbitsByCage(assignedRabbits);
+    // Primero filtramos los conejos si hay término de búsqueda
+    const filteredRabbits = assignedRabbits.filter(r => {
+      if (!searchTerm) return true;
+      const q = searchTerm.toLowerCase();
+      return (
+        Boolean(r.name?.toLowerCase().includes(q)) ||
+        Boolean(r.code?.toLowerCase().includes(q)) ||
+        Boolean(r.cageNumber?.toString().includes(q))
+      );
+    });
+
+    const grouped = groupRabbitsByCage(filteredRabbits);
     return Object.values(grouped).sort((a, b) => a.cageNumber - b.cageNumber);
-  }, [assignedRabbits]);
+  }, [assignedRabbits, searchTerm]);
+
+  // Si cambia la búsqueda, regresar a la página 1
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  const totalPages = Math.ceil(cageGroups.length / itemsPerPage) || 1;
+  const paginatedGroups = cageGroups.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   if (loading) {
     return <LoadingMessage message="Cargando mortalidades..." />;
@@ -48,12 +73,21 @@ export function MortalityCatalog({ onSuccess }: Readonly<MortalityCatalogProps>)
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="w-full relative z-20 mb-2">
+        <FilterBar
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          searchPlaceholder="Buscar por nombre, código o jaula..."
+        />
+      </div>
+
       {cageGroups.length === 0 ? (
         <p className="text-sm text-muted">No hay conejos con jaula asignada disponibles para registrar mortalidad.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          {cageGroups.map((group) => {
-            const hasLactatingRabbit = group.rabbits.some(r => (r as any).isLactating);
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            {paginatedGroups.map((group) => {
+              const hasLactatingRabbit = group.rabbits.some(r => (r as any).isLactating);
             return (
             <CageGroupCard
               key={group.cageNumber}
@@ -76,7 +110,17 @@ export function MortalityCatalog({ onSuccess }: Readonly<MortalityCatalogProps>)
             </CageGroupCard>
             );
           })}
-        </div>
+          </div>
+          {totalPages > 1 && (
+            <div className="mt-6 flex justify-center">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          )}
+        </>
       )}
 
       {selectedRabbitIds.length > 0 && (

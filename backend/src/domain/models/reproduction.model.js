@@ -79,7 +79,13 @@ const Reproduction = sequelize.define('Reproduction', {
     }
 }, {
     tableName: 'reproductions',
-    timestamps: true
+    timestamps: true,
+    indexes: [
+        { fields: ['femaleId'] },
+        { fields: ['galponId'] },
+        { fields: ['status'] },
+        { fields: ['mountDate'] }
+    ]
 });
 
 module.exports = Reproduction;

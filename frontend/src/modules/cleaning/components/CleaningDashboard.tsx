@@ -8,7 +8,6 @@ import { cleaningService } from '../services/cleaning.service';
 import { CleaningCatalog } from './CleaningCatalog';
 import { Card, CardHeader, AuditHistoryView } from '@/shared/ui';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
-
 export function CleaningDashboard() {
   const { activeTab, handleTabChange, isInitialized } = usePersistentTab('cleaning', 'registro');
   const { user } = useAuthContext();
@@ -21,7 +20,7 @@ export function CleaningDashboard() {
       <CardHeader 
         title="Limpieza de Jaulas" 
         subtitle="Marca las jaulas que ya limpiaste para llevar un buen control de higiene" 
-        tutorialUrl="https://youtu.be/LXKorxIwyHo" 
+        tutorialUrl="https://youtu.be/LXKorxIwyHo"
       />
       <DashboardTabs
         tabs={[

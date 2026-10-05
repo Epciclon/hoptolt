@@ -2,11 +2,14 @@
 
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Input, Button, CageCatalog, LoadingMessage, Dialog, SelectionActionBar } from '@/shared/ui';
+import { Pagination } from '@/shared/ui/Pagination';
 import type { CageItem } from '@/shared/ui';
 import { groupRabbitsByCage } from '@/shared/utils/rabbitUtils';
 import { useFeeding } from '../hooks/useFeeding';
 import { useAuth } from '@/modules/auth/hooks/useAuth';
 import { useToast } from '@/shared/contexts/ToastContext';
+
+import { FilterBar } from '@/shared/ui/FilterBar';
 
 interface FeedingCatalogProps {
   onSuccess?: () => void;
@@ -17,6 +20,9 @@ const FOOD_TYPES_STORAGE_KEY = 'feeding_selected_food_types';
 export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
   const { assignedRabbits, foodTypes, loading, createFeeding, feedings } = useFeeding();
   const { user } = useAuth();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const itemsPerPage = 12;
 
   const { showToast } = useToast();
   const [selectedCageNumbers, setSelectedCageNumbers] = useState<number[]>([]);
@@ -95,10 +101,24 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
 
   const cageGroups = useMemo<CageItem[]>(() => {
     const groupedByCage = groupRabbitsByCage(assignedRabbits);
+    const allGroups = Object.values(groupedByCage).sort((a, b) => a.cageNumber - b.cageNumber);
+    // Filtrar por searchTerm
+    if (!searchTerm) return allGroups;
+    const q = searchTerm.toLowerCase();
+    return allGroups.filter(g =>
+      g.cageNumber.toString().includes(q) ||
+      g.rabbits.some(r =>
+        Boolean(r.name?.toLowerCase().includes(q)) ||
+        Boolean(r.code?.toLowerCase().includes(q))
+      )
+    );
+  }, [assignedRabbits, searchTerm]);
 
-    return Object.values(groupedByCage)
-      .sort((a, b) => a.cageNumber - b.cageNumber);
-  }, [assignedRabbits]);
+  // Regresar a página 1 cuando cambie la búsqueda
+  useMemo(() => { setCurrentPage(1); }, [searchTerm]);
+
+  const totalPages = Math.ceil(cageGroups.length / itemsPerPage) || 1;
+  const paginatedGroups = cageGroups.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const toggleCage = (cageNumber: number) => {
     setSelectedCageNumbers(prev => 
@@ -279,10 +299,11 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
       <div className="bg-card border border-strong rounded-lg p-4 sticky top-0 z-10 shadow-sm flex flex-col gap-4">
         <div className="flex items-center justify-between border-b border-default pb-3">
           <span className="text-sm font-medium text-main">Turno Actual:</span>
-          <span className={`px-3 py-1 rounded-full text-xs font-bold ${currentEcuadorShift === 'mañana' ? 'bg-emerald-100 text-emerald-800' : 'bg-orange-100 text-orange-800'}`}>
+          <span className={`px-3 py-1 rounded-full text-xs font-bold ${currentEcuadorShift === 'mañana' ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-400' : 'bg-orange-100 dark:bg-orange-500/10 text-orange-800 dark:text-orange-400'}`}>
             {currentEcuadorShift === 'mañana' ? 'Mañana' : 'Tarde'}
           </span>
         </div>
+
 
         <div className="w-full relative z-20" ref={foodDropdownRef}>
           <span className="block text-sm font-medium text-main mb-2">Tipos de Alimento</span>
@@ -332,6 +353,14 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
         )}
       </div>
 
+      <div className="w-full relative z-20">
+        <FilterBar
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          searchPlaceholder="Buscar por nombre, código o jaula..."
+        />
+      </div>
+
       <div className="flex justify-end mb-2">
         <Button 
           type="button" 
@@ -348,37 +377,48 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
       {cageGroups.length === 0 ? (
         <p className="text-sm text-muted">No hay conejos con jaula asignada en el galpón activo.</p>
       ) : (
-        <CageCatalog
-          cageGroups={cageGroups}
-          selectedCageNumbers={selectedCageNumbers}
-          onToggleCage={toggleCage}
-          renderCageContent={(cage) => {
-            const cageLastFeeding = getCageLastFeeding(cage.cageId);
-            const cageFeedingsThisShift = getCageFeedingsThisShift(cage.cageId);
-            return (
-              <>
-                {cageLastFeeding ? (
-                  <>
-                    <p className="text-xs font-semibold text-muted">
-                      Último alimento suministrado:
-                    </p>
-                    <p className="text-xs text-muted mt-1">
-                      {cageLastFeeding.foodTypes.join(', ')}
-                    </p>
-                    <p className="text-xs text-muted mt-1">
-                      {formatDateTime(cageLastFeeding.feedingDate)}
-                    </p>
-                  </>
-                ) : (
-                  <p className="text-xs text-theme-faint">Sin registros previos</p>
-                )}
-                <p className="text-xs text-muted mt-1 font-medium text-emerald-600">
-                  {cageFeedingsThisShift} registro{cageFeedingsThisShift !== 1 ? 's' : ''} tuyos en este turno
-                </p>
-              </>
-            );
-          }}
-        />
+        <>
+          <CageCatalog
+            cageGroups={paginatedGroups}
+            selectedCageNumbers={selectedCageNumbers}
+            onToggleCage={toggleCage}
+            renderCageContent={(cage) => {
+              const cageLastFeeding = getCageLastFeeding(cage.cageId);
+              const cageFeedingsThisShift = getCageFeedingsThisShift(cage.cageId);
+              return (
+                <>
+                  {cageLastFeeding ? (
+                    <>
+                      <p className="text-xs font-semibold text-muted">
+                        Último alimento suministrado:
+                      </p>
+                      <p className="text-xs text-muted mt-1">
+                        {cageLastFeeding.foodTypes.join(', ')}
+                      </p>
+                      <p className="text-xs text-muted mt-1">
+                        {formatDateTime(cageLastFeeding.feedingDate)}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-xs text-theme-faint">Sin registros previos</p>
+                  )}
+                  <p className="text-xs text-muted mt-1 font-medium text-emerald-600">
+                    {cageFeedingsThisShift} registro{cageFeedingsThisShift !== 1 ? 's' : ''} tuyos en este turno
+                  </p>
+                </>
+              );
+            }}
+          />
+          {totalPages > 1 && (
+            <div className="mt-6 flex justify-center">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          )}
+        </>
       )}
 
       <SelectionActionBar

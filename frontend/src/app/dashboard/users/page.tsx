@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useActiveGalpon } from '@/modules/galpones/hooks/useActiveGalpon';
 import { useFarmMember } from '@/modules/farmMember/hooks/useFarmMember';
 import { useInvitation } from '@/modules/invitation/hooks/useInvitation';
-import { Button, Input, Dialog, ConfirmDialog, Alert, WorkerDetailsModal, DashboardTabs, Card, CardHeader, SectionMessage } from '@/shared/ui';
+import { Button, Input, Dialog, ConfirmDialog, Alert, WorkerDetailsModal, DashboardTabs, Card, CardHeader, SectionMessage, FilterBar } from '@/shared/ui';
 import { Users, Mail } from 'lucide-react';
 import { GalponGuard } from '@/modules/galpones/components/GalponGuard';
 import { useForm } from 'react-hook-form';
@@ -35,6 +35,7 @@ export default function UsersPage() {
   const [deleting, setDeleting] = useState(false);
   const [workerToEdit, setWorkerToEdit] = useState<any>(null);
   const [workerToView, setWorkerToView] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   
   const isOwner = activeGalpon?.memberRole === 'owner';
 
@@ -107,8 +108,18 @@ export default function UsersPage() {
     } else if (workers.length === 0) {
       content = <div className="p-8 text-center text-muted">No hay trabajadores activos en este galpón.</div>;
     } else {
-      content = workers.map(worker => (
-        <button 
+      const filteredWorkers = workers.filter(w => 
+        !searchTerm || 
+        w.profile?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        w.profile?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        w.profile?.username?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+
+      if (filteredWorkers.length === 0) {
+        content = <div className="p-8 text-center text-muted">No se encontraron trabajadores que coincidan con la búsqueda.</div>;
+      } else {
+        content = filteredWorkers.map(worker => (
+          <button 
           key={worker.id} 
           type="button"
           className="w-full text-left bg-transparent border-none outline-none p-4 flex justify-between items-center hover:bg-primary-50 dark:hover:bg-primary-900/20 border-b border-default cursor-pointer transition-colors group block"
@@ -123,11 +134,19 @@ export default function UsersPage() {
           </span>
         </button>
       ));
+      }
     }
 
     return (
       <>
         <SectionMessage message="En esta fase se puede revisar el equipo de trabajo actual." />
+        <div className="mb-4">
+          <FilterBar
+            searchValue={searchTerm}
+            onSearchChange={setSearchTerm}
+            searchPlaceholder="Buscar por nombre, correo o usuario..."
+          />
+        </div>
         <div className="bg-card rounded-xl shadow-sm border border-strong overflow-hidden">
           <div className="divide-y divide-slate-100">
             {content}
@@ -144,8 +163,16 @@ export default function UsersPage() {
     } else if (pendingInvitations.length === 0) {
       content = <div className="p-8 text-center text-muted">No hay invitaciones pendientes.</div>;
     } else {
-      content = pendingInvitations.map(inv => (
-        <div key={inv.token} className="p-4 flex justify-between items-center hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors">
+      const filteredInvitations = pendingInvitations.filter(inv => 
+        !searchTerm || 
+        inv.email.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+
+      if (filteredInvitations.length === 0) {
+        content = <div className="p-8 text-center text-muted">No se encontraron invitaciones que coincidan con la búsqueda.</div>;
+      } else {
+        content = filteredInvitations.map(inv => (
+          <div key={inv.token} className="p-4 flex justify-between items-center hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors">
           <div>
             <div className="font-medium text-main">{inv.email}</div>
             <div className="text-xs text-muted">Invitado por: {inv.inviter?.fullName || 'Usuario'} - Enviada: {new Date(inv.createdAt).toLocaleDateString()}</div>
@@ -159,11 +186,19 @@ export default function UsersPage() {
           </Button>
         </div>
       ));
+      }
     }
 
     return (
       <>
         <SectionMessage message="En esta fase se puede revisar las invitaciones pendientes." />
+        <div className="mb-4">
+          <FilterBar
+            searchValue={searchTerm}
+            onSearchChange={setSearchTerm}
+            searchPlaceholder="Buscar por correo electrónico..."
+          />
+        </div>
         <div className="bg-card rounded-xl shadow-sm border border-strong overflow-hidden">
           <div className="divide-y divide-slate-100">
             {content}
@@ -211,7 +246,7 @@ export default function UsersPage() {
           actions={<Button onClick={() => setIsModalOpen(true)}>+ Invitar Trabajador</Button>}
         />
 
-        <DashboardTabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
+        <DashboardTabs tabs={tabs} activeTab={activeTab} onTabChange={(tab) => { setActiveTab(tab); setSearchTerm(''); }} />
 
         <div className="p-6 pt-0">
           {activeTab === 'workers' && renderWorkersTab()}

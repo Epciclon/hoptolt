@@ -7,7 +7,7 @@ export function useRaces(initialParams?: GetRacesParams) {
   const queryClient = useQueryClient();
 
   const [page, setPage] = useState(initialParams?.page || 1);
-  const [limit, setLimit] = useState(initialParams?.limit || 10);
+  const [limit, setLimit] = useState(initialParams?.limit || 12);
   const [search, setSearch] = useState(initialParams?.search || '');
 
   // Query: Fetch Races

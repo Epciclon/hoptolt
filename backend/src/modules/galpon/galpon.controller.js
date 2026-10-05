@@ -20,7 +20,7 @@ exports.getGalponByName = catchAsync(async (req, res) => {
 
 exports.getAllGalpones = catchAsync(async (req, res) => {
     const page = Number.parseInt(req.query.page) || 1;
-    const limit = Number.parseInt(req.query.limit) || 10;
+    const limit = Number.parseInt(req.query.limit) || 12;
     const result = await galponService.getAllGalpones(req.user.id, page, limit);
     // Cada item ya tiene memberRole adjunto
     res.status(200).json({

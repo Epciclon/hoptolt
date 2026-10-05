@@ -16,7 +16,7 @@ exports.registerFeeding = catchAsync(async (req, res) => {
 
 exports.getFeedings = catchAsync(async (req, res) => {
     const page = Number.parseInt(req.query.page) || 1;
-    const limit = Number.parseInt(req.query.limit) || 10;
+    const limit = Number.parseInt(req.query.limit) || 12;
     const { startDate, endDate, races, profileId, cageType, all } = req.query;
     
     const filters = { startDate, endDate, races, profileId, cageType, all: all === 'true' };

@@ -48,7 +48,7 @@ export function CageGroupCard({
           Jaula #{cageNumber}
         </h3>
         {headerBadge && (
-          <div className="absolute right-0 top-0 pointer-events-auto">
+          <div className="absolute right-0 top-0 pointer-events-none">
             {headerBadge}
           </div>
         )}
@@ -57,12 +57,12 @@ export function CageGroupCard({
         </span>
       </div>
 
-      <div className="flex-1 space-y-3 relative z-10 pointer-events-auto">
+      <div className="flex-1 space-y-3 relative z-10 pointer-events-none">
         {children}
       </div>
 
       {footer && (
-        <div className="mt-4 pt-3 border-t border-default relative z-10 pointer-events-auto">
+        <div className="mt-4 pt-3 border-t border-default relative z-10 pointer-events-none">
           {footer}
         </div>
       )}
