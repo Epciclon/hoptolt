@@ -226,6 +226,10 @@ export function RabbitCatalog({ onSuccess }: Readonly<RabbitCatalogProps>) {
           setDetailsRabbit(null);
         }} 
         rabbit={detailsRabbit} 
+        onEdit={(rabbit) => {
+          setEditingRabbit(rabbit);
+          setShowEditModal(true);
+        }}
       />
     </div>
   );

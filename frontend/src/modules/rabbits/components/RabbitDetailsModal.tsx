@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Dialog, Button, RabbitAvatar } from '@/shared/ui';
-import { Activity, Info } from 'lucide-react';
+import { Activity, Info, Pencil } from 'lucide-react';
 import { Rabbit } from '../types/rabbit.types';
 import { RabbitGrowthHistory } from '@/modules/growth/components/RabbitGrowthHistory';
 import { RabbitReproductionHistory } from './RabbitReproductionHistory';
@@ -14,12 +14,14 @@ interface RabbitDetailsModalProps {
   open: boolean;
   onClose: () => void;
   rabbit: Rabbit | null;
+  onEdit?: (rabbit: Rabbit) => void;
 }
 
 export function RabbitDetailsModal({
   open,
   onClose,
   rabbit,
+  onEdit,
 }: Readonly<RabbitDetailsModalProps>) {
   const [activeTab, setActiveTab] = useState<'info' | 'medical' | 'partos'>('info');
 
@@ -79,10 +81,17 @@ export function RabbitDetailsModal({
         <div className="p-6 bg-theme-surface flex-1 overflow-y-auto">
           {activeTab === 'info' && (
             <div className="space-y-6">
-              <div className="flex flex-col items-center justify-center pb-2">
+              <div className="flex flex-col items-center justify-center pb-2 relative">
                   <RabbitAvatar imageUrl={rabbit.imageUrl} alt={rabbit.name || rabbit.code} size="2xl" ring />
-                <h3 className="text-xl font-bold text-main">{rabbit.name || 'Sin nombre'}</h3>
+                <h3 className="text-xl font-bold text-main mt-2">{rabbit.name || 'Sin nombre'}</h3>
                 <span className="text-sm text-muted font-medium">{rabbit.code}</span>
+                {onEdit && (
+                   <div className="mt-4">
+                     <Button type="button" variant="outline" size="sm" icon={<Pencil size={14} />} onClick={() => { onEdit(rabbit); onClose(); }}>
+                       Editar Conejo
+                     </Button>
+                   </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

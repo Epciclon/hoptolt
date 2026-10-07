@@ -186,8 +186,24 @@ class RabbitService {
         const oldWeight = Number.parseFloat(rabbit.weight);
         const newWeight = data.weight !== undefined ? Number.parseFloat(data.weight) : oldWeight;
 
+        const normalize = str => (str || '').toString().trim().toLowerCase();
+        const sexChanged = data.sex !== undefined && normalize(data.sex) !== normalize(rabbit.sex);
+        const purposeChanged = data.purpose !== undefined && normalize(data.purpose) !== normalize(rabbit.purpose);
+        let birthDateChanged = false;
+        if (data.birthDate) {
+            const oldTime = new Date(rabbit.birthDate).getTime();
+            const newTime = new Date(data.birthDate).getTime();
+            // If the difference is more than 24 hours, it definitely changed.
+            // This prevents false positives due to timezone shifts (e.g. 5 hours off).
+            if (Math.abs(oldTime - newTime) > 24 * 60 * 60 * 1000) {
+                birthDateChanged = true;
+            }
+        }
+
+        console.log('DEBUG UPDATE:', { sexChanged, purposeChanged, birthDateChanged, oldSex: rabbit.sex, newSex: data.sex, oldPurpose: rabbit.purpose, newPurpose: data.purpose, oldBirth: rabbit.birthDate, newBirth: data.birthDate });
+
         // Validar si el conejo está asignado y el cambio rompería las reglas
-        if (data.birthDate || data.sex || data.purpose) {
+        if (birthDateChanged || sexChanged || purposeChanged) {
             const assignmentRepository = require('../assignment/assignment.repository');
             const cageRepository = require('../cage/cage.repository');
             const assignmentService = require('../assignment/assignment.service');
@@ -209,14 +225,12 @@ class RabbitService {
                     ...data 
                 };
                 
-                const service = new assignmentService();
-                
                 if (cage.type === 'reproducción' && simulatedRabbit.purpose === 'Engorde') {
                     throw new AppError('No puedes cambiar el propósito a Engorde porque este conejo está en una jaula de reproducción. Desasígnalo primero.', 400);
                 }
                 
                 // Validate against other rabbits in the same cage
-                service.validateCompatibility(cage, [simulatedRabbit], otherRabbits);
+                assignmentService.validateCompatibility(cage, [simulatedRabbit], otherRabbits);
             }
         }
 

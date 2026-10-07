@@ -87,15 +87,17 @@ class GrowthService {
 
         const maxAge = rabbit.purpose === 'Engorde' ? 8 : 12;
         
-        // Si la edad registrada ya es mayor o igual a los meses actuales (o maxAge), no hacemos nada
-        if (rabbit.age >= currentMonths || rabbit.age >= maxAge) return;
+        const rabbitAge = Number(rabbit.age || 0);
 
-        const startMonth = rabbit.age + 1;
+        // Si la edad registrada ya es mayor o igual a los meses actuales (o maxAge), no hacemos nada
+        if (rabbitAge >= currentMonths || rabbitAge >= maxAge) return;
+
+        const startMonth = rabbitAge + 1;
         const endMonth = Math.min(currentMonths, maxAge);
         
         if (startMonth > endMonth) return;
 
-        let finalWeight = Number.parseFloat(rabbit.weight);
+        let finalWeight = Number.parseFloat(rabbit.weight || '0');
         
         for (let m = startMonth; m <= endMonth; m++) {
             // Calculate the exact date this rabbit turned 'm' months old
@@ -108,7 +110,7 @@ class GrowthService {
                 rabbitId: rabbit.id,
                 weight: estimatedWeight,
                 oldWeight: finalWeight, // El peso anterior es el peso con el que empezó este ciclo
-                recordDate: exactDate.toLocaleDateString('sv', { timeZone: 'America/Guayaquil' })
+                recordDate: `${exactDate.toLocaleDateString('sv', { timeZone: 'America/Guayaquil' })}T12:00:00Z`
             });
             
             finalWeight = estimatedWeight;
@@ -141,9 +143,7 @@ class GrowthService {
             const growthRecords = catchUpGrowths.map(g => ({
                 rabbitId: g.rabbitId,
                 weight: g.weight,
-                oldWeight: g.oldWeight,
-                recordDate: g.recordDate,
-                recordedBy: profileId
+                recordDate: g.recordDate
             }));
             await Growth.bulkCreate(growthRecords);
         }
@@ -160,8 +160,11 @@ class GrowthService {
                 await AuditLog.create({
                     profileId: profileId,
                     action: 'Cálculo Automático',
-                    details: `Edad actualizada a ${update.age} meses` + (update.weight ? ` y peso a ${update.weight} kg` : '') + ` para el conejo ${rabbit.code}.`,
-                    module: 'Rabbits'
+                    details: {
+                        message: `Edad actualizada a ${update.age} meses` + (update.weight ? ` y peso a ${update.weight} kg` : '') + ` para el conejo ${rabbit.code}.`
+                    },
+                    entity: 'Rabbit',
+                    entityId: rabbit.id
                 });
             }));
         }

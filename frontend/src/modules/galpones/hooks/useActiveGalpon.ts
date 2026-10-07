@@ -25,9 +25,7 @@ export function useActiveGalpon() {
       return galpon;
     },
     onSuccess: (galpon) => {
-      // Guardamos el mensaje en sessionStorage para que ToastContext lo muestre al recargar
       sessionStorage.setItem('flash_toast', `Galpón "${galpon.name}" seleccionado como activo.`);
-      // Un reload completo limpia el caché y estados viejos instantáneamente
       window.location.reload();
     }
   });

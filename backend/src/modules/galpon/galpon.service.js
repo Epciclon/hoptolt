@@ -186,16 +186,17 @@ class GalponService {
         const galpon = await galponRepository.findById(galponId);
         if (!galpon) throw new AppError('Galpón no encontrado', 404);
 
-        const { Assignment, Reproduction } = require('../../domain/models');
+        const { Rabbit, Reproduction } = require('../../domain/models');
         
-        const [assignedRabbits, plannedBirths, lactatingFemales, matingFemales] = await Promise.all([
-            Assignment.count({ where: { galponId, status: 'asignado' } }),
+        const [maleRabbits, femaleRabbits, plannedBirths, lactatingFemales, matingFemales] = await Promise.all([
+            Rabbit.count({ where: { galponId, sex: 'macho' } }),
+            Rabbit.count({ where: { galponId, sex: 'hembra' } }),
             Reproduction.count({ where: { galponId, status: 'gestacion' } }),
             Reproduction.count({ where: { galponId, status: 'lactancia' } }),
             Reproduction.count({ where: { galponId, status: 'monta' } })
         ]);
         
-        return { assignedRabbits, plannedBirths, lactatingFemales, matingFemales };
+        return { maleRabbits, femaleRabbits, plannedBirths, lactatingFemales, matingFemales };
     }
 
     async _assertOwner(galponId, profileId) {

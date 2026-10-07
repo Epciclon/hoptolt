@@ -11,14 +11,16 @@ import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
 import api from '@/lib/api';
 
 interface GalponStats {
-  assignedRabbits: number;
+  maleRabbits: number;
+  femaleRabbits: number;
   plannedBirths: number;
   lactatingFemales: number;
   matingFemales: number;
 }
 
 const statsMeta = [
-  { key: 'assignedRabbits' as keyof GalponStats, label: 'Conejos en Jaulas', icon: Rabbit, color: 'text-emerald-500 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/40' },
+  { key: 'maleRabbits' as keyof GalponStats, label: 'Conejos Machos', icon: Rabbit, color: 'text-indigo-500 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-900/40' },
+  { key: 'femaleRabbits' as keyof GalponStats, label: 'Conejas Hembras', icon: Rabbit, color: 'text-emerald-500 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/40' },
   { key: 'plannedBirths' as keyof GalponStats, label: 'Partos Planeados', icon: Baby, color: 'text-blue-500 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/40' },
   { key: 'lactatingFemales' as keyof GalponStats, label: 'Conejas en Lactancia', icon: Activity, color: 'text-pink-500 dark:text-pink-400', bg: 'bg-pink-50 dark:bg-pink-900/40' },
   { key: 'matingFemales' as keyof GalponStats, label: 'Conejas en Monta', icon: Heart, color: 'text-amber-500 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/40' },
@@ -86,7 +88,11 @@ function DashboardHomeContent() {
       </Card>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6 mb-6">
+      <div className="mt-8 mb-4">
+        <h3 className="text-xl font-bold text-main">Estado de Población</h3>
+        <p className="text-sm text-muted">Resumen actual de los animales registrados en tu galpón.</p>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
         {statsMeta.map((stat) => {
           const Icon = stat.icon;
           const value = stats ? stats[stat.key] : null;

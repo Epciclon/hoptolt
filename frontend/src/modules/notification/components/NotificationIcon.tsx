@@ -231,14 +231,21 @@ export function NotificationIcon() {
               ) : (
                 <>
                   {displayedNotifications.map((notification) => (
-                    <button
-                      type="button"
+                    <div
                       key={notification.id}
+                      role="button"
+                      tabIndex={0}
                       className={cn(
                         'w-full text-left p-4 border-b border-default hover:bg-theme-surface transition-colors cursor-pointer block focus:outline-none focus:ring-2 focus:ring-primary-500',
                         !notification.read && 'bg-blue-50/50'
                       )}
                       onClick={() => handleNotificationClick(notification)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleNotificationClick(notification);
+                        }
+                      }}
                     >
                       <div className="flex items-start gap-3">
                         <div className={cn('w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold', getTypeColor(notification.type))}>
@@ -317,7 +324,7 @@ export function NotificationIcon() {
                           )}
                         </div>
                       </div>
-                    </button>
+                    </div>
                   ))}
                 </>
               )}
