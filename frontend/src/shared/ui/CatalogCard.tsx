@@ -55,16 +55,15 @@ export function CatalogCard({
             alt={imageAlt}
             fill
             unoptimized
+            priority={true}
             className="object-cover transition-transform duration-300 group-hover:scale-105"
             sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
           />
         ) : (
-          <div className="w-full h-full flex justify-center items-center bg-theme-surface border border-default">
-            <ImagePlaceholder size="lg" />
-          </div>
+          <ImagePlaceholder size="lg" className="h-full w-full border-0 rounded-none" />
         )}
         {badge && (
-          <div className="absolute top-2 left-2 bg-slate-900/80 backdrop-blur-sm text-white text-xs font-bold px-2 py-1 rounded shadow-sm pointer-events-auto">
+          <div className="absolute top-2 left-2 bg-slate-900/80 backdrop-blur-sm text-white text-xs font-bold px-2 py-1 rounded shadow-sm pointer-events-none">
             {badge}
           </div>
         )}
@@ -84,20 +83,20 @@ export function CatalogCard({
         )}
         
         {tags && (
-          <div className="flex flex-wrap gap-2 justify-center mb-4 pointer-events-auto">
+          <div className="flex flex-wrap gap-2 justify-center mb-4 pointer-events-none">
             {tags}
           </div>
         )}
 
         {details && (
-          <div className="flex gap-4 text-xs text-muted mt-auto bg-theme-surface border border-default/70 p-2 rounded-md w-full justify-center shadow-inner mb-2 pointer-events-auto">
+          <div className="flex gap-4 text-xs text-muted mt-auto bg-theme-surface border border-default/70 p-2 rounded-md w-full justify-center shadow-inner mb-2 pointer-events-none">
             {details}
           </div>
         )}
 
         {/* Botones de acción */}
         {isSelected && actions && (
-          <div className={`flex flex-wrap gap-2 w-full pt-4 border-t border-strong/60 animate-in fade-in slide-in-from-bottom-2 duration-200 justify-center pointer-events-auto ${!details ? 'mt-auto' : ''}`}>
+          <div className={`flex flex-wrap gap-2 w-full pt-4 border-t border-strong/60 animate-in fade-in slide-in-from-bottom-2 duration-200 justify-center pointer-events-none [&_button]:pointer-events-auto [&_a]:pointer-events-auto ${!details ? 'mt-auto' : ''}`}>
             {actions}
           </div>
         )}

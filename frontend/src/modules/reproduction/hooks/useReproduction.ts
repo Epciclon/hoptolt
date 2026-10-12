@@ -119,6 +119,7 @@ export function useReproduction(filters?: { profileId?: string; date?: string; s
       queryClient.invalidateQueries({ queryKey: ['birthCalendar'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
       queryClient.invalidateQueries({ queryKey: ['active-dates'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
   });
 
@@ -129,6 +130,7 @@ export function useReproduction(filters?: { profileId?: string; date?: string; s
       queryClient.invalidateQueries({ queryKey: ['birthCalendar'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
       queryClient.invalidateQueries({ queryKey: ['active-dates'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
   });
 
@@ -138,6 +140,7 @@ export function useReproduction(filters?: { profileId?: string; date?: string; s
       queryClient.invalidateQueries({ queryKey: ['reproductions'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
       queryClient.invalidateQueries({ queryKey: ['active-dates'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
   });
 

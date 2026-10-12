@@ -60,6 +60,6 @@ exports.getPotentialMothers = catchAsync(async (req, res) => {
 });
 
 exports.suggestName = catchAsync(async (req, res) => {
-    const name = rabbitService.suggestName(req.query.sex);
+    const name = await rabbitService.suggestName(req.query.sex, req.galponId);
     res.status(200).json({ success: true, name });
 });

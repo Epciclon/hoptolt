@@ -194,7 +194,6 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
                 </span>
               }
             >
-              <div className="flex flex-col gap-3">
                 {group.reproductions.map(reproduction => {
                   const isExpanded = expandedId === reproduction.id;
                   const canGiveBirth = isBirthDateReached(reproduction.estimatedBirthDate);
@@ -313,7 +312,6 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
               </RabbitSelectableCard>
                   );
                 })}
-              </div>
             </CageGroupCard>
           ))}
         </div>

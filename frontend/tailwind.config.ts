@@ -21,6 +21,7 @@ const config: Config = {
           700: '#12876e',
           800: '#0e6e58',
           900: '#0a5542',
+          950: '#073b30',
         },
         sidebar: {
           DEFAULT: 'var(--color-sidebar)',

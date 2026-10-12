@@ -672,7 +672,7 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
                                         ...members
                                             .filter(m => !selectedProfileIds.includes(m.profile?.id || ''))
                                             .map(m => ({
-                                                label: `${m.profile?.fullName || m.profile?.username || 'Usuario'}`,
+                                                label: `${m.profile?.fullName || m.profile?.username || 'Usuario'}${m.status === 'inactive' ? ' (Inactivo)' : ''}`,
                                                 value: m.profile?.id || ''
                                             }))
                                     ]}
@@ -681,7 +681,7 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
                                     <div className="flex flex-wrap gap-2 mt-2">
                                         {selectedProfileIds.map(profileId => {
                                             const member = members.find(m => m.profile?.id === profileId);
-                                            const name = member?.profile?.fullName || member?.profile?.username || 'Usuario';
+                                            const name = `${member?.profile?.fullName || member?.profile?.username || 'Usuario'}${member?.status === 'inactive' ? ' (Inactivo)' : ''}`;
                                             return (
                                                 <button
                                                     key={profileId}

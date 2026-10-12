@@ -126,9 +126,6 @@ class CleaningService {
             type: 'warning',
             title: 'Alerta de Limpieza Requerida'
         };
-        if (owner) {
-            whereClause.profileId = owner.profileId;
-        }
 
         const warnings = await Notification.findAll({ where: whereClause });
         const toDestroy = [];

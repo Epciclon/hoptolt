@@ -129,7 +129,7 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
 
       <div>
         <span className="block text-sm font-medium mb-2">Vacunas</span>
-        <div className="relative z-20" ref={vaccineDropdownRef}>
+        <div className="relative z-30" ref={vaccineDropdownRef}>
           <Input
             placeholder="Busca o selecciona vacunas..."
             value={vaccineSearch}

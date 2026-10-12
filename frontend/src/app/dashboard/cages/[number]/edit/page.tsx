@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
@@ -24,7 +24,7 @@ export default function CageEditPage() {
   return (
     <Card>
       <CardHeader
-        title={`Editar Jaula #${number}`}
+        title={`Editar Jaula ${number}`}
         subtitle="Modifica los datos de la jaula seleccionada"
       />
       {error && <Alert variant="error" message={error} className="mb-4" />}

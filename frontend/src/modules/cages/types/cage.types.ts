@@ -1,4 +1,4 @@
-﻿export interface Cage {
+export interface Cage {
   id: number;
   number: number;
   type: 'engorde' | 'reproducción';
@@ -10,7 +10,7 @@
 }
 
 export interface CreateCageDto {
-  number: number;
+  quantity: number;
   type: 'engorde' | 'reproducción';
   capacity: number;
   status: 'operativa' | 'mantenimiento';

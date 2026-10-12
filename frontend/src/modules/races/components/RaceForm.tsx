@@ -136,6 +136,7 @@ export function RaceForm({ mode, defaultValues, raceId, onSuccess, onCancel }: R
               alt="Imagen de la raza"
               fill
               unoptimized
+              priority={true}
               className="object-contain rounded-lg"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             />

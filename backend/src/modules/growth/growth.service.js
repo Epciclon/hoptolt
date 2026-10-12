@@ -70,7 +70,7 @@ class GrowthService {
 
         const history = await Growth.findAll({
             where: { rabbitId },
-            attributes: ['id', 'weight', 'recordDate'],
+            attributes: ['id', 'weight', 'recordDate', 'isManual'],
             order: [['recordDate', 'DESC']]
         });
 
@@ -79,59 +79,54 @@ class GrowthService {
 
     _processRabbitGrowthSync(rabbit, today, updatesResult) {
         const birthDate = new Date(rabbit.birthDate);
-        let currentMonths = (today.getFullYear() - birthDate.getFullYear()) * 12;
-        currentMonths -= birthDate.getMonth();
-        currentMonths += today.getMonth();
-        if (today.getDate() < birthDate.getDate()) currentMonths--;
+        
+        // Calcular meses basados en 30 días
+        const diffTime = today.getTime() - birthDate.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        let currentMonths = Math.floor(diffDays / 30);
         if (currentMonths < 0) currentMonths = 0;
 
         const maxAge = rabbit.purpose === 'Engorde' ? 8 : 12;
-        
         const rabbitAge = Number(rabbit.age || 0);
 
-        // Si la edad registrada ya es mayor o igual a los meses actuales (o maxAge), no hacemos nada
         if (rabbitAge >= currentMonths || rabbitAge >= maxAge) return;
 
         const startMonth = rabbitAge + 1;
         const endMonth = Math.min(currentMonths, maxAge);
-        
         if (startMonth > endMonth) return;
 
         let finalWeight = Number.parseFloat(rabbit.weight || '0');
         
         for (let m = startMonth; m <= endMonth; m++) {
-            // Calculate the exact date this rabbit turned 'm' months old
-            const exactDate = new Date(birthDate);
-            exactDate.setMonth(exactDate.getMonth() + m);
+            // Fecha exacta cada 30 días
+            const exactDate = new Date(birthDate.getTime() + m * 30 * 24 * 60 * 60 * 1000);
             
-            const estimatedWeight = this.calculateEstimatedWeight(rabbit.purpose, m);
+            // "una ves cumpla se queda con el peso que dejamos y pasa a historico"
+            // Solo para el último mes cumplido, pasamos el peso actual que el usuario dejó al historial.
+            // Para meses intermedios saltados, usamos el estimado.
+            const weightToLog = (m === endMonth) ? finalWeight : this.calculateEstimatedWeight(rabbit.purpose, m);
             
             updatesResult.catchUpGrowths.push({
                 rabbitId: rabbit.id,
-                weight: estimatedWeight,
-                oldWeight: finalWeight, // El peso anterior es el peso con el que empezó este ciclo
+                weight: weightToLog,
+                oldWeight: finalWeight,
                 recordDate: `${exactDate.toLocaleDateString('sv', { timeZone: 'America/Guayaquil' })}T12:00:00Z`
             });
-            
-            finalWeight = estimatedWeight;
         }
 
+        // Actualizamos solo la edad del conejo, manteniendo su peso actual (el que dejó el usuario)
         const updates = { rabbitId: rabbit.id, age: endMonth };
-        if (finalWeight !== Number.parseFloat(rabbit.weight)) {
-            updates.weight = finalWeight;
-            updates.oldWeight = Number.parseFloat(rabbit.weight);
-        }
-
+        
         let msg = `${rabbit.code} - ${rabbit.name || 'Sin nombre'} ha alcanzado los ${endMonth} meses de edad. `;
-        if (updates.weight !== undefined) {
-             msg += `Su peso estimado actual es ${finalWeight.toFixed(2)} kg.`;
-        }
-        
         if (endMonth === maxAge) {
-            msg += ` (Último peso estimado por el sistema, ha alcanzado la madurez).`;
+            msg += ` (Ha alcanzado la madurez).`;
         }
         
-        updatesResult.messages.push(msg);
+        updatesResult.messages.push({
+            rabbitId: rabbit.id,
+            galponId: rabbit.galponId,
+            text: msg
+        });
         updatesResult.rabbitsToUpdate.push(updates);
     }
 
@@ -143,7 +138,8 @@ class GrowthService {
             const growthRecords = catchUpGrowths.map(g => ({
                 rabbitId: g.rabbitId,
                 weight: g.weight,
-                recordDate: g.recordDate
+                recordDate: g.recordDate,
+                isManual: false
             }));
             await Growth.bulkCreate(growthRecords);
         }
@@ -169,15 +165,114 @@ class GrowthService {
             }));
         }
 
-        if (messages.length > 0) {
+        const memberships = await FarmMember.findAll({ where: { profileId, status: 'active' } });
+        const ownedGalpones = await Galpon.findAll({ where: { profileId } });
+        const isOwner = ownedGalpones.length > 0 || memberships.some(m => m.role === 'owner');
+
+        let userMessages = [];
+
+        if (isOwner) {
+            const ownedGalponIds = new Set([
+                ...ownedGalpones.map(g => g.id),
+                ...memberships.filter(m => m.role === 'owner').map(m => m.galponId)
+            ]);
+            userMessages = messages.filter(m => ownedGalponIds.has(m.galponId)).map(m => m.text);
+        } else {
+            // Usuario es trabajador: solo recibe notificaciones si tiene permisos en el módulo y jaulas asignadas
+            const workerMemberships = memberships.filter(m => m.role === 'worker');
+            let allowedRabbitIds = new Set();
+
+            for (const wm of workerMemberships) {
+                const { WorkerPermission, WorkerCage, Assignment } = require('../../domain/models');
+                const hasPermission = await WorkerPermission.findOne({
+                    where: {
+                        farmMemberId: wm.id,
+                        moduleName: { [Op.in]: ['conejos', 'rabbits'] },
+                        canRead: true
+                    }
+                });
+
+                if (hasPermission) {
+                    const workerCages = await WorkerCage.findAll({ where: { farmMemberId: wm.id } });
+                    const cageIds = workerCages.map(wc => wc.cageId);
+                    if (cageIds.length > 0) {
+                        const activeAssignments = await Assignment.findAll({
+                            where: {
+                                cageId: { [Op.in]: cageIds },
+                                status: 'asignado'
+                            }
+                        });
+                        activeAssignments.forEach(a => allowedRabbitIds.add(Number(a.rabbitId)));
+                    }
+                }
+            }
+
+            userMessages = messages.filter(m => allowedRabbitIds.has(Number(m.rabbitId))).map(m => m.text);
+        }
+
+        if (userMessages.length > 0) {
             await Notification.create({
                 profileId,
                 type: 'info',
                 title: 'Resumen de Crecimiento',
-                message: messages.join('\n'),
+                message: userMessages.join('\n'),
                 data: { type: 'growth_summary' }
             });
+        } else {
+            // Limpiar notificaciones huérfanas si el usuario no tiene permisos o jaulas
+            await Notification.destroy({
+                where: {
+                    profileId,
+                    type: 'info',
+                    title: 'Resumen de Crecimiento'
+                }
+            });
         }
+    }
+
+    async rebuildGrowthHistory(rabbitId) {
+        const { Rabbit, Growth } = require('../../domain/models');
+        const rabbit = await Rabbit.findByPk(rabbitId);
+        if (!rabbit) return;
+
+        // Borramos todo historial anterior (basura) para armar de 0
+        await Growth.destroy({ where: { rabbitId: rabbit.id } });
+
+        const birthDate = new Date(rabbit.birthDate);
+        const today = new Date();
+        const diffTime = today.getTime() - birthDate.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        let currentMonths = Math.floor(diffDays / 30);
+        if (currentMonths < 0) currentMonths = 0;
+
+        const maxAge = rabbit.purpose === 'Engorde' ? 8 : 12;
+        const endMonth = Math.min(currentMonths, maxAge);
+
+        const growthsToCreate = [];
+        
+        // 1. Armar todo el historial estimado antiguo (mes a mes)
+        for (let m = 1; m <= endMonth; m++) {
+            // Fecha exacta cada 30 días
+            const exactDate = new Date(birthDate.getTime() + m * 30 * 24 * 60 * 60 * 1000);
+            
+            // Para el último mes que cumplió, usamos el peso que tiene actualmente
+            const weightToLog = (m === endMonth) ? rabbit.weight : this.calculateEstimatedWeight(rabbit.purpose, m);
+
+            growthsToCreate.push({
+                rabbitId: rabbit.id,
+                weight: weightToLog,
+                recordDate: `${exactDate.toLocaleDateString('sv', { timeZone: 'America/Guayaquil' })}T12:00:00Z`,
+                isManual: false
+            });
+        }
+
+        if (growthsToCreate.length > 0) {
+            await Growth.bulkCreate(growthsToCreate);
+        }
+        
+        // 3. Actualizamos la edad (pero mantenemos el peso)
+        rabbit.age = endMonth;
+        await rabbit.save();
     }
 }
 

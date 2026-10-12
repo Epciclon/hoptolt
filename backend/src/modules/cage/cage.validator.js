@@ -1,11 +1,11 @@
 const validateCreateCage = (req, res, next) => {
     const errors = [];
-    const { number, type, capacity, status } = req.body;
+    const { quantity, type, capacity, status } = req.body;
 
-    if (number === undefined || number === null || number === '') {
-        errors.push('El número de jaula es obligatorio.');
-    } else if (!Number.isInteger(Number(number)) || Number(number) <= 0 || Number(number) > 999) {
-        errors.push('El número de jaula debe ser un entero positivo menor o igual a 999.');
+    if (quantity === undefined || quantity === null || quantity === '') {
+        errors.push('La cantidad de jaulas es obligatoria.');
+    } else if (!Number.isInteger(Number(quantity)) || Number(quantity) <= 0 || Number(quantity) > 9999) {
+        errors.push('La cantidad debe ser un entero positivo menor o igual a 9999.');
     }
 
     if (!type || !['engorde', 'reproducción'].includes(type)) {
@@ -18,8 +18,8 @@ const validateCreateCage = (req, res, next) => {
         errors.push('La capacidad debe ser un número entero positivo.');
     } else if (type === 'reproducción' && Number(capacity) !== 1) {
         errors.push('La capacidad máxima para jaula de reproducción es 1.');
-    } else if (type === 'engorde' && (Number(capacity) < 1 || Number(capacity) > 6)) {
-        errors.push('La capacidad para jaula de engorde debe ser entre 1 y 6.');
+    } else if (type === 'engorde' && (Number(capacity) < 1 || Number(capacity) > 100)) {
+        errors.push('La capacidad para jaula de engorde debe ser entre 1 y 100.');
     }
 
     if (status && !['operativa', 'mantenimiento'].includes(status)) {
@@ -43,8 +43,8 @@ const validateEditCage = (req, res, next) => {
             errors.push('La capacidad debe ser un número entero positivo.');
         } else if (type === 'reproducción' && Number(capacity) !== 1) {
             errors.push('La capacidad máxima para jaula de reproducción es 1.');
-        } else if (type === 'engorde' && (Number(capacity) < 1 || Number(capacity) > 6)) {
-            errors.push('La capacidad para jaula de engorde debe ser entre 1 y 6.');
+        } else if (type === 'engorde' && (Number(capacity) < 1 || Number(capacity) > 100)) {
+            errors.push('La capacidad para jaula de engorde debe ser entre 1 y 100.');
         }
     }
 

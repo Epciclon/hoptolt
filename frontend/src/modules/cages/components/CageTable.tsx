@@ -27,7 +27,7 @@ export function CageTable({ onEdit }: Readonly<CageTableProps>) {
     setDeleteLoading(false);
     setDeleteTarget(null);
     if (success) {
-      showToast(`Jaula #${deleteTarget.number} eliminada correctamente.`, 'success');
+      showToast(`Jaula ${deleteTarget.number} eliminada correctamente.`, 'success');
     } else {
       showToast(deleteError || 'No se pudo eliminar la jaula.', 'error');
     }
@@ -156,7 +156,7 @@ export function CageTable({ onEdit }: Readonly<CageTableProps>) {
         onConfirm={handleDelete}
         loading={deleteLoading}
         title="¿Eliminar jaula?"
-        description={`Se eliminará permanentemente la Jaula #${deleteTarget?.number}. Esta acción no se puede deshacer.`}
+        description={`Se eliminará permanentemente la Jaula ${deleteTarget?.number}. Esta acción no se puede deshacer.`}
         confirmLabel="Eliminar"
       />
     </div>

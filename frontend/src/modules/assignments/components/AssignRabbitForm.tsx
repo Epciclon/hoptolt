@@ -218,18 +218,13 @@ export function AssignRabbitForm({ onSuccess, onCancel }: Readonly<AssignRabbitF
                   <p className="text-gray-500 text-sm col-span-full">No hay conejos disponibles que coincidan con la búsqueda.</p>
                 ) : (
                   filteredRabbits.map(rabbit => (
-                    <button 
-                      key={rabbit.id} 
-                      type="button"
-                      className="w-full text-left cursor-pointer" 
-                      onClick={() => handleRabbitSelect(rabbit)}
-                    >
+                    <div key={rabbit.id} className="w-full">
                       <RabbitSelectableCard
                         rabbit={rabbit}
                         isSelected={selectedRabbits.includes(rabbit.id)}
                         onClick={() => handleRabbitSelect(rabbit)}
                       />
-                    </button>
+                    </div>
                   ))
                 )}
               </div>

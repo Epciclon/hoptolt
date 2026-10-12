@@ -10,6 +10,10 @@ class RabbitRepository {
         return Rabbit.findOne({ where: { code } });
     }
 
+    async findByNameAndGalpon(name, galponId) {
+        return Rabbit.findOne({ where: { name, galponId } });
+    }
+
     async findByRace(race) {
         return Rabbit.findAll({ where: { race } });
     }

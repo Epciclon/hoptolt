@@ -1,13 +1,16 @@
-﻿'use client';
+'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { invitationService } from '../services/invitation.service';
 
 import { useActiveGalpon } from '@/modules/galpones/hooks/useActiveGalpon';
+import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
 
 export function useInvitation() {
   const queryClient = useQueryClient();
   const { activeGalpon } = useActiveGalpon();
+  const { role } = usePermissions();
+  const isOwner = role === 'owner';
 
   // Query: Fetch Pending Invitations for me
   const {
@@ -20,7 +23,7 @@ export function useInvitation() {
     queryFn: () => invitationService.getMyPendingInvitations(),
   });
 
-  // Query: Fetch Invitations by Galpon
+  // Query: Fetch Invitations by Galpon (solo para propietarios)
   const {
     data: galponInvitations = [],
     isLoading: loadingGalpon,
@@ -29,7 +32,7 @@ export function useInvitation() {
   } = useQuery({
     queryKey: ['invitations', 'galpon', activeGalpon?.id],
     queryFn: () => invitationService.getInvitationsByGalpon(activeGalpon!.id),
-    enabled: !!activeGalpon,
+    enabled: !!activeGalpon && isOwner,
   });
 
   const invitations = [...pendingInvitations, ...galponInvitations].filter((v, i, a) => a.findIndex(t => (t.id === v.id)) === i);

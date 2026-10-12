@@ -3,8 +3,13 @@ const cageService = require('./cage.service');
 const { toCageDTO } = require('../../common/dtos/cage.dto');
 
 exports.registerCage = catchAsync(async (req, res) => {
-    const cage = await cageService.registerCage(req.body, req.user.id);
-    res.status(201).json({ success: true, message: 'Jaula registrada con éxito', cage: toCageDTO(cage) });
+    const createdCages = await cageService.registerCage(req.body, req.user.id);
+    const count = createdCages.length;
+    res.status(201).json({ 
+        success: true, 
+        message: count > 1 ? `${count} jaulas registradas con éxito` : 'Jaula registrada con éxito', 
+        cages: createdCages.map(toCageDTO) 
+    });
 });
 
 exports.getCage = catchAsync(async (req, res) => {

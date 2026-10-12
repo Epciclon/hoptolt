@@ -64,10 +64,9 @@ class RabbitService {
     calculateAge(birthDate) {
         const bd = new Date(birthDate);
         const today = new Date();
-        // Establecer la hora a medianoche para cálculos consistentes
-        bd.setHours(0, 0, 0, 0);
-        today.setHours(0, 0, 0, 0);
-        const ageMonths = Math.floor((today - bd) / (1000 * 60 * 60 * 24 * 30.44));
+        const diffTime = today.getTime() - bd.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        const ageMonths = Math.floor(diffDays / 30);
         return Math.max(0, ageMonths);
     }
 
@@ -98,13 +97,10 @@ class RabbitService {
             profileId
         });
 
-        await Growth.create({
-            rabbitId: rabbit.id,
-            weight: rabbit.weight,
-            recordDate: new Date()
-        });
+        const growthService = require('../growth/growth.service');
+        await growthService.rebuildGrowthHistory(rabbit.id);
 
-        return rabbit;
+        return await rabbitRepository.findById(rabbit.id);
     }
 
     async getRabbit(id, profileId) {
@@ -200,8 +196,6 @@ class RabbitService {
             }
         }
 
-        console.log('DEBUG UPDATE:', { sexChanged, purposeChanged, birthDateChanged, oldSex: rabbit.sex, newSex: data.sex, oldPurpose: rabbit.purpose, newPurpose: data.purpose, oldBirth: rabbit.birthDate, newBirth: data.birthDate });
-
         // Validar si el conejo está asignado y el cambio rompería las reglas
         if (birthDateChanged || sexChanged || purposeChanged) {
             const assignmentRepository = require('../assignment/assignment.repository');
@@ -236,37 +230,16 @@ class RabbitService {
 
         const updatedRabbit = await rabbitRepository.update(rabbit, data);
 
-        if (newWeight !== oldWeight) {
-            // Find the most recent growth record
-            const latestGrowth = await Growth.findOne({
-                where: { rabbitId: rabbit.id },
-                order: [['recordDate', 'DESC']]
-            });
-
-            if (latestGrowth) {
-                // Determine if the latest growth record was made this current month
-                const today = new Date();
-                const latestDate = new Date(latestGrowth.recordDate);
-                if (today.getMonth() === latestDate.getMonth() && today.getFullYear() === latestDate.getFullYear()) {
-                    // Update the existing record instead of duplicating
-                    await latestGrowth.update({ weight: newWeight, recordDate: new Date() });
-                } else {
-                    // It's a new month (or first edit in a long time), create a new one
-                    await Growth.create({
-                        rabbitId: rabbit.id,
-                        weight: newWeight,
-                        recordDate: new Date()
-                    });
-                }
-            } else {
-                // If somehow no baseline existed, create one
-                await Growth.create({
-                    rabbitId: rabbit.id,
-                    weight: newWeight,
-                    recordDate: new Date()
-                });
-            }
+        // Si el usuario cambia la fecha de nacimiento o el propósito, la curva estimada antigua se rompe.
+        // Debemos reconstruirla:
+        if (birthDateChanged || purposeChanged) {
+            const growthService = require('../growth/growth.service');
+            await growthService.rebuildGrowthHistory(rabbit.id);
         }
+
+        // Ya no tocamos la tabla Growth manualmente.
+        // El peso se guardó en `rabbitRepository.update`. 
+        // El cron se encargará de empujar este peso al historial cuando el conejo cumpla su próximo mes (cada 30 días).
 
         return updatedRabbit;
     }
@@ -290,11 +263,36 @@ class RabbitService {
         return raceRepository.findAll();
     }
 
-    suggestName(sex) {
+    async suggestName(sex, galponId) {
         if (!['macho', 'hembra'].includes(sex)) {
             sex = 'macho'; // fallback por defecto
         }
-        return generateRandomName(sex);
+        
+        let attempts = 0;
+        let suggestedName = '';
+        let isUnique = false;
+        
+        while (!isUnique && attempts < 10) {
+            suggestedName = generateRandomName(sex);
+            if (galponId) {
+                const existing = await rabbitRepository.findByNameAndGalpon(suggestedName, galponId);
+                if (!existing) {
+                    isUnique = true;
+                }
+            } else {
+                isUnique = true;
+            }
+            attempts++;
+        }
+        
+        // Si después de 10 intentos todos los nombres estaban usados (ej. miles de conejos),
+        // agregamos un sufijo numérico para garantizar unicidad al 100%
+        if (!isUnique) {
+            const num = Math.floor(Math.random() * 900) + 100;
+            suggestedName = `${suggestedName} ${num}`;
+        }
+        
+        return suggestedName;
     }
 
     async getPotentialFathers(galponId, profileId) {

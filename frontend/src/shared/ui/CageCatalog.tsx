@@ -48,11 +48,9 @@ export function CageCatalog({
             onCageClick={() => onToggleCage(group.cageNumber)}
             footer={renderCageContent ? renderCageContent(group) : undefined}
           >
-            <div className="flex flex-col gap-2 mt-2">
               {group.rabbits.map(rabbit => (
                 <RabbitSelectableCard key={rabbit.id} rabbit={rabbit} />
               ))}
-            </div>
           </CageGroupCard>
         );
       })}

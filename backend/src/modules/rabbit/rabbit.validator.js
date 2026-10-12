@@ -2,9 +2,9 @@ const _validateName = (name, errors) => {
     if (!name || name.trim() === '') {
         errors.push('El nombre del conejo es obligatorio.');
     } else {
-        const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+        const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s]+$/;
         if (!nameRegex.test(name.trim())) {
-            errors.push('El nombre solo puede contener letras y espacios.');
+            errors.push('El nombre solo puede contener letras, números y espacios.');
         } else if (name.trim().length > 50) {
             errors.push('El nombre tiene un límite máximo de 50 caracteres.');
         }
@@ -44,10 +44,9 @@ const _validatePurposeAndImage = (purpose, imageUrl, errors) => {
         errors.push('El propósito debe ser "Reproducción" o "Engorde".');
     }
     if (imageUrl) {
-        try {
-            new URL(imageUrl);
-        } catch {
-            errors.push('La imagen proporcionada no es una URL válida.');
+        // Permitir URLs absolutas (http...) o relativas (empiezan con /storage o /)
+        if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
+            errors.push('La imagen proporcionada no es una ruta o URL válida.');
         }
     }
 };

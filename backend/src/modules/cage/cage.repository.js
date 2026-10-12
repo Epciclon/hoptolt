@@ -38,6 +38,10 @@ class CageRepository {
         return Cage.create(data);
     }
 
+    async bulkCreate(dataArray) {
+        return Cage.bulkCreate(dataArray);
+    }
+
     async update(cage, data) {
         return cage.update(data);
     }

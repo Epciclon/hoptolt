@@ -71,6 +71,18 @@ export function useNotifications(options?: { limit?: number; offset?: number; un
           queryClient.invalidateQueries();
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'reproductions',
+        },
+        () => {
+          // Invalidamos queries cuando una reproducción avanza de fase (así se borran notificaciones estancadas)
+          queryClient.invalidateQueries();
+        }
+      )
       .subscribe();
 
     return () => {
@@ -86,7 +98,7 @@ export function useNotifications(options?: { limit?: number; offset?: number; un
       // We don't save previous state here easily because there can be multiple queries,
       // but typically we can just rely on invalidation if it fails.
       queryClient.setQueriesData({ queryKey: ['notifications'] }, (old: any) => {
-        if (!old) return old;
+        if (!old || !Array.isArray(old)) return old;
         return old.map((n: any) => n.id === id ? { ...n, read: true } : n);
       });
     },
@@ -101,7 +113,7 @@ export function useNotifications(options?: { limit?: number; offset?: number; un
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: ['notifications'] });
       queryClient.setQueriesData({ queryKey: ['notifications'] }, (old: any) => {
-        if (!old) return old;
+        if (!old || !Array.isArray(old)) return old;
         return old.map((n: any) => ({ ...n, read: true }));
       });
     },
@@ -116,7 +128,7 @@ export function useNotifications(options?: { limit?: number; offset?: number; un
     onMutate: async (id: number) => {
       await queryClient.cancelQueries({ queryKey: ['notifications'] });
       queryClient.setQueriesData({ queryKey: ['notifications'] }, (old: any) => {
-        if (!old) return old;
+        if (!old || !Array.isArray(old)) return old;
         return old.filter((n: any) => n.id !== id);
       });
     },

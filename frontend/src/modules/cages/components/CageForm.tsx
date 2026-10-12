@@ -12,15 +12,15 @@ import type { Cage } from '../types/cage.types';
 import { useQueryClient } from '@tanstack/react-query';
 
 const schema = z.object({
-  number: z.coerce.number({
-    invalid_type_error: 'El número de jaula es obligatorio'
-  }).int('El número debe ser un entero').min(1, 'El número de jaula debe ser mayor o igual a 1').max(999, 'El número de jaula debe ser menor o igual a 999'),
+  quantity: z.coerce.number({
+    invalid_type_error: 'La cantidad es obligatoria'
+  }).int('La cantidad debe ser un entero').min(1, 'La cantidad debe ser mayor o igual a 1').max(9999, 'La cantidad debe ser menor o igual a 9999'),
   type: z.enum(['engorde', 'reproducción'], {
     errorMap: () => ({ message: 'El tipo de jaula debe ser engorde o reproducción' })
   }),
   capacity: z.coerce.number({
     invalid_type_error: 'La capacidad es obligatoria'
-  }).int('La capacidad debe ser un entero').min(1, 'La capacidad debe ser mayor o igual a 1').max(6, 'La capacidad debe ser menor o igual a 6'),
+  }).int('La capacidad debe ser un entero').min(1, 'La capacidad debe ser mayor o igual a 1').max(100, 'La capacidad debe ser menor o igual a 100'),
   status: z.enum(['operativa', 'mantenimiento'], {
     errorMap: () => ({ message: 'El estado debe ser operativa o mantenimiento' })
   }),
@@ -28,8 +28,8 @@ const schema = z.object({
   (data) => !(data.type === 'reproducción' && data.capacity !== 1),
   { message: 'La capacidad para reproducción debe ser 1.', path: ['capacity'] },
 ).refine(
-  (data) => !(data.type === 'engorde' && (data.capacity < 1 || data.capacity > 6)),
-  { message: 'La capacidad para engorde debe ser entre 1 y 6.', path: ['capacity'] },
+  (data) => !(data.type === 'engorde' && (data.capacity < 1 || data.capacity > 100)),
+  { message: 'La capacidad para engorde debe ser entre 1 y 100.', path: ['capacity'] },
 );
 
 type FormValues = z.infer<typeof schema>;
@@ -50,7 +50,7 @@ export function CageForm({ defaultValues, cageId, mode, onSuccess, onCancel }: R
   const { register, handleSubmit, formState: { errors, isSubmitting }, watch, setValue } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      number: defaultValues?.number,
+      quantity: 1, // Por defecto al editar y crear es 1
       type: defaultValues?.type ?? 'reproducción',
       capacity: defaultValues?.capacity ?? 1,
       status: (defaultValues?.status as 'operativa' | 'mantenimiento') ?? 'operativa',
@@ -73,7 +73,7 @@ export function CageForm({ defaultValues, cageId, mode, onSuccess, onCancel }: R
           return;
         }
         await cageService.create({ ...values, galponId: activeGalpon.id });
-        showToast('Jaula registrada exitosamente.', 'success');
+        showToast(values.quantity > 1 ? `${values.quantity} jaulas registradas exitosamente.` : 'Jaula registrada exitosamente.', 'success');
       } else {
         if (!activeGalpon) {
           showToast('Debes seleccionar un galpón activo antes de editar una jaula.', 'error');
@@ -98,22 +98,22 @@ export function CageForm({ defaultValues, cageId, mode, onSuccess, onCancel }: R
         <div>
           <span className="block text-sm font-medium text-muted mb-1">Número de Jaula</span>
           <div className="px-3 py-2.5 bg-theme-surface border border-strong rounded-lg text-main font-semibold text-base">
-            #{defaultValues?.number}
+            {defaultValues?.number}
           </div>
         </div>
       ) : (
         <Input
-          label="Número de Jaula"
+          label="Cantidad de Jaulas a crear"
           type="number"
           required
-          placeholder="Ej: 1"
-          error={errors.number?.message}
-          {...register('number')}
+          placeholder="Ej: 5"
+          error={errors.quantity?.message}
+          {...register('quantity')}
         />
       )}
 
       <Select
-        label="Tipo de Jaula"
+        label={mode === 'create' ? 'Tipo de Jaulas' : 'Tipo de Jaula'}
         required
         options={[
           { value: 'reproducción', label: 'Reproducción' },
@@ -124,7 +124,7 @@ export function CageForm({ defaultValues, cageId, mode, onSuccess, onCancel }: R
       />
 
       <Input
-        label="Capacidad"
+        label={mode === 'create' ? 'Capacidad por jaula' : 'Capacidad'}
         type="number"
         required
         placeholder="Máx. 6 para engorde, 1 para reproducción"
@@ -134,7 +134,7 @@ export function CageForm({ defaultValues, cageId, mode, onSuccess, onCancel }: R
       />
 
       <Select
-        label="Estado de la Jaula"
+        label={mode === 'create' ? 'Estado de las Jaulas' : 'Estado de la Jaula'}
         required
         options={[
           { value: 'operativa', label: 'Operativa' },
@@ -149,7 +149,7 @@ export function CageForm({ defaultValues, cageId, mode, onSuccess, onCancel }: R
           Cancelar
         </Button>
         <Button type="submit" loading={isSubmitting}>
-          {mode === 'create' ? 'Registrar Jaula' : 'Guardar Cambios'}
+          {mode === 'create' ? 'Registrar Jaulas' : 'Guardar Cambios'}
         </Button>
       </div>
     </form>

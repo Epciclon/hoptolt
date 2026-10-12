@@ -113,6 +113,7 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
   // Vista Detallada (In-page view)
   if (selectedWorker?.profile) {
     const isOwner = selectedWorker.role === 'owner';
+    const isInactive = selectedWorker.status === 'inactive';
     const profileName = selectedWorker.profile.fullName || selectedWorker.profile.username || 'Usuario';
     const maxDate = getEcuadorDateString();
 
@@ -131,10 +132,21 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
               Volver
             </Button>
             <div>
-              <h2 className="text-lg font-bold text-main">Historial de {profileName}</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-bold text-main">Historial de {profileName}</h2>
+                {isInactive && (
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-700 font-semibold">
+                    Inactivo / Ex-trabajador
+                  </span>
+                )}
+              </div>
               <div className="flex flex-col gap-0.5 mt-1">
                 <p className="text-sm font-medium text-muted">
-                  {isOwner ? 'Propietario del Galpón' : 'Trabajador del Galpón'}
+                  {isOwner 
+                    ? 'Propietario del Galpón' 
+                    : isInactive 
+                      ? 'Ex-trabajador desvinculado (registros históricos conservados)' 
+                      : 'Trabajador del Galpón'}
                 </p>
                 <p className="text-xs text-muted">
                   Selecciona un registro de la lista para ver información más detallada.
@@ -235,8 +247,14 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
                     {profile.fullName || profile.username}
                   </h3>
                   <div className="flex items-center gap-1.5 text-xs text-muted mt-0.5">
-                    <span className={`px-1.5 py-0.5 rounded ${isOwner ? 'bg-theme-surface border border-default text-main' : 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400'} font-medium`}>
-                      {isOwner ? 'Propietario' : 'Trabajador'}
+                    <span className={`px-1.5 py-0.5 rounded font-medium ${
+                      isOwner 
+                        ? 'bg-theme-surface border border-default text-main' 
+                        : member.status === 'inactive'
+                          ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-700'
+                          : 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400'
+                    }`}>
+                      {isOwner ? 'Propietario' : member.status === 'inactive' ? 'Ex-trabajador' : 'Trabajador'}
                     </span>
                   </div>
                 </div>
@@ -258,12 +276,14 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
                 
                 {/* Jaulas Asignadas (Solo para trabajadores) */}
                 {!isOwner && (
-                  <div className="mt-2 pt-2 border-t border-slate-50">
+                  <div className="mt-2 pt-2 border-t border-default">
                     <div className="flex items-center gap-1.5 text-xs font-semibold text-muted uppercase mb-1.5">
                       <Box size={13} />
-                      Jaulas Asignadas ({assignedCages.length})
+                      {member.status === 'inactive' ? 'Estado' : `Jaulas Asignadas (${assignedCages.length})`}
                     </div>
-                    {assignedCages.length > 0 ? (
+                    {member.status === 'inactive' ? (
+                      <span className="text-xs text-amber-600 dark:text-amber-400 italic">Desvinculado del galpón</span>
+                    ) : assignedCages.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
                         {assignedCages.slice(0, 5).map(wc => (
                           <span key={wc.id} className="text-[11px] bg-theme-surface border border-default text-muted px-1.5 py-0.5 rounded">

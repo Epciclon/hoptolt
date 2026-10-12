@@ -1,4 +1,4 @@
-﻿import api from '@/lib/api';
+import api from '@/lib/api';
 import type { Cage, CreateCageDto, UpdateCageDto } from '../types/cage.types';
 
 export interface GetCagesParams {
@@ -37,9 +37,9 @@ export const cageService = {
     return cage;
   },
 
-  async create(payload: CreateCageDto): Promise<Cage> {
-    const { data } = await api.post<{ success: boolean; cage: Cage }>('/cages', payload);
-    return data.cage;
+  async create(payload: CreateCageDto): Promise<Cage[]> {
+    const { data } = await api.post<{ success: boolean; cages: Cage[] }>('/cages', payload);
+    return data.cages;
   },
 
   async update(id: number, payload: UpdateCageDto): Promise<Cage> {

@@ -167,7 +167,6 @@ export function MontasView({ searchTerm, onSearchChange }: Readonly<MontasViewPr
               )
             }
           >
-            <div className="flex flex-col gap-3">
               {group.machos.map((macho) => (
           <RabbitSelectableCard
             key={macho.id}
@@ -267,7 +266,6 @@ export function MontasView({ searchTerm, onSearchChange }: Readonly<MontasViewPr
             )}
           </RabbitSelectableCard>
               ))}
-            </div>
           </CageGroupCard>
         ))}
       </div>

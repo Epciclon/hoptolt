@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Input, Select, Button } from '@/shared/ui';
-import { Sparkles } from 'lucide-react';
+import { Dices } from 'lucide-react';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { rabbitService } from '../services/rabbit.service';
 import { raceService } from '@/modules/races/services/race.service';
@@ -236,7 +236,7 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
         <Button
           type="button"
           variant="outline"
-          icon={<Sparkles size={16} />}
+          icon={<Dices size={16} />}
           onClick={suggestName}
           disabled={!selectedSex || suggestingName}
           loading={suggestingName}
@@ -286,6 +286,7 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
               alt="Foto del conejo"
               fill
               unoptimized
+              priority={true}
               className="object-contain"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             />
@@ -301,12 +302,13 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
           accept="image/*"
           onChange={handleImageUpload}
           disabled={uploading}
-          className="block w-full text-sm text-muted
+          className="block w-full text-sm text-muted dark:text-slate-200
             file:mr-4 file:py-2 file:px-4
             file:rounded-lg file:border-0
             file:text-sm file:font-semibold
             file:bg-blue-50 file:text-blue-700
-            hover:file:bg-blue-100
+            dark:file:bg-blue-900/50 dark:file:text-white
+            hover:file:bg-blue-100 dark:hover:file:bg-blue-800/60
             disabled:opacity-50 transition-colors"
         />
         {uploading && <p className="text-sm text-muted mt-2">Subiendo imagen, por favor espera...</p>}

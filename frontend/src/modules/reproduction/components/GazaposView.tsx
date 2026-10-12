@@ -303,7 +303,6 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
                 </span>
               }
             >
-              <div className="flex flex-col gap-3">
                 {group.reproductions.map(reproduction => {
                   const isExpanded = expandedId === reproduction.id;
                   const daysInLactation = getDaysInLactation(reproduction.estimatedBirthDate);
@@ -455,7 +454,6 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
               </RabbitSelectableCard>
                   );
                 })}
-              </div>
             </CageGroupCard>
           ))}
         </div>
@@ -477,6 +475,7 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
           onFinish={handleConfirmFinish}
           reproduction={toFinish}
           finishing={finishing}
+          onKitsRegistered={onSuccess}
         />
       )}
 

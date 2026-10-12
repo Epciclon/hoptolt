@@ -13,18 +13,40 @@ class CageService {
         const galpon = await galponRepository.findById(data.galponId);
         if (!galpon) throw new AppError('El galpón no existe.', 404);
 
-        const currentCageCount = await cageRepository.countByGalponId(data.galponId);
-        if (currentCageCount >= galpon.totalCapacity) {
-            throw new AppError('No se pueden crear más jaulas. Capacidad máxima del galpón alcanzada.', 400);
+        const quantity = parseInt(data.quantity) || 1;
+        if (quantity <= 0) {
+            throw new AppError('La cantidad debe ser un número positivo mayor a 0.', 400);
         }
 
-        const exists = await cageRepository.findByNumberAndGalpon(data.number, data.galponId);
-        if (exists) throw new AppError('El número de jaula ya existe en este galpón.', 400);
+        const currentCages = await cageRepository.findByGalponId(data.galponId);
+        const currentCageCount = currentCages.length;
+        
+        if (currentCageCount + quantity > galpon.totalCapacity) {
+            throw new AppError(`No se pueden crear ${quantity} jaulas. La capacidad límite de este galpón es de ${galpon.totalCapacity} jaulas y actualmente tienes ${currentCageCount}.`, 400);
+        }
 
-        return cageRepository.create({
-            ...data,
+        const existingNumbers = new Set(currentCages.map(c => Number(c.number)));
+        const availableNumbers = [];
+        let currentNum = 1;
+
+        while (availableNumbers.length < quantity) {
+            if (!existingNumbers.has(currentNum)) {
+                availableNumbers.push(currentNum);
+            }
+            currentNum++;
+        }
+
+        const cagesToCreate = availableNumbers.map(number => ({
+            number,
+            type: data.type,
+            capacity: data.capacity,
+            status: data.status || 'operativa',
+            galponId: data.galponId,
             profileId
-        });
+        }));
+
+        const createdCages = await cageRepository.bulkCreate(cagesToCreate);
+        return createdCages;
     }
 
     async getCageById(id, galponId, profileId) {

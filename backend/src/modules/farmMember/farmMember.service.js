@@ -17,11 +17,11 @@ class FarmMemberService {
     }
 
     /**
-     * Lista TODOS los miembros activos de un galpón (incluyendo al propietario).
-     * Útil para reportes y auditoría.
+     * Lista TODOS los miembros de un galpón (incluyendo activos, inactivos y al propietario).
+     * Útil para reportes y auditoría histórica.
      */
     async getAllMembersByGalpon(galponId) {
-        return farmMemberRepository.findByGalponId(galponId);
+        return farmMemberRepository.findByGalponId(galponId, true);
     }
 
     /**
@@ -53,6 +53,8 @@ class FarmMemberService {
             throw new AppError('Ya eres miembro de este galpón.', 400);
         }
         if (existing) {
+            await farmMemberRepository.replacePermissions(existing.id, []);
+            await farmMemberRepository.replaceWorkerCages(existing.id, []);
             return farmMemberRepository.update(existing, { role: 'worker', status: 'active' });
         }
         return farmMemberRepository.create({ profileId, galponId, role: 'worker', status: 'active' });
@@ -198,6 +200,14 @@ class FarmMemberService {
         const ownerProfile = await Profile.findByPk(requestingProfileId);
 
         await farmMemberRepository.deactivate(member);
+
+        // Si el trabajador tenía este galpón como activo, deseleccionarlo
+        const workerProfile = await Profile.findByPk(member.profileId);
+        if (workerProfile && workerProfile.activeGalponId === member.galponId) {
+            await workerProfile.update({ activeGalponId: null });
+            const { clearCache } = require('../../common/middlewares/auth.middleware');
+            clearCache(member.profileId);
+        }
 
         // Notificar al trabajador que fue eliminado del galpón
         await notificationService.createNotification(member.profileId, {

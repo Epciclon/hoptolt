@@ -12,7 +12,7 @@ const Cage = sequelize.define('Cage', {
         allowNull: false,
         validate: {
             min: 1,
-            max: 999,
+            max: 9999,
             isInt: { msg: 'El número debe ser un entero positivo' }
         }
     },
@@ -26,7 +26,7 @@ const Cage = sequelize.define('Cage', {
         allowNull: false,
         validate: {
             min: 1,
-            max: 6,
+            max: 100,
             isInt: { msg: 'La capacidad debe ser un entero positivo' }
         }
     },

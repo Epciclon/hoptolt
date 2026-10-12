@@ -139,7 +139,12 @@ export function RabbitDetailsModal({
 
           {activeTab === 'medical' && (
             <div className="bg-card p-6 rounded-xl border border-strong shadow-sm min-h-[300px]">
-              <RabbitGrowthHistory rabbitId={rabbit.id} rabbitBirthDate={rabbit.birthDate} />
+              <RabbitGrowthHistory 
+                rabbitId={rabbit.id} 
+                rabbitBirthDate={rabbit.birthDate}
+                rabbitAge={rabbit.age}
+                rabbitWeight={rabbit.weight}
+              />
             </div>
           )}
 

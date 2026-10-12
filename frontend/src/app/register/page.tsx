@@ -27,8 +27,7 @@ const schema = z.object({
     .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'Solo letras y espacios'),
   password: z
     .string()
-    .min(6, 'Mínimo 6 caracteres')
-    .regex(/[!@#$%^&*(),.?":{}|<>_]/, 'Debe contener al menos un carácter especial (ej. @#$%)'),
+    .min(6, 'Mínimo 6 caracteres'),
   confirmPassword: z.string().min(6, 'Debes confirmar tu contraseña'),
   terms: z.boolean().refine(val => val === true, {
     message: 'Debes aceptar los Términos y Condiciones para registrarte',

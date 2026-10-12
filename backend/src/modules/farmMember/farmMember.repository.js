@@ -3,10 +3,16 @@ const { FarmMember, Profile, Galpon, WorkerPermission, WorkerCage, Cage } = requ
 class FarmMemberRepository {
     /**
      * Busca todos los miembros de un galpón con sus perfiles.
+     * @param {number} galponId
+     * @param {boolean} includeInactive - Si es true, incluye miembros inactivos (para auditoría e informes)
      */
-    async findByGalponId(galponId) {
+    async findByGalponId(galponId, includeInactive = false) {
+        const where = { galponId };
+        if (!includeInactive) {
+            where.status = 'active';
+        }
         return FarmMember.findAll({
-            where: { galponId, status: 'active' },
+            where,
             include: [
                 { model: Profile, as: 'profile' },
                 { model: WorkerPermission, as: 'permissions' },
@@ -62,6 +68,8 @@ class FarmMemberRepository {
     }
 
     async deactivate(member) {
+        await WorkerPermission.destroy({ where: { farmMemberId: member.id } });
+        await WorkerCage.destroy({ where: { farmMemberId: member.id } });
         return member.update({ status: 'inactive' });
     }
 

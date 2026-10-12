@@ -23,6 +23,10 @@ const Growth = sequelize.define('Growth', {
             max: 4.5
         }
     },
+    isManual: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
     recordDate: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW

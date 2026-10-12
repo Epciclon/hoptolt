@@ -296,7 +296,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
         </div>
       </div>
 
-      <div className="bg-card border border-strong rounded-lg p-4 sticky top-0 z-10 shadow-sm flex flex-col gap-4">
+      <div className="bg-card border border-strong rounded-lg p-4 sticky top-0 z-30 shadow-sm flex flex-col gap-4">
         <div className="flex items-center justify-between border-b border-default pb-3">
           <span className="text-sm font-medium text-main">Turno Actual:</span>
           <span className={`px-3 py-1 rounded-full text-xs font-bold ${currentEcuadorShift === 'mañana' ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-400' : 'bg-orange-100 dark:bg-orange-500/10 text-orange-800 dark:text-orange-400'}`}>

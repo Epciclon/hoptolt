@@ -94,7 +94,7 @@ export function AssignmentTable() {
     const matchesSearch = title.toLowerCase().includes(search.toLowerCase());
     const matchesType = type ? title.toLowerCase().includes(type.toLowerCase()) : true;
     return matchesSearch && matchesType;
-  });
+  }).sort((a, b) => (a.cageNumber || 0) - (b.cageNumber || 0));
 
   const totalPages = Math.max(1, Math.ceil(filteredGroups.length / limit));
   const paginatedGroups = filteredGroups.slice((page - 1) * limit, page * limit);
@@ -183,7 +183,6 @@ export function AssignmentTable() {
                     ) : undefined
                   }
                 >
-                  <div className="space-y-3">
                     {group.assignments.map(assignment => {
                       const isSelected = selectedIds.includes(assignment.rabbitId);
                       return (
@@ -203,7 +202,6 @@ export function AssignmentTable() {
                         />
                       );
                     })}
-                  </div>
                 </CageGroupCard>
               );
             })}

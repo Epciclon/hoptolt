@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { routeNotification } from '@/shared/utils/notificationRouting';
+import { useAuth } from '@/modules/auth/hooks/useAuth';
 
 
 export function NotificationIcon() {
@@ -17,6 +18,7 @@ export function NotificationIcon() {
   const { notifications, markAsRead, markAllAsRead, deleteNotification, unreadCount } = useNotifications({ limit: NOTIFICATION_LIMIT });
   const { acceptInvitation, revokeInvitation } = useInvitation();
   const { showToast } = useToast();
+  const { user } = useAuth();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [accepting, setAccepting] = useState<number | null>(null);
@@ -30,10 +32,13 @@ export function NotificationIcon() {
       // New notification arrived!
       setIsAnimating(true);
       
-      // Play sound
+      // Play sound only if user has interacted with the page
       try {
         const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-        if (AudioContext) {
+        // Check user activation to prevent Chrome autoplay warnings
+        const hasInteracted = (window as any).__hasInteracted || (navigator.userActivation ? navigator.userActivation.hasBeenActive : false);
+        
+        if (AudioContext && hasInteracted) {
           const ctx = new AudioContext();
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
@@ -69,8 +74,54 @@ export function NotificationIcon() {
       setIsOpen(false);
     };
     window.addEventListener('close-notifications', handleCloseNotifications);
+    
+    // Global listener to track first interaction to safely play sounds
+    if (typeof window !== 'undefined' && !(window as any).__interactionListenerAdded) {
+      (window as any).__hasInteracted = false;
+      const setInteracted = () => { (window as any).__hasInteracted = true; };
+      window.addEventListener('click', setInteracted, { once: true, capture: true });
+      window.addEventListener('keydown', setInteracted, { once: true, capture: true });
+      (window as any).__interactionListenerAdded = true;
+    }
+
     return () => window.removeEventListener('close-notifications', handleCloseNotifications);
   }, []);
+
+  // Welcome Toast
+  useEffect(() => {
+    if (typeof window !== 'undefined' && unreadCount > 0 && notifications.length > 0 && user?.id) {
+      const today = new Date().toDateString();
+      const storageKey = `welcome_notif_${user.id}_${today}`;
+      const shown = localStorage.getItem(storageKey);
+      
+      if (!shown) {
+        localStorage.setItem(storageKey, 'true');
+        
+        const unreadList = notifications.filter(n => !n.read);
+        if (unreadList.length > 0) {
+          const warnings = unreadList.filter(n => n.type === 'warning');
+          
+          // Calculamos "avisos" sumando infos, invitaciones y lo que el backend indique en unreadCount
+          const diff = unreadCount - unreadList.length;
+          const totalInfos = unreadList.length - warnings.length + (diff > 0 ? diff : 0);
+          
+          const parts = [];
+          if (warnings.length === 1) parts.push(`1 alerta importante`);
+          else if (warnings.length > 1) parts.push(`${warnings.length} alertas importantes`);
+          
+          if (totalInfos === 1) parts.push(`1 aviso`);
+          else if (totalInfos > 1) parts.push(`${totalInfos} avisos`);
+          
+          if (parts.length > 0) {
+            const summary = parts.join(' y ');
+            setTimeout(() => {
+              showToast(`Tienes ${summary} pendientes. ¡Dales un vistazo!`, 'info');
+            }, 1500);
+          }
+        }
+      }
+    }
+  }, [unreadCount, notifications, showToast, user?.id]);
 
   const getIconByType = (type: string) => {
     switch (type) {

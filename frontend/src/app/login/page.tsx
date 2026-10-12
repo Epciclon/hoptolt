@@ -41,7 +41,18 @@ export default function LoginPage() {
       setIsLoggingIn(true);
       await authService.login(values);
       await refetchUser();
-      router.push('/dashboard');
+
+      const isNewUser = typeof window !== 'undefined' && window.location.search.includes('registered=true');
+      try {
+        const me = await authService.getMe();
+        if (isNewUser || !me?.activeGalponId) {
+          router.push('/dashboard/galpones');
+        } else {
+          router.push('/dashboard');
+        }
+      } catch {
+        router.push(isNewUser ? '/dashboard/galpones' : '/dashboard');
+      }
       router.refresh();
     } catch (err) {
       setIsLoggingIn(false);

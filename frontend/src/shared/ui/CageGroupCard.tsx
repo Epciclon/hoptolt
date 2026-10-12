@@ -1,5 +1,8 @@
-import { ReactNode } from 'react';
+'use client';
+
+import { ReactNode, useState, Children } from 'react';
 import { cn } from '@/lib/utils';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface CageGroupCardProps {
   cageNumber: number;
@@ -21,6 +24,11 @@ export function CageGroupCard({
   headerBadge
 }: Readonly<CageGroupCardProps>) {
   const isSelectable = !!onCageClick;
+  const [expanded, setExpanded] = useState(false);
+  
+  const childrenArray = Children.toArray(children);
+  const hasManyChildren = childrenArray.length > 3;
+  const visibleChildren = expanded ? childrenArray : childrenArray.slice(0, 3);
 
   return (
     <div
@@ -45,7 +53,7 @@ export function CageGroupCard({
 
       <div className="flex flex-col items-center justify-center mb-4 border-b border-strong pb-3 relative z-10 pointer-events-none">
         <h3 className="text-lg font-bold text-main text-center mb-1">
-          Jaula #{cageNumber}
+          Jaula {cageNumber}
         </h3>
         {headerBadge && (
           <div className="absolute right-0 top-0 pointer-events-none">
@@ -57,12 +65,35 @@ export function CageGroupCard({
         </span>
       </div>
 
-      <div className="flex-1 space-y-3 relative z-10 pointer-events-none">
-        {children}
+      <div className={cn("flex-1 space-y-3 relative z-10", isSelectable ? "pointer-events-none" : "pointer-events-auto")}>
+        {visibleChildren}
       </div>
 
+      {hasManyChildren && (
+        <div className="mt-2 flex justify-center relative z-20 pointer-events-auto">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpanded(!expanded);
+            }}
+            className="flex items-center gap-1 text-xs font-medium text-muted hover:text-main bg-theme-surface border border-default rounded-full px-3 py-1.5 shadow-sm transition-colors"
+          >
+            {expanded ? (
+              <>
+                <ChevronUp size={14} /> Mostrar menos
+              </>
+            ) : (
+              <>
+                <ChevronDown size={14} /> Ver {childrenArray.length - 3} más
+              </>
+            )}
+          </button>
+        </div>
+      )}
+
       {footer && (
-        <div className="mt-4 pt-3 border-t border-default relative z-10 pointer-events-none">
+        <div className={cn("mt-4 pt-3 border-t border-default relative z-20", isSelectable ? "pointer-events-none" : "pointer-events-auto")}>
           {footer}
         </div>
       )}

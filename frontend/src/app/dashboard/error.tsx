@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect } from 'react';
 import { AlertTriangle, RefreshCw, ArrowLeft } from 'lucide-react';
@@ -11,11 +11,15 @@ export default function DashboardError({
   error: Error & { digest?: string };
   reset: () => void;
 }>) {
-  const router = useRouter();
-
   useEffect(() => {
     console.error('[Dashboard Error]', error);
   }, [error]);
+
+  const handleBack = () => {
+    if (typeof window !== 'undefined') {
+      window.location.href = '/dashboard';
+    }
+  };
 
   return (
     <div className="flex items-center justify-center min-h-[60vh] px-4">
@@ -40,7 +44,7 @@ export default function DashboardError({
             Reintentar
           </button>
           <button type="button"
-            onClick={() => router.push('/dashboard')}
+            onClick={handleBack}
             className="inline-flex items-center gap-2 bg-card border border-strong hover:bg-theme-surface text-main font-semibold px-5 py-2.5 rounded-xl transition-colors text-base"
           >
             <ArrowLeft size={16} />

@@ -26,7 +26,7 @@ export default function CagesPage() {
             subtitle="Aquí puedes organizar, ubicar y revisar el estado de todas las jaulas"
             tutorialUrl="https://youtu.be/mpzohtBFU_0"
             actions={
-              <Button icon={<Plus size={16} />} onClick={openCreate}>Nueva Jaula</Button>
+              <Button icon={<Plus size={16} />} onClick={openCreate}>Nuevas Jaulas</Button>
             }
           />
           <CageTable onEdit={openEdit} />
@@ -34,7 +34,7 @@ export default function CagesPage() {
           <Dialog
             open={modal !== null}
             onClose={closeModal}
-            title={modal === 'create' ? 'Nueva Jaula' : `Editar Jaula #${editTarget?.number}`}
+            title={modal === 'create' ? 'Nuevas Jaulas' : `Editar Jaula ${editTarget?.number}`}
             size="md"
           >
             {modal !== null && (
