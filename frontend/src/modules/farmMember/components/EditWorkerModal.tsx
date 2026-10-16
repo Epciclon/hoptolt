@@ -270,8 +270,8 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
   }, []);
 
   const filteredCages = occupiedCages.filter(c => {
-    const matchesSearch = c.number.toString().includes(cageSearch) ||
-                         c.type.toLowerCase().includes(cageSearch.toLowerCase());
+    const clean = cageSearch.trim().toLowerCase().replace(/^jaula\s*/i, "");
+    const matchesSearch = clean === "" || c.number.toString() === clean || c.number.toString().includes(clean) || c.type.toLowerCase().includes(clean);
     const notSelected = !selectedCages.includes(c.id);
     return matchesSearch && notSelected;
   });
@@ -320,7 +320,7 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
                       onClick={() => handleCageSelect(cage)}
                       className="w-full text-left px-3 py-2 hover:bg-gray-100 border-b last:border-b-0 text-sm"
                     >
-                      {cage.number}  {cage.type.charAt(0).toUpperCase() + cage.type.slice(1)}
+                      Jaula {cage.number} - {cage.type.charAt(0).toUpperCase() + cage.type.slice(1)}
                     </button>
                   ));
                 })()}
@@ -333,12 +333,12 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
                 const cage = occupiedCages.find(c => c.id === id);
                 if (!cage) return null;
                 return (
-                  <div key={`cage-${id}`} className="flex items-center gap-1 bg-sky-100 dark:bg-sky-900/30 text-sky-800 dark:text-sky-400 px-2 py-1 rounded text-sm">
-                    <span>{cage.number}</span>
+                  <div key={`cage-${id}`} className="flex items-center gap-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 px-2.5 py-1 rounded text-sm font-medium">
+                    <span>Jaula {cage.number}</span>
                     <button
                       type="button"
                       onClick={() => handleCageRemove(id)}
-                      className="text-sky-600 hover:text-sky-800 font-bold"
+                      className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-200 font-bold ml-0.5"
                     >
                       ×
                     </button>

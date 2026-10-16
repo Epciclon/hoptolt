@@ -116,7 +116,7 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
             onClick={toggleSidebar} 
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleSidebar(); }}
             aria-label="Cerrar menú lateral"
-            className="fixed inset-0 bg-black/40 z-30 lg:hidden transition-opacity duration-300 w-full h-full border-none cursor-pointer outline-none"
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity duration-300 w-full h-full border-none cursor-pointer outline-none"
           />
         )}
         

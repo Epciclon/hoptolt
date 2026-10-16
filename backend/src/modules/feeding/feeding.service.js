@@ -26,7 +26,7 @@ class FeedingService {
 
             const feedingsCount = existingCountMap.get(cageId) || 0;
             if (feedingsCount >= 1 && !justification) {
-                throw new AppError(`Ya tienes un registro de alimentación en el turno de la ${finalShift} para la jaula ${cage.number}. Se requiere justificación.`, 400);
+                throw new AppError(`La jaula ${cage.number} ya cuenta con registro de alimentación en el turno de la ${finalShift}. Se requiere justificación si deseas registrarla nuevamente.`, 400);
             }
 
             const rabbitsSnapshot = cageAssignments.map(a => a.rabbit).filter(Boolean);
@@ -64,7 +64,23 @@ class FeedingService {
         }
 
         const { Op } = require('sequelize');
-        const { Cage, Assignment, Rabbit, Feeding } = require('../../domain/models');
+        const { Cage, Assignment, Rabbit, Feeding, WorkerCage } = require('../../domain/models');
+
+        // Verificar que el usuario tiene acceso al galpón y validar sus jaulas si es trabajador
+        const membership = await FarmMember.findOne({
+            where: { profileId, galponId, status: 'active' }
+        });
+        if (!membership) throw new AppError('No tienes acceso a este galpón.', 403);
+
+        if (membership.role === 'worker') {
+            const workerCages = await WorkerCage.findAll({ where: { farmMemberId: membership.id } });
+            const assignedCageIds = new Set(workerCages.map(wc => Number(wc.cageId)));
+            for (const cageId of cageIds) {
+                if (!assignedCageIds.has(Number(cageId))) {
+                    throw new AppError(`No tienes permiso para alimentar jaulas que no tienes asignadas (jaula ID ${cageId}).`, 403);
+                }
+            }
+        }
 
         // Precarga de Jaulas
         const cages = await Cage.findAll({ where: { id: { [Op.in]: cageIds } } });
@@ -82,13 +98,13 @@ class FeedingService {
             assignmentsMap.get(a.cageId).push(a);
         }
 
-        // Precarga de registros existentes (para validación de duplicados en el turno)
+        // Precarga de registros existentes (para validación de duplicados en el turno a nivel de galpón y jaula)
         const { startOfDay, endOfDay } = feedingRepository._getEcuadorDayBounds(now);
         const existingFeedings = await Feeding.findAll({
             where: {
+                galponId,
                 cageId: { [Op.in]: cageIds },
                 shift: finalShift,
-                profileId,
                 feedingDate: { [Op.between]: [startOfDay, endOfDay] }
             },
             attributes: ['cageId']
@@ -106,6 +122,26 @@ class FeedingService {
         const { notifyOwnerOnWorkerAction } = require('../../common/helpers/notification.helper');
         await notifyOwnerOnWorkerAction(profileId, galponId, 'feeding', 'Alimentación');
 
+        // Sincronización asíncrona en tiempo real: verificar y limpiar recordatorios de alimentación si ya se completaron
+        try {
+            const notificationService = require('../notification/notification.service');
+            await notificationService.checkAndCreateFeedingNotifications(profileId);
+
+            const galpon = await galponRepository.findById(galponId);
+            if (galpon?.profileId && galpon.profileId !== profileId) {
+                await notificationService.checkAndCreateFeedingNotifications(galpon.profileId);
+            }
+
+            const members = await FarmMember.findAll({ where: { galponId, status: 'active' } });
+            for (const m of members) {
+                if (m.profileId && m.profileId !== profileId && m.profileId !== galpon?.profileId) {
+                    await notificationService.checkAndCreateFeedingNotifications(m.profileId);
+                }
+            }
+        } catch (notifErr) {
+            console.error('Error synchronizing feeding notifications after register:', notifErr);
+        }
+
         return createdFeedings;
     }
 
@@ -117,6 +153,13 @@ class FeedingService {
             where: { profileId, galponId, status: 'active' }
         });
         if (!membership) throw new AppError('No tienes acceso a este galpón.', 403);
+
+        if (membership.role === 'worker') {
+            const { WorkerCage } = require('../../domain/models');
+            const workerCages = await WorkerCage.findAll({ where: { farmMemberId: membership.id } });
+            const assignedCageIds = workerCages.map(wc => Number(wc.cageId));
+            filters.cageIds = assignedCageIds;
+        }
 
         const { limit: limitValue, offset, page: pageValue } = getPaginationParams(page, limit);
         

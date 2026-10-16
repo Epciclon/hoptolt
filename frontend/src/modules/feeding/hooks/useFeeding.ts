@@ -101,6 +101,7 @@ export function useFeeding(filters?: { profileId?: string; date?: string }) {
       });
       // También invalidamos para garantizar sincronización
       queryClient.invalidateQueries({ queryKey: ['feedings'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
   });
 

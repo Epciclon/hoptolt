@@ -11,6 +11,7 @@ const swaggerConfig = require('./infrastructure/docs/swagger');
 const { apiLimiter, helmetConfig, inputSanitizer } = require('./common/middlewares/security.middleware');
 const errorMiddleware = require('./common/middlewares/error.middleware');
 const startReproductionCron = require('./infrastructure/crons/reproduction.cron');
+const startFeedingCron = require('./infrastructure/crons/feeding.cron');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -48,6 +49,7 @@ sequelize.authenticate()
 
         // Iniciar cron jobs
         startReproductionCron();
+        startFeedingCron();
     })
     .catch(err => {
         console.error('❌ Error al inicializar la base de datos:', err);

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -147,7 +147,7 @@ export function Sidebar({ collapsed, onToggle }: Readonly<SidebarProps>) {
 
   return (
     <aside className={cn(
-      "fixed left-0 top-0 h-full w-60 bg-sidebar flex flex-col z-40 overflow-hidden transition-all duration-300",
+      "fixed left-0 top-0 h-full w-60 bg-sidebar flex flex-col z-50 overflow-hidden transition-all duration-300",
       collapsed ? "-translate-x-full" : "translate-x-0"
     )}>
       <div className="px-5 py-5 border-b border-white/10 flex items-center justify-between">

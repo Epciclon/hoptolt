@@ -287,7 +287,7 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
                       <div className="flex flex-wrap gap-1">
                         {assignedCages.slice(0, 5).map(wc => (
                           <span key={wc.id} className="text-[11px] bg-theme-surface border border-default text-muted px-1.5 py-0.5 rounded">
-                            #{wc.cage?.number ?? wc.cageId}
+                            Jaula {wc.cage?.number ?? wc.cageId}
                           </span>
                         ))}
                         {assignedCages.length > 5 && (

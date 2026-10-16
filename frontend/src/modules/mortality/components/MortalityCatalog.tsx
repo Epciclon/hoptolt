@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Button, Dialog, LoadingMessage, CageGroupCard, RabbitSelectableCard } from '@/shared/ui';
 import { Pagination } from '@/shared/ui/Pagination';
-import { groupRabbitsByCage } from '@/shared/utils/rabbitUtils';
+import { useCageSelection } from '@/shared/hooks/useCageSelection';
 import { useMortality } from '../hooks/useMortality';
 import { MortalityForm } from './MortalityForm';
 
@@ -16,20 +16,18 @@ interface MortalityCatalogProps {
 export function MortalityCatalog({ onSuccess }: Readonly<MortalityCatalogProps>) {
   const [searchTerm, setSearchTerm] = useState('');
   const { assignedRabbits, loading } = useMortality();
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 12;
-
-  const [selectedRabbitIds, setSelectedRabbitIds] = useState<number[]>([]);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
 
-  const toggleRabbit = (rabbitId: number) => {
-    setSelectedRabbitIds(prev =>
-      prev.includes(rabbitId)
-        ? prev.filter(id => id !== rabbitId)
-        : [...prev, rabbitId]
-    );
-  };
-
+  const {
+    selectedRabbitIds,
+    toggleRabbit,
+    cageGroups,
+    paginatedGroups,
+    currentPage,
+    totalPages,
+    setCurrentPage,
+    clearSelection,
+  } = useCageSelection(assignedRabbits, searchTerm);
 
   const handleCloseFormModal = () => {
     setIsFormModalOpen(false);
@@ -37,33 +35,9 @@ export function MortalityCatalog({ onSuccess }: Readonly<MortalityCatalogProps>)
 
   const handleFormSuccess = () => {
     setIsFormModalOpen(false);
-    setSelectedRabbitIds([]);
+    clearSelection();
     onSuccess?.();
   };
-
-  const cageGroups = useMemo(() => {
-    // Primero filtramos los conejos si hay término de búsqueda
-    const filteredRabbits = assignedRabbits.filter(r => {
-      if (!searchTerm) return true;
-      const q = searchTerm.toLowerCase();
-      return (
-        Boolean(r.name?.toLowerCase().includes(q)) ||
-        Boolean(r.code?.toLowerCase().includes(q)) ||
-        Boolean(r.cageNumber?.toString().includes(q))
-      );
-    });
-
-    const grouped = groupRabbitsByCage(filteredRabbits);
-    return Object.values(grouped).sort((a, b) => a.cageNumber - b.cageNumber);
-  }, [assignedRabbits, searchTerm]);
-
-  // Si cambia la búsqueda, regresar a la página 1
-  useMemo(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
-
-  const totalPages = Math.ceil(cageGroups.length / itemsPerPage) || 1;
-  const paginatedGroups = cageGroups.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   if (loading) {
     return <LoadingMessage message="Cargando mortalidades..." />;

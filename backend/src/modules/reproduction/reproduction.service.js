@@ -15,7 +15,7 @@ class ReproductionService {
     }
 
     _getFemaleNameStr(female) {
-        return female.name ? ' — ' + female.name : '';
+        return female.name ? ' - ' + female.name : '';
     }
 
     async _validateFemaleForMating(female, galponId, mountDateObj) {

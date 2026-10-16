@@ -90,7 +90,7 @@ export function AssignmentTable() {
 
   // Apply filters
   const filteredGroups = groups.filter(group => {
-    const title = `Jaula #${group.cageNumber} — ${group.cageType.charAt(0).toUpperCase() + group.cageType.slice(1)}`;
+    const title = `Jaula ${group.cageNumber} - ${group.cageType.charAt(0).toUpperCase() + group.cageType.slice(1)}`;
     const matchesSearch = title.toLowerCase().includes(search.toLowerCase());
     const matchesType = type ? title.toLowerCase().includes(type.toLowerCase()) : true;
     return matchesSearch && matchesType;

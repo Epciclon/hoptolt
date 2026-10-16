@@ -6,13 +6,14 @@ import type { Reproduction } from '../types/reproduction.types';
 import { Button, Dialog, Input, Select, RabbitSelectableCard, CageGroupCard, RabbitAvatar } from '@/shared/ui';
 import { FilterBar } from '@/shared/ui/FilterBar';
 import { Pagination } from '@/shared/ui/Pagination';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { AlertTriangle, Trash2, Pencil } from 'lucide-react';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { mortalityService } from '@/modules/mortality/services/mortality.service';
 import { WeaningWizard } from './WeaningWizard';
 import { ReproductionForm } from './ReproductionForm';
 import { formatDateString } from '@/shared/utils/dateUtils';
+import { matchesSmartSearch } from '@/shared/utils/rabbitUtils';
 
 interface GazaposViewProps {
   searchTerm: string;
@@ -20,9 +21,12 @@ interface GazaposViewProps {
 }
 
 export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposViewProps>) {
-  const { reproductions, pagination, setPage, cancelReproduction, finishLactation, registerBirth, fetchReproductions } = useReproduction({ status: 'lactancia', search: searchTerm });
+  const { reproductions, loading, cancelReproduction, finishLactation, registerBirth, fetchReproductions } = useReproduction({ status: 'lactancia', limit: 1000 });
   const onSuccess = fetchReproductions;
   const { showToast } = useToast();
+  const [page, setPage] = useState(1);
+  const limit = 12;
+
   const [filterRace, setFilterRace] = useState<string>('');
   
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -76,24 +80,35 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
   const [bornKits, setBornKits] = useState<number | ''>('');
   const [registeringKits, setRegisteringKits] = useState(false);
 
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, filterRace]);
+
   const lactancias = reproductions.filter(r => {
     if (r.status !== 'lactancia') return false;
     if (r.isFemaleDeleted) return false;
-    let matchesSearch = true;
-    if (searchTerm) {
-      const q = searchTerm.toLowerCase();
-      matchesSearch = 
-        Boolean(r.femaleName?.toLowerCase().includes(q)) ||
-        Boolean(r.femaleCode.toLowerCase().includes(q)) ||
-        Boolean(r.cageNumber?.toString().includes(q));
-    }
-      
-    const matchesRace = filterRace ? String(r.femaleRace).toLowerCase() === filterRace.toLowerCase() : true;
-
-    return r.status === 'lactancia' && matchesSearch && matchesRace;
+    if (filterRace && String(r.femaleRace).toLowerCase() !== filterRace.toLowerCase()) return false;
+    return matchesSmartSearch(searchTerm, r.cageNumber, r.femaleCode, r.femaleName);
   });
 
   const uniqueRaces = Array.from(new Set(reproductions.filter(r => r.status === 'lactancia' && r.femaleRace).map(r => r.femaleRace)));
+
+  type GroupedLactancia = { cageNumber: number; cageType: string; reproductions: typeof lactancias };
+  const groupedLactancias = useMemo(() => {
+    const map = lactancias.reduce((acc, reproduction) => {
+      const cageNumber = reproduction.cageNumber || 0;
+      if (!acc[cageNumber]) {
+        acc[cageNumber] = { cageNumber, cageType: reproduction.cageType || 'reproducción', reproductions: [] };
+      }
+      acc[cageNumber].reproductions.push(reproduction);
+      return acc;
+    }, {} as Record<number, GroupedLactancia>);
+    return Object.values(map).sort((a, b) => a.cageNumber - b.cageNumber);
+  }, [lactancias]);
+
+  const paginatedGroups = useMemo(() => {
+    return groupedLactancias.slice((page - 1) * limit, page * limit);
+  }, [groupedLactancias, page, limit]);
 
   const formatDateTime = formatDateString;
 
@@ -285,20 +300,13 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
         </p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
-          {Object.values(lactancias.reduce((acc, reproduction) => {
-            const cageNumber = reproduction.cageNumber || 0;
-            if (!acc[cageNumber]) {
-              acc[cageNumber] = { cageNumber, cageType: reproduction.cageType || 'reproducción', reproductions: [] };
-            }
-            acc[cageNumber].reproductions.push(reproduction);
-            return acc;
-          }, {} as Record<number, { cageNumber: number; cageType: string; reproductions: typeof lactancias }>)).sort((a,b) => a.cageNumber - b.cageNumber).map(group => (
+          {paginatedGroups.map(group => (
             <CageGroupCard 
               key={group.cageNumber} 
               cageNumber={group.cageNumber} 
               cageType={group.cageType}
               headerBadge={
-                <span className="px-2 py-1 bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 text-[10px] font-medium rounded-full">
+                <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-medium rounded-full">
                   Lactancia
                 </span>
               }
@@ -459,10 +467,10 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
         </div>
       )}
 
-      {reproductions.length > 0 && (
+      {groupedLactancias.length > 0 && (
         <Pagination
-          currentPage={pagination.page}
-          totalPages={pagination.totalPages}
+          currentPage={page}
+          totalPages={Math.max(1, Math.ceil(groupedLactancias.length / limit))}
           onPageChange={setPage}
         />
       )}
@@ -778,7 +786,7 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
           setEditingReproduction(null);
         }}
         title={(() => {
-          const name = editingReproduction?.femaleName ? `  ${editingReproduction.femaleName}` : '';
+          const name = editingReproduction?.femaleName ? ` - ${editingReproduction.femaleName}` : '';
           return `Editar fechas de ${editingReproduction?.femaleCode ?? ''}${name}`;
         })()}
         size="xl"

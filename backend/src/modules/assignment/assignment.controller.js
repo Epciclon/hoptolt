@@ -41,12 +41,12 @@ exports.moveRabbits = catchAsync(async (req, res) => {
 
 exports.getAssignments = catchAsync(async (req, res) => {
     const galponId = req.galponId;
-    const assignments = await assignmentService.getAssignments(galponId);
+    const assignments = await assignmentService.getAssignments(galponId, req.user?.id);
     res.status(200).json({ success: true, assignments: assignments.map(toAssignmentDTO) });
 });
 
 exports.getAssignedRabbits = catchAsync(async (req, res) => {
-    const rabbits = await assignmentService.getAssignedRabbits(req.galponId);
+    const rabbits = await assignmentService.getAssignedRabbits(req.galponId, req.user?.id);
     res.status(200).json({ success: true, rabbits });
 });
 
@@ -58,7 +58,7 @@ exports.getAvailableRabbits = catchAsync(async (req, res) => {
 
 exports.getOperativeCages = catchAsync(async (req, res) => {
     const galponId = req.galponId;
-    const cages = await assignmentService.getOperativeCages(galponId);
+    const cages = await assignmentService.getOperativeCages(galponId, req.user?.id);
     res.status(200).json({ success: true, cages: cages.map(toCageDTO) });
 });
 

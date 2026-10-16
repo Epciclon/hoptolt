@@ -23,6 +23,11 @@ export function ReproductionDashboard() {
 
   const currentTab = !isOwner && activeTab === 'history' ? 'montas' : activeTab;
 
+  const handleTabSelect = (tabId: string) => {
+    setSearchTerm('');
+    handleTabChange(tabId);
+  };
+
   return (
     <Card className="min-h-[calc(100vh-7rem)]">
       <CardHeader title="Reproducción y Cría" subtitle="Sigue de cerca las montas, nacimientos y destetes de tus conejas" />
@@ -34,7 +39,7 @@ export function ReproductionDashboard() {
           ...(isOwner ? [{ id: 'history', label: 'Historial', icon: <Archive size={18} /> }] : [])
         ]}
         activeTab={currentTab}
-        onTabChange={handleTabChange}
+        onTabChange={handleTabSelect}
       />
       
       <div className="p-6 pt-0">

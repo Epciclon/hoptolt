@@ -104,25 +104,25 @@ export function WorkerDetailsModal({
         </div>
       ) : (
         <div className="space-y-5">
-          {/* Header  Avatar + Name */}
+          {/* Header - Avatar + Name */}
           <div className="flex items-center gap-4 pb-4 border-b border-default">
             <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-md">
               {initials}
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-bold text-main truncate">{profile?.fullName || ''}</h3>
+              <h3 className="text-lg font-bold text-main truncate">{profile?.fullName || '-'}</h3>
               <div className="flex flex-wrap items-center gap-3 mt-1 text-sm text-muted">
                 <span className="inline-flex items-center gap-1">
-                  <Mail size={14} /> {profile?.email || ''}
+                  <Mail size={14} /> {profile?.email || '-'}
                 </span>
                 <span className="inline-flex items-center gap-1">
-                  <AtSign size={14} /> {profile?.username || ''}
+                  <AtSign size={14} /> {profile?.username || '-'}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Jaulas Asignadas  FIRST */}
+          {/* Jaulas Asignadas - FIRST */}
           <div>
             <h4 className="flex items-center gap-2 font-semibold text-main mb-3 text-sm uppercase tracking-wide">
               <Box size={15} className="text-muted" />
@@ -140,7 +140,7 @@ export function WorkerDetailsModal({
                     className="inline-flex items-center gap-1.5 bg-theme-surface border border-default text-main text-sm font-medium px-3 py-1.5 rounded-lg border border-strong"
                   >
                     <Box size={13} className="text-muted" />
-                    #{wc.cage?.number ?? wc.cageId}
+                    Jaula {wc.cage?.number ?? wc.cageId}
                     {wc.cage?.type && (
                       <span className="text-xs text-theme-faint ml-0.5">({wc.cage.type})</span>
                     )}
@@ -150,7 +150,7 @@ export function WorkerDetailsModal({
             )}
           </div>
 
-          {/* Permisos  SECOND */}
+          {/* Permisos - SECOND */}
           <div>
             <h4 className="flex items-center gap-2 font-semibold text-main mb-3 text-sm uppercase tracking-wide">
               <Shield size={15} className="text-muted" />

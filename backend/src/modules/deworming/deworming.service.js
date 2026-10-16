@@ -13,7 +13,7 @@ class DewormingService {
             return;
         }
         
-        const nameSuffix = rabbit.name ? ' — ' + rabbit.name : '';
+        const nameSuffix = rabbit.name ? ' - ' + rabbit.name : '';
         if (rabbit.galponId !== galponId) {
             dewormingErrors.push(`El conejo ${rabbit.code}${nameSuffix} no pertenece al galpón activo.`);
             return;
@@ -58,7 +58,12 @@ class DewormingService {
     async registerDeworming(data, galponId, profileId) {
         const { rabbitIds } = data;
         const { Op } = require('sequelize');
-        const { Rabbit, Assignment, Reproduction, Deworming } = require('../../domain/models');
+        const { Rabbit, Assignment, Reproduction, Deworming, WorkerCage } = require('../../domain/models');
+
+        const membership = await FarmMember.findOne({
+            where: { profileId, galponId, status: 'active' }
+        });
+        if (!membership) throw new AppError('No tienes acceso a este galpón.', 403);
 
         const galpon = await Galpon.findByPk(galponId);
         if (!galpon) throw new AppError('Galpón no encontrado.', 404);
@@ -72,6 +77,17 @@ class DewormingService {
 
         const assignments = await Assignment.findAll({ where: { rabbitId: { [Op.in]: rabbitIds }, status: 'asignado' } });
         const assignmentSet = new Set(assignments.map(a => a.rabbitId));
+
+        // Si es trabajador, validar que todas las jaulas de los conejos estén asignadas a él
+        if (membership.role === 'worker') {
+            const workerCages = await WorkerCage.findAll({ where: { farmMemberId: membership.id } });
+            const assignedCageIds = new Set(workerCages.map(wc => Number(wc.cageId)));
+            for (const assignment of assignments) {
+                if (!assignedCageIds.has(Number(assignment.cageId))) {
+                    throw new AppError('No tienes permiso para desparasitar conejos en jaulas que no tienes asignadas.', 403);
+                }
+            }
+        }
 
         const lactatingReps = await Reproduction.findAll({ where: { femaleId: { [Op.in]: rabbitIds }, status: 'lactancia' } });
         const lactatingSet = new Set(lactatingReps.map(r => r.femaleId));
@@ -113,6 +129,13 @@ class DewormingService {
             where: { profileId, galponId, status: 'active' }
         });
         if (!membership) throw new AppError('No tienes acceso a este galpón.', 403);
+
+        if (membership.role === 'worker') {
+            const { WorkerCage } = require('../../domain/models');
+            const workerCages = await WorkerCage.findAll({ where: { farmMemberId: membership.id } });
+            const assignedCageIds = workerCages.map(wc => Number(wc.cageId));
+            filters.cageIds = assignedCageIds;
+        }
 
         const { limit: limitValue, offset } = getPaginationParams(page, limit);
         

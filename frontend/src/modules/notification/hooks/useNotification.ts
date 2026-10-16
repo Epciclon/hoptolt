@@ -2,19 +2,19 @@
 
 import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { notificationService } from '../services/notification.service';
+import { notificationService, type GetNotificationsParams } from '../services/notification.service';
 import type { CreateNotificationDTO } from '../types/notification.types';
 import { createClient } from '@/utils/supabase/client';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 
-export function useNotifications(options?: { limit?: number; offset?: number; unreadOnly?: boolean }) {
+export function useNotifications(options?: GetNotificationsParams) {
   const queryClient = useQueryClient();
   const { user, refetchUser } = useAuthContext();
   const supabase = createClient();
 
   // Query: Fetch Notifications
   const {
-    data: notifications = [],
+    data,
     isLoading: loading,
     error: queryError,
     refetch: fetchNotifications,
@@ -22,13 +22,20 @@ export function useNotifications(options?: { limit?: number; offset?: number; un
     queryKey: ['notifications', options],
     queryFn: () => notificationService.getAll(options),
     enabled: !!user,
+    refetchInterval: 5000, // Actualización asíncrona automática cada 5 segundos sin requerir recargar la página
+    refetchIntervalInBackground: true,
   });
+
+  const notifications = data?.notifications || [];
+  const pagination = data?.pagination || { total: 0, page: options?.page || 1, limit: options?.limit || 12, totalPages: 1 };
 
   // Query: Unread Count
   const { data: unreadCountData } = useQuery({
     queryKey: ['notifications', 'unreadCount'],
     queryFn: () => notificationService.getUnreadCount(),
     enabled: !!user,
+    refetchInterval: 5000,
+    refetchIntervalInBackground: true,
   });
   
   const unreadCount = unreadCountData?.count || 0;
@@ -98,8 +105,17 @@ export function useNotifications(options?: { limit?: number; offset?: number; un
       // We don't save previous state here easily because there can be multiple queries,
       // but typically we can just rely on invalidation if it fails.
       queryClient.setQueriesData({ queryKey: ['notifications'] }, (old: any) => {
-        if (!old || !Array.isArray(old)) return old;
-        return old.map((n: any) => n.id === id ? { ...n, read: true } : n);
+        if (!old) return old;
+        if (Array.isArray(old)) {
+          return old.map((n: any) => n.id === id ? { ...n, read: true } : n);
+        }
+        if (old.notifications) {
+          return {
+            ...old,
+            notifications: old.notifications.map((n: any) => n.id === id ? { ...n, read: true } : n)
+          };
+        }
+        return old;
       });
     },
     onSettled: () => {
@@ -113,8 +129,17 @@ export function useNotifications(options?: { limit?: number; offset?: number; un
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: ['notifications'] });
       queryClient.setQueriesData({ queryKey: ['notifications'] }, (old: any) => {
-        if (!old || !Array.isArray(old)) return old;
-        return old.map((n: any) => ({ ...n, read: true }));
+        if (!old) return old;
+        if (Array.isArray(old)) {
+          return old.map((n: any) => n.type === 'warning' ? n : { ...n, read: true });
+        }
+        if (old.notifications) {
+          return {
+            ...old,
+            notifications: old.notifications.map((n: any) => n.type === 'warning' ? n : { ...n, read: true })
+          };
+        }
+        return old;
       });
     },
     onSettled: () => {
@@ -128,8 +153,18 @@ export function useNotifications(options?: { limit?: number; offset?: number; un
     onMutate: async (id: number) => {
       await queryClient.cancelQueries({ queryKey: ['notifications'] });
       queryClient.setQueriesData({ queryKey: ['notifications'] }, (old: any) => {
-        if (!old || !Array.isArray(old)) return old;
-        return old.filter((n: any) => n.id !== id);
+        if (!old) return old;
+        if (Array.isArray(old)) {
+          return old.filter((n: any) => n.id !== id);
+        }
+        if (old.notifications) {
+          return {
+            ...old,
+            notifications: old.notifications.filter((n: any) => n.id !== id),
+            pagination: old.pagination ? { ...old.pagination, total: Math.max(0, old.pagination.total - 1) } : old.pagination
+          };
+        }
+        return old;
       });
     },
     onSettled: () => {
@@ -145,6 +180,7 @@ export function useNotifications(options?: { limit?: number; offset?: number; un
 
   return {
     notifications,
+    pagination,
     unreadCount,
     loading,
     error: queryError ? (queryError as Error).message : null,

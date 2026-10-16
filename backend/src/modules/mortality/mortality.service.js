@@ -12,9 +12,27 @@ class MortalityService {
         const profile = await Profile.findByPk(profileId);
         if (!profile) throw new AppError('Usuario no encontrado.', 404);
 
+        const membership = await FarmMember.findOne({
+            where: { profileId, galponId, status: 'active' }
+        });
+        if (!membership) throw new AppError('No tienes acceso a este galpón.', 403);
+
         const rabbit = await Rabbit.findByPk(rabbitId);
         if (!rabbit) throw new AppError(`El conejo con ID ${rabbitId} no existe.`, 404);
         if (rabbit.galponId !== galponId) throw new AppError(`El conejo con ID ${rabbitId} no pertenece al galpón activo.`, 400);
+
+        if (membership.role === 'worker') {
+            const { WorkerCage } = require('../../domain/models');
+            const workerCages = await WorkerCage.findAll({ where: { farmMemberId: membership.id } });
+            const assignedCageIds = new Set(workerCages.map(wc => Number(wc.cageId)));
+
+            const activeAssignment = await Assignment.findOne({
+                where: { rabbitId, status: 'asignado' }
+            });
+            if (!activeAssignment || !assignedCageIds.has(Number(activeAssignment.cageId))) {
+                throw new AppError('No tienes permiso para registrar mortalidad de un conejo que no esté en tus jaulas asignadas.', 403);
+            }
+        }
 
         // Inyectar hora actual a la fecha de muerte
         const now = new Date();

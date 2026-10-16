@@ -24,7 +24,7 @@ const applyProfileFilter = (whereClause, filters) => {
     }
 };
 
-const buildCommonFilters = (filters, dateFieldName = null) => {
+const buildCommonFilters = (filters, dateFieldName = null, hasDirectCageId = false) => {
     const whereClause = {};
     applyDateFilter(whereClause, filters, dateFieldName);
     applyProfileFilter(whereClause, filters);
@@ -38,26 +38,43 @@ const buildCommonFilters = (filters, dateFieldName = null) => {
     if (filters.cageType) {
         cageWhere.type = { [Op.in]: parseArrayFilter(filters.cageType) };
     }
+    if (filters.cageId || filters.cageIds) {
+        const parsedCageIds = parseArrayFilter(filters.cageId || filters.cageIds);
+        if (parsedCageIds && parsedCageIds.length > 0) {
+            if (hasDirectCageId) {
+                whereClause.cageId = { [Op.in]: parsedCageIds };
+            }
+            cageWhere.id = { [Op.in]: parsedCageIds };
+        } else {
+            if (hasDirectCageId) {
+                whereClause.cageId = -1;
+            }
+            cageWhere.id = -1;
+        }
+    }
 
     return { whereClause, rabbitWhere, cageWhere };
 };
 
-const buildRabbitProfileIncludes = (rabbitWhere) => {
+const buildRabbitProfileIncludes = (rabbitWhere = {}, cageWhere = {}) => {
     const { Rabbit, Assignment, Cage, Profile } = require('../../domain/models');
+    const hasCageWhere = Boolean(cageWhere && Object.keys(cageWhere).length > 0);
     return [
         { 
             model: Rabbit, 
             as: 'rabbit',
-            where: Object.keys(rabbitWhere).length > 0 ? rabbitWhere : undefined,
+            where: (rabbitWhere && Object.keys(rabbitWhere).length > 0) ? rabbitWhere : undefined,
             required: true,
             include: [{
                 model: Assignment,
                 as: 'assignments',
                 where: { status: 'asignado' },
-                required: true,
+                required: hasCageWhere,
                 include: [{
                     model: Cage,
                     as: 'cage',
+                    where: hasCageWhere ? cageWhere : undefined,
+                    required: hasCageWhere,
                     attributes: ['id', 'number']
                 }]
             }]

@@ -26,13 +26,13 @@ const AVATAR_SIZES = [
 ];
 
 const FONT_FAMILIES = [
-  { key: '',                              label: 'Segoe UI (predeterminado)', description: 'Fuente del sistema — moderna y clara' },
-  { key: "'Calibri', sans-serif",          label: 'Calibri',                   description: 'Moderna y optimizada para pantalla — ideal para leer' },
-  { key: "'Georgia', serif",              label: 'Georgia',                   description: 'Clásica con serifas — cómoda en textos largos' },
+  { key: '',                              label: 'Segoe UI (predeterminado)', description: 'Fuente del sistema - moderna y clara' },
+  { key: "'Calibri', sans-serif",          label: 'Calibri',                   description: 'Moderna y optimizada para pantalla - ideal para leer' },
+  { key: "'Georgia', serif",              label: 'Georgia',                   description: 'Clásica con serifas - cómoda en textos largos' },
   { key: "'Arial', sans-serif",           label: 'Arial',                     description: 'Familiar y ampliamente usada' },
-  { key: "'Verdana', sans-serif",         label: 'Verdana',                   description: 'Diseñada para pantalla — letras bien separadas' },
+  { key: "'Verdana', sans-serif",         label: 'Verdana',                   description: 'Diseñada para pantalla - letras bien separadas' },
   { key: "'Trebuchet MS', sans-serif",    label: 'Trebuchet MS',              description: 'Moderna y de alta legibilidad' },
-  { key: "'Courier New', monospace",      label: 'Courier New',               description: 'Monoespaciada — para quienes prefieren claridad total' },
+  { key: "'Courier New', monospace",      label: 'Courier New',               description: 'Monoespaciada - para quienes prefieren claridad total' },
 ];
 
 import { applyThemeToDOM as applyToDOM } from '@/hooks/useThemeSync';
@@ -335,8 +335,8 @@ export default function SettingsPage() {
 
               <div className="flex flex-col gap-3">
                 {[
-                  { value: false, label: 'Normal', description: 'Peso estándar del texto — predeterminado' },
-                  { value: true,  label: 'Negrilla', description: 'Texto más grueso — mayor legibilidad' },
+                  { value: false, label: 'Normal', description: 'Peso estándar del texto - predeterminado' },
+                  { value: true,  label: 'Negrilla', description: 'Texto más grueso - mayor legibilidad' },
                 ].map((opt) => (
                   <button type="button"
                     key={String(opt.value)}

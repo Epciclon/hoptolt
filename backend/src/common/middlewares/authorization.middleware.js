@@ -25,7 +25,11 @@ const englishToSpanishMap = Object.fromEntries(
 );
 
 // Módulos de control que requieren acceso a assignments.canRead automáticamente
-const CONTROL_MODULES = ['feeding', 'vaccination', 'deworming', 'cleaning', 'mortality', 'reproduction'];
+const CONTROL_MODULES = [
+    'feeding', 'vaccination', 'deworming', 'cleaning', 'mortality', 'reproduction',
+    'alimentacion', 'alimentación', 'vacunacion', 'vacunación', 'desparasitacion', 'desparasitación',
+    'limpieza', 'mortalidad', 'reproduccionyparto', 'reproducción y parto'
+];
 
 /**
  * Middleware para autorizar acceso basado en el rol del usuario en su galpón activo
@@ -68,39 +72,55 @@ const requirePermission = (moduleName, action) => {
             }
 
             // Para trabajadores ('worker'), buscar sus permisos específicos en este módulo
-            // Intentar buscar primero con el nombre en español normalizado (compatibilidad con permisos existentes),
-            // luego con el nombre en inglés (nuevos permisos)
-            let permission = null;
-            
-            // Primero buscar con el nombre en español normalizado (si existe mapeo)
-            const spanishModuleName = englishToSpanishMap[moduleName];
-            if (spanishModuleName) {
-                permission = await WorkerPermission.findOne({
-                    where: {
-                        farmMemberId: membership.id,
-                        moduleName: spanishModuleName
-                    }
-                });
+            const { Op } = require('sequelize');
+            const candidateNames = new Set([
+                moduleName,
+                moduleName.toLowerCase(),
+                spanishToEnglishMap[moduleName.toLowerCase()],
+                englishToSpanishMap[moduleName.toLowerCase()]
+            ].filter(Boolean));
+
+            if (candidateNames.has('feeding') || candidateNames.has('alimentacion')) {
+                candidateNames.add('alimentación');
+                candidateNames.add('Alimentación');
             }
-            
-            // Si no se encuentra con el nombre en español, buscar con el nombre en inglés
-            if (!permission) {
-                permission = await WorkerPermission.findOne({
-                    where: {
-                        farmMemberId: membership.id,
-                        moduleName: moduleName
-                    }
-                });
+            if (candidateNames.has('vaccination') || candidateNames.has('vacunacion')) {
+                candidateNames.add('vacunación');
+                candidateNames.add('Vacunación');
             }
+            if (candidateNames.has('deworming') || candidateNames.has('desparasitacion')) {
+                candidateNames.add('desparasitación');
+                candidateNames.add('Desparasitación');
+            }
+            if (candidateNames.has('cleaning') || candidateNames.has('limpieza')) {
+                candidateNames.add('Limpieza');
+            }
+            if (candidateNames.has('mortality') || candidateNames.has('mortalidad')) {
+                candidateNames.add('Mortalidad');
+            }
+            if (candidateNames.has('reproduction') || candidateNames.has('reproduccionyparto')) {
+                candidateNames.add('reproducción y parto');
+                candidateNames.add('Reproducción y Parto');
+            }
+
+            let permission = await WorkerPermission.findOne({
+                where: {
+                    farmMemberId: membership.id,
+                    moduleName: { [Op.in]: Array.from(candidateNames) }
+                }
+            });
 
             // Si se solicita acceso a assignments.canRead y el trabajador tiene permisos de control,
             // conceder acceso automáticamente
             if (moduleName === 'assignments' && action === 'canRead' && !permission?.[action]) {
-                // Buscar si el trabajador tiene cualquier permiso de control
                 const hasControlPermission = await WorkerPermission.findOne({
                     where: {
                         farmMemberId: membership.id,
-                        moduleName: CONTROL_MODULES
+                        moduleName: { [Op.in]: CONTROL_MODULES },
+                        [Op.or]: [
+                            { canRead: true },
+                            { canCreate: true }
+                        ]
                     }
                 });
                 

@@ -34,7 +34,7 @@ export function FeedingDashboard() {
       <div className="p-6 pt-0">
         {activeTab === 'registro' || !isOwner ? (
           <>
-            <SectionMessage message="En esta fase se puede registrar el alimento suministrado a las jaulas en el turno actual." />
+            <SectionMessage message="En esta fase se puede registrar el alimento suministrado a las jaulas en el turno actual. Recuerda que debes seleccionar el tipo de alimento para registrar la alimentación." />
             <FeedingCatalog />
           </>
         ) : null}

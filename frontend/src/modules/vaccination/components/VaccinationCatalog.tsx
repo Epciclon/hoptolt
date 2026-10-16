@@ -117,7 +117,7 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
   }, []);
 
   const filteredVaccines = galponVaccines.filter(v =>
-    v.name.toLowerCase().includes(vaccineSearch.toLowerCase())
+    v.name.toLowerCase().includes(vaccineSearch.toLowerCase()) && !selectedVaccines.includes(v.name)
   );
 
   if (loading) {
@@ -127,9 +127,9 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
   return (
     <div className="flex flex-col gap-4">
 
-      <div>
-        <span className="block text-sm font-medium mb-2">Vacunas</span>
-        <div className="relative z-30" ref={vaccineDropdownRef}>
+      <div className="bg-card border border-default rounded-xl p-4 relative z-30">
+        <span className="block text-sm font-semibold text-main mb-2">Vacunas</span>
+        <div className="relative" ref={vaccineDropdownRef}>
           <Input
             placeholder="Busca o selecciona vacunas..."
             value={vaccineSearch}
@@ -140,18 +140,19 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
             onFocus={() => setShowVaccineDropdown(true)}
           />
           {showVaccineDropdown && (
-            <div className="absolute z-10 w-full border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-card mt-1">
+            <div className="absolute z-50 w-full border border-default dark:border-slate-700 rounded-lg max-h-48 overflow-y-auto bg-card dark:bg-slate-900 mt-1.5 shadow-2xl">
               {filteredVaccines.length === 0 ? (
-                <p className="text-gray-500 text-sm p-3">No hay vacunas disponibles</p>
+                <p className="text-muted text-sm p-3">No hay vacunas disponibles</p>
               ) : (
                 filteredVaccines.map(vaccine => (
                   <button
                     key={vaccine.name}
                     type="button"
                     onClick={() => handleVaccineSelect(vaccine.name)}
-                    className="w-full text-left px-3 py-2 hover:bg-gray-100 border-b last:border-b-0 text-sm"
+                    className="w-full text-left px-3.5 py-2.5 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 hover:text-emerald-700 dark:hover:text-emerald-300 border-b border-default dark:border-slate-800 last:border-b-0 text-sm font-medium transition-colors flex items-center justify-between"
                   >
-                    {vaccine.name} (cada {vaccine.period} días)
+                    <span>{vaccine.name} <span className="text-xs text-muted font-normal">(cada {vaccine.period} días)</span></span>
+                    <span className="text-xs text-muted font-normal">+ Agregar</span>
                   </button>
                 ))
               )}
@@ -159,14 +160,15 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
           )}
         </div>
         {selectedVaccines.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-2">
+          <div className="flex flex-wrap gap-2 mt-2.5">
             {selectedVaccines.map(vaccine => (
-              <div key={vaccine} className="flex items-center gap-1 bg-sky-100 dark:bg-sky-900/30 text-sky-800 dark:text-sky-400 border border-sky-200 dark:border-sky-500/30 px-2 py-1 rounded text-sm shadow-sm">
+              <div key={vaccine} className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 px-2.5 py-1 rounded-md text-xs font-semibold shadow-sm">
                 <span>{vaccine}</span>
                 <button
                   type="button"
                   onClick={() => handleVaccineRemove(vaccine)}
-                  className="text-sky-600 hover:text-sky-800 font-bold ml-1"
+                  className="text-emerald-600 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-200 font-bold ml-0.5"
+                  title={`Quitar ${vaccine}`}
                 >
                   ×
                 </button>
@@ -176,7 +178,7 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
         )}
       </div>
 
-      <div className="w-full relative z-20">
+      <div className="w-full relative z-10">
         <FilterBar
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}
@@ -193,7 +195,7 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
             const lastVaccination = getRabbitLastVaccination(rabbit.id);
             return (
               <>
-                <p className="text-[10px] text-muted mb-0.5">ltima vacunación:</p>
+                <p className="text-[10px] text-muted mb-0.5">Última vacunación:</p>
                 <p className="text-xs font-medium text-main truncate" title={lastVaccination ? lastVaccination.vaccines.join(', ') : 'Nunca'}>
                   {lastVaccination ? lastVaccination.vaccines.join(', ') : 'Nunca'}
                 </p>

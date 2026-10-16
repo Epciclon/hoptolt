@@ -239,7 +239,7 @@ class FarmMemberService {
             });
             
             if (rabbitCount === 0) {
-                throw new AppError(`La jaula #${cage.number} no tiene conejos asignados. Solo se pueden asignar jaulas ocupadas.`, 400);
+                throw new AppError(`La jaula ${cage.number} no tiene conejos asignados. Solo se pueden asignar jaulas ocupadas.`, 400);
             }
         }));
     }

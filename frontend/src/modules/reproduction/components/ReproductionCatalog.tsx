@@ -5,13 +5,14 @@ import { FilterBar } from '@/shared/ui/FilterBar';
 import { Pagination } from '@/shared/ui/Pagination';
 import type { Reproduction } from '../types/reproduction.types';
 import { Dialog, Select, RabbitSelectableCard, CageGroupCard, Button, RabbitAvatar } from '@/shared/ui';
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Trash2, Calendar } from 'lucide-react';
 import { ReproductionForm } from './ReproductionForm';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { Input } from '@/shared/ui/Input';
 import { mortalityService } from '@/modules/mortality/services/mortality.service';
 import { formatDateString } from '@/shared/utils/dateUtils';
+import { matchesSmartSearch } from '@/shared/utils/rabbitUtils';
 
 interface ReproductionCatalogProps {
   searchTerm: string;
@@ -19,9 +20,12 @@ interface ReproductionCatalogProps {
 }
 
 export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<ReproductionCatalogProps>) {
-  const { reproductions, pagination, loading, setPage, cancelReproduction, registerBirth, fetchReproductions } = useReproduction({ status: 'gestacion', search: searchTerm });
+  const { reproductions, loading, cancelReproduction, registerBirth, fetchReproductions } = useReproduction({ status: 'gestacion', limit: 1000 });
   const onSuccess = fetchReproductions;
   const { showToast } = useToast();
+  const [page, setPage] = useState(1);
+  const limit = 12;
+
   const [toCancel, setToCancel] = useState<Reproduction | null>(null);
   const [canceling, setCanceling] = useState(false);
   const [cancelReason, setCancelReason] = useState<string>('');
@@ -124,25 +128,35 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
     return { days: Math.max(0, days), daysLeft: Math.max(0, daysLeft) };
   };
 
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, filterRace]);
+
   const gestaciones = reproductions.filter(r => {
-      if (r.status !== 'gestacion') return false;
-      if (r.isFemaleDeleted) return false;
-      
-      let matchesSearch = true;
-      if (searchTerm) {
-        const q = searchTerm.toLowerCase();
-        matchesSearch = 
-          Boolean(r.femaleName?.toLowerCase().includes(q)) ||
-          Boolean(r.femaleCode.toLowerCase().includes(q)) ||
-          Boolean(r.cageNumber?.toString().includes(q));
-      }
-        
-      const matchesRace = filterRace ? r.femaleRace === filterRace : true;
-      
-      return matchesSearch && matchesRace;
+    if (r.status !== 'gestacion') return false;
+    if (r.isFemaleDeleted) return false;
+    if (filterRace && r.femaleRace !== filterRace) return false;
+    return matchesSmartSearch(searchTerm, r.cageNumber, r.femaleCode, r.femaleName);
   });
 
   const uniqueRaces = Array.from(new Set(reproductions.filter(r => r.status === 'gestacion' && r.femaleRace).map(r => r.femaleRace)));
+
+  type GroupedGestacion = { cageNumber: number; cageType: string; reproductions: typeof gestaciones };
+  const groupedGestaciones = useMemo(() => {
+    const map = gestaciones.reduce((acc, reproduction) => {
+      const cageNumber = reproduction.cageNumber || 0;
+      if (!acc[cageNumber]) {
+        acc[cageNumber] = { cageNumber, cageType: reproduction.cageType || 'reproducción', reproductions: [] };
+      }
+      acc[cageNumber].reproductions.push(reproduction);
+      return acc;
+    }, {} as Record<number, GroupedGestacion>);
+    return Object.values(map).sort((a, b) => a.cageNumber - b.cageNumber);
+  }, [gestaciones]);
+
+  const paginatedGroups = useMemo(() => {
+    return groupedGestaciones.slice((page - 1) * limit, page * limit);
+  }, [groupedGestaciones, page, limit]);
 
   return (
     <div className="space-y-4">
@@ -176,14 +190,7 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
         </p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
-          {Object.values(gestaciones.reduce((acc, reproduction) => {
-            const cageNumber = reproduction.cageNumber || 0;
-            if (!acc[cageNumber]) {
-              acc[cageNumber] = { cageNumber, cageType: reproduction.cageType || 'reproducción', reproductions: [] };
-            }
-            acc[cageNumber].reproductions.push(reproduction);
-            return acc;
-          }, {} as Record<number, { cageNumber: number; cageType: string; reproductions: typeof gestaciones }>)).sort((a,b) => a.cageNumber - b.cageNumber).map(group => (
+          {paginatedGroups.map(group => (
             <CageGroupCard 
               key={group.cageNumber} 
               cageNumber={group.cageNumber} 
@@ -317,10 +324,10 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
         </div>
       )}
 
-      {reproductions.length > 0 && (
+      {groupedGestaciones.length > 0 && (
         <Pagination
-          currentPage={pagination.page}
-          totalPages={pagination.totalPages}
+          currentPage={page}
+          totalPages={Math.max(1, Math.ceil(groupedGestaciones.length / limit))}
           onPageChange={setPage}
         />
       )}

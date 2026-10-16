@@ -64,6 +64,8 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     } finally {
       setUser(null);
       if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('hoptolt_session_initialized');
+        sessionStorage.removeItem('hoptolt_last_feeding_popup_time');
         window.location.replace('/login');
       }
     }

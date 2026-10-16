@@ -3,8 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Input, Button, CageCatalog, LoadingMessage, Dialog, SelectionActionBar } from '@/shared/ui';
 import { Pagination } from '@/shared/ui/Pagination';
-import type { CageItem } from '@/shared/ui';
-import { groupRabbitsByCage } from '@/shared/utils/rabbitUtils';
+import { useCageSelection } from '@/shared/hooks/useCageSelection';
 import { useFeeding } from '../hooks/useFeeding';
 import { useAuth } from '@/modules/auth/hooks/useAuth';
 import { useToast } from '@/shared/contexts/ToastContext';
@@ -17,15 +16,46 @@ interface FeedingCatalogProps {
 
 const FOOD_TYPES_STORAGE_KEY = 'feeding_selected_food_types';
 
+// Formatters para Ecuador
+const ecuadorDateFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/Guayaquil',
+  year: 'numeric', month: '2-digit', day: '2-digit'
+});
+
+const ecuadorHourFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/Guayaquil',
+  hour: 'numeric',
+  hour12: false
+});
+
+const getEcuadorDateString = (date: Date) => {
+  const parts = ecuadorDateFormatter.formatToParts(date);
+  const y = parts.find(p => p.type === 'year')?.value;
+  const m = parts.find(p => p.type === 'month')?.value;
+  const d = parts.find(p => p.type === 'day')?.value;
+  return `${y}-${m}-${d}`;
+};
+
 export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
   const { assignedRabbits, foodTypes, loading, createFeeding, feedings } = useFeeding();
   const { user } = useAuth();
-  const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
-  const itemsPerPage = 12;
+
+  const {
+    selectedCageNumbers,
+    setSelectedCageNumbers,
+    toggleCage,
+    selectAllCages,
+    allCageGroups,
+    cageGroups,
+    paginatedGroups,
+    currentPage,
+    totalPages,
+    setCurrentPage,
+    clearSelection,
+  } = useCageSelection(assignedRabbits, searchTerm);
 
   const { showToast } = useToast();
-  const [selectedCageNumbers, setSelectedCageNumbers] = useState<number[]>([]);
   const [selectedFoodTypes, setSelectedFoodTypes] = useState<string[]>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem(FOOD_TYPES_STORAGE_KEY);
@@ -53,30 +83,10 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
     });
     const formattedTime = ecuadorDate.toLocaleTimeString('es-EC', { 
       hour: '2-digit', 
-      minute: '2-digit',
+      minute: '2-digit', 
       hour12: true 
     });
     return `${formattedDate} ${formattedTime}`;
-  };
-
-  // Formatters para Ecuador
-  const ecuadorDateFormatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Guayaquil',
-    year: 'numeric', month: '2-digit', day: '2-digit'
-  });
-  
-  const ecuadorHourFormatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Guayaquil',
-    hour: 'numeric',
-    hour12: false
-  });
-
-  const getEcuadorDateString = (date: Date) => {
-    const parts = ecuadorDateFormatter.formatToParts(date);
-    const y = parts.find(p => p.type === 'year')?.value;
-    const m = parts.find(p => p.type === 'month')?.value;
-    const d = parts.find(p => p.type === 'day')?.value;
-    return `${y}-${m}-${d}`;
   };
 
   const currentEcuadorShift = (() => {
@@ -89,7 +99,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
     return feedings.filter(f => {
       const feedingDate = new Date(f.feedingDate);
       const ecuadorFeedingDate = getEcuadorDateString(feedingDate);
-      return f.cageId === cageId && ecuadorFeedingDate === currentEcuadorDateStr && f.shift === currentEcuadorShift && f.profileId === user?.id;
+      return f.cageId === cageId && ecuadorFeedingDate === currentEcuadorDateStr && f.shift === currentEcuadorShift;
     }).length;
   };
 
@@ -97,43 +107,6 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
     const cageFeedings = feedings.filter(f => f.cageId === cageId);
     if (cageFeedings.length === 0) return null;
     return cageFeedings.sort((a, b) => new Date(b.feedingDate).getTime() - new Date(a.feedingDate).getTime())[0];
-  };
-
-  const cageGroups = useMemo<CageItem[]>(() => {
-    const groupedByCage = groupRabbitsByCage(assignedRabbits);
-    const allGroups = Object.values(groupedByCage).sort((a, b) => a.cageNumber - b.cageNumber);
-    // Filtrar por searchTerm
-    if (!searchTerm) return allGroups;
-    const q = searchTerm.toLowerCase();
-    return allGroups.filter(g =>
-      g.cageNumber.toString().includes(q) ||
-      g.rabbits.some(r =>
-        Boolean(r.name?.toLowerCase().includes(q)) ||
-        Boolean(r.code?.toLowerCase().includes(q))
-      )
-    );
-  }, [assignedRabbits, searchTerm]);
-
-  // Regresar a página 1 cuando cambie la búsqueda
-  useMemo(() => { setCurrentPage(1); }, [searchTerm]);
-
-  const totalPages = Math.ceil(cageGroups.length / itemsPerPage) || 1;
-  const paginatedGroups = cageGroups.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-  const toggleCage = (cageNumber: number) => {
-    setSelectedCageNumbers(prev => 
-      prev.includes(cageNumber) 
-        ? prev.filter(n => n !== cageNumber)
-        : [...prev, cageNumber]
-    );
-  };
-
-  const selectAllCages = () => {
-    if (selectedCageNumbers.length === cageGroups.length) {
-      setSelectedCageNumbers([]);
-    } else {
-      setSelectedCageNumbers(cageGroups.map(g => g.cageNumber));
-    }
   };
 
   const handleFoodSelect = (food: string) => {
@@ -155,7 +128,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
   const checkJustificationRequired = () => {
     const cagesWithIssue: Array<{ cageNumber: number; cageType: string; feedingsToday: number }> = [];
     for (const cageNumber of selectedCageNumbers) {
-      const cage = cageGroups.find(g => g.cageNumber === cageNumber);
+      const cage = allCageGroups.find(g => g.cageNumber === cageNumber);
       if (cage) {
         const feedingsToday = getCageFeedingsThisShift(cage.cageId);
         if (feedingsToday >= 1) {
@@ -195,7 +168,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
     
     const cageIds: number[] = [];
     for (const cageNumber of selectedCageNumbers) {
-      const cage = cageGroups.find(g => g.cageNumber === cageNumber);
+      const cage = allCageGroups.find(g => g.cageNumber === cageNumber);
       if (cage) {
         cageIds.push(cage.cageId);
       }
@@ -243,30 +216,51 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
     f.toLowerCase().includes(foodSearch.toLowerCase()) && !selectedFoodTypes.includes(f)
   );
 
-  if (loading) {
-    return <LoadingMessage message="Cargando alimentación..." />;
-  }
-
   // Estadísticas del día
-  const feedingsToday = feedings.filter(f => {
-    const fd = new Date(f.feedingDate);
-    return getEcuadorDateString(fd) === currentEcuadorDateStr;
-  });
+  const feedingsToday = useMemo(() => {
+    return feedings.filter(f => {
+      const fd = new Date(f.feedingDate);
+      return getEcuadorDateString(fd) === currentEcuadorDateStr;
+    });
+  }, [feedings, currentEcuadorDateStr]);
 
-  const uniqueCagesMorning = new Set(feedingsToday.filter(f => f.shift?.toLowerCase() === 'mañana').map(f => f.cageId)).size;
-  const uniqueCagesAfternoon = new Set(feedingsToday.filter(f => f.shift?.toLowerCase() === 'tarde').map(f => f.cageId)).size;
-  const totalCages = cageGroups.length;
+  const uniqueCagesMorning = useMemo(() => {
+    return new Set(feedingsToday.filter(f => f.shift?.toLowerCase() === 'mañana').map(f => f.cageId)).size;
+  }, [feedingsToday]);
+
+  const uniqueCagesAfternoon = useMemo(() => {
+    return new Set(feedingsToday.filter(f => f.shift?.toLowerCase() === 'tarde').map(f => f.cageId)).size;
+  }, [feedingsToday]);
+
+  const totalCages = allCageGroups.length;
 
   const morningPercentage = totalCages > 0 ? (uniqueCagesMorning / totalCages) * 100 : 0;
   const afternoonPercentage = totalCages > 0 ? (uniqueCagesAfternoon / totalCages) * 100 : 0;
 
+  // Jaulas pendientes en el turno actual
+  const fedCageIdsThisShift = useMemo(() => {
+    return new Set(
+      feedingsToday
+        .filter(f => f.shift?.toLowerCase() === currentEcuadorShift)
+        .map(f => f.cageId)
+    );
+  }, [feedingsToday, currentEcuadorShift]);
+
+  const pendingCagesThisShift = useMemo(() => {
+    return allCageGroups.filter(g => !fedCageIdsThisShift.has(g.cageId));
+  }, [allCageGroups, fedCageIdsThisShift]);
+
+  if (loading) {
+    return <LoadingMessage message="Cargando alimentación..." />;
+  }
+
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-300">
       
-      {/* Sección de Estadísticas (Barra de progreso) */}
+      {/* Sección de Estadísticas (Barra de progreso y jaulas pendientes) */}
       <div className="bg-card border border-strong rounded-lg p-5">
         <h3 className="text-sm font-semibold text-main mb-4 flex items-center gap-2">
-          📊 Progreso de Alimentación Hoy
+          <span>📊 Progreso de Alimentación Hoy</span>
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
@@ -294,9 +288,50 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
             </div>
           </div>
         </div>
+
+        {/* Jaulas pendientes de alimentar en el turno actual con cuadros como los tipos de alimento */}
+        {pendingCagesThisShift.length > 0 && (
+          <div className="mt-5 pt-4 border-t border-default flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-main flex items-center gap-2">
+              <span>Jaulas sin alimentar:</span>
+              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+                pendingCagesThisShift.length === 0
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
+                  : currentEcuadorShift === 'mañana'
+                    ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
+                    : 'bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800/60'
+              }`}>
+                {pendingCagesThisShift.length === 0 ? '0 pendientes (Completo)' : `${pendingCagesThisShift.length} pendiente${pendingCagesThisShift.length > 1 ? 's' : ''}`}
+              </span>
+            </span>
+          </div>
+
+          <div className="flex flex-wrap gap-2 mt-1">
+              {pendingCagesThisShift.map(cage => {
+                const isSelected = selectedCageNumbers.includes(cage.cageNumber);
+                return (
+                  <button
+                    key={cage.cageId}
+                    type="button"
+                    onClick={() => toggleCage(cage.cageNumber)}
+                    className={`min-w-[2.25rem] h-8 px-2.5 rounded-md text-xs font-semibold border transition-all cursor-pointer shadow-sm flex items-center justify-center ${
+                      isSelected
+                        ? 'bg-primary-600 text-white border-primary-700 ring-2 ring-primary-500/25'
+                        : 'bg-theme-surface dark:bg-card text-main border-default hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400'
+                    }`}
+                    title={`Jaula ${cage.cageNumber} (${cage.rabbits.length} ${cage.rabbits.length === 1 ? 'conejo' : 'conejos'}) - Clic para ${isSelected ? 'deseleccionar' : 'seleccionar'}`}
+                  >
+                    <span>{cage.cageNumber}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="bg-card border border-strong rounded-lg p-4 sticky top-0 z-30 shadow-sm flex flex-col gap-4">
+      <div className="bg-card border border-strong rounded-lg p-4 shadow-sm flex flex-col gap-4 relative z-20">
         <div className="flex items-center justify-between border-b border-default pb-3">
           <span className="text-sm font-medium text-main">Turno Actual:</span>
           <span className={`px-3 py-1 rounded-full text-xs font-bold ${currentEcuadorShift === 'mañana' ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-400' : 'bg-orange-100 dark:bg-orange-500/10 text-orange-800 dark:text-orange-400'}`}>
@@ -305,7 +340,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
         </div>
 
 
-        <div className="w-full relative z-20" ref={foodDropdownRef}>
+        <div className="w-full relative z-30" ref={foodDropdownRef}>
           <span className="block text-sm font-medium text-main mb-2">Tipos de Alimento</span>
           <Input
             placeholder="Busca y selecciona tipos de alimento"
@@ -317,7 +352,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
             onFocus={() => setShowFoodDropdown(true)}
           />
           {showFoodDropdown && (
-            <div className="absolute z-10 w-full border border-gray-300 rounded-md max-h-48 overflow-y-auto bg-card mt-1">
+            <div className="absolute z-50 w-full border border-default dark:border-slate-700 rounded-lg max-h-48 overflow-y-auto bg-card dark:bg-slate-900 mt-1.5 shadow-2xl">
               {filteredFoodTypes.length === 0 ? (
                 <p className="text-muted text-sm p-3">No hay tipos de alimento disponibles</p>
               ) : (
@@ -326,9 +361,10 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
                     key={food}
                     type="button"
                     onClick={() => handleFoodSelect(food)}
-                    className="w-full text-left px-3 py-2 hover:bg-gray-100 border-b last:border-b-0 text-sm"
+                    className="w-full text-left px-3.5 py-2.5 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 hover:text-emerald-700 dark:hover:text-emerald-300 border-b border-default dark:border-slate-800 last:border-b-0 text-sm font-medium transition-colors flex items-center justify-between"
                   >
-                    {food}
+                    <span>{food}</span>
+                    <span className="text-xs text-muted font-normal">+ Agregar</span>
                   </button>
                 ))
               )}
@@ -338,12 +374,13 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
         {selectedFoodTypes.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
             {selectedFoodTypes.map(food => (
-              <div key={food} className="flex items-center gap-1 bg-sky-100 dark:bg-sky-900/30 text-sky-800 dark:text-sky-400 border border-sky-200 dark:border-sky-500/30 px-2 py-1 rounded text-sm shadow-sm">
+              <div key={food} className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 px-2.5 py-1 rounded-md text-xs font-semibold shadow-sm">
                 <span>{food}</span>
                 <button
                   type="button"
                   onClick={() => handleFoodRemove(food)}
-                  className="text-sky-600 hover:text-sky-800 font-bold ml-1"
+                  className="text-emerald-600 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-200 font-bold ml-0.5"
+                  title={`Quitar ${food}`}
                 >
                   ×
                 </button>
@@ -353,7 +390,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
         )}
       </div>
 
-      <div className="w-full relative z-20">
+      <div className="w-full relative z-10">
         <FilterBar
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}
@@ -437,36 +474,35 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
         description=""
         size="sm"
       >
-        <div className="p-3 bg-slate-50 border border-slate-200 dark:bg-slate-800/50 dark:border-slate-700 rounded-md mb-4 mt-2">
-          <h4 className="text-sm font-semibold text-main mb-2">⚠️ Política de Alimentación</h4>
+        <div className="p-3 bg-slate-50 border border-slate-200 dark:bg-slate-800/50 dark:border-slate-700 rounded-md mb-3 mt-1">
+          <h4 className="text-sm font-semibold text-main mb-1">⚠️ Política de Alimentación</h4>
           <p className="text-sm text-muted">
-            El sistema permite un registro de alimentación sin justificación por turno y por usuario. Estás intentando registrar un segundo alimento en el turno de la <strong>{currentEcuadorShift}</strong>, por lo que es requerido ingresar un motivo.
+            El sistema permite un registro de alimentación sin justificación por turno en cada jaula. Al registrar un alimento adicional en el turno de la <strong>{currentEcuadorShift}</strong>, se requiere ingresar una justificación.
           </p>
         </div>
         
-        <div className="mb-4">
-          <p className="text-sm font-medium text-main mb-2">Jaulas con observaciones en este turno:</p>
-          <ul className="text-sm text-main space-y-1 max-h-32 overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md p-2">
+        <div className="mb-3">
+          <p className="text-sm font-medium text-main mb-1.5">Jaulas con observaciones en este turno:</p>
+          <ul className="text-sm text-main max-h-36 overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md p-2 divide-y divide-slate-100 dark:divide-slate-800">
             {cagesWithIssue.map(cage => (
-              <li key={cage.cageNumber} className="flex items-center gap-2">
-                <span className="font-medium">Jaula #{cage.cageNumber} - {cage.cageType.charAt(0).toUpperCase() + cage.cageType.slice(1)}</span>
-                <span className="text-red-600">({cage.feedingsToday} registros)</span>
+              <li key={cage.cageNumber} className="flex items-center justify-between py-1 px-1">
+                <span className="font-medium">Jaula {cage.cageNumber}</span>
+                <span className="text-red-500 dark:text-red-400 font-medium text-xs">
+                  ({cage.feedingsToday} {cage.feedingsToday === 1 ? 'registro' : 'registros'})
+                </span>
               </li>
             ))}
           </ul>
         </div>
         
-        <p className="text-sm text-muted mb-4">
-          Por favor, explica el motivo de la alimentación adicional.
-        </p>
         <div className="mb-4">
-          <label htmlFor="justificationInput" className="block text-sm font-medium text-main mb-2">Justificación</label>
+          <label htmlFor="justificationInput" className="block text-sm font-medium text-main mb-1.5">Justificación</label>
           <textarea
             id="justificationInput"
             value={justification}
             onChange={(e) => setJustification(e.target.value)}
-            placeholder="Explica el motivo de la alimentación adicional..."
-            className="w-full border border-slate-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            placeholder="Describe el motivo de la alimentación adicional..."
+            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-main rounded-md p-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
             rows={3}
           />
         </div>

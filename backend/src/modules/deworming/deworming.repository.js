@@ -4,25 +4,29 @@ const { buildCommonFilters, buildRabbitProfileIncludes, buildRabbitCountInclude 
 
 class DewormingRepository {
     async findByGalponId(galponId, options = {}, filters = {}) {
-        const { whereClause: filtersWhere, rabbitWhere } = buildCommonFilters(filters, 'dewormingDate');
+        const { whereClause: filtersWhere, rabbitWhere, cageWhere } = buildCommonFilters(filters, 'dewormingDate');
         const whereClause = { galponId, ...filtersWhere };
 
         return Deworming.findAll({
             where: whereClause,
-            include: buildRabbitProfileIncludes(rabbitWhere),
+            include: buildRabbitProfileIncludes(rabbitWhere, cageWhere),
             order: [['dewormingDate', 'DESC']],
             ...options
         });
     }
 
     async countByGalponId(galponId, filters = {}) {
-        const { whereClause: filtersWhere, rabbitWhere } = buildCommonFilters(filters, 'dewormingDate');
+        const { whereClause: filtersWhere, rabbitWhere, cageWhere } = buildCommonFilters(filters, 'dewormingDate');
         const whereClause = { galponId, ...filtersWhere };
 
-        if (filters.races) {
+        const hasCageFilter = cageWhere && Object.keys(cageWhere).length > 0;
+        const hasRabbitFilter = rabbitWhere && Object.keys(rabbitWhere).length > 0;
+
+        if (hasCageFilter || hasRabbitFilter) {
             return Deworming.count({
                 where: whereClause,
-                include: buildRabbitCountInclude(rabbitWhere)
+                include: buildRabbitProfileIncludes(rabbitWhere, cageWhere),
+                distinct: true
             });
         }
 

@@ -1,4 +1,4 @@
-﻿export interface WorkerPermission {
+export interface WorkerPermission {
   moduleName: string;
   canCreate: boolean;
   canRead: boolean;
@@ -16,6 +16,7 @@ export interface Profile {
   createdAt: string;
   role?: 'owner' | 'worker' | null;
   permissions?: WorkerPermission[];
+  assignedCages?: number[];
 }
 
 // Datos para el formulario de registro

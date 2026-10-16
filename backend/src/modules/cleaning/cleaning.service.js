@@ -18,10 +18,10 @@ class CleaningService {
         for (const cageId of cageIds) {
             const cage = cageMap.get(cageId);
             if (!cage) throw new AppError(`La jaula con ID ${cageId} no existe.`, 404);
-            if (cage.galponId !== galponId) throw new AppError(`La jaula #${cage.number} no pertenece al galpón activo.`, 400);
+            if (cage.galponId !== galponId) throw new AppError(`La jaula ${cage.number} no pertenece al galpón activo.`, 400);
 
             if (membership.role === 'worker' && !workerCagesSet.has(cageId)) {
-                throw new AppError(`No tienes asignada la jaula #${cage.number} para registrar su limpieza.`, 403);
+                throw new AppError(`No tienes asignada la jaula ${cage.number} para registrar su limpieza.`, 403);
             }
 
             const cageAssignments = assignmentsMap.get(cageId) || [];
@@ -119,27 +119,48 @@ class CleaningService {
 
     async _bulkClearCleaningWarnings(cageIds, galponId, Notification) {
         if (!cageIds || cageIds.length === 0) return;
-        const { FarmMember } = require('../../domain/models');
-        const owner = await FarmMember.findOne({ where: { galponId, role: 'owner', status: 'active' }});
-        
-        const whereClause = {
-            type: 'warning',
-            title: 'Alerta de Limpieza Requerida'
-        };
+        const cleanedSet = new Set(cageIds.map(Number));
 
-        const warnings = await Notification.findAll({ where: whereClause });
-        const toDestroy = [];
-        
+        const warnings = await Notification.findAll({
+            where: {
+                type: 'warning',
+                title: 'Alerta de Limpieza Requerida'
+            }
+        });
+
         for (const w of warnings) {
             if (!w.data) continue;
             let dataObj = typeof w.data === 'string' ? JSON.parse(w.data) : w.data;
-            if (dataObj?.type === 'cleaning_warning' && cageIds.includes(Number(dataObj.cageId))) {
-                toDestroy.push(w.id);
-            }
-        }
+            if (dataObj?.type !== 'cleaning_warning') continue;
 
-        if (toDestroy.length > 0) {
-            await Notification.destroy({ where: { id: toDestroy } });
+            // Caso 1: Notificación agrupada con lista de jaulas pendientes
+            if (Array.isArray(dataObj.pendingCages)) {
+                const remainingCages = dataObj.pendingCages.filter(c => !cleanedSet.has(Number(c.cageId)));
+
+                if (remainingCages.length === 0) {
+                    // Todas las jaulas fueron limpiadas: eliminar alerta
+                    await w.destroy();
+                } else if (remainingCages.length < dataObj.pendingCages.length) {
+                    // Se limpiaron algunas: actualizar la lista dinámicamente
+                    const count = remainingCages.length;
+                    const newMessage = count === 1
+                        ? `Tienes 1 jaula con 3 o más días de ocupación sin limpieza en tu galpón. ¡Por favor realiza la limpieza lo antes posible!`
+                        : `Tienes ${count} jaulas con 3 o más días de ocupación sin limpieza en tu galpón. ¡Por favor realiza la limpieza lo antes posible!`;
+
+                    await w.update({
+                        message: newMessage,
+                        data: {
+                            ...dataObj,
+                            pendingCages: remainingCages,
+                            cagesCount: count
+                        }
+                    });
+                }
+            } 
+            // Caso 2: Notificación legacy individual
+            else if (dataObj.cageId && cleanedSet.has(Number(dataObj.cageId))) {
+                await w.destroy();
+            }
         }
     }
 

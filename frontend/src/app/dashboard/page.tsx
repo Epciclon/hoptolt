@@ -107,7 +107,7 @@ function DashboardHomeContent() {
                     <div className="h-8 w-12 bg-slate-200 rounded animate-pulse" />
                   ) : (
                     <p className="text-2xl font-bold text-main">
-                      {value ?? '—'}
+                      {value ?? '-'}
                     </p>
                   )}
                   <p className="text-sm text-muted mt-0.5">{stat.label}</p>

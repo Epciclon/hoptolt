@@ -271,14 +271,42 @@ class AssignmentService {
         throw new AppError('No se pudo mover a los conejos.', 400);
     }
 
-    async getAssignments(galponId) {
-        return assignmentRepository.findByGalponId(galponId);
+    async getAssignments(galponId, profileId = null) {
+        let assignments = await assignmentRepository.findByGalponId(galponId);
+        if (profileId) {
+            const { FarmMember, WorkerCage } = require('../../domain/models');
+            const member = await FarmMember.findOne({
+                where: { profileId, galponId, status: 'active' }
+            });
+            if (member && member.role === 'worker') {
+                const workerCages = await WorkerCage.findAll({
+                    where: { farmMemberId: member.id }
+                });
+                const assignedCageIds = new Set(workerCages.map(wc => Number(wc.cageId)));
+                assignments = assignments.filter(a => assignedCageIds.has(Number(a.cageId)));
+            }
+        }
+        return assignments;
     }
 
-    async getAssignedRabbits(galponId) {
-        const assignments = await assignmentRepository.findByGalponId(galponId);
+    async getAssignedRabbits(galponId, profileId = null) {
+        let assignments = await assignmentRepository.findByGalponId(galponId);
         const reproductionRepo = require('../reproduction/reproduction.repository');
         const lactatingIds = await reproductionRepo.findLactatingFemaleIds(galponId);
+
+        if (profileId) {
+            const { FarmMember, WorkerCage } = require('../../domain/models');
+            const member = await FarmMember.findOne({
+                where: { profileId, galponId, status: 'active' }
+            });
+            if (member && member.role === 'worker') {
+                const workerCages = await WorkerCage.findAll({
+                    where: { farmMemberId: member.id }
+                });
+                const assignedCageIds = new Set(workerCages.map(wc => Number(wc.cageId)));
+                assignments = assignments.filter(a => assignedCageIds.has(Number(a.cageId)));
+            }
+        }
 
         // Los datos ya vienen con includes (rabbit y cage), no necesitamos consultas adicionales
         return assignments.map(assignment => {
@@ -311,10 +339,24 @@ class AssignmentService {
         return allRabbits.filter(r => !assignedIds.has(r.id));
     }
 
-    async getOperativeCages(galponId) {
+    async getOperativeCages(galponId, profileId = null) {
         const cageRepository = require('../cage/cage.repository');
         const cages = await cageRepository.findByStatus('operativa');
-        const galponCages = cages.filter(c => c.galponId === galponId);
+        let galponCages = cages.filter(c => c.galponId === galponId);
+
+        if (profileId) {
+            const { FarmMember, WorkerCage } = require('../../domain/models');
+            const member = await FarmMember.findOne({
+                where: { profileId, galponId, status: 'active' }
+            });
+            if (member && member.role === 'worker') {
+                const workerCages = await WorkerCage.findAll({
+                    where: { farmMemberId: member.id }
+                });
+                const assignedCageIds = new Set(workerCages.map(wc => Number(wc.cageId)));
+                galponCages = galponCages.filter(c => assignedCageIds.has(Number(c.id)));
+            }
+        }
 
         const cagesWithStats = [];
         const activeAssignments = await assignmentRepository.findByGalponId(galponId);

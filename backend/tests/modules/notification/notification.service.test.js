@@ -158,4 +158,19 @@ describe('NotificationService', () => {
       await expect(notificationService.checkAndCreateCleaningNotifications('p1')).resolves.not.toThrow();
     });
   });
+
+  describe('checkAndCreateFeedingNotifications', () => {
+    beforeEach(() => {
+      FarmMember.findAll = jest.fn().mockResolvedValue([]);
+      Galpon.findAll = jest.fn().mockResolvedValue([]);
+      Notification.findAll = jest.fn().mockResolvedValue([]);
+      Notification.bulkCreate = jest.fn().mockResolvedValue([]);
+      Notification.destroy = jest.fn().mockResolvedValue(1);
+    });
+
+    it('checks and handles feeding notifications without throwing', async () => {
+      await expect(notificationService.checkAndCreateFeedingNotifications('p1')).resolves.not.toThrow();
+    });
+  });
 });
+

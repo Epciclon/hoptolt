@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Card, Button } from '@/shared/ui';
+import { Pagination } from '@/shared/ui/Pagination';
 import { useRouter } from 'next/navigation';
 import { useInvitation } from '@/modules/invitation/hooks/useInvitation';
 import { useToast } from '@/shared/contexts/ToastContext';
@@ -13,8 +14,20 @@ import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 import { routeNotification } from '@/shared/utils/notificationRouting';
 
 export default function NotificationsPage() {
-  const { notifications, loading, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const [filter, setFilter] = useState<string>('all');
+  const [page, setPage] = useState(1);
+  const limit = 12;
+
+  const { notifications, pagination, loading, markAsRead, markAllAsRead, deleteNotification } = useNotifications({
+    page,
+    limit,
+    filter
+  });
+
+  const handleFilterChange = (newFilter: string) => {
+    setFilter(newFilter);
+    setPage(1);
+  };
   const { showToast } = useToast();
   const router = useRouter();
   const { acceptInvitation, revokeInvitation } = useInvitation();
@@ -80,7 +93,15 @@ export default function NotificationsPage() {
   };
 
   const handleNotificationClick = async (notification: Notification) => {
-    if (!notification.read) {
+    // Las advertencias del sistema (limpieza, parto, destete, alimentación) NO se deben marcar como leídas
+    // solo por hacer clic o navegar, ya que el usuario aún no ha realizado la acción en el módulo.
+    const isActionableWarning = notification.type === 'warning' ||
+      notification.data?.type === 'feeding_reminder' ||
+      notification.data?.type === 'cleaning_warning' ||
+      notification.data?.type === 'birth_warning' ||
+      notification.data?.type === 'weaning_alert';
+
+    if (!notification.read && !isActionableWarning) {
       try {
         await markAsRead(notification.id);
       } catch (error) {
@@ -101,10 +122,10 @@ export default function NotificationsPage() {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'warning': return 'bg-yellow-50 border-yellow-200 text-yellow-800';
-      case 'info': return 'bg-blue-50 border-blue-200 text-blue-800';
-      case 'invitation': return 'bg-purple-50 border-purple-200 text-purple-800';
-      default: return 'bg-theme-surface border-strong text-main';
+      case 'warning': return 'bg-yellow-50 dark:bg-yellow-950/40 border border-yellow-200 dark:border-yellow-900/60 text-yellow-800 dark:text-yellow-400';
+      case 'info': return 'bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 text-blue-800 dark:text-blue-400';
+      case 'invitation': return 'bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900/60 text-purple-800 dark:text-purple-400';
+      default: return 'bg-theme-surface border border-strong text-main';
     }
   };
 
@@ -113,16 +134,7 @@ export default function NotificationsPage() {
     return date.toLocaleString();
   };
 
-  const filteredNotifications = notifications.filter(n => {
-    if (filter === 'all') return true;
-    if (filter === 'unread') return !n.read;
-    if (filter === 'cleaning') return n.data?.type === 'cleaning_warning';
-    if (filter === 'growth') return n.data?.type === 'growth_summary' || n.data?.type === 'weight_estimation' || n.data?.type === 'weight_estimations' || n.data?.type === 'age_update';
-    if (filter === 'reproduction') return n.data?.type === 'birth_warning' || n.data?.type === 'weaning_alert' || n.data?.type === 'reproduction_manual' || n.data?.type === 'reproduction_automated';
-    if (filter === 'activity') return n.data?.type === 'worker_action';
-    if (filter === 'invitation') return n.type === 'invitation' || n.title?.includes('trabajador en tu galpón') || n.title?.includes('unido al galpón');
-    return true;
-  });
+  const totalPages = pagination?.totalPages || 1;
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -143,49 +155,56 @@ export default function NotificationsPage() {
         <div className="p-4 border-b border-default flex gap-2 overflow-x-auto bg-card">
           <Button 
             variant={filter === 'all' ? 'primary' : 'outline'} 
-            onClick={() => setFilter('all')}
+            onClick={() => handleFilterChange('all')}
             className="rounded-full px-6"
           >
             Todas
           </Button>
           <Button 
             variant={filter === 'unread' ? 'primary' : 'outline'} 
-            onClick={() => setFilter('unread')}
+            onClick={() => handleFilterChange('unread')}
             className="rounded-full px-6"
           >
             No leídas
           </Button>
           <Button 
+            variant={filter === 'feeding' ? 'primary' : 'outline'} 
+            onClick={() => handleFilterChange('feeding')}
+            className="rounded-full px-6"
+          >
+            Alimentación
+          </Button>
+          <Button 
             variant={filter === 'growth' ? 'primary' : 'outline'} 
-            onClick={() => setFilter('growth')}
+            onClick={() => handleFilterChange('growth')}
             className="rounded-full px-6"
           >
             Crecimiento y Edad
           </Button>
           <Button 
             variant={filter === 'cleaning' ? 'primary' : 'outline'} 
-            onClick={() => setFilter('cleaning')}
+            onClick={() => handleFilterChange('cleaning')}
             className="rounded-full px-6"
           >
             Limpieza
           </Button>
           <Button 
             variant={filter === 'reproduction' ? 'primary' : 'outline'} 
-            onClick={() => setFilter('reproduction')}
+            onClick={() => handleFilterChange('reproduction')}
             className="rounded-full px-6"
           >
             Reproducción
           </Button>
           <Button 
             variant={filter === 'activity' ? 'primary' : 'outline'} 
-            onClick={() => setFilter('activity')}
+            onClick={() => handleFilterChange('activity')}
             className="rounded-full px-6"
           >
             Actividad
           </Button>
           <Button 
             variant={filter === 'invitation' ? 'primary' : 'outline'} 
-            onClick={() => setFilter('invitation')}
+            onClick={() => handleFilterChange('invitation')}
             className="rounded-full px-6"
           >
             Invitaciones
@@ -203,7 +222,7 @@ export default function NotificationsPage() {
               );
             }
 
-            if (filteredNotifications.length === 0) {
+            if (notifications.length === 0) {
               return (
                 <div className="p-16 text-center text-muted">
                   <Bell className="w-16 h-16 mx-auto mb-4 text-slate-300" />
@@ -214,15 +233,15 @@ export default function NotificationsPage() {
             }
 
             return (
-              <div className="divide-y divide-slate-100">
-                {filteredNotifications.map((notification) => (
+              <div className="divide-y divide-default">
+                {notifications.map((notification) => (
                   <div
                     role="button"
                     tabIndex={0}
                     key={notification.id}
                     className={cn(
                       "w-full text-left p-6 flex items-start gap-4 hover:bg-theme-surface transition-colors group cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500",
-                      !notification.read && "bg-blue-50/30"
+                      !notification.read && "bg-primary-50/60 dark:bg-primary-900/20"
                     )}
                     onClick={() => handleNotificationClick(notification)}
                     onKeyDown={(e) => {
@@ -242,7 +261,7 @@ export default function NotificationsPage() {
                           <h4 className="text-base font-semibold text-main flex items-center gap-2">
                             {notification.title}
                             {!notification.read && (
-                              <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
+                              <span className="w-2 h-2 rounded-full bg-primary-500 inline-block" />
                             )}
                           </h4>
                           <p className="text-muted mt-1 whitespace-pre-wrap">
@@ -315,6 +334,60 @@ export default function NotificationsPage() {
                           </div>
                         </div>
                       )}
+
+                      {notification.data?.type === 'feeding_reminder' && (
+                        <div className="mt-4 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <p className="text-sm text-amber-800 dark:text-amber-300 font-medium">
+                            Tienes jaulas con conejos pendientes de alimentar en este turno.
+                          </p>
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleNotificationClick(notification);
+                            }}
+                            className="self-start sm:self-auto"
+                          >
+                            Ir a Alimentar
+                          </Button>
+                        </div>
+                      )}
+
+                      {notification.data?.type === 'cleaning_warning' && (
+                        <div className="mt-4 p-4 rounded-lg bg-theme-surface border border-default">
+                          <div className="flex flex-col gap-3">
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm font-semibold text-main">
+                                Jaulas con falta de limpieza ({notification.data.pendingCages?.length || notification.data.cagesCount || 0})
+                              </p>
+                              <Button
+                                size="sm"
+                                variant="primary"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleNotificationClick(notification);
+                                }}
+                              >
+                                Ir a Limpieza
+                              </Button>
+                            </div>
+
+                            {notification.data.pendingCages && notification.data.pendingCages.length > 0 && (
+                              <ul className="text-sm text-main max-h-48 overflow-y-auto bg-card border border-default rounded-md p-2 divide-y divide-default">
+                                {notification.data.pendingCages.map((cage: any) => (
+                                  <li key={cage.cageId || cage.cageNumber} className="flex items-center justify-between py-1.5 px-2">
+                                    <span className="font-medium text-main">Jaula {cage.cageNumber}</span>
+                                    <span className="text-amber-600 dark:text-amber-400 font-medium text-xs">
+                                      {cage.daysWithoutCleaning} {cage.daysWithoutCleaning === 1 ? 'día' : 'días'} sin limpieza
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -322,6 +395,16 @@ export default function NotificationsPage() {
             );
           })()}
         </div>
+
+        {totalPages > 1 && (
+          <div className="p-4 border-t border-default flex justify-center bg-card">
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+            />
+          </div>
+        )}
       </Card>
     </div>
   );

@@ -62,7 +62,7 @@ export function ZoomableViewer({ children }: Readonly<ZoomableViewerProps>) {
         <Button variant="outline" size="sm" icon={<Maximize size={16} />} onClick={handleReset} title="Restablecer vista" />
       </div>
 
-      {/* Visor interactivo  role="application" is an interactive ARIA landmark (WAI-ARIA spec) */}
+      {/* Visor interactivo - role="application" is an interactive ARIA landmark (WAI-ARIA spec) */}
       {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-tabindex */}
       <div
         role="application"

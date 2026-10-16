@@ -147,7 +147,7 @@ export function TransferRabbitModal({ open, onClose, rabbits, currentCageId, sou
                   }`}
                 >
                   <div>
-                    <div className="font-semibold text-main">Jaula #{cage.number} — {cage.type.charAt(0).toUpperCase() + cage.type.slice(1)}</div>
+                    <div className="font-semibold text-main">Jaula {cage.number} - {cage.type.charAt(0).toUpperCase() + cage.type.slice(1)}</div>
                   </div>
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${badgeColor}`}>
                     {labelState}

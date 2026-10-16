@@ -6,6 +6,7 @@ import { reproductionService } from '../services/reproduction.service';
 import { genealogyService } from '@/modules/genealogy/services/genealogy.service';
 import type { MatingRabbit } from '../types/reproduction.types';
 import { HeartHandshake } from 'lucide-react';
+import { matchesSmartSearch } from '@/shared/utils/rabbitUtils';
 
 interface MatingModalProps {
   male: MatingRabbit;
@@ -73,12 +74,7 @@ export function MatingModal({ male, onClose, onSuccess }: Readonly<MatingModalPr
   };
 
   const filteredFemales = females.filter(female => {
-    const safeCode = female.code ? female.code.toLowerCase() : '';
-    const safeName = female.name ? female.name.toLowerCase() : '';
-    const safeCage = female.cageNumber ? female.cageNumber.toString() : '';
-    const safeSearch = search ? search.toLowerCase() : '';
-
-    return safeCode.includes(safeSearch) || safeName.includes(safeSearch) || safeCage.includes(safeSearch);
+    return matchesSmartSearch(search, female.cageNumber, female.code, female.name);
   });
 
   const renderContent = () => {
@@ -122,9 +118,9 @@ export function MatingModal({ male, onClose, onSuccess }: Readonly<MatingModalPr
               <RabbitAvatar imageUrl={female.imageUrl} alt={female.code} size="md" />
               <div>
                 <h5 className="font-medium text-main">
-                  {female.name ? `${female.name}  ${female.code}` : female.code}
+                  {female.name ? `${female.name} - ${female.code}` : female.code}
                 </h5>
-                <p className="text-xs text-muted">Jaula #{female.cageNumber}</p>
+                <p className="text-xs text-muted">Jaula {female.cageNumber}</p>
               </div>
             </div>
             
@@ -152,7 +148,7 @@ export function MatingModal({ male, onClose, onSuccess }: Readonly<MatingModalPr
         <RabbitAvatar imageUrl={male.imageUrl} alt={male.code} size="xl" ring />
         <div>
           <h4 className="font-semibold text-main text-lg">{male.code} {male.name ? `- ${male.name}` : ''}</h4>
-          <p className="text-sm text-muted">Raza: <span className="font-medium capitalize">{male.race}</span> | Jaula: <span className="font-medium">#{male.cageNumber}</span></p>
+          <p className="text-sm text-muted">Raza: <span className="font-medium capitalize">{male.race}</span> | Jaula: <span className="font-medium">{male.cageNumber}</span></p>
           <p className="text-xs text-muted mt-1">Solo se muestran hembras receptivas iguales o mayores a 4 meses de la misma raza.</p>
         </div>
       </div>
@@ -165,7 +161,7 @@ export function MatingModal({ male, onClose, onSuccess }: Readonly<MatingModalPr
           onConfirm={handlePreConfirm}
           loading={processingId !== null}
           title="Confirmar Monta"
-          description={<>¿Estás seguro de que deseas vincular a la hembra <b>{confirmFemale.name ? `${confirmFemale.name}  ${confirmFemale.code}` : confirmFemale.code}</b> con el macho <b>{male.name ? `${male.name}  ${male.code}` : male.code}</b>?</>}
+          description={<>¿Estás seguro de que deseas vincular a la hembra <b>{confirmFemale.name ? `${confirmFemale.name} - ${confirmFemale.code}` : confirmFemale.code}</b> con el macho <b>{male.name ? `${male.name} - ${male.code}` : male.code}</b>?</>}
           confirmLabel="Sí, vincular"
           variant="primary"
         />

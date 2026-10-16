@@ -1,17 +1,57 @@
-﻿import api from '@/lib/api';
+import api from '@/lib/api';
 import type { Notification, CreateNotificationDTO } from '../types/notification.types';
 
 const BASE_URL = '/notifications';
 
+export interface GetNotificationsParams {
+  page?: number;
+  limit?: number;
+  offset?: number;
+  unreadOnly?: boolean;
+  freshSession?: boolean;
+  filter?: string;
+  search?: string;
+}
+
+export interface NotificationsResponse {
+  notifications: Notification[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
 export const notificationService = {
-  async getAll(options?: { limit?: number; offset?: number; unreadOnly?: boolean }): Promise<Notification[]> {
-    const params = new URLSearchParams();
-    if (options?.limit) params.append('limit', options.limit.toString());
-    if (options?.offset) params.append('offset', options.offset.toString());
-    if (options?.unreadOnly) params.append('unreadOnly', 'true');
-    
-    const response = await api.get(`${BASE_URL}?${params.toString()}`);
-    return response.data;
+  async getAll(params?: GetNotificationsParams): Promise<NotificationsResponse> {
+    const { data } = await api.get<{ success?: boolean; notifications?: Notification[]; pagination?: any }>(BASE_URL, { params });
+    if (data && data.notifications) {
+      return {
+        notifications: data.notifications,
+        pagination: data.pagination || {
+          page: params?.page || 1,
+          limit: params?.limit || 12,
+          total: data.notifications.length,
+          totalPages: 1
+        }
+      };
+    }
+    if (Array.isArray(data)) {
+      return {
+        notifications: data as unknown as Notification[],
+        pagination: {
+          page: params?.page || 1,
+          limit: params?.limit || 12,
+          total: (data as any[]).length,
+          totalPages: 1
+        }
+      };
+    }
+    return {
+      notifications: [],
+      pagination: { total: 0, page: 1, limit: 12, totalPages: 1 }
+    };
   },
 
   async getUnreadCount(): Promise<{ count: number }> {

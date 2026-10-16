@@ -54,7 +54,17 @@ class CageService {
         if (!cage) throw new AppError('No se encontró la jaula.', 404);
 
         // Verificar que el usuario tiene acceso al galpón
-        await this._assertGalponAccess(galponId, profileId);
+        const membership = await this._assertGalponAccess(galponId, profileId);
+
+        if (membership.role === 'worker') {
+            const { WorkerCage } = require('../../domain/models');
+            const workerCage = await WorkerCage.findOne({
+                where: { farmMemberId: membership.id, cageId: id }
+            });
+            if (!workerCage) {
+                throw new AppError('No tienes acceso a esta jaula.', 403);
+            }
+        }
 
         const count = await assignmentRepository.countActiveByCageId(cage.id);
         let occupancyStatus = 'disponible';
@@ -72,13 +82,20 @@ class CageService {
         if (!galponId) return createPaginatedResponse([], page, limit, 0);
 
         // Verificar que el usuario tiene acceso al galpón
-        await this._assertGalponAccess(galponId, profileId);
+        const membership = await this._assertGalponAccess(galponId, profileId);
 
         const { limit: limitValue, offset, page: pageValue } = getPaginationParams(page, limit);
 
         const { Op } = require('sequelize');
         const Sequelize = require('sequelize');
         const where = {};
+
+        if (membership.role === 'worker') {
+            const { WorkerCage } = require('../../domain/models');
+            const workerCages = await WorkerCage.findAll({ where: { farmMemberId: membership.id } });
+            const assignedCageIds = workerCages.map(wc => Number(wc.cageId));
+            where.id = { [Op.in]: assignedCageIds };
+        }
 
         if (filters.status) where.status = filters.status;
         if (filters.type) where.type = filters.type;
@@ -177,6 +194,7 @@ class CageService {
             where: { profileId, galponId, status: 'active' }
         });
         if (!membership) throw new AppError('No tienes acceso a este galpón.', 403);
+        return membership;
     }
 }
 

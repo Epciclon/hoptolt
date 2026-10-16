@@ -217,7 +217,7 @@ export default function RegisterPage() {
       <div className="mt-6 text-center animate-fade-in-right" style={{ animationDelay: '0.8s' }}>
         <p className="text-muted text-sm mb-4">
           ¿Ya tienes una cuenta?{' '}
-          º          <Link href="/login" className="text-teal-600 font-semibold hover:underline">
+          <Link href="/login" className="text-teal-600 font-semibold hover:underline">
             Inicia Sesión
           </Link>
         </p>

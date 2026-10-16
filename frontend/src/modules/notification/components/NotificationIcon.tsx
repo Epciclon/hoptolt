@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Bell, X, CheckCheck } from 'lucide-react';
+import { Bell, X, CheckCheck, Utensils, Clock } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotification';
 import { useInvitation } from '@/modules/invitation/hooks/useInvitation';
 import { useToast } from '@/shared/contexts/ToastContext';
@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { routeNotification } from '@/shared/utils/notificationRouting';
 import { useAuth } from '@/modules/auth/hooks/useAuth';
+import { useQueryClient } from '@tanstack/react-query';
 
 
 export function NotificationIcon() {
@@ -20,51 +21,56 @@ export function NotificationIcon() {
   const { showToast } = useToast();
   const { user } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [accepting, setAccepting] = useState<number | null>(null);
   const [rejecting, setRejecting] = useState<number | null>(null);
   
+  // Previa especial de Recordatorio de Alimentación
+  const [previewReminder, setPreviewReminder] = useState<any>(null);
+  const dismissedRemindersRef = useRef<Set<string>>(new Set());
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
   const previousUnreadCountRef = useRef(0);
   const [isAnimating, setIsAnimating] = useState(false);
 
+  const playNotificationSound = () => {
+    try {
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      // Check user activation to prevent Chrome autoplay warnings
+      const hasInteracted = (window as any).__hasInteracted || (navigator.userActivation ? navigator.userActivation.hasBeenActive : false);
+      
+      if (AudioContext && hasInteracted) {
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1);
+        
+        gain.gain.setValueAtTime(0, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.start();
+        osc.stop(ctx.currentTime + 0.3);
+      }
+    } catch (e) {
+      console.error('Error playing notification sound:', e);
+    }
+  };
+
   useEffect(() => {
     if (unreadCount > previousUnreadCountRef.current) {
-      // New notification arrived!
+      // New notification arrived - animar icono de campana como si repicara
       setIsAnimating(true);
-      
-      // Play sound only if user has interacted with the page
-      try {
-        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-        // Check user activation to prevent Chrome autoplay warnings
-        const hasInteracted = (window as any).__hasInteracted || (navigator.userActivation ? navigator.userActivation.hasBeenActive : false);
-        
-        if (AudioContext && hasInteracted) {
-          const ctx = new AudioContext();
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1);
-          
-          gain.gain.setValueAtTime(0, ctx.currentTime);
-          gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.05);
-          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-          
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          
-          osc.start();
-          osc.stop(ctx.currentTime + 0.3);
-        }
-      } catch (e) {
-        console.error('Error playing notification sound:', e);
-      }
-
-      // Stop animation after 2s
       setTimeout(() => {
         setIsAnimating(false);
-      }, 2000);
+      }, 2500);
     }
     previousUnreadCountRef.current = unreadCount;
   }, [unreadCount]);
@@ -123,6 +129,83 @@ export function NotificationIcon() {
     }
   }, [unreadCount, notifications, showToast, user?.id]);
 
+  const lastUserRef = useRef<string | null>(null);
+  useEffect(() => {
+    // Si cambia el usuario (login como otro usuario), limpiar marca de sesión anterior
+    if (user?.id && lastUserRef.current && lastUserRef.current !== user.id) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(`hoptolt_last_feeding_popup_${lastUserRef.current}`);
+      }
+      setPreviewReminder(null);
+    }
+    lastUserRef.current = user?.id || null;
+  }, [user?.id]);
+
+  // Previa temporal exclusiva para Recordatorio de Alimentación:
+  // 1) Al iniciar sesión si no se ha alimentado (inmediato).
+  // 2) Si se mantiene en el sistema, se muestra automáticamente cada 1 minuto sin requerir abrir/cerrar notificaciones.
+  useEffect(() => {
+    const checkAndShowFeedingReminder = () => {
+      if (typeof window === 'undefined' || !user?.id) return;
+
+      const feedingReminder = notifications.find(
+        (n) => !n.read && n.data?.type === 'feeding_reminder'
+      );
+
+      if (!feedingReminder) {
+        setPreviewReminder(null);
+        if (timerRef.current) clearTimeout(timerRef.current);
+        return;
+      }
+
+      // Si el panel de notificaciones está abierto, no sobreponer la previa
+      if (isOpen) return;
+
+      const FEEDING_INTERVAL = 25 * 60 * 1000; // 25 minutos
+      const now = Date.now();
+      const storageIdKey = `hoptolt_last_feeding_popup_id_${user.id}`;
+      const storageTimeKey = `hoptolt_last_feeding_popup_${user.id}`;
+      const lastPopupId = typeof window !== 'undefined' ? localStorage.getItem(storageIdKey) : null;
+      const lastPopupStr = typeof window !== 'undefined' ? localStorage.getItem(storageTimeKey) : null;
+      const lastPopupTime = lastPopupStr ? Number.parseInt(lastPopupStr, 10) : 0;
+
+      // Se sincroniza por ID de notificación: si el backend renueva la alerta, ambos usuarios
+      // la reciben al mismo tiempo y se muestra simultáneamente.
+      const isNewNotification = lastPopupId !== String(feedingReminder.id);
+      const isTimeDue = lastPopupTime === 0 || (now - lastPopupTime >= FEEDING_INTERVAL);
+      const shouldShow = isNewNotification || isTimeDue;
+
+      if (shouldShow) {
+        setPreviewReminder(feedingReminder);
+        playNotificationSound();
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(storageIdKey, String(feedingReminder.id));
+          localStorage.setItem(storageTimeKey, now.toString());
+        }
+
+        if (timerRef.current) clearTimeout(timerRef.current);
+
+        const duration = 12000; // 12 segundos de visualización temporal
+        timerRef.current = setTimeout(() => {
+          setPreviewReminder(null);
+        }, duration);
+      }
+    };
+
+    // Verificar inmediatamente al cambiar notificaciones o al cerrar el panel
+    checkAndShowFeedingReminder();
+
+    // Y además evaluar periódicamente cada 3 segundos para que aparezca solo en cuanto se cumpla el minuto
+    const interval = setInterval(checkAndShowFeedingReminder, 3000);
+
+    return () => clearInterval(interval);
+  }, [notifications, isOpen, user?.id, queryClient]);
+
+  const handleClosePreview = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setPreviewReminder(null);
+  };
+
   const getIconByType = (type: string) => {
     switch (type) {
       case 'warning':
@@ -139,11 +222,11 @@ export function NotificationIcon() {
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'warning':
-        return 'bg-yellow-50 border-yellow-200 text-yellow-800';
+        return 'bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-950/40 dark:border-yellow-900/60 dark:text-yellow-400';
       case 'info':
-        return 'bg-blue-50 border-blue-200 text-blue-800';
+        return 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950/40 dark:border-blue-900/60 dark:text-blue-400';
       case 'invitation':
-        return 'bg-purple-50 border-purple-200 text-purple-800';
+        return 'bg-purple-50 border-purple-200 text-purple-800 dark:bg-purple-950/40 dark:border-purple-900/60 dark:text-purple-400';
       default:
         return 'bg-theme-surface border-strong text-main';
     }
@@ -203,7 +286,15 @@ export function NotificationIcon() {
   };
 
   const handleNotificationClick = async (notification: any) => {
-    if (!notification.read) {
+    // Las advertencias del sistema (limpieza, parto, destete, alimentación) NO se deben marcar como leídas
+    // solo por hacer clic o navegar, ya que el usuario aún no ha realizado la acción en el módulo.
+    const isActionableWarning = notification.type === 'warning' ||
+      notification.data?.type === 'feeding_reminder' ||
+      notification.data?.type === 'cleaning_warning' ||
+      notification.data?.type === 'birth_warning' ||
+      notification.data?.type === 'weaning_alert';
+
+    if (!notification.read && !isActionableWarning) {
       try {
         await markAsRead(notification.id);
       } catch (error) {
@@ -214,13 +305,27 @@ export function NotificationIcon() {
     setIsOpen(false);
   };
 
-  const displayedNotifications = notifications.slice(0, NOTIFICATION_LIMIT);
+  const sortedNotifications = [...notifications].sort((a, b) => {
+    const getPriority = (item: any) => {
+      if (item.type === 'warning' && item.data?.type === 'feeding_reminder') return 0;
+      if (item.type === 'warning') return 1;
+      return 2;
+    };
+    const pA = getPriority(a);
+    const pB = getPriority(b);
+    if (pA !== pB) return pA - pB;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+  const displayedNotifications = sortedNotifications.slice(0, NOTIFICATION_LIMIT);
   const hasUnreadWarnings = notifications.some(n => !n.read && n.type === 'warning');
 
   return (
     <div className="relative">
       <button type="button"
         onClick={() => {
+          if (previewReminder) {
+            handleClosePreview();
+          }
           const newState = !isOpen;
           setIsOpen(newState);
           if (newState && window.innerWidth < 1024) {
@@ -229,8 +334,8 @@ export function NotificationIcon() {
         }}
         className="relative p-2 rounded-lg hover:bg-theme-surface border border-default transition-colors"
       >
-        <Bell className={cn("w-5 h-5 text-muted transition-colors", 
-          isAnimating && "animate-bounce text-primary-500"
+        <Bell className={cn("w-5 h-5 text-muted transition-colors origin-top", 
+          (unreadCount > 0 || isAnimating) && "animate-bell-ring text-primary-500"
         )} />
         {unreadCount > 0 && (
           <span className={cn(
@@ -241,6 +346,93 @@ export function NotificationIcon() {
           </span>
         )}
       </button>
+
+      {/* Previa especial exclusiva de Recordatorio de Alimentación con el formato estándar */}
+      {previewReminder && !isOpen && (
+        <div className="fixed sm:absolute top-16 sm:top-full right-4 sm:right-0 left-4 sm:left-auto mt-2 w-auto sm:w-96 max-w-[calc(100vw-2rem)] bg-card rounded-xl shadow-lg border border-strong overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="p-4 border-b border-default flex justify-between items-center bg-theme-surface">
+            <div className="flex items-center gap-2">
+              <span className="flex h-2 w-2 rounded-full bg-primary-500 animate-pulse" />
+              <h3 className="font-semibold text-main text-base m-0">Notificaciones</h3>
+            </div>
+            <button
+              type="button"
+              onClick={handleClosePreview}
+              className="text-theme-faint hover:text-muted p-1 rounded hover:bg-theme-surface transition-colors cursor-pointer"
+              aria-label="Cerrar notificación"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          <div
+            role="button"
+            tabIndex={0}
+            className="w-full text-left p-4 bg-primary-50/60 dark:bg-primary-900/20 hover:bg-theme-surface transition-colors cursor-pointer block focus:outline-none focus:ring-2 focus:ring-primary-500"
+            onClick={() => {
+              const reminder = previewReminder;
+              handleClosePreview();
+              handleNotificationClick(reminder);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                const reminder = previewReminder;
+                handleClosePreview();
+                handleNotificationClick(reminder);
+              }
+            }}
+          >
+            <div className="flex items-start gap-3">
+              <div className={cn('w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0', getTypeColor(previewReminder.type))}>
+                {getIconByType(previewReminder.type)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-start gap-2">
+                  <h4 className="font-medium text-main text-sm flex items-center gap-2">
+                    {previewReminder.title}
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary-500 inline-block" />
+                  </h4>
+                </div>
+                <p className="text-sm text-muted mt-1 leading-relaxed">
+                  {previewReminder.message.split(/(\*\*.*?\*\*)/g).map((part: string, i: number) => {
+                    if (part.startsWith('**') && part.endsWith('**')) {
+                      return <strong key={i} className="font-semibold text-main">{part.slice(2, -2)}</strong>;
+                    }
+                    return part;
+                  })}
+                </p>
+                <div className="mt-3 flex items-center justify-between gap-2 pt-2.5 border-t border-default">
+                  <p className="text-xs text-theme-faint">{formatTime(previewReminder.createdAt)}</p>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const reminder = previewReminder;
+                      handleClosePreview();
+                      handleNotificationClick(reminder);
+                    }}
+                    className="text-xs py-1 px-3 shadow-sm"
+                  >
+                    Ir a Alimentar
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-2 border-t border-default bg-theme-surface">
+            <Link
+              href="/dashboard/notifications"
+              onClick={handleClosePreview}
+              className="w-full text-center block text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium py-1.5 hover:bg-theme-surface rounded transition-colors border-none cursor-pointer"
+            >
+              Ver todas las notificaciones
+            </Link>
+          </div>
+        </div>
+      )}
 
       {isOpen && (
         <>
@@ -288,7 +480,7 @@ export function NotificationIcon() {
                       tabIndex={0}
                       className={cn(
                         'w-full text-left p-4 border-b border-default hover:bg-theme-surface transition-colors cursor-pointer block focus:outline-none focus:ring-2 focus:ring-primary-500',
-                        !notification.read && 'bg-blue-50/50'
+                        !notification.read && 'bg-primary-50/60 dark:bg-primary-900/20'
                       )}
                       onClick={() => handleNotificationClick(notification)}
                       onKeyDown={(e) => {
@@ -304,7 +496,12 @@ export function NotificationIcon() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-start gap-2">
-                            <h4 className="font-medium text-main text-sm">{notification.title}</h4>
+                            <h4 className="font-medium text-main text-sm flex items-center gap-2">
+                              {notification.title}
+                              {!notification.read && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-primary-500 inline-block" />
+                              )}
+                            </h4>
                             {!(notification.type === 'warning' || notification.type === 'invitation') && (
                               <button type="button"
                                 onClick={async (e) => {
@@ -371,6 +568,61 @@ export function NotificationIcon() {
                                   <li className="italic text-theme-faint">... y {notification.data.details.length - 3} más</li>
                                 )}
                               </ul>
+                            </div>
+                          )}
+                          {notification.data?.type === 'feeding_reminder' && (
+                            <div className="mt-2.5 flex items-center justify-between gap-2 p-2 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40">
+                              <span className="text-xs text-amber-800 dark:text-amber-300 font-medium">
+                                Alimentación pendiente
+                              </span>
+                              <Button
+                                size="sm"
+                                variant="primary"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleNotificationClick(notification);
+                                }}
+                                className="text-xs py-0.5 px-2.5 h-auto"
+                              >
+                                Alimentar
+                              </Button>
+                            </div>
+                          )}
+                          {notification.data?.type === 'cleaning_warning' && (
+                            <div className="mt-2.5 flex flex-col gap-1.5 p-2 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-xs text-amber-800 dark:text-amber-300 font-medium">
+                                  {notification.data.pendingCages?.length || notification.data.cagesCount || 0} jaulas sin limpiar
+                                </span>
+                                <Button
+                                  size="sm"
+                                  variant="primary"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleNotificationClick(notification);
+                                  }}
+                                  className="text-xs py-0.5 px-2.5 h-auto"
+                                >
+                                  Limpiar
+                                </Button>
+                              </div>
+                              {notification.data.pendingCages && notification.data.pendingCages.length > 0 && (
+                                <ul className="text-xs text-muted max-h-24 overflow-y-auto bg-card/60 rounded p-1 divide-y divide-default/40">
+                                  {notification.data.pendingCages.slice(0, 5).map((cage: any) => (
+                                    <li key={cage.cageId || cage.cageNumber} className="flex items-center justify-between py-0.5 px-1">
+                                      <span className="font-medium text-main">Jaula {cage.cageNumber}</span>
+                                      <span className="text-amber-600 dark:text-amber-400 font-medium text-[11px]">
+                                        {cage.daysWithoutCleaning}d
+                                      </span>
+                                    </li>
+                                  ))}
+                                  {notification.data.pendingCages.length > 5 && (
+                                    <li className="italic text-theme-faint text-[10px] px-1 pt-0.5">
+                                      ... y {notification.data.pendingCages.length - 5} jaulas más
+                                    </li>
+                                  )}
+                                </ul>
+                              )}
                             </div>
                           )}
                         </div>

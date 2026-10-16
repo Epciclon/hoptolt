@@ -169,7 +169,7 @@ export function AssignRabbitForm({ onSuccess, onCancel }: Readonly<AssignRabbitF
                     className="w-full text-left px-3 py-3 border-b border-strong last:border-b-0 text-sm transition-colors flex items-center justify-between hover:bg-theme-hover"
                   >
                     <div>
-                      <div className="font-semibold text-main">Jaula #{cage.number} — {cage.type.charAt(0).toUpperCase() + cage.type.slice(1)}</div>
+                      <div className="font-semibold text-main">Jaula {cage.number} - {cage.type.charAt(0).toUpperCase() + cage.type.slice(1)}</div>
                       <div className="text-muted text-xs mt-0.5">Espacio disponible: {available} / {cage.capacity}</div>
                     </div>
                   </button>
@@ -193,7 +193,7 @@ export function AssignRabbitForm({ onSuccess, onCancel }: Readonly<AssignRabbitF
                 <path d="m15 18-6-6 6-6"/>
               </svg>
             </button>
-            <h3 className="text-lg font-semibold text-main">Jaula #{selectedCage.number}</h3>
+            <h3 className="text-lg font-semibold text-main">Jaula {selectedCage.number}</h3>
             <span className="text-xs font-medium bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-1 rounded-md ml-auto">
               {selectedCage.assignedCount || 0} / {selectedCage.capacity} ocupados
             </span>

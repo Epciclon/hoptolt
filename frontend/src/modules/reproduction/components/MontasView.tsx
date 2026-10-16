@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button, CageGroupCard, RabbitSelectableCard, RabbitAvatar, ConfirmDialog } from '@/shared/ui';
 import { FilterBar } from '@/shared/ui/FilterBar';
@@ -9,6 +9,7 @@ import { useReproduction } from '../hooks/useReproduction';
 import { Pagination } from '@/shared/ui/Pagination';
 import { Heart, Clock, Trash2 } from 'lucide-react';
 import { MatingModal } from './MatingModal';
+import { matchesSmartSearch } from '@/shared/utils/rabbitUtils';
 
 const getRemainingTime = (createdAt?: string) => {
   if (!createdAt) return null;
@@ -104,22 +105,17 @@ export function MontasView({ searchTerm, onSearchChange }: Readonly<MontasViewPr
     };
   });
 
-  const filteredMales = malesWithStatus.filter((male) => {
-    const safeCode = male.code ? male.code.toLowerCase() : '';
-    const safeName = male.name ? male.name.toLowerCase() : '';
-    const safeCage = male.cageNumber ? male.cageNumber.toString() : '';
-    const safeSearch = searchTerm ? searchTerm.toLowerCase() : '';
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, statusFilter]);
 
-    const matchesSearch = 
-      safeCode.includes(safeSearch) || 
-      safeName.includes(safeSearch) ||
-      safeCage.includes(safeSearch);
-      
+  const filteredMales = malesWithStatus.filter((male) => {
     let matchesStatus = true;
     if (statusFilter === 'disponible') matchesStatus = !male.isOccupied;
     if (statusFilter === 'en_monta') matchesStatus = male.isOccupied;
+    if (!matchesStatus) return false;
 
-    return matchesSearch && matchesStatus;
+    return matchesSmartSearch(searchTerm, male.cageNumber, male.code, male.name);
   });
 
   type GroupedMale = { cageNumber: number; cageType: string; machos: typeof filteredMales };
@@ -317,7 +313,7 @@ export function MontasView({ searchTerm, onSearchChange }: Readonly<MontasViewPr
         description={
           finishingReproduction ? (
             <>
-              ¿Estás seguro de que deseas retirar a la hembra <b>{finishingReproduction.femaleName ? `${finishingReproduction.femaleName}  ${finishingReproduction.femaleCode}` : finishingReproduction.femaleCode}</b> de la jaula del macho? Esto registrará que la monta ha concluido y pasará al estado de Gestación.
+              ¿Estás seguro de que deseas retirar a la hembra <b>{finishingReproduction.femaleName ? `${finishingReproduction.femaleName} - ${finishingReproduction.femaleCode}` : finishingReproduction.femaleCode}</b> de la jaula del macho? Esto registrará que la monta ha concluido y pasará al estado de Gestación.
             </>
           ) : ''
         }

@@ -33,7 +33,7 @@ export const cageService = {
   async getByNumber(number: number): Promise<Cage> {
     const { cages } = await this.getAll({ search: number.toString() });
     const cage = cages.find(c => c.number === number);
-    if (!cage) throw new Error(`Jaula #${number} no encontrada`);
+    if (!cage) throw new Error(`Jaula ${number} no encontrada`);
     return cage;
   },
 

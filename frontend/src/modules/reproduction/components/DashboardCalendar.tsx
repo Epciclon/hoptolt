@@ -182,12 +182,7 @@ export function DashboardCalendar() {
 
       {/* Selector de tipo de calendario */}
       {canViewReproduction && (
-        <div className="flex bg-theme-surface border border-default p-1 rounded-lg w-full max-w-2xl mx-auto mb-4 relative overflow-hidden">
-        {isFetching && (
-          <div className="absolute top-0 left-0 w-full h-0.5 bg-slate-200">
-            <div className="h-full bg-primary-500 animate-pulse w-full"></div>
-          </div>
-        )}
+        <div className="flex bg-theme-surface border border-default p-1 rounded-lg w-full max-w-2xl mx-auto mb-4 relative">
         <button type="button"
           onClick={() => { setCalendarType('births'); setSelectedDate(null); }}
           className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-all ${
@@ -340,7 +335,7 @@ export function DashboardCalendar() {
                           </p>
                           {entry.cageNumber && (
                             <p className="text-xs text-muted mt-0.5 flex items-center gap-1 truncate">
-                              Jaula #{entry.cageNumber} {entry.cageType ? `(${entry.cageType})` : ''}
+                              Jaula {entry.cageNumber} {entry.cageType ? `(${entry.cageType})` : ''}
                             </p>
                           )}
                         </div>

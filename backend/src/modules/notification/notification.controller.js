@@ -21,18 +21,27 @@ class NotificationController {
 
     // Obtener notificaciones del usuario actual
     getMyNotifications = catchAsync(async (req, res) => {
-        const { limit = 20, offset = 0, unreadOnly } = req.query;
+        const page = Number.parseInt(req.query.page) || 1;
+        const limit = Number.parseInt(req.query.limit) || 12;
+        const { unreadOnly, freshSession, filter, search } = req.query;
         
-        const notifications = await notificationService.getNotificationsByProfile(
+        const result = await notificationService.getNotificationsByProfile(
             req.user.id,
             {
-                limit: Number.parseInt(limit),
-                offset: Number.parseInt(offset),
-                unreadOnly: unreadOnly === 'true'
+                page,
+                limit,
+                unreadOnly: unreadOnly === 'true',
+                freshSession: freshSession === 'true',
+                filter,
+                search
             }
         );
 
-        res.json(notifications);
+        res.status(200).json({
+            success: true,
+            notifications: result.data || result,
+            pagination: result.pagination
+        });
     });
 
     // Obtener contador de notificaciones no leídas

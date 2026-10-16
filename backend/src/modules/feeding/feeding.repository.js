@@ -52,7 +52,7 @@ class FeedingRepository {
 
     async findByGalponId(galponId, options = {}, filters = {}) {
         const { Assignment, Rabbit } = require('../../domain/models');
-        const { whereClause: filtersWhere, cageWhere } = buildCommonFilters(filters, 'feedingDate');
+        const { whereClause: filtersWhere, cageWhere } = buildCommonFilters(filters, 'feedingDate', true);
         const whereClause = { galponId, ...filtersWhere };
 
         return Feeding.findAll({
@@ -90,11 +90,11 @@ class FeedingRepository {
     }
 
     async countByGalponId(galponId, filters = {}) {
-        const { whereClause: filtersWhere, cageWhere } = buildCommonFilters(filters, 'feedingDate');
+        const { whereClause: filtersWhere, cageWhere } = buildCommonFilters(filters, 'feedingDate', true);
         const whereClause = { galponId, ...filtersWhere };
 
-        // Si hay filtro de tipo de jaula, necesitamos hacer el include para el count
-        if (filters.cageType) {
+        // Si hay filtro de jaula, necesitamos hacer el include para el count
+        if (filters.cageType || filters.cageId || filters.cageIds) {
             const { Cage } = require('../../domain/models');
             
             return Feeding.count({ 
