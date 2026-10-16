@@ -1,7 +1,6 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { growthService } from '../services/growth.service';
+import { useGrowthHistory } from '../hooks/useGrowth';
 import { LoadingMessage } from '@/shared/ui';
 import { LineChart, Calendar, User, Cpu } from 'lucide-react';
 
@@ -13,13 +12,7 @@ interface RabbitGrowthHistoryProps {
 }
 
 export function RabbitGrowthHistory({ rabbitId, rabbitBirthDate, rabbitAge, rabbitWeight }: Readonly<RabbitGrowthHistoryProps>) {
-  const { data: growths = [], isLoading: loading, error: queryError } = useQuery({
-    queryKey: ['growths', rabbitId],
-    queryFn: () => growthService.getHistory(rabbitId),
-    enabled: !!rabbitId,
-  });
-
-  const error = queryError ? (queryError as Error).message : '';
+  const { growths, loading, error } = useGrowthHistory(rabbitId);
 
   if (loading) return <LoadingMessage message="Cargando historial médico..." />;
   if (error) return <div className="text-primary-800 py-8 text-center">{error}</div>;
