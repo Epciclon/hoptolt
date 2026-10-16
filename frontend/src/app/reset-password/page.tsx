@@ -1,13 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { authService } from '@/modules/auth/services/auth.service';
-import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 import { AuthLayout } from '@/modules/auth/components/AuthLayout';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { createClient } from '@/utils/supabase/client';
@@ -26,15 +25,12 @@ type FormValues = z.infer<typeof schema>;
 
 export default function ResetPasswordPage() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuthContext();
   const { showToast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isVerifying, setIsVerifying] = useState(true);
   const [isReady, setIsReady] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const hadRecoveryToken = useRef(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -67,35 +63,11 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    // 2. Comprobar si hay credenciales de recuperación en la URL
-    const params = new URLSearchParams(search);
-    const code = params.get('code');
-    const hasHashRecovery = hash.includes('type=recovery') || hash.includes('access_token=');
-    const hasCreds = Boolean(code || hasHashRecovery);
-
-    if (hasCreds) {
-      hadRecoveryToken.current = true;
-    }
-
-    // Si el usuario ya está autenticado normalmente y no viene por recuperación
-    if (!authLoading && user && !hasCreds) {
-      router.replace('/active-session');
-      return;
-    }
-
-    // Si no viene con credenciales de recuperación, mostrar error inmediatamente
-    if (!hasCreds) {
-      setErrorMessage(
-        'No se encontró un enlace de recuperación válido. Para restablecer tu contraseña, solicita un enlace desde la página de recuperación.'
-      );
-      setIsVerifying(false);
-      setIsReady(false);
-      return;
-    }
-
-    // 3. Procesar enlace válido de Supabase
     const supabase = createClient();
 
+    // 2. Si viene con código PKCE (?code=...)
+    const params = new URLSearchParams(search);
+    const code = params.get('code');
     if (code) {
       supabase.auth.exchangeCodeForSession(code).then((result: { error: { message?: string } | null }) => {
         if (result.error) {
@@ -109,30 +81,40 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        hadRecoveryToken.current = true;
+    // 3. Escuchar evento oficial PASSWORD_RECOVERY o sesión iniciada por el token
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, session: unknown) => {
+      if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && Boolean(session))) {
         setIsReady(true);
         setIsVerifying(false);
       }
     });
 
-    const timer = setTimeout(async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data?.session && hadRecoveryToken.current) {
+    // 4. Verificar si Supabase ya estableció la sesión a partir del hash
+    supabase.auth.getSession().then((res: { data: { session: unknown } }) => {
+      const session = res.data.session;
+      if (session) {
         setIsReady(true);
+        setIsVerifying(false);
       } else {
-        setErrorMessage('El enlace de recuperación ha expirado o ya fue utilizado.');
-        setIsReady(false);
+        // Si tras breve espera no hay sesión ni token, marcar como enlace inválido
+        setTimeout(() => {
+          setIsReady((currentReady) => {
+            if (!currentReady) {
+              setErrorMessage(
+                'No se encontró un enlace de recuperación válido. Para restablecer tu contraseña, solicita un enlace desde la página de recuperación.'
+              );
+              setIsVerifying(false);
+            }
+            return currentReady;
+          });
+        }, 1200);
       }
-      setIsVerifying(false);
-    }, 2000);
+    });
 
     return () => {
       subscription.unsubscribe();
-      clearTimeout(timer);
     };
-  }, [user, authLoading, router]);
+  }, []);
 
   const {
     register,
@@ -162,17 +144,6 @@ export default function ResetPasswordPage() {
       setIsReady(false);
     }
   };
-
-  // Si está autenticado normalmente y no viene por enlace de recuperación, mostrar loader mientras redirige
-  if (authLoading || (user && !hadRecoveryToken.current)) {
-    return (
-      <AuthLayout>
-        <div className="flex items-center justify-center p-6 h-full min-h-[50vh]">
-          <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin" />
-        </div>
-      </AuthLayout>
-    );
-  }
 
   return (
     <AuthLayout>
