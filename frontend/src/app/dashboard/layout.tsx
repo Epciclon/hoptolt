@@ -18,6 +18,21 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // 1. Si la URL actual contiene parámetros de recuperación, NUNCA permitir ver el dashboard
+    if (typeof window !== 'undefined') {
+      const search = window.location.search || '';
+      const hash = window.location.hash || '';
+      if (
+        search.includes('type=recovery') ||
+        search.includes('token_hash=') ||
+        hash.includes('type=recovery') ||
+        hash.includes('access_token=')
+      ) {
+        window.location.replace(`/reset-password${search}${hash}`);
+        return;
+      }
+    }
+
     setMounted(true);
   }, []);
 
@@ -27,7 +42,7 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
     }
   }, [user, loading, router, mounted]);
 
-  // Verificación adicional para prevenir acceso tras logout
+  // Verificación adicional para prevenir acceso tras logout o con sesiones de recuperación
   useEffect(() => {
     if (!mounted) return;
 
@@ -42,6 +57,25 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
 
       if (!session && !loading) {
         router.replace('/login');
+        return;
+      }
+
+      // Si la sesión proviene de recuperación de contraseña, expulsar inmediatamente a /reset-password
+      if (session?.access_token) {
+        try {
+          const parts = session.access_token.split('.');
+          if (parts.length >= 2) {
+            const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+            const payload = JSON.parse(atob(base64));
+            const isRecovery = Array.isArray(payload.amr) && payload.amr.some((item: { method?: string }) => item.method === 'recovery');
+            if (isRecovery) {
+              window.location.replace('/reset-password');
+              return;
+            }
+          }
+        } catch {
+          // Ignorar error al parsear payload
+        }
       }
     };
 

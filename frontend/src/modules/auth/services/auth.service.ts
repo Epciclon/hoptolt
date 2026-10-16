@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/client';
 import api from '@/lib/api';
 import type { Profile, RegisterDto, LoginDto, SyncProfileResponse } from '../types/auth.types';
+import { translateAuthError } from '../utils/auth-errors';
 
 /**
  * Servicio de autenticación usando Supabase Auth.
@@ -32,7 +33,7 @@ export const authService = {
       },
     });
 
-    if (error) throw new Error(error.message);
+    if (error) throw new Error(translateAuthError(error));
     if (!data.user) throw new Error('No se pudo crear el usuario en Supabase.');
 
     // 2. Sincronizar perfil en nuestra BD (respaldo al trigger de PostgreSQL)
@@ -69,14 +70,7 @@ export const authService = {
     });
 
     if (error) {
-      // Traducimos los mensajes de error de Supabase al español
-      if (error.message.includes('Invalid login credentials')) {
-        throw new Error('Credenciales incorrectas. Verifica tu usuario y contraseña.');
-      }
-      if (error.message.includes('Email not confirmed')) {
-        throw new Error('Tu cuenta no ha sido confirmada. Revisa tu correo electrónico.');
-      }
-      throw new Error(error.message);
+      throw new Error(translateAuthError(error));
     }
 
     if (!data.session) throw new Error('No se pudo iniciar sesión.');
@@ -131,7 +125,7 @@ export const authService = {
     const { error: supabaseError } = await supabase.auth.updateUser({
       data: { fullName, username },
     });
-    if (supabaseError) throw new Error(supabaseError.message);
+    if (supabaseError) throw new Error(translateAuthError(supabaseError));
 
     // 2. Actualizar base de datos local
     const { data } = await api.put<{ success: boolean; user: Profile }>('/auth/profile', {
@@ -162,7 +156,7 @@ export const authService = {
     const { error: updateError } = await supabase.auth.updateUser({
       password: newPassword,
     });
-    if (updateError) throw new Error(updateError.message);
+    if (updateError) throw new Error(translateAuthError(updateError));
   },
 
   /** Elimina la cuenta permanentemente */
@@ -194,10 +188,7 @@ export const authService = {
     });
 
     if (error) {
-      if (error.message.includes('rate limit')) {
-        throw new Error('Límite de solicitudes alcanzado. Por favor espera unos minutos antes de volver a intentar.');
-      }
-      throw new Error(error.message);
+      throw new Error(translateAuthError(error));
     }
   },
 
@@ -209,7 +200,7 @@ export const authService = {
     });
 
     if (error) {
-      throw new Error(error.message);
+      throw new Error(translateAuthError(error));
     }
   },
 };

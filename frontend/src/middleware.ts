@@ -2,13 +2,47 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
 /**
+ * Función para verificar si un token JWT proviene de un flujo de recuperación de contraseña.
+ * Utiliza atob para compatibilidad nativa con Edge Runtime de Next.js.
+ */
+function isRecoverySession(accessToken?: string): boolean {
+  if (!accessToken) return false
+  try {
+    const parts = accessToken.split('.')
+    if (parts.length < 2) return false
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const payload = JSON.parse(atob(base64))
+    return (
+      Array.isArray(payload.amr) &&
+      payload.amr.some((item: { method?: string }) => item.method === 'recovery')
+    )
+  } catch {
+    return false
+  }
+}
+
+/**
  * Middleware de protección de rutas de Next.js.
- * - Rutas públicas (/login, /register): accesibles sin sesión.
+ * - Rutas públicas (/login, /register, /forgot-password, /reset-password): accesibles sin sesión.
  * - Rutas protegidas (/dashboard/**): redirigen a /login si no hay sesión activa.
- * - Raíz (/): redirige al dashboard si hay sesión, o a login si no la hay.
+ * - Parámetros o sesión de recuperación: bloquea estrictamente el acceso a cualquier ruta interna y redirige a /reset-password.
  */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // 1. Si la petición incluye parámetros de recuperación pero apunta a otra ruta (ej: /dashboard/feeding)
+  const isRecoveryParam =
+    request.nextUrl.searchParams.get('type') === 'recovery' ||
+    request.nextUrl.searchParams.has('token_hash') ||
+    request.nextUrl.searchParams.has('code')
+
+  if (isRecoveryParam && !pathname.startsWith('/reset-password')) {
+    const resetUrl = new URL('/reset-password', request.url)
+    request.nextUrl.searchParams.forEach((val, key) => {
+      resetUrl.searchParams.set(key, val)
+    })
+    return NextResponse.redirect(resetUrl)
+  }
 
   // Rutas públicas que no requieren autenticación previa
   const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/terms', '/privacy']
@@ -16,7 +50,10 @@ export async function middleware(request: NextRequest) {
 
   // Rutas de autenticación para invitados (si ya tiene sesión, no debe ir a login, register, forgot-password ni reset-password)
   const guestOnlyPaths = ['/login', '/register', '/forgot-password', '/reset-password']
-  const isRecoveryLink = pathname.startsWith('/reset-password') && request.nextUrl.searchParams.has('code')
+  const isRecoveryLink = pathname.startsWith('/reset-password') && (
+    request.nextUrl.searchParams.has('code') ||
+    request.nextUrl.searchParams.has('token_hash')
+  )
   const isGuestOnly = guestOnlyPaths.some((p) => pathname.startsWith(p)) && !isRecoveryLink
 
   // Crear cliente Supabase SSR con cookies del request
@@ -44,7 +81,16 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
+
+  // 2. Si la sesión activa proviene de un flujo de recuperación (AMR === 'recovery'),
+  // BLOQUEAR acceso a cualquier ruta interna y obligar a ir a /reset-password
+  if (session?.access_token && isRecoverySession(session.access_token)) {
+    if (!pathname.startsWith('/reset-password')) {
+      return NextResponse.redirect(new URL('/reset-password', request.url))
+    }
+  }
 
   // Si está autenticado e intenta acceder a la raíz → redirigir al dashboard
   if (user && pathname === '/') {

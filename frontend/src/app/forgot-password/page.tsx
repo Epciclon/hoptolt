@@ -10,6 +10,7 @@ import { authService } from '@/modules/auth/services/auth.service';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 import { AuthLayout } from '@/modules/auth/components/AuthLayout';
 import { useToast } from '@/shared/contexts/ToastContext';
+import { translateAuthError } from '@/modules/auth/utils/auth-errors';
 
 const schema = z.object({
   identifier: z.string().min(1, 'El usuario o correo electrónico es obligatorio.'),
@@ -45,7 +46,7 @@ export default function ForgotPasswordPage() {
       setIsSuccess(true);
       showToast('Enlace de recuperación enviado correctamente.', 'success');
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Error al solicitar recuperación de contraseña.', 'error');
+      showToast(translateAuthError(err), 'error');
     }
   };
 

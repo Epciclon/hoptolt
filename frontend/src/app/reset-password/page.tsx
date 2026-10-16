@@ -5,11 +5,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { authService } from '@/modules/auth/services/auth.service';
 import { AuthLayout } from '@/modules/auth/components/AuthLayout';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { createClient } from '@/utils/supabase/client';
+import { translateAuthError } from '@/modules/auth/utils/auth-errors';
 
 const schema = z
   .object({
@@ -32,6 +32,20 @@ export default function ResetPasswordPage() {
   const [isReady, setIsReady] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Limpia cualquier sesión fantasma o temporal que haya quedado al fallar o cancelar la recuperación
+  const clearPhantomSession = async () => {
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('hoptolt_session_initialized');
+        sessionStorage.removeItem('hoptolt_last_feeding_popup_time');
+      }
+    } catch {
+      // Ignorar errores al limpiar
+    }
+  };
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -42,37 +56,47 @@ export default function ResetPasswordPage() {
     if (hash.includes('error=')) {
       const hashParams = new URLSearchParams(hash.replace(/^#/, ''));
       setErrorMessage(
-        hashParams.get('error_description') ||
-        hashParams.get('error') ||
-        'El enlace de recuperación es inválido o ha expirado.'
+        translateAuthError(
+          hashParams.get('error_description') ||
+          hashParams.get('error') ||
+          'El enlace de recuperación es inválido o ha expirado.'
+        )
       );
       setIsVerifying(false);
       setIsReady(false);
+      clearPhantomSession();
       return;
     }
 
     if (search.includes('error=')) {
       const searchParams = new URLSearchParams(search);
       setErrorMessage(
-        searchParams.get('error_description') ||
-        searchParams.get('error') ||
-        'El enlace de recuperación es inválido o ha expirado.'
+        translateAuthError(
+          searchParams.get('error_description') ||
+          searchParams.get('error') ||
+          'El enlace de recuperación es inválido o ha expirado.'
+        )
       );
       setIsVerifying(false);
       setIsReady(false);
+      clearPhantomSession();
       return;
     }
 
     const supabase = createClient();
 
-    // 2. Si viene con código PKCE (?code=...)
     const params = new URLSearchParams(search);
+    const tokenHash = params.get('token_hash');
+    const type = (params.get('type') || 'recovery') as 'recovery';
     const code = params.get('code');
-    if (code) {
-      supabase.auth.exchangeCodeForSession(code).then((result: { error: { message?: string } | null }) => {
+
+    // 2. Si viene con token_hash (flujo universal independiente de navegador o dominio)
+    if (tokenHash) {
+      supabase.auth.verifyOtp({ token_hash: tokenHash, type }).then((result: { error: { message?: string } | null }) => {
         if (result.error) {
-          setErrorMessage(result.error.message || 'Código de recuperación inválido o expirado.');
+          setErrorMessage(translateAuthError(result.error));
           setIsReady(false);
+          clearPhantomSession();
         } else {
           setIsReady(true);
         }
@@ -81,7 +105,22 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    // 3. Escuchar evento oficial PASSWORD_RECOVERY o sesión iniciada por el token
+    // 3. Si viene con código PKCE (?code=...)
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then((result: { error: { message?: string } | null }) => {
+        if (result.error) {
+          setErrorMessage(translateAuthError(result.error));
+          setIsReady(false);
+          clearPhantomSession();
+        } else {
+          setIsReady(true);
+        }
+        setIsVerifying(false);
+      });
+      return;
+    }
+
+    // 4. Escuchar evento oficial PASSWORD_RECOVERY o sesión iniciada por el token
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, session: unknown) => {
       if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && Boolean(session))) {
         setIsReady(true);
@@ -89,14 +128,14 @@ export default function ResetPasswordPage() {
       }
     });
 
-    // 4. Verificar si Supabase ya estableció la sesión a partir del hash
+    // 5. Verificar si Supabase ya estableció la sesión a partir del hash
     supabase.auth.getSession().then((res: { data: { session: unknown } }) => {
       const session = res.data.session;
       if (session) {
         setIsReady(true);
         setIsVerifying(false);
       } else {
-        // Si tras breve espera no hay sesión ni token, marcar como enlace inválido
+        // Si tras breve espera no hay sesión ni token, marcar como enlace inválido y limpiar
         setTimeout(() => {
           setIsReady((currentReady) => {
             if (!currentReady) {
@@ -104,6 +143,7 @@ export default function ResetPasswordPage() {
                 'No se encontró un enlace de recuperación válido. Para restablecer tu contraseña, solicita un enlace desde la página de recuperación.'
               );
               setIsVerifying(false);
+              clearPhantomSession();
             }
             return currentReady;
           });
@@ -127,22 +167,37 @@ export default function ResetPasswordPage() {
   const onSubmit = async (values: FormValues) => {
     try {
       await authService.resetPassword(values.password);
-      // Cerrar sesión en Supabase y limpiar almacenamiento local
-      const supabase = createClient();
-      await supabase.auth.signOut().catch(() => {});
-      if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('hoptolt_session_initialized');
-        sessionStorage.removeItem('hoptolt_last_feeding_popup_time');
-      }
-
+      await clearPhantomSession();
       showToast('¡Contraseña restablecida exitosamente! Ya puedes iniciar sesión.', 'success');
       router.push('/login');
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al actualizar la contraseña.';
+      const msg = translateAuthError(err);
       showToast(msg, 'error');
-      setErrorMessage(msg);
-      setIsReady(false);
+
+      // Si es un error de validación o restricción de contraseña (ej: contraseña igual a la actual o muy débil),
+      // NO destruimos la sesión ni bloqueamos al usuario con la pantalla de error; le permitimos ingresar otra
+      const isPasswordConstraintError =
+        msg.includes('diferente a la contraseña actual') ||
+        msg.includes('caracteres') ||
+        msg.includes('débil') ||
+        msg.includes('válida');
+
+      if (!isPasswordConstraintError) {
+        setErrorMessage(msg);
+        setIsReady(false);
+        await clearPhantomSession();
+      }
     }
+  };
+
+  const handleExitToLogin = async () => {
+    await clearPhantomSession();
+    router.push('/login');
+  };
+
+  const handleExitToForgot = async () => {
+    await clearPhantomSession();
+    router.push('/forgot-password');
   };
 
   return (
@@ -257,12 +312,13 @@ export default function ResetPasswordPage() {
           </button>
 
           <div className="text-center pt-2">
-            <Link
-              href="/login"
+            <button
+              type="button"
+              onClick={handleExitToLogin}
               className="text-sm text-teal-600 dark:text-teal-400 font-semibold hover:underline inline-flex items-center gap-1"
             >
               ← Cancelar y volver al login
-            </Link>
+            </button>
           </div>
         </form>
       ) : (
@@ -279,20 +335,22 @@ export default function ResetPasswordPage() {
             </p>
           </div>
 
-          <Link
-            href="/forgot-password"
+          <button
+            type="button"
+            onClick={handleExitToForgot}
             className="w-full py-4 bg-gradient-to-r from-teal-500 to-teal-600 text-white font-semibold rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
           >
             Solicitar un nuevo enlace
-          </Link>
+          </button>
 
           <div className="text-center pt-2">
-            <Link
-              href="/login"
+            <button
+              type="button"
+              onClick={handleExitToLogin}
               className="text-sm text-teal-600 dark:text-teal-400 font-semibold hover:underline inline-flex items-center gap-1"
             >
               ← Volver al inicio de sesión
-            </Link>
+            </button>
           </div>
         </div>
       )}

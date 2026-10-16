@@ -69,6 +69,19 @@ const authenticate = async (req, res, next) => {
             throw new AppError('Token inválido o expirado. Inicie sesión nuevamente.', 401);
         }
 
+        // Verificar si es un token temporal de recuperación de contraseña (bloquear acceso a la API)
+        try {
+            const parts = token.split('.');
+            if (parts.length >= 2) {
+                const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf-8'));
+                if (Array.isArray(payload.amr) && payload.amr.some(item => item.method === 'recovery')) {
+                    throw new AppError('Sesión de recuperación. Debe actualizar su contraseña antes de acceder al sistema.', 403);
+                }
+            }
+        } catch (jwtErr) {
+            if (jwtErr instanceof AppError) throw jwtErr;
+        }
+
         // Intentamos obtener el perfil del cache
         let profile = getFromCache(user.id);
         
