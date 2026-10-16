@@ -10,9 +10,14 @@ import { createServerClient } from '@supabase/ssr'
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Rutas que NO requieren autenticación
-  const publicPaths = ['/login', '/register']
+  // Rutas públicas que no requieren autenticación previa
+  const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/terms', '/privacy']
   const isPublic = publicPaths.some((p) => pathname.startsWith(p))
+
+  // Rutas de autenticación para invitados (si ya tiene sesión, no debe ir a login, register, forgot-password ni reset-password)
+  const guestOnlyPaths = ['/login', '/register', '/forgot-password', '/reset-password']
+  const isRecoveryLink = pathname.startsWith('/reset-password') && request.nextUrl.searchParams.has('code')
+  const isGuestOnly = guestOnlyPaths.some((p) => pathname.startsWith(p)) && !isRecoveryLink
 
   // Crear cliente Supabase SSR con cookies del request
   let response = NextResponse.next({ request })
@@ -46,8 +51,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  // Si está autenticado e intenta ir a login/register → redirigir a /active-session
-  if (user && isPublic) {
+  // Si está autenticado e intenta ir a rutas exclusivas de invitados (login/register/forgot-password) → redirigir a /active-session
+  if (user && isGuestOnly) {
     return NextResponse.redirect(new URL('/active-session', request.url))
   }
 

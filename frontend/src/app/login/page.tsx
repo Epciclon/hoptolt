@@ -102,7 +102,15 @@ export default function LoginPage() {
 
         {/* Contraseña */}
         <div>
-          <label htmlFor="password" className="block text-sm font-semibold text-main mb-2">Contraseña</label>
+          <div className="flex items-center justify-between mb-2">
+            <label htmlFor="password" className="block text-sm font-semibold text-main">Contraseña</label>
+            <Link
+              href="/forgot-password"
+              className="text-xs text-teal-600 dark:text-teal-400 font-semibold hover:text-teal-700 dark:hover:text-teal-300 hover:underline transition-colors"
+            >
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </div>
           <div className="relative">
             <input
               {...register('password')}
@@ -143,28 +151,24 @@ export default function LoginPage() {
           disabled={isSubmitting}
           className="w-full py-4 bg-gradient-to-r from-teal-500 to-teal-600 text-white font-semibold rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none mt-4 relative overflow-hidden"
         >
-          <span className="flex items-center justify-center gap-2">
-            {isSubmitting ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Iniciando sesión...
-              </>
-            ) : (
-              <>
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2Z" />
-                </svg>
-                Iniciar Sesión
-              </>
-            )}
-          </span>
+          {isSubmitting ? (
+            <span className="flex items-center justify-center gap-2">
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Iniciando sesión...
+            </span>
+          ) : (
+            'Iniciar Sesión'
+          )}
         </button>
       </form>
 
       <div className="mt-8 text-center animate-fade-in-right" style={{ animationDelay: '0.8s' }}>
         <p className="text-muted text-sm mb-4">
           ¿No tienes una cuenta?{' '}
-          <Link href="/register" className="text-teal-600 font-semibold hover:underline">
+          <Link
+            href="/register"
+            className="text-teal-600 dark:text-teal-400 font-semibold hover:text-teal-700 dark:hover:text-teal-300 hover:underline transition-colors"
+          >
             Regístrate aquí
           </Link>
         </p>

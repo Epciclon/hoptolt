@@ -172,4 +172,44 @@ export const authService = {
     const supabase = createClient();
     await supabase.auth.signOut();
   },
+
+  /** Envía un correo con el enlace para restablecer la contraseña */
+  async requestPasswordReset(identifier: string): Promise<void> {
+    const supabase = createClient();
+
+    let email = identifier.trim();
+    if (!email.includes('@')) {
+      const { data: resolveData } = await api.get<{ success: boolean; email: string }>(
+        `/auth/resolve-email?identifier=${encodeURIComponent(identifier)}`
+      );
+      email = resolveData.email;
+    }
+
+    const redirectTo = typeof window !== 'undefined'
+      ? `${window.location.origin}/reset-password`
+      : undefined;
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo,
+    });
+
+    if (error) {
+      if (error.message.includes('rate limit')) {
+        throw new Error('Límite de solicitudes alcanzado. Por favor espera unos minutos antes de volver a intentar.');
+      }
+      throw new Error(error.message);
+    }
+  },
+
+  /** Establece la nueva contraseña del usuario usando la sesión de recuperación */
+  async resetPassword(newPassword: string): Promise<void> {
+    const supabase = createClient();
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  },
 };
