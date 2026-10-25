@@ -132,7 +132,7 @@ class VaccinationService {
         const createdVaccinations = await Promise.all(toCreate.map(data => vaccinationRepository.create(data)));
 
         const { notifyOwnerOnWorkerAction } = require('../../common/helpers/notification.helper');
-        await notifyOwnerOnWorkerAction(profileId, galponId, 'vaccination', 'Vacunación');
+        await notifyOwnerOnWorkerAction(profileId, galponId, 'vaccination', 'Vacunación', rabbitIds.length, 'conejo');
 
         return createdVaccinations;
     }

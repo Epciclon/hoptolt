@@ -26,12 +26,12 @@ export function RabbitSelectableCard({
   return (
     <div
       className={cn(
-        'border rounded-lg p-3 transition-all duration-150 bg-card text-left w-full block relative',
+        'border rounded-lg p-2.5 sm:p-3 transition-all duration-150 bg-card text-left w-full min-w-0 block relative',
         isSelectable && 'focus-within:ring-2 focus-within:ring-primary-500 focus-within:ring-offset-1 pointer-events-auto',
         (() => {
           if (isSelected) return 'border-primary-500 ring-1 ring-primary-500 shadow-sm';
-          if (isSelectable) return 'border-slate-300 shadow-sm hover:border-primary-400';
-          return 'border-slate-300 shadow-sm';
+          if (isSelectable) return 'border-strong shadow-sm hover:border-primary-400';
+          return 'border-strong shadow-sm';
         })()
       )}
     >
@@ -44,36 +44,38 @@ export function RabbitSelectableCard({
         />
       )}
 
-      <div className="flex justify-between items-start mb-2 gap-2 pointer-events-none">
-        <div className="flex items-center gap-3 relative z-0 min-w-0 flex-1">
+      <div className="flex items-start gap-2.5 mb-2 relative z-0 min-w-0 pointer-events-none">
+        <div className="shrink-0">
           <RabbitAvatar imageUrl={rabbit.imageUrl} alt={rabbit.code} size="md" />
-          <div className="min-w-0">
-            {rabbit.name ? (
-              <>
-                <h4 className="font-bold text-sm text-main leading-tight">{rabbit.name}</h4>
-                <p className="text-xs text-muted">{rabbit.code}</p>
-              </>
-            ) : (
-              <h4 className="font-bold text-sm text-main leading-tight">{rabbit.code}</h4>
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-1">
+            <div className="min-w-0 flex-1">
+              {rabbit.name ? (
+                <>
+                  <h4 className="font-bold text-sm text-main leading-tight truncate">{rabbit.name}</h4>
+                  <p className="text-xs text-muted leading-tight mt-0.5">{rabbit.code}</p>
+                </>
+              ) : (
+                <h4 className="font-bold text-sm text-main leading-tight truncate">{rabbit.code}</h4>
+              )}
+            </div>
+            {rabbit.race && (
+              <span className="px-1.5 py-0.5 bg-theme-surface text-muted text-[10px] font-medium rounded-full capitalize border border-strong shrink-0 max-w-[85px] truncate" title={rabbit.race}>
+                {rabbit.race}
+              </span>
+            )}
+            {onRemove && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onRemove(); }}
+                className="pointer-events-auto text-theme-faint hover:text-muted hover:bg-theme-surface border border-default rounded-full p-1 transition-colors -mt-1 -mr-1 shrink-0"
+                title="Quitar"
+              >
+                <X size={14} />
+              </button>
             )}
           </div>
-        </div>
-        <div className="flex items-start gap-1 flex-shrink-0">
-          {rabbit.race && (
-            <span className="px-2 py-0.5 bg-theme-surface text-muted text-[10px] font-medium rounded-full capitalize border border-strong" title={rabbit.race}>
-              {rabbit.race}
-            </span>
-          )}
-          {onRemove && (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onRemove(); }}
-              className="pointer-events-auto text-theme-faint hover:text-muted hover:bg-theme-surface border border-default rounded-full p-1 transition-colors -mt-1 -mr-1 relative z-20"
-              title="Quitar"
-            >
-              <X size={14} />
-            </button>
-          )}
         </div>
       </div>
 

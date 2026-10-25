@@ -112,7 +112,7 @@ class CleaningService {
         this._bulkClearCleaningWarnings(processedCageIds, galponId, Notification).catch(err => console.error("Error clearing warnings:", err));
 
         const { notifyOwnerOnWorkerAction } = require('../../common/helpers/notification.helper');
-        await notifyOwnerOnWorkerAction(profileId, galponId, 'cleaning', 'Limpieza');
+        await notifyOwnerOnWorkerAction(profileId, galponId, 'cleaning', 'Limpieza', processedCageIds.length, 'jaula');
 
         return createdCleanings;
     }

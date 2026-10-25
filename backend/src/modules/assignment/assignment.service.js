@@ -2,6 +2,7 @@ const assignmentRepository = require('./assignment.repository');
 const cageRepository = require('../cage/cage.repository');
 const rabbitRepository = require('../rabbit/rabbit.repository');
 const AppError = require('../../errors/AppError');
+const { recordWorkerChange } = require('../../common/helpers/audit.helper');
 
 class AssignmentService {
     validateCompatibility(cage, rabbits, existingRabbits = []) {
@@ -129,16 +130,30 @@ class AssignmentService {
         // Uso de model.bulkCreate a través del repository
         const createdAssignments = await assignmentRepository.bulkCreate(toCreate);
         
-        // Batch notificaciones si aplica
-        const notificationsToCreate = rabbits.map(rabbit => {
-            const rabbitIdentifier = rabbit.name ? `${rabbit.code} - ${rabbit.name}` : rabbit.code;
-            return { cageId: cage.id, rabbitIdentifier };
-        });
-        
-        // Lo disparamos asíncronamente en background
-        Promise.all(notificationsToCreate.map(n => 
-            notificationService.createRabbitAssignmentNotification(n.cageId, n.rabbitIdentifier, true)
-        )).catch(err => console.error("Error creating notifications:", err));
+        // Batch notificaciones consolidadas por jaula
+        notificationService.createRabbitAssignmentNotification(cage.id, rabbits, true)
+            .catch(err => console.error("Error creating notifications:", err));
+
+        if (profileId) {
+            const isSingle = rabbits.length === 1;
+            const singleIsFemale = isSingle && rabbits[0].sex === 'hembra';
+            const rabbitText = isSingle ? (singleIsFemale ? '1 coneja' : '1 conejo') : `${rabbits.length} conejos`;
+            const rabbitsField = isSingle ? (singleIsFemale ? 'coneja' : 'conejo') : 'rabbits';
+
+            await recordWorkerChange({
+                galponId,
+                profileId,
+                action: 'crear',
+                entity: 'assignments',
+                entityId: cage.id,
+                itemName: `Jaula ${cage.number}`,
+                summary: `Asignó ${rabbitText} a la jaula número ${cage.number}`,
+                after: {
+                    cageNumber: cage.number,
+                    [rabbitsField]: rabbits.map(r => r.name ? `${r.name} - ${r.code}` : r.code)
+                }
+            });
+        }
 
         return { assignments: createdAssignments, warnings };
     }
@@ -178,6 +193,25 @@ class AssignmentService {
             const warnings = this.validateCompatibility(targetCage, [rabbit], existingRabbits);
             
             await assignmentRepository.update(sourceAssignment, { cageId: targetCageId });
+            
+            if (profileId) {
+                const rabbitLabel = rabbit.name ? `${rabbit.name} - ${rabbit.code}` : rabbit.code;
+                const isFemale = rabbit.sex === 'hembra';
+                const prefix = isFemale ? 'Coneja' : 'Conejo';
+                const article = isFemale ? 'a la coneja' : 'al conejo';
+                await recordWorkerChange({
+                    galponId,
+                    profileId,
+                    action: 'modificar',
+                    entity: 'assignments',
+                    entityId: rabbit.id,
+                    itemName: `${prefix} ${rabbitLabel}`,
+                    summary: `Movió ${article} ${rabbitLabel} de la jaula ${currentCage?.number} a la jaula ${targetCage?.number}`,
+                    before: { cageNumber: currentCage?.number },
+                    after: { cageNumber: targetCage?.number }
+                });
+            }
+
             return { message: 'Conejo movido exitosamente.', warnings };
         }
 
@@ -204,6 +238,29 @@ class AssignmentService {
 
             await assignmentRepository.update(occupantAssignment, { cageId: currentCageId });
             await assignmentRepository.update(sourceAssignment, { cageId: targetCageId });
+
+            if (profileId) {
+                const rabbitLabel = rabbit.name ? `${rabbit.name} - ${rabbit.code}` : rabbit.code;
+                const isFemale = rabbit.sex === 'hembra';
+                const prefix = isFemale ? 'Coneja' : 'Conejo';
+                const article = isFemale ? 'a la coneja' : 'al conejo';
+
+                const occupantLabel = occupantRabbit?.name ? `${occupantRabbit.name} - ${occupantRabbit.code}` : occupantRabbit?.code;
+                const occupantIsFemale = occupantRabbit?.sex === 'hembra';
+                const occupantArticle = occupantIsFemale ? 'con la coneja' : 'con el conejo';
+
+                await recordWorkerChange({
+                    galponId,
+                    profileId,
+                    action: 'modificar',
+                    entity: 'assignments',
+                    entityId: rabbit.id,
+                    itemName: `${prefix} ${rabbitLabel}`,
+                    summary: `Intercambió ${article} ${rabbitLabel} de la jaula ${currentCage?.number} ${occupantArticle} ${occupantLabel} de la jaula ${targetCage?.number}`,
+                    before: { cageNumber: currentCage?.number, occupantRabbit: occupantLabel },
+                    after: { cageNumber: targetCage?.number }
+                });
+            }
 
             return { 
                 message: 'Jaula llena. Se realizó un intercambio con el ocupante actual exitosamente.', 
@@ -256,11 +313,31 @@ class AssignmentService {
             const warnings = this.validateCompatibility(targetCage, rabbits, existingRabbits);
             
             await Promise.all(sourceAssignments.map(a => assignmentRepository.update(a, { cageId: targetCageId })));
+
+            if (profileId) {
+                const isSingle = rabbits.length === 1;
+                const singleIsFemale = isSingle && rabbits[0].sex === 'hembra';
+                const rabbitText = isSingle ? (singleIsFemale ? '1 coneja' : '1 conejo') : `${rabbits.length} conejos`;
+                const rabbitsField = isSingle ? (singleIsFemale ? 'coneja' : 'conejo') : 'rabbits';
+
+                await recordWorkerChange({
+                    galponId,
+                    profileId,
+                    action: 'modificar',
+                    entity: 'assignments',
+                    entityId: targetCage.id,
+                    itemName: `Jaula ${targetCage.number}`,
+                    summary: `Movió ${rabbitText} de la jaula ${currentCage?.number} a la jaula ${targetCage?.number}`,
+                    before: { fromCageNumber: currentCage?.number, [rabbitsField]: rabbits.map(r => r.name ? `${r.name} - ${r.code}` : r.code) },
+                    after: { toCageNumber: targetCage?.number, [rabbitsField]: rabbits.map(r => r.name ? `${r.name} - ${r.code}` : r.code) }
+                });
+            }
+
             return { message: 'Conejos movidos exitosamente.', warnings };
         }
 
         if (targetCage.type === 'engorde') {
-            throw new AppError(`La jaula destino no tiene espacio suficiente (Espacio disponible: ${availableSpace}).`, 400);
+            throw new AppError(`La jaula destino no tiene espacio suficiente. Espacio disponible: ${availableSpace}.`, 400);
         }
         
         if (targetCage.type === 'reproducción' && rabbitIds.length === 1) {
@@ -272,21 +349,7 @@ class AssignmentService {
     }
 
     async getAssignments(galponId, profileId = null) {
-        let assignments = await assignmentRepository.findByGalponId(galponId);
-        if (profileId) {
-            const { FarmMember, WorkerCage } = require('../../domain/models');
-            const member = await FarmMember.findOne({
-                where: { profileId, galponId, status: 'active' }
-            });
-            if (member && member.role === 'worker') {
-                const workerCages = await WorkerCage.findAll({
-                    where: { farmMemberId: member.id }
-                });
-                const assignedCageIds = new Set(workerCages.map(wc => Number(wc.cageId)));
-                assignments = assignments.filter(a => assignedCageIds.has(Number(a.cageId)));
-            }
-        }
-        return assignments;
+        return assignmentRepository.findByGalponId(galponId);
     }
 
     async getAssignedRabbits(galponId, profileId = null) {
@@ -342,21 +405,7 @@ class AssignmentService {
     async getOperativeCages(galponId, profileId = null) {
         const cageRepository = require('../cage/cage.repository');
         const cages = await cageRepository.findByStatus('operativa');
-        let galponCages = cages.filter(c => c.galponId === galponId);
-
-        if (profileId) {
-            const { FarmMember, WorkerCage } = require('../../domain/models');
-            const member = await FarmMember.findOne({
-                where: { profileId, galponId, status: 'active' }
-            });
-            if (member && member.role === 'worker') {
-                const workerCages = await WorkerCage.findAll({
-                    where: { farmMemberId: member.id }
-                });
-                const assignedCageIds = new Set(workerCages.map(wc => Number(wc.cageId)));
-                galponCages = galponCages.filter(c => assignedCageIds.has(Number(c.id)));
-            }
-        }
+        const galponCages = cages.filter(c => c.galponId === galponId);
 
         const cagesWithStats = [];
         const activeAssignments = await assignmentRepository.findByGalponId(galponId);
@@ -381,20 +430,45 @@ class AssignmentService {
         return cagesWithStats;
     }
 
-    async unassignRabbit(id) {
+    async unassignRabbit(id, profileId = null, galponId = null) {
         const assignment = await assignmentRepository.findById(id);
         if (!assignment) throw new AppError('La asignación no existe.', 404);
         await assignmentRepository.update(assignment, { status: 'liberado' });
         
+        let rabbit = null;
         try {
-            const rabbit = await rabbitRepository.findById(assignment.rabbitId);
+            rabbit = await rabbitRepository.findById(assignment.rabbitId);
             if (rabbit) {
                 const notificationService = require('../notification/notification.service');
-                const rabbitIdentifier = rabbit.name ? `${rabbit.code} - ${rabbit.name}` : rabbit.code;
-                await notificationService.createRabbitAssignmentNotification(assignment.cageId, rabbitIdentifier, false);
+                await notificationService.createRabbitAssignmentNotification(assignment.cageId, rabbit, false);
             }
         } catch(e) {
             console.error('Error notifying unassignment', e);
+        }
+
+        if (profileId) {
+            const cageRepo = require('../cage/cage.repository');
+            const cage = await cageRepo.findById(assignment.cageId);
+            const isFemale = rabbit?.sex === 'hembra';
+            const prefix = isFemale ? 'Coneja' : 'Conejo';
+            const article = isFemale ? 'a la coneja' : 'al conejo';
+            const rabbitLabel = rabbit ? (rabbit.name ? `${rabbit.name} - ${rabbit.code}` : rabbit.code) : null;
+
+            const rabbitKey = isFemale ? 'coneja' : 'conejo';
+            await recordWorkerChange({
+                galponId: galponId || assignment.galponId,
+                profileId,
+                action: 'eliminar',
+                entity: 'assignments',
+                entityId: assignment.id,
+                itemName: rabbitLabel ? `${prefix} ${rabbitLabel}` : `Asignación ${id}`,
+                summary: rabbitLabel ? `Liberó ${article} ${rabbitLabel} de su jaula` : `Liberó al conejo de su jaula`,
+                before: {
+                    [rabbitKey]: rabbitLabel || (isFemale ? `Coneja ${assignment.rabbitId}` : `Conejo ${assignment.rabbitId}`),
+                    cageNumber: cage ? cage.number : assignment.cageId
+                },
+                after: null
+            });
         }
     }
 }

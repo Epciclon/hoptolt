@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useActiveGalpon } from '@/modules/galpones/hooks/useActiveGalpon';
 import { useFarmMember } from '@/modules/farmMember/hooks/useFarmMember';
 import { useInvitation } from '@/modules/invitation/hooks/useInvitation';
 import { Button, Input, Dialog, ConfirmDialog, Alert, WorkerDetailsModal, DashboardTabs, Card, CardHeader, SectionMessage, FilterBar } from '@/shared/ui';
-import { Users, Mail } from 'lucide-react';
+import { Users, Mail, History, Sparkles } from 'lucide-react';
 import { GalponGuard } from '@/modules/galpones/components/GalponGuard';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,12 +15,15 @@ import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { EditWorkerModal } from '@/modules/farmMember/components/EditWorkerModal';
 import { farmMemberService } from '@/modules/farmMember/services/farmMember.service';
+import { AuditChangeLogTab } from '@/modules/farmMember/components/AuditChangeLogTab';
+import { SystemAuditLogTab } from '@/modules/farmMember/components/SystemAuditLogTab';
+import { usePersistentTab } from '@/shared/hooks/usePersistentTab';
 
 const schema = z.object({
   email: z.string().email('Ingresa un correo válido')
 });
 
-export default function UsersPage() {
+function UsersPageContent() {
   const { activeGalpon, loading: loadingGalpon } = useActiveGalpon();
   const { workers, loading: loadingWorkers, fetchWorkers, removeWorker, updateWorker } = useFarmMember();
   const { invitations, loading: loadingInv, createInvitation, revokeInvitation, error: invitationError } = useInvitation();
@@ -28,7 +31,7 @@ export default function UsersPage() {
   const queryClient = useQueryClient();
   
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('workers');
+  const { activeTab, handleTabChange: setActiveTab } = usePersistentTab('users', 'workers');
   const [submitting, setSubmitting] = useState(false);
   const [workerToDelete, setWorkerToDelete] = useState<any>(null);
   const [invitationToDelete, setInvitationToDelete] = useState<any>(null);
@@ -97,8 +100,10 @@ export default function UsersPage() {
   const pendingInvitations = invitations?.filter(i => i.status === 'pending') || [];
 
   const tabs = [
-    { id: 'workers', label: `Trabajadores Activos (${workers.length})`, icon: <Users size={18} /> },
-    { id: 'invitations', label: `Invitaciones Pendientes (${pendingInvitations.length})`, icon: <Mail size={18} /> }
+    { id: 'workers', label: `Trabajadores Activos • ${workers.length}`, icon: <Users size={18} /> },
+    { id: 'invitations', label: `Invitaciones Pendientes • ${pendingInvitations.length}`, icon: <Mail size={18} /> },
+    { id: 'audit-logs', label: 'Control de Cambios', icon: <History size={18} /> },
+    { id: 'system-logs', label: 'Movimientos de HopTolt', icon: <Sparkles size={18} /> }
   ];
 
   const renderWorkersTab = () => {
@@ -175,7 +180,7 @@ export default function UsersPage() {
           <div key={inv.token} className="p-4 flex justify-between items-center hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors">
           <div>
             <div className="font-medium text-main">{inv.email}</div>
-            <div className="text-xs text-muted">Invitado por: {inv.inviter?.fullName || 'Usuario'} - Enviada: {new Date(inv.createdAt).toLocaleDateString()}</div>
+            <div className="text-xs text-muted">Invitado por: {inv.inviter?.fullName?.trim() || inv.inviter?.username || 'Usuario'} - Enviada: {new Date(inv.createdAt).toLocaleDateString()}</div>
           </div>
           <Button 
             variant="danger" 
@@ -248,9 +253,15 @@ export default function UsersPage() {
 
         <DashboardTabs tabs={tabs} activeTab={activeTab} onTabChange={(tab) => { setActiveTab(tab); setSearchTerm(''); }} />
 
-        <div className="p-6 pt-0">
+        <div className="p-2 sm:p-4 md:p-6 pt-0">
           {activeTab === 'workers' && renderWorkersTab()}
           {activeTab === 'invitations' && renderInvitationsTab()}
+          {activeTab === 'audit-logs' && activeGalpon && (
+            <AuditChangeLogTab galponId={activeGalpon.id} workers={workers} />
+          )}
+          {activeTab === 'system-logs' && activeGalpon && (
+            <SystemAuditLogTab galponId={activeGalpon.id} />
+          )}
         </div>
 
         <Dialog 
@@ -331,5 +342,17 @@ export default function UsersPage() {
         }}
       />
     </GalponGuard>
+  );
+}
+
+export default function UsersPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+      </div>
+    }>
+      <UsersPageContent />
+    </Suspense>
   );
 }

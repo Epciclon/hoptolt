@@ -13,6 +13,7 @@ import { Input } from '@/shared/ui/Input';
 import { mortalityService } from '@/modules/mortality/services/mortality.service';
 import { formatDateString } from '@/shared/utils/dateUtils';
 import { matchesSmartSearch } from '@/shared/utils/rabbitUtils';
+import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
 
 interface ReproductionCatalogProps {
   searchTerm: string;
@@ -23,6 +24,10 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
   const { reproductions, loading, cancelReproduction, registerBirth, fetchReproductions } = useReproduction({ status: 'gestacion', limit: 1000 });
   const onSuccess = fetchReproductions;
   const { showToast } = useToast();
+  const { can } = usePermissions();
+  const canCreate = can('reproduction', 'canCreate');
+  const canUpdate = can('reproduction', 'canUpdate');
+  const canDelete = can('reproduction', 'canDelete');
   const [page, setPage] = useState(1);
   const limit = 12;
 
@@ -189,7 +194,7 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
           No hay conejas en etapa de gestación que coincidan con los filtros.
         </p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start">
           {paginatedGroups.map(group => (
             <CageGroupCard 
               key={group.cageNumber} 
@@ -247,26 +252,32 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
                     <p className="text-muted">Fecha de monta</p>
                     <p className="font-medium text-main">{formatDateTime(reproduction.mountDate)}</p>
                   </div>
-                  <button 
-                    type="button"
-                    className={`bg-theme-surface border border-default p-2 rounded flex justify-between items-center w-full text-left ${
-                      isExpanded 
-                        ? 'cursor-pointer hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:border-primary-200 dark:hover:border-primary-500/30 transition-colors group' 
-                        : ''
-                    }`}
-                    onClick={(e) => {
-                      if (!isExpanded) return;
-                      e.stopPropagation();
-                      setEditingReproduction(reproduction);
-                      setShowEditModal(true);
-                    }}
-                  >
-                    <p className="text-muted flex items-center gap-1">
-                      <Calendar size={12} className="opacity-70" />
-                      Fecha estimada
-                    </p>
-                    <p className={`font-medium ${canGiveBirth ? 'text-amber-600' : 'text-main'}`}>{formatDateTime(reproduction.estimatedBirthDate)}</p>
-                  </button>
+                  {isExpanded && canUpdate ? (
+                    <button 
+                      type="button"
+                      className="bg-theme-surface border border-default p-2 rounded flex justify-between items-center w-full text-left cursor-pointer hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:border-primary-200 dark:hover:border-primary-500/30 transition-colors group"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingReproduction(reproduction);
+                        setShowEditModal(true);
+                      }}
+                      title="Editar fecha estimada"
+                    >
+                      <p className="text-muted flex items-center gap-1">
+                        <Calendar size={12} className="opacity-70" />
+                        Fecha estimada
+                      </p>
+                      <p className={`font-medium ${canGiveBirth ? 'text-amber-600' : 'text-main'}`}>{formatDateTime(reproduction.estimatedBirthDate)}</p>
+                    </button>
+                  ) : (
+                    <div className="bg-theme-surface border border-default p-2 rounded flex justify-between items-center">
+                      <p className="text-muted flex items-center gap-1">
+                        <Calendar size={12} className="opacity-70" />
+                        Fecha estimada
+                      </p>
+                      <p className={`font-medium ${canGiveBirth ? 'text-amber-600' : 'text-main'}`}>{formatDateTime(reproduction.estimatedBirthDate)}</p>
+                    </div>
+                  )}
                   <div className={`p-2 rounded flex justify-between items-center border ${
                     nearBirth
                       ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-500/30'
@@ -289,31 +300,40 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
                   <div 
                     className="mt-4 flex flex-col gap-2 animate-in fade-in slide-in-from-top-1 duration-150"
                   >
-                    <Button
-                      type="button"
-                      variant="primary"
-                      className="w-full"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setToRegisterBirth(reproduction);
-                        const ecuadorDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
-                        const y = ecuadorDate.getFullYear();
-                        const m = String(ecuadorDate.getMonth() + 1).padStart(2, '0');
-                        const d = String(ecuadorDate.getDate()).padStart(2, '0');
-                        setActualBirthDate(`${y}-${m}-${d}`);
-                      }}
-                    >
-                      Registrar Parto
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="danger"
-                      icon={<Trash2 size={16} />}
-                      className="w-full justify-center gap-2"
-                      onClick={(e) => { e.stopPropagation(); setToCancel(reproduction); }}
-                    >
-                      Eliminar
-                    </Button>
+                    {canCreate && (
+                      <Button
+                        type="button"
+                        variant="primary"
+                        className="w-full"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setToRegisterBirth(reproduction);
+                          const ecuadorDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
+                          const y = ecuadorDate.getFullYear();
+                          const m = String(ecuadorDate.getMonth() + 1).padStart(2, '0');
+                          const d = String(ecuadorDate.getDate()).padStart(2, '0');
+                          setActualBirthDate(`${y}-${m}-${d}`);
+                        }}
+                      >
+                        Registrar Parto
+                      </Button>
+                    )}
+                    {canDelete && (
+                      <Button
+                        type="button"
+                        variant="danger"
+                        icon={<Trash2 size={16} />}
+                        className="w-full justify-center gap-2"
+                        onClick={(e) => { e.stopPropagation(); setToCancel(reproduction); }}
+                      >
+                        Eliminar
+                      </Button>
+                    )}
+                    {!canCreate && !canDelete && (
+                      <span className="text-xs text-muted font-medium py-1 px-2 text-center w-full">
+                        Solo consulta
+                      </span>
+                    )}
                   </div>
                 )}
               </RabbitSelectableCard>
@@ -376,7 +396,7 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
                   required
                   value={cancelReasonOther}
                   onChange={(e) => setCancelReasonOther(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="w-full px-3 py-2 border border-default bg-theme-surface dark:bg-slate-900 text-main rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   placeholder="Ej. Complicaciones de salud"
                 />
               </div>

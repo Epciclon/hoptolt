@@ -10,6 +10,7 @@ import { useCageSelection } from '@/shared/hooks/useCageSelection';
 import { formatDateTime } from '@/shared/utils/dateUtils';
 
 import { FilterBar } from '@/shared/ui/FilterBar';
+import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
 
 interface VaccinationCatalogProps {
   onSuccess?: () => void;
@@ -21,6 +22,8 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
   const [searchTerm, setSearchTerm] = useState('');
   const { assignedRabbits, galponVaccines, loading, createVaccination, vaccinations, isCreating } = useVaccination();
   const { showToast } = useToast();
+  const { can } = usePermissions();
+  const canCreate = can('vaccination', 'canCreate');
   
   const {
     selectedRabbitIds,
@@ -127,7 +130,7 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
   return (
     <div className="flex flex-col gap-4">
 
-      <div className="bg-card border border-default rounded-xl p-4 relative z-30">
+      <div className="bg-card border border-default rounded-xl p-4 relative z-10">
         <span className="block text-sm font-semibold text-main mb-2">Vacunas</span>
         <div className="relative" ref={vaccineDropdownRef}>
           <Input
@@ -140,7 +143,7 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
             onFocus={() => setShowVaccineDropdown(true)}
           />
           {showVaccineDropdown && (
-            <div className="absolute z-50 w-full border border-default dark:border-slate-700 rounded-lg max-h-48 overflow-y-auto bg-card dark:bg-slate-900 mt-1.5 shadow-2xl">
+            <div className="absolute z-20 w-full border border-default dark:border-slate-700 rounded-lg max-h-48 overflow-y-auto bg-card dark:bg-slate-900 mt-1.5 shadow-2xl">
               {filteredVaccines.length === 0 ? (
                 <p className="text-muted text-sm p-3">No hay vacunas disponibles</p>
               ) : (
@@ -219,13 +222,21 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
         )}
       </>
 
-      <SelectionActionBar
-        count={selectedRabbitIds.length}
-        itemName="conejo"
-        buttonText="Registrar Vacunación"
-        onRegister={handleRegister}
-        isSubmitting={isCreating}
-      />
+      {canCreate ? (
+        <SelectionActionBar
+          count={selectedRabbitIds.length}
+          itemName="conejo"
+          buttonText="Registrar Vacunación"
+          onRegister={handleRegister}
+          isSubmitting={isCreating}
+        />
+      ) : (
+        selectedRabbitIds.length > 0 && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-theme-surface border border-strong shadow-lg rounded-xl px-4 py-2 text-xs text-muted font-medium">
+            Solo consulta
+          </div>
+        )
+      )}
     </div>
   );
 }

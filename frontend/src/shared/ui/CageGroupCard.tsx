@@ -33,11 +33,11 @@ export function CageGroupCard({
   return (
     <div
       className={cn(
-        'group relative border shadow-sm rounded-xl p-4 transition-all duration-150 flex flex-col text-left w-full',
+        'group relative border shadow-sm rounded-xl p-3 sm:p-4 transition-all duration-150 flex flex-col text-left w-full min-w-0',
         (() => {
           if (isSelected) return 'border-primary-500 ring-1 ring-primary-500 bg-card shadow-sm';
-          if (isSelectable) return 'border-slate-300 bg-card hover:border-primary-400';
-          return 'border-slate-300 bg-card hover:shadow-md';
+          if (isSelectable) return 'border-strong bg-card hover:border-primary-400';
+          return 'border-strong bg-card hover:shadow-md';
         })()
       )}
     >
@@ -51,16 +51,16 @@ export function CageGroupCard({
         />
       )}
 
-      <div className="flex flex-col items-center justify-center mb-4 border-b border-strong pb-3 relative z-10 pointer-events-none">
-        <h3 className="text-lg font-bold text-main text-center mb-1">
-          Jaula {cageNumber}
-        </h3>
+      <div className="relative flex flex-col items-center justify-center mb-3 border-b border-strong pb-3 pointer-events-none w-full min-w-0">
         {headerBadge && (
-          <div className="absolute right-0 top-0 pointer-events-none">
+          <div className="absolute right-0 top-0.5 shrink-0 pointer-events-none">
             {headerBadge}
           </div>
         )}
-        <span className="px-2.5 py-0.5 bg-theme-surface border border-default text-main rounded-full text-[11px] font-medium capitalize border border-strong max-w-[120px] truncate">
+        <h3 className="text-base sm:text-lg font-bold text-main text-center leading-snug">
+          Jaula {cageNumber}
+        </h3>
+        <span className="mt-1 px-2.5 py-0.5 bg-theme-surface border border-default text-main rounded-full text-[11px] font-medium capitalize max-w-[140px] truncate">
           {cageType}
         </span>
       </div>

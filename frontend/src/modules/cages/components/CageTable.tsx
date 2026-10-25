@@ -8,6 +8,7 @@ import { Pagination } from '@/shared/ui/Pagination';
 import type { Column } from '@/shared/ui/Table';
 import { useCages } from '../hooks/useCages';
 import { useToast } from '@/shared/contexts/ToastContext';
+import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
 import type { Cage } from '../types/cage.types';
 
 interface CageTableProps {
@@ -16,6 +17,7 @@ interface CageTableProps {
 
 export function CageTable({ onEdit }: Readonly<CageTableProps>) {
   const { cages, pagination, loading, deleteCage, setPage, setSearch, setType, setStatus, filters } = useCages();
+  const { can } = usePermissions();
   const { showToast } = useToast();
   const [deleteTarget, setDeleteTarget] = useState<Cage | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -81,27 +83,40 @@ export function CageTable({ onEdit }: Readonly<CageTableProps>) {
     {
       key: 'actions',
       header: 'Acciones',
-      render: (row) => (
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            className="text-main"
-            icon={<Pencil size={13} />}
-            onClick={() => onEdit?.(row)}
-          >
-            Editar
-          </Button>
-          <Button
-            size="sm"
-            variant="danger"
-            icon={<Trash2 size={13} />}
-            onClick={() => setDeleteTarget(row)}
-          >
-            Eliminar
-          </Button>
-        </div>
-      ),
+      render: (row) => {
+        const canEdit = can('cages', 'canUpdate');
+        const canDelete = can('cages', 'canDelete');
+
+        if (!canEdit && !canDelete) {
+          return <span className="text-xs text-muted">Solo consulta</span>;
+        }
+
+        return (
+          <div className="flex items-center gap-2">
+            {canEdit && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-main"
+                icon={<Pencil size={13} />}
+                onClick={() => onEdit?.(row)}
+              >
+                Editar
+              </Button>
+            )}
+            {canDelete && (
+              <Button
+                size="sm"
+                variant="danger"
+                icon={<Trash2 size={13} />}
+                onClick={() => setDeleteTarget(row)}
+              >
+                Eliminar
+              </Button>
+            )}
+          </div>
+        );
+      },
     },
   ];
 

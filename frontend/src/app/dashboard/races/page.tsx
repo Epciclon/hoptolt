@@ -7,9 +7,11 @@ import { Card, CardHeader, Button, Dialog } from '@/shared/ui';
 import { PermissionGuard } from '@/shared/layout/PermissionGuard';
 import { RaceCatalog } from '@/modules/races/components/RaceCatalog';
 import { RaceForm } from '@/modules/races/components/RaceForm';
+import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
 
 export default function RacesPage() {
   const [modal, setModal] = useState(false);
+  const { can } = usePermissions();
 
   const openModal = () => setModal(true);
   const closeModal = () => setModal(false);
@@ -23,7 +25,9 @@ export default function RacesPage() {
           subtitle="Gestiona el catálogo de razas de tu galpón"
           tutorialUrl="https://youtu.be/Ib1lTVUYFrs"
           actions={
-            <Button icon={<Plus size={16} />} onClick={openModal}>Nueva Raza</Button>
+            can('races', 'canCreate') ? (
+              <Button icon={<Plus size={16} />} onClick={openModal}>Nueva Raza</Button>
+            ) : null
           }
         />
         <RaceCatalog />

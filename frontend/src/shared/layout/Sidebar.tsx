@@ -100,9 +100,14 @@ export function Sidebar({ collapsed, onToggle }: Readonly<SidebarProps>) {
       // Si es owner, mostrar todas las opciones
       if (role === 'owner') return true;
 
-      // Ocultar Reportes y Usuarios del menú para trabajadores
-      if (item.name === 'Reportes' || item.name === 'Usuarios') {
+      // Ocultar Equipo de Trabajo del menú para trabajadores
+      if (item.name === 'Equipo de Trabajo' || item.name === 'Usuarios') {
         return false;
+      }
+
+      // Reportes solo visible para trabajadores si tienen permiso asignado
+      if (item.name === 'Reportes') {
+        return hasPermission('reports');
       }
 
       // Items que siempre se muestran

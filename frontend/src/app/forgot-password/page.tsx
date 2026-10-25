@@ -116,10 +116,10 @@ export default function ForgotPasswordPage() {
               {...register('identifier')}
               type="text"
               id="identifier"
-              className={`w-full px-4 py-4 border-2 rounded-xl outline-none transition-all ${
+              className={`w-full px-4 py-4 border-2 rounded-xl outline-none transition-all bg-theme-surface dark:bg-slate-900 text-main dark:text-slate-100 ${
                 errors.identifier
                   ? 'border-red-500 bg-red-50 dark:bg-red-500/10'
-                  : 'border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
+                  : 'border-slate-300 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
               }`}
               placeholder="Ingrese su usuario o correo"
               autoComplete="email"

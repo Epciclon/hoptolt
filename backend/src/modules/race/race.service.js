@@ -2,17 +2,34 @@ const raceRepository = require('./race.repository');
 const { Rabbit } = require('../../domain/models');
 const AppError = require('../../errors/AppError');
 const { getPaginationParams, createPaginatedResponse } = require('../../common/helpers/pagination.helper');
+const { recordWorkerChange } = require('../../common/helpers/audit.helper');
 
 class RaceService {
-    async registerRace(data, profileId) {
+    async registerRace(data, profileId, galponId = null, workerProfileId = null) {
         const existing = await raceRepository.findByNameAndProfile(data.name.trim(), profileId);
         if (existing) throw new AppError('El nombre de la raza ya está en uso.', 400);
-        return raceRepository.create({
+        const created = await raceRepository.create({
             name: data.name.trim(),
             description: data.description.trim(),
             imageUrl: data.imageUrl || null,
-            profileId
+            profileId,
+            galponId
         });
+
+        if (galponId) {
+            await recordWorkerChange({
+                galponId,
+                profileId: workerProfileId || profileId,
+                action: 'crear',
+                entity: 'races',
+                entityId: created.id,
+                itemName: `Raza ${created.name}`,
+                summary: `Registró la nueva raza ${created.name}`,
+                after: { name: created.name, description: created.description, imageUrl: created.imageUrl || null }
+            });
+        }
+
+        return created;
     }
 
     async getRaceById(id) {
@@ -46,13 +63,30 @@ class RaceService {
         return createPaginatedResponse(races, pageValue, limitValue, total);
     }
 
-    async editRaceDescription(id, data) {
+    async editRaceDescription(id, data, profileId = null, galponId = null) {
         const race = await raceRepository.findById(id);
         if (!race) throw new AppError('Raza no encontrada.', 404);
-        return raceRepository.update(race, data);
+        const before = { name: race.name, description: race.description, imageUrl: race.imageUrl || null };
+        const updated = await raceRepository.update(race, data);
+
+        if (galponId && profileId) {
+            await recordWorkerChange({
+                galponId,
+                profileId,
+                action: 'modificar',
+                entity: 'races',
+                entityId: race.id,
+                itemName: `Raza ${race.name}`,
+                summary: `Modificó la información de la raza ${race.name}`,
+                before,
+                after: { name: updated.name, description: updated.description, imageUrl: updated.imageUrl || null }
+            });
+        }
+
+        return updated;
     }
 
-    async deleteRace(id) {
+    async deleteRace(id, profileId = null, galponId = null) {
         const race = await raceRepository.findById(id);
         if (!race) throw new AppError('Raza no encontrada.', 404);
 
@@ -61,7 +95,21 @@ class RaceService {
             throw new AppError('No se puede eliminar la raza porque tiene conejos asociados. Primero debe reasignar o eliminar los conejos de esa raza.', 400);
         }
 
+        const before = { name: race.name, description: race.description, imageUrl: race.imageUrl || null };
         await raceRepository.delete(race);
+
+        if (galponId && profileId) {
+            await recordWorkerChange({
+                galponId,
+                profileId,
+                action: 'eliminar',
+                entity: 'races',
+                entityId: race.id,
+                itemName: `Raza ${race.name}`,
+                summary: `Eliminó la raza ${race.name} del catálogo`,
+                before
+            });
+        }
     }
 }
 

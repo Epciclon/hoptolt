@@ -7,11 +7,13 @@ import { CageTable } from '@/modules/cages/components/CageTable';
 import { CageForm } from '@/modules/cages/components/CageForm';
 import { GalponGuard } from '@/modules/galpones/components/GalponGuard';
 import { PermissionGuard } from '@/shared/layout/PermissionGuard';
+import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
 import type { Cage } from '@/modules/cages/types/cage.types';
 
 export default function CagesPage() {
   const [modal, setModal] = useState<'create' | 'edit' | null>(null);
   const [editTarget, setEditTarget] = useState<Cage | null>(null);
+  const { can } = usePermissions();
 
   const openCreate = () => { setEditTarget(null); setModal('create'); };
   const openEdit = (cage: Cage) => { setEditTarget(cage); setModal('edit'); };
@@ -26,7 +28,9 @@ export default function CagesPage() {
             subtitle="Aquí puedes organizar, ubicar y revisar el estado de todas las jaulas"
             tutorialUrl="https://youtu.be/mpzohtBFU_0"
             actions={
-              <Button icon={<Plus size={16} />} onClick={openCreate}>Nuevas Jaulas</Button>
+              can('cages', 'canCreate') ? (
+                <Button icon={<Plus size={16} />} onClick={openCreate}>Nuevas Jaulas</Button>
+              ) : undefined
             }
           />
           <CageTable onEdit={openEdit} />

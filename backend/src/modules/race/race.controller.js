@@ -3,7 +3,8 @@ const raceService = require('./race.service');
 const { toRaceDTO } = require('../../common/dtos/race.dto');
 
 exports.registerRace = catchAsync(async (req, res) => {
-    const race = await raceService.registerRace(req.body, req.user.id);
+    const ownerProfileId = req.activeGalpon?.profileId || req.galpon?.profileId || req.user.id;
+    const race = await raceService.registerRace(req.body, ownerProfileId, req.galponId, req.user.id);
     res.status(201).json({ success: true, message: 'Raza registrada exitosamente.', race: toRaceDTO(race) });
 });
 
@@ -19,7 +20,7 @@ exports.getAllRaces = catchAsync(async (req, res) => {
     
     // Si hay un galpón activo (trabajador o dueño en vista de galpón), usamos el profileId del dueño.
     // De lo contrario, usamos el profileId del usuario actual.
-    const ownerProfileId = req.galpon ? req.galpon.profileId : req.user.id;
+    const ownerProfileId = req.activeGalpon?.profileId || req.galpon?.profileId || req.user.id;
     
     const result = await raceService.getAllRaces(ownerProfileId, filters, page, limit);
     res.status(200).json({ 
@@ -30,11 +31,11 @@ exports.getAllRaces = catchAsync(async (req, res) => {
 });
 
 exports.editRace = catchAsync(async (req, res) => {
-    const race = await raceService.editRaceDescription(req.params.id, req.body);
+    const race = await raceService.editRaceDescription(req.params.id, req.body, req.user.id, req.galponId);
     res.status(200).json({ success: true, message: 'Raza editada exitosamente.', race: toRaceDTO(race) });
 });
 
 exports.deleteRace = catchAsync(async (req, res) => {
-    await raceService.deleteRace(req.params.id);
+    await raceService.deleteRace(req.params.id, req.user.id, req.galponId);
     res.status(200).json({ success: true, message: 'Raza eliminada con éxito.' });
 });

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, Button } from '@/shared/ui';
 import { useToast } from '@/shared/contexts/ToastContext';
-import { Type, Bold, Moon, Contrast, ALargeSmall, Image as ImageIcon } from 'lucide-react';
+import { Type, Bold, Moon, Contrast, ALargeSmall, Image as ImageIcon, Bell, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // ── Datos de opciones ────────────────────────────────────────────────────────
@@ -26,7 +26,7 @@ const AVATAR_SIZES = [
 ];
 
 const FONT_FAMILIES = [
-  { key: '',                              label: 'Segoe UI (predeterminado)', description: 'Fuente del sistema - moderna y clara' },
+  { key: '',                              label: 'Segoe UI - Predeterminado', description: 'Fuente del sistema - moderna y clara' },
   { key: "'Calibri', sans-serif",          label: 'Calibri',                   description: 'Moderna y optimizada para pantalla - ideal para leer' },
   { key: "'Georgia', serif",              label: 'Georgia',                   description: 'Clásica con serifas - cómoda en textos largos' },
   { key: "'Arial', sans-serif",           label: 'Arial',                     description: 'Familiar y ampliamente usada' },
@@ -39,7 +39,7 @@ import { applyThemeToDOM as applyToDOM } from '@/hooks/useThemeSync';
 
 // ── Tipos de sección ──────────────────────────────────────────────────────────
 
-type Section = 'size' | 'family' | 'bold' | 'dark' | 'contrast' | 'avatar';
+type Section = 'size' | 'family' | 'bold' | 'dark' | 'contrast' | 'avatar' | 'previews';
 
 interface NavItem {
   readonly id: Section;
@@ -49,12 +49,13 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'size',     label: 'Tamaño de Letra',   icon: ALargeSmall, ready: true  },
-  { id: 'avatar',   label: 'Tamaño de Avatares', icon: ImageIcon, ready: true  },
-  { id: 'family',   label: 'Tipo de Letra',      icon: Type,        ready: true  },
-  { id: 'bold',     label: 'Texto en Negrilla',  icon: Bold,        ready: true  },
-  { id: 'dark',     label: 'Modo Oscuro',         icon: Moon,        ready: true },
-  { id: 'contrast', label: 'Alto Contraste',      icon: Contrast,    ready: true },
+  { id: 'size',     label: 'Tamaño de Letra',       icon: ALargeSmall, ready: true  },
+  { id: 'avatar',   label: 'Tamaño de Avatares',    icon: ImageIcon,   ready: true  },
+  { id: 'family',   label: 'Tipo de Letra',          icon: Type,        ready: true  },
+  { id: 'bold',     label: 'Texto en Negrilla',      icon: Bold,        ready: true  },
+  { id: 'dark',     label: 'Modo Oscuro',            icon: Moon,        ready: true },
+  { id: 'contrast', label: 'Alto Contraste',         icon: Contrast,    ready: true },
+  { id: 'previews', label: 'Avisos Flotantes',       icon: Bell,        ready: true },
 ];
 
 // ── Componente check ─────────────────────────────────────────────────────────
@@ -78,6 +79,9 @@ export default function SettingsPage() {
   const [fontFamily, setFontFamily] = useState('');
   const [bold,       setBold]       = useState(false);
   const [theme,      setTheme]      = useState<'light' | 'dark' | 'contrast'>('light');
+  const [previewNotifications, setPreviewNotifications] = useState(true);
+  const [previewAlerts, setPreviewAlerts] = useState(true);
+  const [previewIncidents, setPreviewIncidents] = useState(true);
 
   useEffect(() => {
     const size   = localStorage.getItem('fontSize')   ?? '16px';
@@ -85,11 +89,17 @@ export default function SettingsPage() {
     const family = localStorage.getItem('fontFamily') ?? '';
     const bld    = localStorage.getItem('fontBold')   === 'true';
     const thm    = (localStorage.getItem('theme') as any) ?? 'light';
+    const prevNotif = localStorage.getItem('hoptolt_preview_notifications') !== 'false';
+    const prevAlert = localStorage.getItem('hoptolt_preview_alerts') !== 'false';
+    const prevInc = localStorage.getItem('hoptolt_preview_incidents') !== 'false';
     setFontSize(size);
     setAvatarScale(avScale);
     setFontFamily(family);
     setBold(bld);
     setTheme(thm);
+    setPreviewNotifications(prevNotif);
+    setPreviewAlerts(prevAlert);
+    setPreviewIncidents(prevInc);
     applyToDOM(size, family, bld, thm, avScale);
   }, []);
 
@@ -133,18 +143,46 @@ export default function SettingsPage() {
     showToast(msg, 'success');
   }, [fontSize, fontFamily, bold, avatarScale, showToast]);
 
+  const togglePreviewNotification = useCallback((val: boolean) => {
+    setPreviewNotifications(val);
+    localStorage.setItem('hoptolt_preview_notifications', String(val));
+    window.dispatchEvent(new CustomEvent('hoptolt_previews_changed'));
+    showToast(val ? 'Notificaciones previas activadas' : 'Notificaciones previas desactivadas', 'success');
+  }, [showToast]);
+
+  const togglePreviewAlerts = useCallback((val: boolean) => {
+    setPreviewAlerts(val);
+    localStorage.setItem('hoptolt_preview_alerts', String(val));
+    window.dispatchEvent(new CustomEvent('hoptolt_previews_changed'));
+    showToast(val ? 'Alertas previas activadas' : 'Alertas previas desactivadas', 'success');
+  }, [showToast]);
+
+  const togglePreviewIncidents = useCallback((val: boolean) => {
+    setPreviewIncidents(val);
+    localStorage.setItem('hoptolt_preview_incidents', String(val));
+    window.dispatchEvent(new CustomEvent('hoptolt_previews_changed'));
+    showToast(val ? 'Novedades previas activadas' : 'Novedades previas desactivadas', 'success');
+  }, [showToast]);
+
   const resetDefaults = () => {
     setFontSize('16px');
     setAvatarScale('1');
     setFontFamily('');
     setBold(false);
     setTheme('light');
+    setPreviewNotifications(true);
+    setPreviewAlerts(true);
+    setPreviewIncidents(true);
     applyToDOM('16px', '', false, 'light', '1');
     localStorage.setItem('fontSize', '16px');
     localStorage.setItem('avatarScale', '1');
     localStorage.removeItem('fontFamily');
     localStorage.removeItem('fontBold');
     localStorage.removeItem('theme');
+    localStorage.removeItem('hoptolt_preview_notifications');
+    localStorage.removeItem('hoptolt_preview_alerts');
+    localStorage.removeItem('hoptolt_preview_incidents');
+    window.dispatchEvent(new CustomEvent('hoptolt_previews_changed'));
     showToast('Preferencias restablecidas', 'success');
   };
 
@@ -198,7 +236,7 @@ export default function SettingsPage() {
               </h3>
               <p className="text-sm text-muted mb-6">El cambio se aplica de inmediato en toda la aplicación.</p>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
                 {FONT_SIZES.map((f) => (
                   <button type="button"
                     key={f.key}
@@ -240,11 +278,11 @@ export default function SettingsPage() {
             <Card>
               <h3 className="text-lg font-bold text-main mb-1 flex items-center gap-2">
                 <ImageIcon className="text-primary-500" size={20} />
-                Tamaño de Avatares (Mini-fotos)
+                Tamaño de Avatares - Mini fotos
               </h3>
               <p className="text-sm text-muted mb-6">Ajusta el tamaño global de las fotos de los conejos en todo el sistema.</p>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
                 {AVATAR_SIZES.map((f) => (
                   <button type="button"
                     key={f.key}
@@ -401,7 +439,7 @@ export default function SettingsPage() {
                   Alto Contraste
                 </h3>
                 <p className="text-sm text-muted mb-6">
-                  Usa colores intensos (blanco, negro, amarillo) para máxima legibilidad.
+                  Usa colores intensos - blanco, negro, amarillo - para máxima legibilidad.
                 </p>
                 <div className="flex gap-4">
                   <button type="button" onClick={() => { if (theme === 'contrast') selectTheme('light'); }} className={cn("p-4 border-2 rounded-xl flex-1 text-center font-medium transition-colors hover:bg-theme-surface dark:hover:bg-slate-800/50", theme !== 'contrast' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 shadow-sm' : 'border-default text-muted')}>
@@ -411,6 +449,146 @@ export default function SettingsPage() {
                     Activado
                   </button>
                 </div>
+                <SaveBar onReset={resetDefaults} />
+              </div>
+            )}
+
+            {/* ── Avisos Flotantes ── */}
+            {activeSection === 'previews' && (
+              <div className="max-w-3xl mx-auto w-full">
+                <h3 className="text-lg font-bold text-main mb-1 flex items-center gap-2">
+                  <Bell className="text-primary-500" size={20} />
+                  Avisos Flotantes
+                </h3>
+                <p className="text-sm text-muted mb-6">
+                  Configura qué avisos emergentes deseas ver en pantalla al recibir novedades, alertas o notificaciones.
+                </p>
+
+                <div className="flex flex-col gap-4">
+                  {/* Notificaciones Previas */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-default bg-theme-surface gap-4">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2.5 rounded-lg bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 shrink-0">
+                        <Bell size={20} />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-main text-sm">Notificaciones Previas</h4>
+                        <p className="text-xs text-muted mt-0.5">
+                          Muestra una ventana flotante momentánea cuando llegan avisos generales o actividades del sistema
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 self-end sm:self-center shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => togglePreviewNotification(false)}
+                        className={cn(
+                          "px-4 py-2 text-xs font-semibold rounded-lg border transition-colors",
+                          !previewNotifications
+                            ? "border-primary-500 bg-primary-500 text-white shadow-sm"
+                            : "border-default bg-card text-muted hover:bg-theme-surface hover:text-main"
+                        )}
+                      >
+                        Desactivado
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => togglePreviewNotification(true)}
+                        className={cn(
+                          "px-4 py-2 text-xs font-semibold rounded-lg border transition-colors",
+                          previewNotifications
+                            ? "border-primary-500 bg-primary-500 text-white shadow-sm"
+                            : "border-default bg-card text-muted hover:bg-theme-surface hover:text-main"
+                        )}
+                      >
+                        Activado
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Alertas Previas */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-default bg-theme-surface gap-4">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 shrink-0">
+                        <AlertTriangle size={20} />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-main text-sm">Alertas Previas</h4>
+                        <p className="text-xs text-muted mt-0.5">
+                          Muestra una ventana flotante momentánea para recordatorios urgentes de alimentación, partos o destetes
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 self-end sm:self-center shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => togglePreviewAlerts(false)}
+                        className={cn(
+                          "px-4 py-2 text-xs font-semibold rounded-lg border transition-colors",
+                          !previewAlerts
+                            ? "border-primary-500 bg-primary-500 text-white shadow-sm"
+                            : "border-default bg-card text-muted hover:bg-theme-surface hover:text-main"
+                        )}
+                      >
+                        Desactivado
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => togglePreviewAlerts(true)}
+                        className={cn(
+                          "px-4 py-2 text-xs font-semibold rounded-lg border transition-colors",
+                          previewAlerts
+                            ? "border-primary-500 bg-primary-500 text-white shadow-sm"
+                            : "border-default bg-card text-muted hover:bg-theme-surface hover:text-main"
+                        )}
+                      >
+                        Activado
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Novedades Previas */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-default bg-theme-surface gap-4">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 shrink-0">
+                        <ShieldAlert size={20} />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-main text-sm">Novedades Previas</h4>
+                        <p className="text-xs text-muted mt-0.5">
+                          Muestra una ventana flotante momentánea cuando se reportan o responden incidencias y novedades del galpón
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 self-end sm:self-center shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => togglePreviewIncidents(false)}
+                        className={cn(
+                          "px-4 py-2 text-xs font-semibold rounded-lg border transition-colors",
+                          !previewIncidents
+                            ? "border-primary-500 bg-primary-500 text-white shadow-sm"
+                            : "border-default bg-card text-muted hover:bg-theme-surface hover:text-main"
+                        )}
+                      >
+                        Desactivado
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => togglePreviewIncidents(true)}
+                        className={cn(
+                          "px-4 py-2 text-xs font-semibold rounded-lg border transition-colors",
+                          previewIncidents
+                            ? "border-primary-500 bg-primary-500 text-white shadow-sm"
+                            : "border-default bg-card text-muted hover:bg-theme-surface hover:text-main"
+                        )}
+                      >
+                        Activado
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
                 <SaveBar onReset={resetDefaults} />
               </div>
             )}

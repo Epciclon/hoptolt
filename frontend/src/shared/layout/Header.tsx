@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ChevronDown, User, LogOut, Settings } from 'lucide-react';
+import { ChevronDown, User, LogOut, Settings, ShieldAlert, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 import Link from 'next/link';
 import Cookies from 'js-cookie';
 import { useAuth } from '@/modules/auth/hooks/useAuth';
+import { AlertsIcon } from '@/modules/notification/components/AlertsIcon';
 import { NotificationIcon } from '@/modules/notification/components/NotificationIcon';
 
 export function Header() {
@@ -27,8 +28,19 @@ export function Header() {
   };
 
   return (
-    <header className="h-14 bg-card border-b border-strong flex items-center justify-end px-4 md:px-6 sticky top-0 z-30">
-      <div className="flex items-center gap-4">
+    <header className="h-14 bg-card border-b border-strong flex items-center justify-between px-3 sm:px-6 sticky top-0 z-40">
+      <button
+        type="button"
+        onClick={() => window.dispatchEvent(new CustomEvent('toggle-sidebar'))}
+        className="xl:hidden p-2 -ml-1 text-muted hover:text-main hover:bg-theme-surface rounded-lg transition-colors flex items-center justify-center cursor-pointer"
+        title="Abrir menú"
+        aria-label="Abrir menú de navegación"
+      >
+        <Menu size={20} />
+      </button>
+
+      <div className="flex items-center gap-2 sm:gap-3 ml-auto">
+        <AlertsIcon />
         <NotificationIcon />
         <div className="relative">
           <button type="button"
@@ -66,6 +78,13 @@ export function Header() {
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-muted hover:bg-theme-surface hover:text-primary-600 transition-colors"
                   >
                     <User size={16} /> Mi Perfil
+                  </Link>
+                  <Link
+                    href="/dashboard/incidents"
+                    onClick={() => setDropdownOpen(false)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-muted hover:bg-theme-surface hover:text-primary-600 transition-colors"
+                  >
+                    <ShieldAlert size={16} /> Novedades del Galpón
                   </Link>
                   <Link
                     href="/dashboard/settings"

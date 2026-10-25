@@ -106,7 +106,7 @@ export function TransferRabbitModal({ open, onClose, rabbits, currentCageId, sou
           <p className="text-sm text-muted mb-2">
             Moviendo a:{' '}
             {rabbits.length === 1 ? (
-              <strong>{rabbits[0].code} - {rabbits[0].name}</strong>
+              <strong>{rabbits[0].name ? `${rabbits[0].name} - ${rabbits[0].code}` : rabbits[0].code}</strong>
             ) : (
               <strong>{rabbits.length} conejos seleccionados</strong>
             )}
@@ -120,7 +120,7 @@ export function TransferRabbitModal({ open, onClose, rabbits, currentCageId, sou
 
         <div className="border border-strong rounded-md max-h-64 overflow-y-auto bg-card shadow-inner">
           {availableCages.length === 0 ? (
-            <p className="text-gray-500 text-sm p-4 text-center">No hay otras jaulas operativas compatibles disponibles.</p>
+            <p className="text-muted text-sm p-4 text-center">No hay otras jaulas operativas compatibles disponibles.</p>
           ) : (
             availableCages.map(cage => {
               const currentCapacity = cage.assignedCount || 0;

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -30,7 +30,8 @@ export function useRealtimeSync() {
       farm_members: ['farmMembers', 'workers'],
       invitations: ['invitations'],
       growths: ['growths'],
-      mortalities: ['mortalities']
+      mortalities: ['mortalities'],
+      incidents: ['incidents']
     };
 
     const handleChanges = (queryKeys: string[]) => {

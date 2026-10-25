@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { Network, Edit2 } from 'lucide-react';
 import type { Rabbit } from '@/modules/rabbits/types/rabbit.types';
 import { formatRabbitAge, rabbitSexOptions } from '@/shared/utils/rabbitUtils';
+import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
 
 interface GenealogyCatalogProps {
   onViewTree: (rabbit: Rabbit) => void;
@@ -18,6 +19,8 @@ interface GenealogyCatalogProps {
 export function GenealogyCatalog({ onViewTree, onEditRelation }: Readonly<GenealogyCatalogProps>) {
   const { rabbits, pagination, loading, setPage, setSearch, setRace, setSex, filters } = useRabbits();
   const { races } = useRaces();
+  const { can } = usePermissions();
+  const canUpdate = can('genealogy', 'canUpdate') || can('genealogy', 'canCreate');
   
   const [selectedRabbitId, setSelectedRabbitId] = useState<number | null>(null);
 
@@ -32,7 +35,7 @@ export function GenealogyCatalog({ onViewTree, onEditRelation }: Readonly<Geneal
     if (rabbits.length === 0) return <p className="text-sm text-muted text-center py-8 bg-theme-surface rounded-lg border border-strong">No hay conejos registrados con esos filtros.</p>;
     
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {rabbits.map((rabbit) => {
           const isSelected = selectedRabbitId === rabbit.id;
           return (
@@ -77,19 +80,25 @@ export function GenealogyCatalog({ onViewTree, onEditRelation }: Readonly<Geneal
               </>
             }
             actions={
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="flex-1 min-w-[80px] text-main"
-                icon={<Edit2 size={14} />}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEditRelation(rabbit);
-                }}
-              >
-                Editar Padres
-              </Button>
+              canUpdate ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 min-w-[80px] text-main"
+                  icon={<Edit2 size={14} />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditRelation(rabbit);
+                  }}
+                >
+                  Editar Padres
+                </Button>
+              ) : (
+                <span className="text-xs text-muted font-medium py-1 px-2 text-center w-full">
+                  Solo consulta
+                </span>
+              )
             }
           />
           );

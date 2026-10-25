@@ -10,6 +10,7 @@ import { useToast } from '@/shared/contexts/ToastContext';
 import type { Race } from '../types/race.types';
 import { useState, useRef, useEffect } from 'react';
 import { useSupabase } from '../../../hooks/useSupabase';
+import { X } from 'lucide-react';
 import Image from 'next/image';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -65,6 +66,13 @@ export function RaceForm({ mode, defaultValues, raceId, onSuccess, onCancel }: R
       showToast(err instanceof Error ? err.message : 'Error al subir la imagen.', 'error');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImageUrl(undefined);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -130,7 +138,7 @@ export function RaceForm({ mode, defaultValues, raceId, onSuccess, onCancel }: R
       <div>
         <span className="block text-sm font-medium text-muted mb-2">Imagen de la raza</span>
         {imageUrl ? (
-          <div className="mb-3 relative w-full h-64">
+          <div className="mb-3 relative w-full h-64 border border-default rounded-lg overflow-hidden bg-theme-surface">
             <Image
               src={imageUrl}
               alt="Imagen de la raza"
@@ -140,6 +148,14 @@ export function RaceForm({ mode, defaultValues, raceId, onSuccess, onCancel }: R
               className="object-contain rounded-lg"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             />
+            <button
+              type="button"
+              onClick={handleRemoveImage}
+              className="absolute top-2 right-2 bg-rose-600 hover:bg-rose-700 text-white p-1.5 rounded-full shadow-md transition-colors z-10"
+              title="Quitar imagen"
+            >
+              <X size={16} />
+            </button>
           </div>
         ) : (
           <div className="mb-3">

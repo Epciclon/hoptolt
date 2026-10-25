@@ -1,9 +1,10 @@
 const genealogyRepository = require('./genealogy.repository');
 const { Rabbit } = require('../../domain/models');
 const AppError = require('../../errors/AppError');
+const { recordWorkerChange } = require('../../common/helpers/audit.helper');
 
 class GenealogyService {
-    async registerGenealogy(data, galponId) {
+    async registerGenealogy(data, galponId, profileId = null) {
         const { rabbitId, fatherId, motherId } = data;
 
         const rabbit = await Rabbit.findByPk(rabbitId, { paranoid: false });
@@ -30,13 +31,73 @@ class GenealogyService {
             consanguinityWarning = await this._getConsanguinityWarning(fatherId, motherId, rabbitId);
         }
 
+        if (consanguinityWarning && !data.confirmConsanguinity) {
+            return {
+                requiresConfirmation: true,
+                consanguinityWarning
+            };
+        }
+
+        const rabbitLabel = rabbit.name ? `${rabbit.name} - ${rabbit.code}` : rabbit.code;
+        const isFemale = rabbit.sex === 'hembra';
+        const prefix = isFemale ? 'Coneja' : 'Conejo';
+        const article = isFemale ? 'de la coneja' : 'del conejo';
+
+        const targetFatherId = fatherId;
+        const targetMotherId = motherId;
+        const fatherObj = targetFatherId ? await Rabbit.findByPk(targetFatherId, { paranoid: false }) : null;
+        const fatherLabel = fatherObj ? (fatherObj.name ? `${fatherObj.name} - ${fatherObj.code}` : fatherObj.code) : 'Sin padre registrado';
+        const motherObj = targetMotherId ? await Rabbit.findByPk(targetMotherId, { paranoid: false }) : null;
+        const motherLabel = motherObj ? (motherObj.name ? `${motherObj.name} - ${motherObj.code}` : motherObj.code) : 'Sin madre registrada';
+
         const existing = await genealogyRepository.findByRabbitId(rabbitId);
         if (existing) {
-            const result = await genealogyRepository.update(existing, { fatherId: fatherId || existing.fatherId, motherId: motherId || existing.motherId });
+            const prevFatherObj = existing.fatherId ? await Rabbit.findByPk(existing.fatherId, { paranoid: false }) : null;
+            const prevFatherLabel = prevFatherObj ? (prevFatherObj.name ? `${prevFatherObj.name} - ${prevFatherObj.code}` : prevFatherObj.code) : 'Sin padre registrado';
+            const prevMotherObj = existing.motherId ? await Rabbit.findByPk(existing.motherId, { paranoid: false }) : null;
+            const prevMotherLabel = prevMotherObj ? (prevMotherObj.name ? `${prevMotherObj.name} - ${prevMotherObj.code}` : prevMotherObj.code) : 'Sin madre registrada';
+
+            const beforeData = { father: prevFatherLabel, mother: prevMotherLabel };
+            const newTargetFatherId = fatherId !== undefined ? (fatherId || null) : existing.fatherId;
+            const newTargetMotherId = motherId !== undefined ? (motherId || null) : existing.motherId;
+            const hasChanged = (existing.fatherId || null) !== newTargetFatherId ||
+                               (existing.motherId || null) !== newTargetMotherId;
+
+            const result = await genealogyRepository.update(existing, { fatherId: newTargetFatherId, motherId: newTargetMotherId });
+            
+            if (profileId && hasChanged) {
+                await recordWorkerChange({
+                    galponId,
+                    profileId,
+                    action: 'modificar',
+                    entity: 'genealogy',
+                    entityId: rabbit.id,
+                    itemName: `${prefix} ${rabbitLabel}`,
+                    summary: `Actualizó el árbol genealógico ${article} ${rabbitLabel}`,
+                    before: beforeData,
+                    after: { father: fatherLabel, mother: motherLabel }
+                });
+            }
+
             return { ...result.toJSON(), consanguinityWarning };
         }
 
         const result = await genealogyRepository.create({ rabbitId, fatherId, motherId, galponId });
+
+        if (profileId) {
+            await recordWorkerChange({
+                galponId,
+                profileId,
+                action: 'crear',
+                entity: 'genealogy',
+                entityId: rabbit.id,
+                itemName: `${prefix} ${rabbitLabel}`,
+                summary: `Registró el árbol genealógico ${article} ${rabbitLabel}`,
+                before: null,
+                after: { father: fatherLabel, mother: motherLabel }
+            });
+        }
+
         return { ...result.toJSON(), consanguinityWarning };
     }
 
@@ -123,7 +184,7 @@ class GenealogyService {
         return genealogyRepository.findByGalponId(galponId);
     }
 
-    async editGenealogy(rabbitId, data) {
+    async editGenealogy(rabbitId, data, profileId = null, galponId = null) {
         const genealogy = await genealogyRepository.findByRabbitId(rabbitId);
         if (!genealogy) throw new AppError('Relación genealógica no encontrada.', 404);
 
@@ -142,11 +203,53 @@ class GenealogyService {
             consanguinityWarning = await this._getConsanguinityWarning(newFatherId, newMotherId, rabbitId);
         }
 
+        if (consanguinityWarning && !data.confirmConsanguinity) {
+            return {
+                requiresConfirmation: true,
+                consanguinityWarning
+            };
+        }
+
+        const prevFatherObj = genealogy.fatherId ? await Rabbit.findByPk(genealogy.fatherId, { paranoid: false }) : null;
+        const prevFatherLabel = prevFatherObj ? (prevFatherObj.name ? `${prevFatherObj.name} - ${prevFatherObj.code}` : prevFatherObj.code) : 'Sin padre registrado';
+        const prevMotherObj = genealogy.motherId ? await Rabbit.findByPk(genealogy.motherId, { paranoid: false }) : null;
+        const prevMotherLabel = prevMotherObj ? (prevMotherObj.name ? `${prevMotherObj.name} - ${prevMotherObj.code}` : prevMotherObj.code) : 'Sin madre registrada';
+
+        const beforeData = { father: prevFatherLabel, mother: prevMotherLabel };
+
+        const hasChanged = (genealogy.fatherId || null) !== (newFatherId || null) ||
+                           (genealogy.motherId || null) !== (newMotherId || null);
+
         genealogy.fatherId = newFatherId || null;
         genealogy.motherId = newMotherId || null;
         genealogy.changed('fatherId', true);
         genealogy.changed('motherId', true);
         const result = await genealogy.save();
+
+        const fatherObj = result.fatherId ? await Rabbit.findByPk(result.fatherId, { paranoid: false }) : null;
+        const fatherLabel = fatherObj ? (fatherObj.name ? `${fatherObj.name} - ${fatherObj.code}` : fatherObj.code) : 'Sin padre registrado';
+        const motherObj = result.motherId ? await Rabbit.findByPk(result.motherId, { paranoid: false }) : null;
+        const motherLabel = motherObj ? (motherObj.name ? `${motherObj.name} - ${motherObj.code}` : motherObj.code) : 'Sin madre registrada';
+
+        const rabbitLabel = rabbit.name ? `${rabbit.name} - ${rabbit.code}` : rabbit.code;
+        const isFemale = rabbit.sex === 'hembra';
+        const prefix = isFemale ? 'Coneja' : 'Conejo';
+        const article = isFemale ? 'de la coneja' : 'del conejo';
+
+        if (profileId && hasChanged) {
+            await recordWorkerChange({
+                galponId: galponId || rabbit.galponId,
+                profileId,
+                action: 'modificar',
+                entity: 'genealogy',
+                entityId: rabbit.id,
+                itemName: `${prefix} ${rabbitLabel}`,
+                summary: `Actualizó el árbol genealógico ${article} ${rabbitLabel}`,
+                before: beforeData,
+                after: { father: fatherLabel, mother: motherLabel }
+            });
+        }
+
         return { ...result.toJSON(), consanguinityWarning };
     }
 

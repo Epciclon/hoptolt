@@ -117,9 +117,10 @@ class GrowthService {
         // Actualizamos solo la edad del conejo, manteniendo su peso actual (el que dejó el usuario)
         const updates = { rabbitId: rabbit.id, age: endMonth };
         
-        let msg = `${rabbit.code} - ${rabbit.name || 'Sin nombre'} ha alcanzado los ${endMonth} meses de edad. `;
+        const rabbitLabel = rabbit.name ? `${rabbit.name} - ${rabbit.code}` : rabbit.code;
+        let msg = `${rabbitLabel} ha alcanzado los ${endMonth} meses de edad. `;
         if (endMonth === maxAge) {
-            msg += ` (Ha alcanzado la madurez).`;
+            msg += `Ha alcanzado la madurez.`;
         }
         
         updatesResult.messages.push({
@@ -147,20 +148,25 @@ class GrowthService {
         if (rabbitsToUpdate.length > 0) {
             const rabbitMap = new Map(rabbits.map(r => [r.id, r]));
 
+            const { recordSystemChange } = require('../../common/helpers/audit.helper');
             await Promise.all(rabbitsToUpdate.map(async update => {
                 const rabbit = rabbitMap.get(update.rabbitId);
+                const oldAge = rabbit.age;
+                const oldWeight = rabbit.weight;
                 rabbit.age = update.age;
                 if (update.weight !== undefined) rabbit.weight = update.weight;
                 await rabbit.save();
                 
-                await AuditLog.create({
-                    profileId: profileId,
-                    action: 'Cálculo Automático',
-                    details: {
-                        message: `Edad actualizada a ${update.age} meses` + (update.weight ? ` y peso a ${update.weight} kg` : '') + ` para el conejo ${rabbit.code}.`
-                    },
-                    entity: 'Rabbit',
-                    entityId: rabbit.id
+                const rabbitLabel = rabbit.name ? `${rabbit.name} - ${rabbit.code}` : rabbit.code;
+                await recordSystemChange({
+                    galponId: rabbit.galponId,
+                    action: 'Cálculo de crecimiento',
+                    entity: 'growth',
+                    entityId: rabbit.id,
+                    itemName: rabbitLabel,
+                    summary: `HopTolt actualizó la edad a ${update.age} meses` + (update.weight ? ` y peso a ${update.weight} kg` : '') + ` para el conejo ${rabbitLabel}`,
+                    before: { age: oldAge, weight: oldWeight },
+                    after: { age: update.age, weight: update.weight }
                 });
             }));
         }

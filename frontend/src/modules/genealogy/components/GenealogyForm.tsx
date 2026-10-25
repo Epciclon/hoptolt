@@ -94,10 +94,11 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Warning modal
   const [showWarningModal, setShowWarningModal] = useState(false);
   const [warningDetails, setWarningDetails] = useState<string[]>([]);
   const [consequenceExplanation, setConsequenceExplanation] = useState('');
+  const [pendingValues, setPendingValues] = useState<FormValues | null>(null);
+  const [isConfirming, setIsConfirming] = useState(false);
 
   const { handleSubmit, formState: { errors, isSubmitting }, setValue, reset } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -143,7 +144,7 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
       explanation = 'Consecuencias: Los hijos de un mismo padre con diferentes madres pueden acumular genes recesivos dañinos, lo que aumenta el riesgo de malformaciones congénitas, problemas de desarrollo, menor supervivencia y debilidad del sistema inmunológico en las generaciones siguientes.';
     }
     if (warningStr.includes('emparentados')) {
-      details.push('⚠️ Los conejos seleccionados son emparentados (incesto directo o ancestros comunes).');
+      details.push('⚠️ Los conejos seleccionados son emparentados: incesto directo o ancestros comunes.');
       explanation = 'Consecuencias: El cruce de conejos emparentados aumenta significativamente la expresión de genes recesivos dañinos, causando mutaciones genéticas, malformaciones físicas, esterilidad, baja tasa de supervivencia, problemas de crecimiento y enfermedades hereditarias severas en los descendientes.';
     }
     
@@ -153,16 +154,16 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
   };
 
   const onSubmit = async (values: FormValues) => {
-
     try {
       if (editData) {
-        const payload: UpdateGenealogyDto = {
+        const payload: any = {
           fatherId: values.fatherId ?? null,
           motherId: values.motherId ?? null,
         };
         const result = await genealogyService.edit(editData.rabbitId, payload);
-        if (result.consanguinityWarning) {
-          handleConsanguinityWarning(result.consanguinityWarning);
+        if (result?.requiresConfirmation || result?.consanguinityWarning) {
+          setPendingValues(values);
+          handleConsanguinityWarning(result.consanguinityWarning || '');
           return;
         }
         showToast('Relación genealógica actualizada exitosamente.', 'success');
@@ -178,14 +179,15 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
         setFatherSearch('');
         setMotherSearch('');
       } else {
-        const payload = {
+        const payload: any = {
           rabbitId: values.rabbitId,
           fatherId: values.fatherId ?? undefined,
           motherId: values.motherId ?? undefined,
         };
         const result = await genealogyService.register(payload);
-        if (result.consanguinityWarning) {
-          handleConsanguinityWarning(result.consanguinityWarning);
+        if (result?.requiresConfirmation || result?.consanguinityWarning) {
+          setPendingValues(values);
+          handleConsanguinityWarning(result.consanguinityWarning || '');
           return;
         }
         showToast('Relación genealógica registrada exitosamente.', 'success');
@@ -206,47 +208,74 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
     }
   };
 
-  const handleConfirmWarning = () => {
-    setShowWarningModal(false);
-    showToast(editData ? 'Relación genealógica actualizada exitosamente.' : 'Relación genealógica registrada exitosamente.', 'success');
-    queryClient.invalidateQueries({ queryKey: ['genealogies'] });
-    queryClient.invalidateQueries({ queryKey: ['genealogy'] });
-    queryClient.invalidateQueries({ queryKey: ['genealogyTree'] });
-    onSuccess?.();
-    reset();
-    setSelectedRabbit(null);
-    setSelectedFather(null);
-    setSelectedMother(null);
-    setRabbitSearch('');
-    setFatherSearch('');
-    setMotherSearch('');
-    setWarningDetails([]);
-    setConsequenceExplanation('');
+  const handleConfirmWarning = async () => {
+    if (!pendingValues || isConfirming) return;
+    setIsConfirming(true);
+    try {
+      if (editData) {
+        const payload: any = {
+          fatherId: pendingValues.fatherId ?? null,
+          motherId: pendingValues.motherId ?? null,
+          confirmConsanguinity: true
+        };
+        await genealogyService.edit(editData.rabbitId, payload);
+      } else {
+        const payload: any = {
+          rabbitId: pendingValues.rabbitId,
+          fatherId: pendingValues.fatherId ?? undefined,
+          motherId: pendingValues.motherId ?? undefined,
+          confirmConsanguinity: true
+        };
+        await genealogyService.register(payload);
+      }
+      setShowWarningModal(false);
+      setPendingValues(null);
+      showToast(editData ? 'Relación genealógica actualizada exitosamente.' : 'Relación genealógica registrada exitosamente.', 'success');
+      queryClient.invalidateQueries({ queryKey: ['genealogies'] });
+      queryClient.invalidateQueries({ queryKey: ['genealogy'] });
+      queryClient.invalidateQueries({ queryKey: ['genealogyTree'] });
+      onSuccess?.();
+      reset();
+      setSelectedRabbit(null);
+      setSelectedFather(null);
+      setSelectedMother(null);
+      setRabbitSearch('');
+      setFatherSearch('');
+      setMotherSearch('');
+      setWarningDetails([]);
+      setConsequenceExplanation('');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Error inesperado.', 'error');
+    } finally {
+      setIsConfirming(false);
+    }
   };
 
   const handleCancelWarning = () => {
+    if (isConfirming) return;
     setShowWarningModal(false);
+    setPendingValues(null);
     setWarningDetails([]);
     setConsequenceExplanation('');
   };
 
   const handleRabbitSelect = (rabbit: Rabbit) => {
     setSelectedRabbit(rabbit);
-    setRabbitSearch(`${rabbit.code} - ${rabbit.name}`);
+    setRabbitSearch(rabbit.name ? `${rabbit.name} - ${rabbit.code}` : rabbit.code);
     setValue('rabbitId', rabbit.id);
     setShowRabbitDropdown(false);
   };
 
   const handleFatherSelect = (rabbit: Rabbit) => {
     setSelectedFather(rabbit);
-    setFatherSearch(`${rabbit.code} - ${rabbit.name}`);
+    setFatherSearch(rabbit.name ? `${rabbit.name} - ${rabbit.code}` : rabbit.code);
     setValue('fatherId', rabbit.id);
     setShowFatherDropdown(false);
   };
 
   const handleMotherSelect = (rabbit: Rabbit) => {
     setSelectedMother(rabbit);
-    setMotherSearch(`${rabbit.code} - ${rabbit.name}`);
+    setMotherSearch(rabbit.name ? `${rabbit.name} - ${rabbit.code}` : rabbit.code);
     setValue('motherId', rabbit.id);
     setShowMotherDropdown(false);
   };
@@ -402,31 +431,20 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
         title="Advertencia de Consanguinidad"
         size="md"
       >
-        <div className="flex flex-col gap-4">
-          <div className="bg-red-50 border border-red-200 rounded-md p-3">
-            <p className="text-sm font-semibold text-red-800 mb-2">⚠️ Advertencia de Consanguinidad</p>
-            {warningDetails.length > 0 && (
-              <ul className="text-sm text-red-700 space-y-1">
-                {warningDetails.map((detail) => (
-                  <li key={detail}>{detail}</li>
-                ))}
-              </ul>
-            )}
-          </div>
-          {consequenceExplanation && (
-            <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
-              <p className="text-sm text-amber-800">{consequenceExplanation}</p>
+        <div className="flex flex-col gap-4 text-main">
+          <div className="bg-theme-surface border border-strong text-main p-4 rounded-lg flex gap-3">
+            <div className="text-sm">
+              <p className="mb-2"><b>El cruce de conejos de la misma familia puede causar problemas de salud en las crías.</b></p>
+              <p>Lo ideal es cruzar conejos sin ningún parentesco cercano en su árbol genealógico. Esta práctica ayuda a mantener crías fuertes y asegura camadas grandes y sanas.</p>
             </div>
-          )}
-          <p className="text-sm text-muted">
-            El registro se completará exitosamente, pero debe ser consciente de las consecuencias genéticas que esto puede tener en los descendientes.
-          </p>
-          <div className="flex gap-3 pt-2">
-            <Button onClick={handleConfirmWarning}>
-              Entendido, Continuar
-            </Button>
-            <Button variant="secondary" onClick={handleCancelWarning}>
+          </div>
+          <p className="text-sm">¿Deseas proceder de todos modos con este parentesco y guardar el registro?</p>
+          <div className="flex justify-end gap-3 mt-2">
+            <Button variant="outline" onClick={handleCancelWarning} disabled={isConfirming}>
               Cancelar
+            </Button>
+            <Button variant="danger" onClick={handleConfirmWarning} loading={isConfirming} disabled={isConfirming}>
+              Proceder de todos modos
             </Button>
           </div>
         </div>

@@ -116,7 +116,7 @@ class DewormingService {
         const createdDewormings = await Promise.all(toCreate.map(data => dewormingRepository.create(data)));
 
         const { notifyOwnerOnWorkerAction } = require('../../common/helpers/notification.helper');
-        await notifyOwnerOnWorkerAction(profileId, galponId, 'deworming', 'Desparasitación');
+        await notifyOwnerOnWorkerAction(profileId, galponId, 'deworming', 'Desparasitación', rabbitIds.length, 'conejo');
 
         return createdDewormings;
     }

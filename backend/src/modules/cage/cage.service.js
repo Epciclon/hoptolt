@@ -4,6 +4,7 @@ const galponRepository = require('../galpon/galpon.repository');
 const { FarmMember } = require('../../domain/models');
 const AppError = require('../../errors/AppError');
 const { getPaginationParams, createPaginatedResponse } = require('../../common/helpers/pagination.helper');
+const { recordWorkerChange } = require('../../common/helpers/audit.helper');
 
 class CageService {
     async registerCage(data, profileId) {
@@ -46,6 +47,21 @@ class CageService {
         }));
 
         const createdCages = await cageRepository.bulkCreate(cagesToCreate);
+        if (createdCages.length > 0) {
+            const numbers = createdCages.map(c => c.number).join(', ');
+            await recordWorkerChange({
+                galponId: data.galponId,
+                profileId,
+                action: 'crear',
+                entity: 'cages',
+                entityId: createdCages[0].id,
+                itemName: createdCages.length === 1 ? `Jaula ${createdCages[0].number}` : `Jaulas ${numbers}`,
+                summary: createdCages.length === 1 
+                    ? `Registró la jaula número ${createdCages[0].number} de tipo ${data.type}`
+                    : `Registró ${createdCages.length} jaulas: ${numbers} de tipo ${data.type}`,
+                after: { numbers, type: data.type, capacity: data.capacity, count: createdCages.length }
+            });
+        }
         return createdCages;
     }
 
@@ -54,17 +70,7 @@ class CageService {
         if (!cage) throw new AppError('No se encontró la jaula.', 404);
 
         // Verificar que el usuario tiene acceso al galpón
-        const membership = await this._assertGalponAccess(galponId, profileId);
-
-        if (membership.role === 'worker') {
-            const { WorkerCage } = require('../../domain/models');
-            const workerCage = await WorkerCage.findOne({
-                where: { farmMemberId: membership.id, cageId: id }
-            });
-            if (!workerCage) {
-                throw new AppError('No tienes acceso a esta jaula.', 403);
-            }
-        }
+        await this._assertGalponAccess(galponId, profileId);
 
         const count = await assignmentRepository.countActiveByCageId(cage.id);
         let occupancyStatus = 'disponible';
@@ -82,20 +88,13 @@ class CageService {
         if (!galponId) return createPaginatedResponse([], page, limit, 0);
 
         // Verificar que el usuario tiene acceso al galpón
-        const membership = await this._assertGalponAccess(galponId, profileId);
+        await this._assertGalponAccess(galponId, profileId);
 
         const { limit: limitValue, offset, page: pageValue } = getPaginationParams(page, limit);
 
         const { Op } = require('sequelize');
         const Sequelize = require('sequelize');
         const where = {};
-
-        if (membership.role === 'worker') {
-            const { WorkerCage } = require('../../domain/models');
-            const workerCages = await WorkerCage.findAll({ where: { farmMemberId: membership.id } });
-            const assignedCageIds = workerCages.map(wc => Number(wc.cageId));
-            where.id = { [Op.in]: assignedCageIds };
-        }
 
         if (filters.status) where.status = filters.status;
         if (filters.type) where.type = filters.type;
@@ -169,7 +168,31 @@ class CageService {
             }
         }
 
-        return cageRepository.update(cage, data);
+        const before = {
+            type: cage.type,
+            capacity: cage.capacity,
+            status: cage.status
+        };
+
+        const updated = await cageRepository.update(cage, data);
+
+        await recordWorkerChange({
+            galponId: cage.galponId,
+            profileId,
+            action: 'modificar',
+            entity: 'cages',
+            entityId: cage.id,
+            itemName: `Jaula ${cage.number}`,
+            summary: `Modificó los datos de la jaula número ${cage.number}`,
+            before,
+            after: {
+                type: updated.type,
+                capacity: updated.capacity,
+                status: updated.status
+            }
+        });
+
+        return updated;
     }
 
     async deleteCage(id, profileId) {
@@ -186,7 +209,26 @@ class CageService {
                 400
             );
         }
+
+        const before = {
+            number: cage.number,
+            type: cage.type,
+            capacity: cage.capacity,
+            status: cage.status
+        };
+
         await cageRepository.delete(cage);
+
+        await recordWorkerChange({
+            galponId: cage.galponId,
+            profileId,
+            action: 'eliminar',
+            entity: 'cages',
+            entityId: cage.id,
+            itemName: `Jaula ${cage.number}`,
+            summary: `Eliminó la jaula número ${cage.number} del galpón`,
+            before
+        });
     }
 
     async _assertGalponAccess(galponId, profileId) {

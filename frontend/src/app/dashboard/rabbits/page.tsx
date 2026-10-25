@@ -7,9 +7,11 @@ import { RabbitCatalog } from '@/modules/rabbits/components/RabbitCatalog';
 import { RabbitForm } from '@/modules/rabbits/components/RabbitForm';
 import { GalponGuard } from '@/modules/galpones/components/GalponGuard';
 import { PermissionGuard } from '@/shared/layout/PermissionGuard';
+import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
 
 export default function RabbitsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const { can } = usePermissions();
 
   return (
     <PermissionGuard moduleName="rabbits">
@@ -20,7 +22,9 @@ export default function RabbitsPage() {
             subtitle="Visualiza, filtra y administra todos tus conejos"
             tutorialUrl="https://youtu.be/c073zLfxMyA"
             actions={
-              <Button icon={<Plus size={16} />} onClick={() => setIsCreateOpen(true)}>Nuevo Conejo</Button>
+              can('rabbits', 'canCreate') ? (
+                <Button icon={<Plus size={16} />} onClick={() => setIsCreateOpen(true)}>Nuevo Conejo</Button>
+              ) : undefined
             }
           />
           <div className="p-4 border-t border-default">

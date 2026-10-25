@@ -4,8 +4,22 @@ import { Notification } from '@/modules/notification/types/notification.types';
 export const routeNotification = (notification: Notification, router: AppRouterInstance) => {
   const type = notification.data?.type;
   
+  if (type === 'incident') {
+    window.dispatchEvent(
+      new CustomEvent('open-incident-widget', {
+        detail: { incidentId: notification.data?.incidentId }
+      })
+    );
+    return;
+  }
+
   if (type === 'worker_action' && notification.data?.module) {
     router.push(`/dashboard/${notification.data.module}?tab=historial`);
+    return;
+  }
+
+  if (type === 'worker_sensitive_action') {
+    router.push('/dashboard/users?tab=audit-logs');
     return;
   }
   

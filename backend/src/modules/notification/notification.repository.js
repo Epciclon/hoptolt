@@ -18,9 +18,25 @@ class NotificationRepository {
 
         if (unreadOnly || filter === 'unread') {
             andClauses.push({ read: false });
+        } else if (filter === 'read') {
+            andClauses.push({ read: true });
         }
 
-        if (filter === 'feeding') {
+        if (filter === 'alerts' || filter === 'warning') {
+            andClauses.push({
+                [Op.or]: [
+                    { type: 'warning' },
+                    Sequelize.literal(`("data"->>'type') IN ('feeding_reminder', 'cleaning_warning', 'birth_warning', 'weaning_alert')`)
+                ]
+            });
+        } else if (filter === 'notices') {
+            andClauses.push({
+                [Op.and]: [
+                    { type: { [Op.ne]: 'warning' } },
+                    Sequelize.literal(`COALESCE(("data"->>'type'), '') NOT IN ('feeding_reminder', 'cleaning_warning', 'birth_warning', 'weaning_alert')`)
+                ]
+            });
+        } else if (filter === 'feeding') {
             andClauses.push(Sequelize.literal(`("data"->>'type') = 'feeding_reminder'`));
         } else if (filter === 'cleaning') {
             andClauses.push(Sequelize.literal(`("data"->>'type') = 'cleaning_warning'`));
@@ -50,6 +66,14 @@ class NotificationRepository {
             });
         }
 
+        // Las novedades operativas corresponden a su propio módulo y widget flotante
+        andClauses.push(
+            Sequelize.literal(`COALESCE(("data"->>'type'), '') NOT IN ('incident', 'incident_response')`),
+            {
+                title: { [Op.notILike]: '%novedad%' }
+            }
+        );
+
         return { [Op.and]: andClauses };
     }
 
@@ -60,15 +84,7 @@ class NotificationRepository {
         return await this.Notification.findAll({
             where,
             order: [
-                [
-                    Sequelize.literal(`CASE 
-                        WHEN "type" = 'warning' AND ("data"->>'type') = 'feeding_reminder' THEN 0 
-                        WHEN "type" = 'warning' THEN 1 
-                        ELSE 2 
-                    END`),
-                    'ASC'
-                ],
-                ['createdAt', 'DESC']
+                ['updatedAt', 'DESC']
             ],
             limit,
             offset
@@ -87,24 +103,49 @@ class NotificationRepository {
     async markAsRead(id) {
         const notification = await this.findById(id);
         if (!notification) return null;
-        if (notification.type === 'warning') return notification;
         
+        // Las advertencias operativas (alimentación, limpieza, destete, parto) se marcan cuando se realiza la labor en el módulo
+        const d = notification.data || {};
+        const isTaskReminder = !d.isContract && (
+            notification.type === 'warning' ||
+            d.type === 'feeding_reminder' ||
+            d.type === 'cleaning_warning' ||
+            d.type === 'birth_warning' ||
+            d.type === 'weaning_alert'
+        );
+        if (isTaskReminder) return notification;
+
         await notification.update({ read: true });
         return notification;
     }
 
     async markAllAsRead(profileId) {
         const { Op } = require('sequelize');
-        return await this.Notification.update(
-            { read: true },
-            { 
-                where: { 
-                    profileId, 
-                    read: false,
-                    type: { [Op.ne]: 'warning' }
-                } 
-            }
-        );
+        const unreadNotifications = await this.Notification.findAll({
+            where: { profileId, read: false }
+        });
+
+        const idsToMark = unreadNotifications
+            .filter(n => {
+                const d = n.data || {};
+                const isTaskReminder = !d.isContract && (
+                    n.type === 'warning' ||
+                    d.type === 'feeding_reminder' ||
+                    d.type === 'cleaning_warning' ||
+                    d.type === 'birth_warning' ||
+                    d.type === 'weaning_alert'
+                );
+                return !isTaskReminder;
+            })
+            .map(n => n.id);
+
+        if (idsToMark.length > 0) {
+            await this.Notification.update(
+                { read: true },
+                { where: { id: { [Op.in]: idsToMark } } }
+            );
+        }
+        return true;
     }
 
     async delete(id) {
@@ -115,10 +156,9 @@ class NotificationRepository {
         return true;
     }
 
-    async countUnread(profileId) {
-        return await this.Notification.count({
-            where: { profileId, read: false }
-        });
+    async countUnread(profileId, filter) {
+        const where = this._buildWhereClause(profileId, { unreadOnly: true, filter });
+        return await this.Notification.count({ where });
     }
 }
 

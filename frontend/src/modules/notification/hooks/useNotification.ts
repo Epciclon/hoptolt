@@ -26,13 +26,21 @@ export function useNotifications(options?: GetNotificationsParams) {
     refetchIntervalInBackground: true,
   });
 
-  const notifications = data?.notifications || [];
+  const rawNotifications = data?.notifications || [];
+  const notifications = rawNotifications.filter((n: any) => {
+    const t = n.data?.type;
+    if (t === 'incident' || t === 'incident_response') return false;
+    const title = (n.title || '').toLowerCase();
+    const msg = (n.message || '').toLowerCase();
+    if (title.includes('novedad') || msg.includes('novedad')) return false;
+    return true;
+  });
   const pagination = data?.pagination || { total: 0, page: options?.page || 1, limit: options?.limit || 12, totalPages: 1 };
 
   // Query: Unread Count
   const { data: unreadCountData } = useQuery({
-    queryKey: ['notifications', 'unreadCount'],
-    queryFn: () => notificationService.getUnreadCount(),
+    queryKey: ['notifications', 'unreadCount', options?.filter],
+    queryFn: () => notificationService.getUnreadCount(options?.filter),
     enabled: !!user,
     refetchInterval: 5000,
     refetchIntervalInBackground: true,
@@ -130,13 +138,20 @@ export function useNotifications(options?: GetNotificationsParams) {
       await queryClient.cancelQueries({ queryKey: ['notifications'] });
       queryClient.setQueriesData({ queryKey: ['notifications'] }, (old: any) => {
         if (!old) return old;
+        const isTaskReminder = (n: any) => !n.data?.isContract && (
+          n.type === 'warning' ||
+          n.data?.type === 'feeding_reminder' ||
+          n.data?.type === 'cleaning_warning' ||
+          n.data?.type === 'birth_warning' ||
+          n.data?.type === 'weaning_alert'
+        );
         if (Array.isArray(old)) {
-          return old.map((n: any) => n.type === 'warning' ? n : { ...n, read: true });
+          return old.map((n: any) => isTaskReminder(n) ? n : { ...n, read: true });
         }
         if (old.notifications) {
           return {
             ...old,
-            notifications: old.notifications.map((n: any) => n.type === 'warning' ? n : { ...n, read: true })
+            notifications: old.notifications.map((n: any) => isTaskReminder(n) ? n : { ...n, read: true })
           };
         }
         return old;

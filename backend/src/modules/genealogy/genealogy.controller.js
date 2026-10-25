@@ -4,7 +4,15 @@ const { toGenealogyDTO } = require('../../common/dtos/genealogy.dto');
 
 exports.registerGenealogy = catchAsync(async (req, res) => {
     const galponId = req.galponId;
-    const genealogy = await genealogyService.registerGenealogy(req.body, galponId);
+    const genealogy = await genealogyService.registerGenealogy(req.body, galponId, req.user.id);
+    if (genealogy.requiresConfirmation) {
+        return res.status(200).json({
+            success: true,
+            requiresConfirmation: true,
+            consanguinityWarning: genealogy.consanguinityWarning,
+            genealogy: toGenealogyDTO(genealogy)
+        });
+    }
     res.status(201).json({ success: true, message: 'Relación genealógica registrada exitosamente.', genealogy: toGenealogyDTO(genealogy) });
 });
 
@@ -19,7 +27,15 @@ exports.getAllGenealogies = catchAsync(async (req, res) => {
 });
 
 exports.editGenealogy = catchAsync(async (req, res) => {
-    const genealogy = await genealogyService.editGenealogy(req.params.rabbitId, req.body);
+    const genealogy = await genealogyService.editGenealogy(req.params.rabbitId, req.body, req.user.id, req.galponId);
+    if (genealogy.requiresConfirmation) {
+        return res.status(200).json({
+            success: true,
+            requiresConfirmation: true,
+            consanguinityWarning: genealogy.consanguinityWarning,
+            genealogy: toGenealogyDTO(genealogy)
+        });
+    }
     res.status(200).json({ success: true, message: 'Relación genealógica actualizada exitosamente.', genealogy: toGenealogyDTO(genealogy) });
 });
 

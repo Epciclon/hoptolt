@@ -4,6 +4,7 @@ const { Assignment, FarmMember, Growth } = require('../../domain/models');
 const AppError = require('../../errors/AppError');
 const { getPaginationParams, createPaginatedResponse } = require('../../common/helpers/pagination.helper');
 const { generateRandomName } = require('../../common/helpers/names.helper');
+const { recordWorkerChange } = require('../../common/helpers/audit.helper');
 const { Op } = require('sequelize');
 const crypto = require('node:crypto');
 
@@ -100,7 +101,33 @@ class RabbitService {
         const growthService = require('../growth/growth.service');
         await growthService.rebuildGrowthHistory(rabbit.id);
 
-        return await rabbitRepository.findById(rabbit.id);
+        const savedRabbit = await rabbitRepository.findById(rabbit.id);
+
+        const rabbitLabel = rabbit.name ? `${rabbit.name} - ${rabbit.code}` : rabbit.code;
+        const isFemale = rabbit.sex === 'hembra';
+        const prefix = isFemale ? 'Coneja' : 'Conejo';
+        const article = isFemale ? 'a la coneja' : 'al conejo';
+
+        await recordWorkerChange({
+            galponId,
+            profileId,
+            action: 'crear',
+            entity: 'rabbits',
+            entityId: rabbit.id,
+            itemName: `${prefix} ${rabbitLabel}`,
+            summary: `Registró ${article} ${rabbitLabel} de raza ${rabbit.race}`,
+            after: {
+                code: rabbit.code,
+                name: rabbit.name,
+                race: rabbit.race,
+                sex: rabbit.sex,
+                purpose: rabbit.purpose,
+                weight: rabbit.weight != null ? Number(rabbit.weight) : null,
+                imageUrl: rabbit.imageUrl || null
+            }
+        });
+
+        return savedRabbit;
     }
 
     async getRabbit(id, profileId) {
@@ -228,6 +255,16 @@ class RabbitService {
             }
         }
 
+        const before = {
+            name: rabbit.name,
+            race: rabbit.race,
+            sex: rabbit.sex,
+            purpose: rabbit.purpose,
+            weight: rabbit.weight != null ? Number(rabbit.weight) : null,
+            birthDate: rabbit.birthDate,
+            imageUrl: rabbit.imageUrl || null
+        };
+
         const updatedRabbit = await rabbitRepository.update(rabbit, data);
 
         // Si el usuario cambia la fecha de nacimiento o el propósito, la curva estimada antigua se rompe.
@@ -240,6 +277,33 @@ class RabbitService {
         // Ya no tocamos la tabla Growth manualmente.
         // El peso se guardó en `rabbitRepository.update`. 
         // El cron se encargará de empujar este peso al historial cuando el conejo cumpla su próximo mes (cada 30 días).
+
+        const updatedName = updatedRabbit.name || rabbit.name;
+        const rabbitLabel = updatedName ? `${updatedName} - ${rabbit.code}` : rabbit.code;
+        const currentSex = updatedRabbit.sex || rabbit.sex;
+        const isFemale = currentSex === 'hembra';
+        const prefix = isFemale ? 'Coneja' : 'Conejo';
+        const article = isFemale ? 'de la coneja' : 'del conejo';
+
+        await recordWorkerChange({
+            galponId: rabbit.galponId,
+            profileId,
+            action: 'modificar',
+            entity: 'rabbits',
+            entityId: rabbit.id,
+            itemName: `${prefix} ${rabbitLabel}`,
+            summary: `Modificó los datos ${article} ${rabbitLabel}`,
+            before,
+            after: {
+                name: updatedRabbit.name,
+                race: updatedRabbit.race,
+                sex: updatedRabbit.sex,
+                purpose: updatedRabbit.purpose,
+                weight: updatedRabbit.weight != null ? Number(updatedRabbit.weight) : null,
+                birthDate: updatedRabbit.birthDate,
+                imageUrl: updatedRabbit.imageUrl || null
+            }
+        });
 
         return updatedRabbit;
     }
@@ -256,7 +320,32 @@ class RabbitService {
             throw new AppError('No se puede eliminar un conejo asignado a una jaula. Debe desasignarse primero.', 400);
         }
 
+        const before = {
+            code: rabbit.code,
+            name: rabbit.name,
+            race: rabbit.race,
+            sex: rabbit.sex,
+            purpose: rabbit.purpose,
+            imageUrl: rabbit.imageUrl || null
+        };
+
         await rabbitRepository.delete(rabbit);
+
+        const rabbitLabel = rabbit.name ? `${rabbit.name} - ${rabbit.code}` : rabbit.code;
+        const isFemale = rabbit.sex === 'hembra';
+        const deletePrefix = isFemale ? 'Coneja' : 'Conejo';
+        const deleteArticle = isFemale ? 'a la coneja' : 'al conejo';
+
+        await recordWorkerChange({
+            galponId: rabbit.galponId,
+            profileId,
+            action: 'eliminar',
+            entity: 'rabbits',
+            entityId: rabbit.id,
+            itemName: `${deletePrefix} ${rabbitLabel}`,
+            summary: `Eliminó ${deleteArticle} ${rabbitLabel} del galpón`,
+            before
+        });
     }
 
     async getAvailableRaces() {

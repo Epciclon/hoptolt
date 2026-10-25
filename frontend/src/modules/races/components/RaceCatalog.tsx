@@ -10,6 +10,7 @@ import { Pencil, Trash2 } from 'lucide-react';
 import { RaceForm } from './RaceForm';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { useSupabase } from '../../../hooks/useSupabase';
+import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
 
 interface RaceCatalogProps {
   onSuccess?: () => void;
@@ -18,6 +19,10 @@ interface RaceCatalogProps {
 export function RaceCatalog({ onSuccess }: Readonly<RaceCatalogProps>) {
   const { races, pagination, loading, fetchRaces: loadRaces, deleteRace, setPage, setSearch, filters } = useRaces();
   const { showToast } = useToast();
+  const { can } = usePermissions();
+  const canUpdate = can('races', 'canUpdate');
+  const canDelete = can('races', 'canDelete');
+
   const [selectedRaceId, setSelectedRaceId] = useState<number | null>(null);
   const [toDelete, setToDelete] = useState<Race | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -66,7 +71,7 @@ export function RaceCatalog({ onSuccess }: Readonly<RaceCatalogProps>) {
         <p className="text-sm text-muted">No hay razas registradas.</p>
       )}
       {!loading && races.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {races.map((race) => {
             const isSelected = selectedRaceId === race.id;
             return (
@@ -79,34 +84,45 @@ export function RaceCatalog({ onSuccess }: Readonly<RaceCatalogProps>) {
                 isSelected={isSelected}
                 onClick={() => toggleRaceSelection(race.id)}
                 actions={
-                  <>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="text-main"
-                      icon={<Pencil size={14} />}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingRace(race);
-                        setShowEditModal(true);
-                      }}
-                    >
-                      Editar
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="danger"
-                      size="sm"
-                      icon={<Trash2 size={14} />}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setToDelete(race);
-                      }}
-                    >
-                      Eliminar
-                    </Button>
-                  </>
+                  (canUpdate || canDelete) ? (
+                    <>
+                      {canUpdate && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 text-main"
+                          icon={<Pencil size={14} />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingRace(race);
+                            setShowEditModal(true);
+                          }}
+                        >
+                          Editar
+                        </Button>
+                      )}
+                      {canDelete && (
+                        <Button
+                          type="button"
+                          variant="danger"
+                          size="sm"
+                          className="flex-1"
+                          icon={<Trash2 size={14} />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setToDelete(race);
+                          }}
+                        >
+                          Eliminar
+                        </Button>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-xs text-muted font-medium py-1 px-2 text-center w-full">
+                      Solo consulta
+                    </span>
+                  )
                 }
               />
             );

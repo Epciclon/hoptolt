@@ -14,6 +14,7 @@ import { WeaningWizard } from './WeaningWizard';
 import { ReproductionForm } from './ReproductionForm';
 import { formatDateString } from '@/shared/utils/dateUtils';
 import { matchesSmartSearch } from '@/shared/utils/rabbitUtils';
+import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
 
 interface GazaposViewProps {
   searchTerm: string;
@@ -24,6 +25,10 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
   const { reproductions, loading, cancelReproduction, finishLactation, registerBirth, fetchReproductions } = useReproduction({ status: 'lactancia', limit: 1000 });
   const onSuccess = fetchReproductions;
   const { showToast } = useToast();
+  const { can } = usePermissions();
+  const canCreate = can('reproduction', 'canCreate');
+  const canUpdate = can('reproduction', 'canUpdate');
+  const canDelete = can('reproduction', 'canDelete');
   const [page, setPage] = useState(1);
   const limit = 12;
 
@@ -299,7 +304,7 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
           No hay camadas en etapa de lactancia.
         </p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start">
           {paginatedGroups.map(group => (
             <CageGroupCard 
               key={group.cageNumber} 
@@ -359,7 +364,7 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
                   </div>
                 )}
                 <div className="space-y-2 mt-2 text-xs">
-                  {isExpanded && !hasKits ? (
+                  {isExpanded && !hasKits && canUpdate ? (
                     <button
                       type="button"
                       className="bg-theme-surface border border-default p-2 rounded flex justify-between items-center w-full text-left cursor-pointer hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:border-primary-200 dark:hover:border-primary-500/30 transition-colors group"
@@ -394,14 +399,14 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
                     className={cn(
                       'border p-2 rounded relative transition-colors text-left',
                       (() => {
-                        if (!isExpanded) return 'bg-card/60 border-default';
+                        if (!isExpanded || (!canCreate && !canUpdate)) return 'bg-card/60 border-default';
                         return hasKits
                           ? 'bg-card/60 border-default cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-900/20 group'
                           : 'bg-card/60 border-default cursor-pointer hover:bg-theme-surface group';
                       })()
                     )}
                     onClick={(e) => { 
-                      if (!isExpanded) return;
+                      if (!isExpanded || (!canCreate && !canUpdate)) return;
                       e.stopPropagation();
                       if (hasKits) {
                         setToRegisterMortality(reproduction);
@@ -411,14 +416,14 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
                       }
                     }}
                     title={(() => {
-                      if (!isExpanded) return '';
+                      if (!isExpanded || (!canCreate && !canUpdate)) return '';
                       return hasKits ? 'Clic para registrar una baja de gazapos' : 'Toca para registrar la cantidad de gazapos nacidos';
                     })()}
                   >
                     <p className="text-muted mb-1 flex justify-between items-center">
                       Gazapos Nacidos
-                      {(!hasKits && isExpanded) && <Pencil size={12} className="text-theme-faint group-hover:text-primary-500 transition-colors" />}
-                      {(hasKits && isExpanded) && <AlertTriangle size={12} className="text-theme-faint group-hover:text-emerald-500 transition-colors" />}
+                      {(!hasKits && isExpanded && (canCreate || canUpdate)) && <Pencil size={12} className="text-theme-faint group-hover:text-primary-500 transition-colors" />}
+                      {(hasKits && isExpanded && (canCreate || canUpdate)) && <AlertTriangle size={12} className="text-theme-faint group-hover:text-emerald-500 transition-colors" />}
                     </p>
                     <p className={`font-bold ${hasKits ? 'text-main' : 'text-theme-faint font-normal italic'}`}>
                       {hasKits ? reproduction.bornKits : 'Toca para registrar'}
@@ -440,23 +445,32 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
                   <div
                     className="mt-4 flex flex-col gap-2 animate-in fade-in slide-in-from-top-1 duration-150"
                   >
-                    <Button
-                      type="button"
-                      variant="primary"
-                      className="w-full justify-center gap-2"
-                      onClick={(e) => { e.stopPropagation(); setToFinish(reproduction); }}
-                    >
-                      Finalizar Ciclo
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="danger"
-                      className="w-full justify-center gap-2"
-                      onClick={(e) => { e.stopPropagation(); setToCancel(reproduction); }}
-                    >
-                      <Trash2 size={16} />
-                      Eliminar
-                    </Button>
+                    {(canCreate || canUpdate) && (
+                      <Button
+                        type="button"
+                        variant="primary"
+                        className="w-full justify-center gap-2"
+                        onClick={(e) => { e.stopPropagation(); setToFinish(reproduction); }}
+                      >
+                        Finalizar Ciclo
+                      </Button>
+                    )}
+                    {canDelete && (
+                      <Button
+                        type="button"
+                        variant="danger"
+                        className="w-full justify-center gap-2"
+                        onClick={(e) => { e.stopPropagation(); setToCancel(reproduction); }}
+                      >
+                        <Trash2 size={16} />
+                        Eliminar
+                      </Button>
+                    )}
+                    {!canCreate && !canUpdate && !canDelete && (
+                      <span className="text-xs text-muted font-medium py-1 px-2 text-center w-full">
+                        Solo consulta
+                      </span>
+                    )}
                   </div>
                 )}
               </RabbitSelectableCard>
@@ -659,11 +673,11 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
 
           <div className="flex flex-col gap-1.5">
             <label htmlFor="mortalityObsInput" className="text-sm font-medium text-main">
-              Observaciones (¿Qué pasó?) <span className="text-red-500">*</span>
+              Observaciones - ¿Qué pasó? <span className="text-red-500">*</span>
             </label>
             <textarea
               id="mortalityObsInput"
-              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-card text-main focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-strong bg-card text-main focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500"
               rows={3}
               value={mortalityObs}
               onChange={(e) => setMortalityObs(e.target.value)}

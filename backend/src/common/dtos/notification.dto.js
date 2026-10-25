@@ -5,7 +5,8 @@ const toNotificationDTO = (notification) => ({
     message: notification.message,
     data: notification.data,
     read: notification.read,
-    createdAt: notification.createdAt
+    createdAt: notification.createdAt,
+    updatedAt: notification.updatedAt
 });
 
 module.exports = { toNotificationDTO };

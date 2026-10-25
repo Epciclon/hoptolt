@@ -156,7 +156,7 @@ export function AssignRabbitForm({ onSuccess, onCancel }: Readonly<AssignRabbitF
           />
           <div className="border border-strong rounded-md overflow-y-auto bg-card shadow-inner max-h-80 mt-2">
             {filteredCages.length === 0 ? (
-              <p className="text-gray-500 text-sm p-4 text-center">No se encontraron jaulas con espacio disponible.</p>
+              <p className="text-muted text-sm p-4 text-center">No se encontraron jaulas con espacio disponible.</p>
             ) : (
               filteredCages.map(cage => {
                 const currentCapacity = cage.assignedCount || 0;
@@ -215,7 +215,7 @@ export function AssignRabbitForm({ onSuccess, onCancel }: Readonly<AssignRabbitF
               
               <div className="flex flex-col gap-3 overflow-y-auto pr-1" style={{ maxHeight: '60vh' }}>
                 {filteredRabbits.length === 0 ? (
-                  <p className="text-gray-500 text-sm col-span-full">No hay conejos disponibles que coincidan con la búsqueda.</p>
+                  <p className="text-muted text-sm col-span-full">No hay conejos disponibles que coincidan con la búsqueda.</p>
                 ) : (
                   filteredRabbits.map(rabbit => (
                     <div key={rabbit.id} className="w-full">

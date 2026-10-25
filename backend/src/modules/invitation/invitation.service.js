@@ -51,16 +51,17 @@ class InvitationService {
         // Si el perfil existe, crear notificación de invitación
         const galpon = await invitationRepository.getGalponWithOwner(galponId);
         const inviterProfile = await Profile.findByPk(requestingProfileId);
+        const inviterName = inviterProfile?.fullName?.trim() || inviterProfile?.username || 'el propietario';
 
         await notificationService.createNotification(invitedProfile.id, {
             type: 'invitation',
             title: 'Invitación a galpón',
-            message: `Has sido invitado por ${inviterProfile?.fullName || 'un usuario'} a unirte como trabajador al galpón "${galpon.name}".`,
+            message: `Has sido invitado por ${inviterName} a unirte como trabajador al galpón "${galpon.name}".`,
             data: {
                 invitationToken: invitation.token,
                 galponId: galpon.id,
                 galponName: galpon.name,
-                inviterName: inviterProfile?.fullName
+                inviterName
             }
         });
 
@@ -123,7 +124,7 @@ class InvitationService {
             // Obtener el perfil del trabajador para obtener su nombre de usuario
             const { Profile } = require('../../domain/models');
             const workerProfile = await Profile.findByPk(profileId);
-            const workerName = workerProfile ? workerProfile.username : profileEmail;
+            const workerName = workerProfile?.fullName?.trim() || workerProfile?.username || profileEmail;
 
             await notificationService.createNotification(galpon.profileId, {
                 type: 'info',
@@ -171,7 +172,7 @@ class InvitationService {
         if (isInvitedUser) {
             const galpon = await invitationRepository.getGalponWithOwner(invitation.galponId);
             if (galpon?.profileId) {
-                const workerName = requesterProfile.username || requesterProfile.email;
+                const workerName = requesterProfile?.fullName?.trim() || requesterProfile?.username || requesterProfile.email;
                 await notificationService.createNotification(galpon.profileId, {
                     type: 'info',
                     title: 'Invitación rechazada',

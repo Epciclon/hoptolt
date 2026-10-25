@@ -1,4 +1,4 @@
-﻿export type NotificationType = 'success' | 'error' | 'warning' | 'info' | 'invitation';
+export type NotificationType = 'success' | 'error' | 'warning' | 'info' | 'invitation';
 
 export interface Notification {
   id: number;
@@ -8,6 +8,7 @@ export interface Notification {
   data?: any;
   read: boolean;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface CreateNotificationDTO {

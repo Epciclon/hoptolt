@@ -14,7 +14,7 @@ const formatCageNumber = (num: any, type: any) => {
     if (!num) return 'N/A';
     if (!type) return String(num);
     const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
-    return `${num} (${capitalizedType})`;
+    return `${num} • ${capitalizedType}`;
 };
 
 const formatRabbitInfo = (code: any, name: any) => {
@@ -423,6 +423,15 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
             cageType: selectedCageTypes.length > 0 ? selectedCageTypes.join(',') : undefined,
             status: selectedStatuses.length > 0 ? selectedStatuses.join(',') : undefined
         });
+
+        const moduleConfig = REPORT_MODULES.find(m => m.id === selectedModule);
+        farmMemberService.logReportAudit(Number(galponId), {
+            moduleName: selectedModule,
+            moduleLabel: moduleConfig?.label || selectedModule,
+            startDate,
+            endDate,
+            format: 'vista previa'
+        });
     };
 
     // getDateFieldForModule moved to module level to reduce nesting depth
@@ -523,6 +532,14 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
 
             setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
 
+            farmMemberService.logReportAudit(Number(galponId), {
+                moduleName: selectedModule,
+                moduleLabel: moduleConfig?.label || selectedModule,
+                startDate: appliedStartDate,
+                endDate: appliedEndDate,
+                format: 'pdf'
+            });
+
             onToast('PDF descargado exitosamente', 'success');
         } catch (error) {
             console.error('Error downloading PDF:', error);
@@ -536,7 +553,7 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
         <Card className="min-h-[calc(100vh-7rem)] flex flex-col">
             <CardHeader title="Tus Estadísticas y Reportes" subtitle="Genera documentos y mira cómo va el rendimiento de tu granja" />
 
-            <div className="flex flex-col md:flex-row gap-6 p-6 pt-0 flex-1">
+            <div className="flex flex-col md:flex-row gap-4 sm:gap-6 p-2 sm:p-4 md:p-6 pt-0 flex-1">
                 {/* Panel de Filtros */}
                 {!isExpanded && (
                     <div className="w-full md:w-1/3 flex flex-col gap-4 border-r pr-0 md:pr-6 border-strong border-b md:border-b-0 pb-6 md:pb-0">
@@ -672,7 +689,7 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
                                         ...members
                                             .filter(m => !selectedProfileIds.includes(m.profile?.id || ''))
                                             .map(m => ({
-                                                label: `${m.profile?.fullName || m.profile?.username || 'Usuario'}${m.status === 'inactive' ? ' (Inactivo)' : ''}`,
+                                                label: `${m.profile?.fullName || m.profile?.username || 'Usuario'}${m.status === 'inactive' ? ' • Inactivo' : ''}`,
                                                 value: m.profile?.id || ''
                                             }))
                                     ]}
@@ -681,7 +698,7 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
                                     <div className="flex flex-wrap gap-2 mt-2">
                                         {selectedProfileIds.map(profileId => {
                                             const member = members.find(m => m.profile?.id === profileId);
-                                            const name = `${member?.profile?.fullName || member?.profile?.username || 'Usuario'}${member?.status === 'inactive' ? ' (Inactivo)' : ''}`;
+                                            const name = `${member?.profile?.fullName || member?.profile?.username || 'Usuario'}${member?.status === 'inactive' ? ' • Inactivo' : ''}`;
                                             return (
                                                 <button
                                                     key={profileId}
@@ -819,7 +836,7 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
                         </div>
                     ) : (
                         <div className="flex-1 flex flex-col items-center justify-center p-12 text-theme-faint bg-theme-surface rounded-xl border border-dashed border-strong">
-                            <Info className="w-12 h-12 mb-3 text-slate-300" />
+                            <Info className="w-12 h-12 mb-3 text-slate-300 dark:text-slate-600" />
                             <p className="text-center font-medium">No hay datos para mostrar</p>
                             <p className="text-sm text-center mt-1">Selecciona los filtros y genera una vista previa para visualizar los resultados antes de descargar.</p>
                         </div>

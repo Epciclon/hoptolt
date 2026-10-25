@@ -13,7 +13,10 @@ import { translateAuthError } from '@/modules/auth/utils/auth-errors';
 
 const schema = z
   .object({
-    password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres.'),
+    password: z
+      .string()
+      .min(6, 'La contraseña debe tener al menos 6 caracteres.')
+      .regex(/[!@#$%^&*(),.?":{}|<>_]/, 'Debe contener al menos un carácter especial como @#$%'),
     confirmPassword: z.string().min(6, 'La confirmación debe tener al menos 6 caracteres.'),
   })
   .refine(data => data.password === data.confirmPassword, {
@@ -224,10 +227,10 @@ export default function ResetPasswordPage() {
                 {...register('password')}
                 type={showPassword ? 'text' : 'password'}
                 id="password"
-                className={`w-full px-4 py-4 pr-12 border-2 rounded-xl outline-none transition-all ${
+                className={`w-full px-4 py-4 pr-12 border-2 rounded-xl outline-none transition-all bg-theme-surface dark:bg-slate-900 text-main dark:text-slate-100 ${
                   errors.password
                     ? 'border-red-500 bg-red-50 dark:bg-red-500/10'
-                    : 'border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
+                    : 'border-slate-300 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
                 }`}
                 placeholder="Mínimo 6 caracteres"
                 autoComplete="new-password"
@@ -265,10 +268,10 @@ export default function ResetPasswordPage() {
                 {...register('confirmPassword')}
                 type={showConfirmPassword ? 'text' : 'password'}
                 id="confirmPassword"
-                className={`w-full px-4 py-4 pr-12 border-2 rounded-xl outline-none transition-all ${
+                className={`w-full px-4 py-4 pr-12 border-2 rounded-xl outline-none transition-all bg-theme-surface dark:bg-slate-900 text-main dark:text-slate-100 ${
                   errors.confirmPassword
                     ? 'border-red-500 bg-red-50 dark:bg-red-500/10'
-                    : 'border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
+                    : 'border-slate-300 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
                 }`}
                 placeholder="Repite la contraseña"
                 autoComplete="new-password"

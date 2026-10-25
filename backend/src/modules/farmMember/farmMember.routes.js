@@ -22,6 +22,12 @@ router.get('/farm-members/:id', farmMemberController.getWorkerById);
 // Editar trabajador (permisos y jaulas)
 router.put('/farm-members/:id', farmMemberController.updateWorker);
 
+// Registro de control de cambios del galpón (solo propietario)
+router.get('/galpones/:galponId/audit-logs', farmMemberController.getAuditLogsByGalpon);
+
+// Registro de auditoría al consultar/generar reporte (trabajadores)
+router.post('/galpones/:galponId/reports/audit', farmMemberController.logReportAudit);
+
 // Desvincular trabajador del galpón
 router.delete('/farm-members/:id', farmMemberController.removeWorker);
 

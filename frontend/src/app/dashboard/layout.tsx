@@ -10,6 +10,7 @@ import { createClient } from '@/utils/supabase/client';
 
 
 import { PermissionGuard } from '@/shared/guards/PermissionGuard';
+import { IncidentFloatingWidget } from '@/modules/incident/components/IncidentFloatingWidget';
 
 export default function DashboardLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const { user, loading } = useAuthContext();
@@ -86,35 +87,39 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
 
   useEffect(() => {
     if (mounted) {
-      const isMobile = window.innerWidth < 1024;
+      const isMobile = window.innerWidth < 1280;
       setSidebarCollapsed(isMobile);
     }
   }, [mounted]);
 
   const toggleSidebar = () => {
-    setSidebarCollapsed(prev => {
-      const next = !prev;
-      localStorage.setItem('sidebarCollapsed', String(next));
-      
-      // If we are opening the sidebar on mobile, close notifications
-      if (!next && window.innerWidth < 1024) {
-        window.dispatchEvent(new CustomEvent('close-notifications'));
-      }
-      
-      return next;
-    });
+    const next = !sidebarCollapsed;
+    setSidebarCollapsed(next);
+    localStorage.setItem('sidebarCollapsed', String(next));
+    
+    // If we are opening the sidebar on mobile or tablet, close notifications
+    if (!next && window.innerWidth < 1280) {
+      window.dispatchEvent(new CustomEvent('close-notifications'));
+    }
   };
 
   useEffect(() => {
     const handleCloseSidebar = () => {
-      if (window.innerWidth < 1024) {
-        setSidebarCollapsed(true);
-        localStorage.setItem('sidebarCollapsed', 'true');
+      if (window.innerWidth < 1280) {
+        setTimeout(() => {
+          setSidebarCollapsed(true);
+          localStorage.setItem('sidebarCollapsed', 'true');
+        }, 0);
       }
     };
+    const handleToggleEvent = () => toggleSidebar();
     window.addEventListener('close-sidebar', handleCloseSidebar);
-    return () => window.removeEventListener('close-sidebar', handleCloseSidebar);
-  }, []);
+    window.addEventListener('toggle-sidebar', handleToggleEvent);
+    return () => {
+      window.removeEventListener('close-sidebar', handleCloseSidebar);
+      window.removeEventListener('toggle-sidebar', handleToggleEvent);
+    };
+  }, [sidebarCollapsed]);
 
   if (loading || !mounted) {
     return (
@@ -129,39 +134,43 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
   }
 
   return (
-    <div className="flex min-h-screen bg-page relative overflow-x-hidden">
+    <div className="flex min-h-screen bg-page relative overflow-x-clip">
         <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
         
-        {/* Floating trigger tab visible on both mobile and PC when sidebar is closed */}
+        {/* Floating trigger tab visible only on desktop when sidebar is closed */}
         {sidebarCollapsed && (
           <button type="button"
             onClick={toggleSidebar}
-            className="fixed left-0 top-24 z-50 bg-sidebar hover:bg-slate-800 text-white rounded-r-full pl-3 pr-4 py-3 shadow-lg border border-l-0 border-white/10 transition-all duration-300 flex items-center justify-center group"
+            className="hidden xl:flex fixed left-0 top-24 z-50 bg-sidebar hover:bg-slate-800 text-white rounded-r-full pl-3 pr-4 py-3 shadow-lg border border-l-0 border-white/10 transition-all duration-300 items-center justify-center group"
             title="Mostrar menú"
           >
             <List size={20} className="text-primary-400 group-hover:text-white transition-colors" />
           </button>
         )}
 
-        {/* Overlay / Backdrop on mobile when sidebar is open */}
+        {/* Overlay / Backdrop on mobile and tablets when sidebar is open */}
         {!sidebarCollapsed && (
           <button 
             type="button"
             onClick={toggleSidebar} 
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleSidebar(); }}
             aria-label="Cerrar menú lateral"
-            className="fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity duration-300 w-full h-full border-none cursor-pointer outline-none"
+            className="fixed inset-0 bg-black/50 z-40 xl:hidden transition-opacity duration-300 w-full h-full border-none cursor-pointer outline-none"
           />
         )}
         
-        <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ml-0 ${sidebarCollapsed ? 'lg:ml-0' : 'lg:ml-60'}`}>
+        <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ml-0 ${sidebarCollapsed ? 'xl:ml-0' : 'xl:ml-60'}`}>
           <Header />
-          <main className="flex-1 p-4 md:p-6 max-w-full min-w-0 overflow-x-hidden">
+          <main className="flex-1 p-2.5 sm:p-4 md:p-6 max-w-full min-w-0 overflow-x-hidden">
             <PermissionGuard>
               {children}
             </PermissionGuard>
           </main>
         </div>
+
+        {/* Global floating incident report widget */}
+        <IncidentFloatingWidget />
       </div>
   );
 }
+

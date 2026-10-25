@@ -11,7 +11,8 @@ class VaccinationRepository {
             where: whereClause,
             include: buildRabbitProfileIncludes(rabbitWhere, cageWhere),
             order: [['vaccinationDate', 'DESC']],
-            ...options
+            ...options,
+            subQuery: false
         });
     }
 

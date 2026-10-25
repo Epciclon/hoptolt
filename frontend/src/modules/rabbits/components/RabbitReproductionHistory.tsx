@@ -46,7 +46,7 @@ export function RabbitReproductionHistory({ rabbitId }: RabbitReproductionHistor
   if (reproductions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-muted bg-theme-surface rounded-lg border border-default border-dashed">
-        <Heart className="w-12 h-12 text-slate-300 mb-3" />
+        <Heart className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-3" />
         <h3 className="text-lg font-medium text-main">Sin historial reproductivo</h3>
         <p className="text-sm mt-1 max-w-sm text-center">Esta coneja aún no ha sido registrada en ningún proceso de reproducción.</p>
       </div>

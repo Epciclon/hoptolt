@@ -10,6 +10,7 @@ import { Pagination } from '@/shared/ui/Pagination';
 import { Heart, Clock, Trash2 } from 'lucide-react';
 import { MatingModal } from './MatingModal';
 import { matchesSmartSearch } from '@/shared/utils/rabbitUtils';
+import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
 
 const getRemainingTime = (createdAt?: string) => {
   if (!createdAt) return null;
@@ -33,6 +34,10 @@ interface MontasViewProps {
 
 export function MontasView({ searchTerm, onSearchChange }: Readonly<MontasViewProps>) {
   const { showToast } = useToast();
+  const { can } = usePermissions();
+  const canCreate = can('reproduction', 'canCreate');
+  const canUpdate = can('reproduction', 'canUpdate');
+  const canDelete = can('reproduction', 'canDelete');
 
   const { data: allMales = [], isLoading: loadingMales } = useQuery({
     queryKey: ['availableMalesForMating'],
@@ -145,7 +150,7 @@ export function MontasView({ searchTerm, onSearchChange }: Readonly<MontasViewPr
     );
   } else {
     content = (
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start">
         {paginatedGroups.map(group => (
           <CageGroupCard 
             key={group.cageNumber} 
@@ -222,41 +227,57 @@ export function MontasView({ searchTerm, onSearchChange }: Readonly<MontasViewPr
             {expandedMaleId === macho.id && (
               <div className="mt-2 animate-in fade-in slide-in-from-top-1 duration-150">
                 {macho.isOccupied ? (
-                  <div className="mt-4 flex flex-col gap-2">
+                  (canCreate || canUpdate || canDelete) ? (
+                    <div className="mt-4 flex flex-col gap-2">
+                      {(canCreate || canUpdate) && (
+                        <Button 
+                          variant="primary" 
+                          className="w-full"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFinishingReproduction(macho.activeMonta!);
+                          }}
+                        >
+                          Finalizar Monta
+                        </Button>
+                      )}
+                      {canDelete && (
+                        <Button 
+                          variant="danger" 
+                          className="w-full justify-center gap-2"
+                          icon={<Trash2 size={16} />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCancelingReproduction(macho.activeMonta!);
+                          }}
+                        >
+                          Eliminar
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center w-full py-2 text-xs text-muted font-medium">
+                      Solo consulta
+                    </div>
+                  )
+                ) : (
+                  canCreate ? (
                     <Button 
                       variant="primary" 
                       className="w-full"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setFinishingReproduction(macho.activeMonta!);
+                        setSelectedMale(macho);
+                        setShowMatingModal(true);
                       }}
                     >
-                      Finalizar Monta
+                      Elegir Pareja
                     </Button>
-                    <Button 
-                      variant="danger" 
-                      className="w-full justify-center gap-2"
-                      icon={<Trash2 size={16} />}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCancelingReproduction(macho.activeMonta!);
-                      }}
-                    >
-                      Eliminar
-                    </Button>
-                  </div>
-                ) : (
-                  <Button 
-                    variant="primary" 
-                    className="w-full"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedMale(macho);
-                      setShowMatingModal(true);
-                    }}
-                  >
-                    Elegir Pareja
-                  </Button>
+                  ) : (
+                    <div className="text-center w-full py-2 text-xs text-muted font-medium">
+                      Solo consulta
+                    </div>
+                  )
                 )}
               </div>
             )}
@@ -286,7 +307,7 @@ export function MontasView({ searchTerm, onSearchChange }: Readonly<MontasViewPr
             placeholder: 'Todos los estados',
             options: [
               { label: 'Disponibles', value: 'disponible' },
-              { label: 'En Monta (Ocupados)', value: 'en_monta' }
+              { label: 'En Monta - Ocupados', value: 'en_monta' }
             ],
             value: statusFilter,
             onChange: setStatusFilter

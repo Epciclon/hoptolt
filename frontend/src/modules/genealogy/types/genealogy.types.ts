@@ -1,4 +1,4 @@
-﻿export interface Genealogy {
+export interface Genealogy {
   id?: number;
   rabbitId: number;
   fatherId?: number | null;
@@ -7,6 +7,7 @@
   createdAt?: string;
   updatedAt?: string;
   consanguinityWarning?: string;
+  requiresConfirmation?: boolean;
   rabbit?: {
     id: number;
     code: string;
@@ -52,9 +53,11 @@ export interface RegisterGenealogyDto {
   rabbitId: number;
   fatherId?: number;
   motherId?: number;
+  confirmConsanguinity?: boolean;
 }
 
 export interface UpdateGenealogyDto {
   fatherId?: number | null;
   motherId?: number | null;
+  confirmConsanguinity?: boolean;
 }

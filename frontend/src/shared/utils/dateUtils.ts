@@ -27,3 +27,37 @@ export const formatDateString = (dateString: string | null | undefined) => {
   }
   return dateString;
 };
+
+export const formatFriendlyDate = (dateInput: string | Date | null | undefined): string => {
+  if (!dateInput) return '';
+  const date = new Date(dateInput);
+  if (Number.isNaN(date.getTime())) return '';
+
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+
+  if (minutes < 1) return 'Hace un momento';
+  if (minutes < 60) return `Hace ${minutes} min`;
+  if (hours < 24) return `Hace ${hours} h`;
+  if (days < 7) return `Hace ${days} d`;
+  return date.toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' });
+};
+
+export const formatTime = formatFriendlyDate;
+
+export const isIncidentFromToday = (dateInput: string | Date | null | undefined): boolean => {
+  if (!dateInput) return false;
+  const date = new Date(dateInput);
+  if (Number.isNaN(date.getTime())) return false;
+
+  const now = new Date();
+  return (
+    date.getDate() === now.getDate() &&
+    date.getMonth() === now.getMonth() &&
+    date.getFullYear() === now.getFullYear()
+  );
+};
+

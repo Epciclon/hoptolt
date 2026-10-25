@@ -1,22 +1,33 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@/shared/ui';
 import { Pagination } from '@/shared/ui/Pagination';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useInvitation } from '@/modules/invitation/hooks/useInvitation';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { Bell, CheckCheck, Clock, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Notification } from '@/modules/notification/types/notification.types';
+import type { Notification } from '@/modules/notification/types/notification.types';
 import { useNotifications } from '@/modules/notification/hooks/useNotification';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 import { routeNotification } from '@/shared/utils/notificationRouting';
+import { formatTime } from '@/shared/utils/dateUtils';
 
 export default function NotificationsPage() {
-  const [filter, setFilter] = useState<string>('all');
+  const searchParams = useSearchParams();
+  const initialFilter = searchParams.get('filter') || 'all';
+  const [filter, setFilter] = useState<string>(initialFilter);
   const [page, setPage] = useState(1);
   const limit = 12;
+
+  useEffect(() => {
+    const qFilter = searchParams.get('filter');
+    if (qFilter && qFilter !== filter) {
+      setFilter(qFilter);
+      setPage(1);
+    }
+  }, [searchParams]);
 
   const { notifications, pagination, loading, markAsRead, markAllAsRead, deleteNotification } = useNotifications({
     page,
@@ -37,7 +48,7 @@ export default function NotificationsPage() {
   const handleMarkAllRead = async () => {
     try {
       await markAllAsRead();
-      showToast('Notificaciones marcadas como leídas', 'success');
+      showToast('Avisos marcados como leídos', 'success');
     } catch (error) {
       console.error(error);
       showToast('Error al marcar notificaciones', 'error');
@@ -95,11 +106,12 @@ export default function NotificationsPage() {
   const handleNotificationClick = async (notification: Notification) => {
     // Las advertencias del sistema (limpieza, parto, destete, alimentación) NO se deben marcar como leídas
     // solo por hacer clic o navegar, ya que el usuario aún no ha realizado la acción en el módulo.
-    const isActionableWarning = notification.type === 'warning' ||
+    const isActionableWarning = !notification.data?.isContract && (
       notification.data?.type === 'feeding_reminder' ||
       notification.data?.type === 'cleaning_warning' ||
       notification.data?.type === 'birth_warning' ||
-      notification.data?.type === 'weaning_alert';
+      notification.data?.type === 'weaning_alert'
+    );
 
     if (!notification.read && !isActionableWarning) {
       try {
@@ -129,10 +141,7 @@ export default function NotificationsPage() {
     }
   };
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString();
-  };
+
 
   const totalPages = pagination?.totalPages || 1;
 
@@ -145,10 +154,12 @@ export default function NotificationsPage() {
             <p className="text-muted mt-1">Revisa los últimos avisos, recordatorios y actividades de tu granja</p>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={handleMarkAllRead} className="flex items-center gap-2">
-              <CheckCheck size={18} />
-              Marcar todas como leídas
-            </Button>
+            {filter !== 'alerts' && (
+              <Button variant="outline" onClick={handleMarkAllRead} className="flex items-center gap-2">
+                <CheckCheck size={18} />
+                Marcar todas como leídas
+              </Button>
+            )}
           </div>
         </div>
 
@@ -156,58 +167,37 @@ export default function NotificationsPage() {
           <Button 
             variant={filter === 'all' ? 'primary' : 'outline'} 
             onClick={() => handleFilterChange('all')}
-            className="rounded-full px-6"
+            className="rounded-full px-5 text-xs sm:text-sm shrink-0"
           >
             Todas
           </Button>
           <Button 
             variant={filter === 'unread' ? 'primary' : 'outline'} 
             onClick={() => handleFilterChange('unread')}
-            className="rounded-full px-6"
+            className="rounded-full px-5 text-xs sm:text-sm shrink-0"
           >
             No leídas
           </Button>
           <Button 
-            variant={filter === 'feeding' ? 'primary' : 'outline'} 
-            onClick={() => handleFilterChange('feeding')}
-            className="rounded-full px-6"
+            variant={filter === 'read' ? 'primary' : 'outline'} 
+            onClick={() => handleFilterChange('read')}
+            className="rounded-full px-5 text-xs sm:text-sm shrink-0"
           >
-            Alimentación
+            Leídas
           </Button>
           <Button 
-            variant={filter === 'growth' ? 'primary' : 'outline'} 
-            onClick={() => handleFilterChange('growth')}
-            className="rounded-full px-6"
+            variant={filter === 'alerts' ? 'primary' : 'outline'} 
+            onClick={() => handleFilterChange('alerts')}
+            className="rounded-full px-5 text-xs sm:text-sm shrink-0"
           >
-            Crecimiento y Edad
+            Alertas
           </Button>
           <Button 
-            variant={filter === 'cleaning' ? 'primary' : 'outline'} 
-            onClick={() => handleFilterChange('cleaning')}
-            className="rounded-full px-6"
+            variant={filter === 'notices' ? 'primary' : 'outline'} 
+            onClick={() => handleFilterChange('notices')}
+            className="rounded-full px-5 text-xs sm:text-sm shrink-0"
           >
-            Limpieza
-          </Button>
-          <Button 
-            variant={filter === 'reproduction' ? 'primary' : 'outline'} 
-            onClick={() => handleFilterChange('reproduction')}
-            className="rounded-full px-6"
-          >
-            Reproducción
-          </Button>
-          <Button 
-            variant={filter === 'activity' ? 'primary' : 'outline'} 
-            onClick={() => handleFilterChange('activity')}
-            className="rounded-full px-6"
-          >
-            Actividad
-          </Button>
-          <Button 
-            variant={filter === 'invitation' ? 'primary' : 'outline'} 
-            onClick={() => handleFilterChange('invitation')}
-            className="rounded-full px-6"
-          >
-            Invitaciones
+            Avisos y Actividad
           </Button>
         </div>
 
@@ -225,7 +215,7 @@ export default function NotificationsPage() {
             if (notifications.length === 0) {
               return (
                 <div className="p-16 text-center text-muted">
-                  <Bell className="w-16 h-16 mx-auto mb-4 text-slate-300" />
+                  <Bell className="w-16 h-16 mx-auto mb-4 text-slate-300 dark:text-slate-600" />
                   <h3 className="text-lg font-medium text-main">No hay notificaciones</h3>
                   <p className="mt-1">No tienes alertas pendientes en esta categoría.</p>
                 </div>
@@ -274,8 +264,8 @@ export default function NotificationsPage() {
                           </p>
                         </div>
                         <div className="text-sm text-theme-faint flex flex-col items-end gap-2 shrink-0">
-                          <span>{formatTime(notification.createdAt)}</span>
-                          {!(notification.type === 'warning' || notification.type === 'invitation') && (
+                          <span>{formatTime(notification.updatedAt || notification.createdAt)}</span>
+                          {!(notification.type === 'warning' || notification.type === 'invitation' || notification.data?.isContract) && (
                             <button 
                               type="button"
                               onClick={(e) => {
@@ -296,7 +286,7 @@ export default function NotificationsPage() {
                           <div className="flex gap-6">
                             {notification.data.updatesCount > 0 && (
                               <div className="w-full">
-                                <p className="text-sm font-semibold text-main mb-2">Conejos Actualizados ({notification.data.updatesCount})</p>
+                                <p className="text-sm font-semibold text-main mb-2">Conejos actualizados • {notification.data.updatesCount}</p>
                                 <ul className="text-xs text-muted list-disc list-inside space-y-1">
                                   {notification.data.details?.map((detail: string, i: number) => (
                                     <li key={`${detail}-${i}`}>{detail}</li>
@@ -335,57 +325,66 @@ export default function NotificationsPage() {
                         </div>
                       )}
 
-                      {notification.data?.type === 'feeding_reminder' && (
-                        <div className="mt-4 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                          <p className="text-sm text-amber-800 dark:text-amber-300 font-medium">
-                            Tienes jaulas con conejos pendientes de alimentar en este turno.
+                      {notification.data?.type === 'cleaning_warning' && notification.data.pendingCages && notification.data.pendingCages.length > 0 && (
+                        <div className="mt-4 p-4 rounded-lg bg-theme-surface border border-default">
+                          <p className="text-sm font-semibold text-main mb-2.5">
+                            Jaulas con falta de limpieza • {notification.data.pendingCages.length}
                           </p>
-                          <Button
-                            size="sm"
-                            variant="primary"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleNotificationClick(notification);
-                            }}
-                            className="self-start sm:self-auto"
-                          >
-                            Ir a Alimentar
-                          </Button>
+                          <ul className="text-sm text-main max-h-48 overflow-y-auto bg-card border border-default rounded-md p-2 divide-y divide-default">
+                            {notification.data.pendingCages.map((cage: any) => (
+                              <li key={cage.cageId || cage.cageNumber} className="flex items-center justify-between py-1.5 px-2">
+                                <span className="font-medium text-main">Jaula {cage.cageNumber}</span>
+                                <span className="text-xs font-medium text-main bg-theme-surface px-2.5 py-1 rounded-md border border-default">
+                                  {cage.daysWithoutCleaning} {cage.daysWithoutCleaning === 1 ? 'día' : 'días'} sin limpieza
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
                       )}
 
-                      {notification.data?.type === 'cleaning_warning' && (
+                      {notification.data?.type === 'worker_action' && notification.data?.workersList && notification.data.workersList.length > 1 && (
                         <div className="mt-4 p-4 rounded-lg bg-theme-surface border border-default">
-                          <div className="flex flex-col gap-3">
-                            <div className="flex items-center justify-between">
-                              <p className="text-sm font-semibold text-main">
-                                Jaulas con falta de limpieza ({notification.data.pendingCages?.length || notification.data.cagesCount || 0})
-                              </p>
-                              <Button
-                                size="sm"
-                                variant="primary"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleNotificationClick(notification);
-                                }}
-                              >
-                                Ir a Limpieza
-                              </Button>
-                            </div>
+                          <p className="text-sm font-semibold text-main mb-2.5">
+                            Detalle por trabajador • {(() => {
+                              const total = notification.data.totalCount || notification.data.totalItems || 0;
+                              const unit = notification.data.unitName || notification.data.unit || 'registro';
+                              const unitLabel = total === 1 ? unit : (unit === 'jaula' ? 'jaulas' : (unit === 'conejo' ? 'conejos' : `${unit}s`));
+                              return `${total} ${unitLabel} en total:`;
+                            })()}
+                          </p>
+                          <ul className="text-sm text-main max-h-48 overflow-y-auto bg-card border border-default rounded-md p-2 divide-y divide-default">
+                            {notification.data.workersList.map((worker: any) => {
+                              const unit = notification.data.unitName || notification.data.unit || 'registro';
+                              const workerUnit = worker.count === 1 ? unit : (unit === 'jaula' ? 'jaulas' : (unit === 'conejo' ? 'conejos' : `${unit}s`));
+                              return (
+                                <li key={worker.name} className="flex items-center justify-between py-1.5 px-2">
+                                  <span className="font-medium text-main">{worker.name}</span>
+                                  <span className="text-xs font-medium text-main bg-theme-surface px-2.5 py-1 rounded-md border border-default">
+                                    {worker.count} {workerUnit}
+                                  </span>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </div>
+                      )}
 
-                            {notification.data.pendingCages && notification.data.pendingCages.length > 0 && (
-                              <ul className="text-sm text-main max-h-48 overflow-y-auto bg-card border border-default rounded-md p-2 divide-y divide-default">
-                                {notification.data.pendingCages.map((cage: any) => (
-                                  <li key={cage.cageId || cage.cageNumber} className="flex items-center justify-between py-1.5 px-2">
-                                    <span className="font-medium text-main">Jaula {cage.cageNumber}</span>
-                                    <span className="text-amber-600 dark:text-amber-400 font-medium text-xs">
-                                      {cage.daysWithoutCleaning} {cage.daysWithoutCleaning === 1 ? 'día' : 'días'} sin limpieza
-                                    </span>
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
+                      {notification.data?.type === 'worker_sensitive_action' && notification.data?.modulesBreakdown && notification.data.modulesBreakdown.length > 0 && (
+                        <div className="mt-4 p-4 rounded-lg bg-theme-surface border border-default">
+                          <p className="text-sm font-semibold text-main mb-2.5">
+                            Detalle por módulo sensible • {notification.data.changeCount || 0} {notification.data.changeCount === 1 ? 'cambio' : 'cambios'} en total:
+                          </p>
+                          <ul className="text-sm text-main max-h-48 overflow-y-auto bg-card border border-default rounded-md p-2 divide-y divide-default">
+                            {notification.data.modulesBreakdown.map((m: any) => (
+                              <li key={m.module} className="flex items-center justify-between py-1.5 px-2">
+                                <span className="font-medium text-main">{m.label}</span>
+                                <span className="text-xs font-medium text-main bg-theme-surface px-2.5 py-1 rounded-md border border-default">
+                                  {m.count} {m.count === 1 ? 'cambio' : 'cambios'}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
                       )}
                     </div>

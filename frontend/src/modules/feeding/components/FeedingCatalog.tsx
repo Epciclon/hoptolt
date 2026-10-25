@@ -9,6 +9,7 @@ import { useAuth } from '@/modules/auth/hooks/useAuth';
 import { useToast } from '@/shared/contexts/ToastContext';
 
 import { FilterBar } from '@/shared/ui/FilterBar';
+import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
 
 interface FeedingCatalogProps {
   onSuccess?: () => void;
@@ -39,6 +40,8 @@ const getEcuadorDateString = (date: Date) => {
 export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
   const { assignedRabbits, foodTypes, loading, createFeeding, feedings } = useFeeding();
   const { user } = useAuth();
+  const { can } = usePermissions();
+  const canCreate = can('feeding', 'canCreate');
   const [searchTerm, setSearchTerm] = useState('');
 
   const {
@@ -331,7 +334,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
         )}
       </div>
 
-      <div className="bg-card border border-strong rounded-lg p-4 shadow-sm flex flex-col gap-4 relative z-20">
+      <div className="bg-card border border-strong rounded-lg p-4 shadow-sm flex flex-col gap-4 relative z-10">
         <div className="flex items-center justify-between border-b border-default pb-3">
           <span className="text-sm font-medium text-main">Turno Actual:</span>
           <span className={`px-3 py-1 rounded-full text-xs font-bold ${currentEcuadorShift === 'mañana' ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-400' : 'bg-orange-100 dark:bg-orange-500/10 text-orange-800 dark:text-orange-400'}`}>
@@ -340,7 +343,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
         </div>
 
 
-        <div className="w-full relative z-30" ref={foodDropdownRef}>
+        <div className="w-full relative z-10" ref={foodDropdownRef}>
           <span className="block text-sm font-medium text-main mb-2">Tipos de Alimento</span>
           <Input
             placeholder="Busca y selecciona tipos de alimento"
@@ -352,7 +355,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
             onFocus={() => setShowFoodDropdown(true)}
           />
           {showFoodDropdown && (
-            <div className="absolute z-50 w-full border border-default dark:border-slate-700 rounded-lg max-h-48 overflow-y-auto bg-card dark:bg-slate-900 mt-1.5 shadow-2xl">
+            <div className="absolute z-20 w-full border border-default dark:border-slate-700 rounded-lg max-h-48 overflow-y-auto bg-card dark:bg-slate-900 mt-1.5 shadow-2xl">
               {filteredFoodTypes.length === 0 ? (
                 <p className="text-muted text-sm p-3">No hay tipos de alimento disponibles</p>
               ) : (
@@ -458,14 +461,22 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
         </>
       )}
 
-      <SelectionActionBar
-        count={selectedCageNumbers.length}
-        itemName="jaula"
-        buttonText="Registrar Alimentación"
-        onRegister={handleRegister}
-        isSubmitting={isSubmitting}
-        isDisabled={selectedFoodTypes.length === 0}
-      />
+      {canCreate ? (
+        <SelectionActionBar
+          count={selectedCageNumbers.length}
+          itemName="jaula"
+          buttonText="Registrar Alimentación"
+          onRegister={handleRegister}
+          isSubmitting={isSubmitting}
+          isDisabled={selectedFoodTypes.length === 0}
+        />
+      ) : (
+        selectedCageNumbers.length > 0 && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-theme-surface border border-strong shadow-lg rounded-xl px-4 py-2 text-xs text-muted font-medium">
+            Solo consulta
+          </div>
+        )
+      )}
 
       <Dialog
         open={showJustificationModal}
@@ -474,7 +485,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
         description=""
         size="sm"
       >
-        <div className="p-3 bg-slate-50 border border-slate-200 dark:bg-slate-800/50 dark:border-slate-700 rounded-md mb-3 mt-1">
+        <div className="p-3 bg-theme-surface border border-default rounded-md mb-3 mt-1">
           <h4 className="text-sm font-semibold text-main mb-1">⚠️ Política de Alimentación</h4>
           <p className="text-sm text-muted">
             El sistema permite un registro de alimentación sin justificación por turno en cada jaula. Al registrar un alimento adicional en el turno de la <strong>{currentEcuadorShift}</strong>, se requiere ingresar una justificación.
@@ -483,12 +494,12 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
         
         <div className="mb-3">
           <p className="text-sm font-medium text-main mb-1.5">Jaulas con observaciones en este turno:</p>
-          <ul className="text-sm text-main max-h-36 overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md p-2 divide-y divide-slate-100 dark:divide-slate-800">
+          <ul className="text-sm text-main max-h-36 overflow-y-auto bg-card border border-default rounded-md p-2 divide-y divide-default">
             {cagesWithIssue.map(cage => (
               <li key={cage.cageNumber} className="flex items-center justify-between py-1 px-1">
                 <span className="font-medium">Jaula {cage.cageNumber}</span>
                 <span className="text-red-500 dark:text-red-400 font-medium text-xs">
-                  ({cage.feedingsToday} {cage.feedingsToday === 1 ? 'registro' : 'registros'})
+                  {cage.feedingsToday} {cage.feedingsToday === 1 ? 'registro' : 'registros'}
                 </span>
               </li>
             ))}
@@ -502,7 +513,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
             value={justification}
             onChange={(e) => setJustification(e.target.value)}
             placeholder="Describe el motivo de la alimentación adicional..."
-            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-main rounded-md p-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+            className="w-full bg-theme-surface dark:bg-slate-900 border border-default text-main rounded-md p-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
             rows={3}
           />
         </div>

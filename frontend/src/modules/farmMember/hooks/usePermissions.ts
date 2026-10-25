@@ -15,7 +15,8 @@ const canonicalGroups: string[][] = [
   ['genealogy', 'arbolgenealogico', 'árbol genealógico', 'genealogia', 'genealogía'],
   ['assignments', 'asignarjaula', 'asignaciones', 'asignar jaula', 'asignacion', 'asignación', 'asignar'],
   ['reproduction', 'reproduccionyparto', 'reproducción y parto', 'reproduccion', 'reproducción'],
-  ['farmmembers', 'gestionartrabajadores', 'usuarios', 'equipo de trabajo', 'farm_members']
+  ['farmmembers', 'gestionartrabajadores', 'usuarios', 'equipo de trabajo', 'farm_members'],
+  ['reports', 'reportes']
 ];
 
 const moduleAliases: Record<string, string[]> = {};
@@ -46,7 +47,16 @@ export function usePermissions() {
     return permissions.some(p => targetAliases.includes(p));
   }, [role, permissions]);
 
-  return { permissions, role, loading, hasPermission };
+  // Función para verificar una acción específica (canRead, canCreate, canUpdate, canDelete)
+  const can = useCallback((moduleName: string, action: 'canRead' | 'canCreate' | 'canUpdate' | 'canDelete'): boolean => {
+    if (role === 'owner') return true;
+    const lower = moduleName.toLowerCase();
+    const targetAliases = moduleAliases[lower] || [lower];
+    const perm = user?.permissions?.find(p => targetAliases.includes(p.moduleName.toLowerCase()));
+    return Boolean(perm?.[action]);
+  }, [role, user]);
+
+  return { permissions, role, loading, hasPermission, can };
 }
 
 

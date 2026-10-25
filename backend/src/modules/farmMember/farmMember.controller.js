@@ -43,3 +43,25 @@ exports.removeWorker = catchAsync(async (req, res) => {
     await farmMemberService.removeWorker(Number(req.params.id), req.user.id);
     res.status(200).json({ success: true, message: 'Trabajador desvinculado del galpón exitosamente.' });
 });
+
+exports.getAuditLogsByGalpon = catchAsync(async (req, res) => {
+    const { profileId, entity, action, startDate, endDate, isSystem, source, page, limit } = req.query;
+    const result = await farmMemberService.getAuditLogsByGalpon(
+        Number(req.params.galponId),
+        req.user.id,
+        { profileId, entity, action, startDate, endDate, isSystem, source },
+        page,
+        limit
+    );
+    res.status(200).json({ success: true, ...result });
+});
+
+exports.logReportAudit = catchAsync(async (req, res) => {
+    const { moduleName, moduleLabel, startDate, endDate, format } = req.body;
+    await farmMemberService.logReportAudit(
+        Number(req.params.galponId),
+        req.user.id,
+        { moduleName, moduleLabel, startDate, endDate, format }
+    );
+    res.status(200).json({ success: true, message: 'Auditoría de reporte registrada exitosamente.' });
+});

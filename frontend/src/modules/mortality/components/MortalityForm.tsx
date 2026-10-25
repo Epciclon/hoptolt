@@ -226,11 +226,11 @@ export function MortalityForm({ selectedRabbits, onSuccess, onCancel }: Readonly
       {/* Observaciones obligatorias */}
       <div className="flex flex-col gap-1.5">
         <label htmlFor="observationsInput" className="text-sm font-medium text-main">
-          Observaciones (¿Qué pasó?) <span className="text-red-500">*</span>
+          Observaciones - ¿Qué pasó? <span className="text-red-500">*</span>
         </label>
         <textarea
           id="observationsInput"
-          className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-card text-main focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500"
+          className="w-full px-3 py-2 text-sm rounded-lg border border-strong bg-card text-main focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500"
           rows={3}
           value={observations}
           onChange={(e) => setObservations(e.target.value)}

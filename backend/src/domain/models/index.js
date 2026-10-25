@@ -19,6 +19,7 @@ const WorkerCage         = require('./workerCage.model');
 const Invitation         = require('./invitation.model');
 const Notification       = require('./notification.model');
 const AuditLog           = require('./audit.model');
+const Incident           = require('./incident.model');
 
 // ─── Relaciones existentes ───────────────────────────────────────────────────
 Cage.hasMany(Assignment, { foreignKey: 'cageId', sourceKey: 'id', as: 'assignments' });
@@ -118,6 +119,25 @@ Invitation.belongsTo(Profile, { foreignKey: 'invitedBy', as: 'inviter' });
 Profile.hasMany(Notification, { foreignKey: 'profileId', as: 'notifications' });
 Notification.belongsTo(Profile, { foreignKey: 'profileId', as: 'profile' });
 
+// Incidents / Novedades
+Galpon.hasMany(Incident, { foreignKey: 'galponId', as: 'incidents' });
+Incident.belongsTo(Galpon, { foreignKey: 'galponId', as: 'galpon' });
+
+Profile.hasMany(Incident, { foreignKey: 'profileId', as: 'reportedIncidents' });
+Incident.belongsTo(Profile, { foreignKey: 'profileId', as: 'reporter' });
+
+Profile.hasMany(Incident, { foreignKey: 'reviewedBy', as: 'reviewedIncidents' });
+Incident.belongsTo(Profile, { foreignKey: 'reviewedBy', as: 'reviewer' });
+
+Cage.hasMany(Incident, { foreignKey: 'cageId', as: 'incidents' });
+Incident.belongsTo(Cage, { foreignKey: 'cageId', as: 'cage' });
+
+Rabbit.hasMany(Incident, { foreignKey: 'rabbitId', as: 'incidents' });
+Incident.belongsTo(Rabbit, { foreignKey: 'rabbitId', as: 'rabbit' });
+
+Profile.hasMany(AuditLog, { foreignKey: 'profileId', as: 'auditLogs' });
+AuditLog.belongsTo(Profile, { foreignKey: 'profileId', as: 'profile' });
+
 module.exports = {
     Cage,
     Rabbit,
@@ -138,5 +158,7 @@ module.exports = {
     WorkerCage,
     Invitation,
     Notification,
-    AuditLog
+    AuditLog,
+    Incident
 };
+

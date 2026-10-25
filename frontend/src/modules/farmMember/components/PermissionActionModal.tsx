@@ -40,7 +40,7 @@ export function PermissionActionModal({ open, onClose, onConfirm, moduleName, is
     const allActions = ['canCreate', 'canRead', 'canUpdate', 'canDelete'] as const;
     
     // Módulos que solo soportan Crear y Consultar
-    const twoActionsModules = ['Alimentación', 'Vacunación', 'Desparasitación', 'Limpieza', 'Mortalidad'];
+    const twoActionsModules = ['Alimentación', 'Vacunación', 'Desparasitación', 'Limpieza', 'Mortalidad', 'Reportes'];
     
     // Módulos que soportan Crear, Consultar y Eliminar (Desasignar)
     const threeActionsModules = ['Asignar'];
@@ -130,9 +130,9 @@ export function PermissionActionModal({ open, onClose, onConfirm, moduleName, is
     <Dialog open={open} onClose={handleClose} title={`Acciones para ${moduleName}`} size="md">
       <div className="space-y-4">
         {isSensitive && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-            <p className="text-sm text-blue-800">
-              Permisos para gestionar datos críticos del sistema. Solo asignar a trabajadores de confianza.
+          <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 rounded-lg p-3 mb-4">
+            <p className="text-sm text-amber-800 dark:text-amber-300">
+              Permisos para gestionar información delicada del galpón. Solo asignar a trabajadores de confianza.
             </p>
           </div>
         )}

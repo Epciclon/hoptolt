@@ -120,7 +120,7 @@ class FeedingService {
         const createdFeedings = await Promise.all(toCreate.map(data => feedingRepository.create(data)));
 
         const { notifyOwnerOnWorkerAction } = require('../../common/helpers/notification.helper');
-        await notifyOwnerOnWorkerAction(profileId, galponId, 'feeding', 'Alimentación');
+        await notifyOwnerOnWorkerAction(profileId, galponId, 'feeding', 'Alimentación', cageIds.length, 'jaula');
 
         // Sincronización asíncrona en tiempo real: verificar y limpiar recordatorios de alimentación si ya se completaron
         try {

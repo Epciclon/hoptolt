@@ -1,4 +1,4 @@
-﻿import { ReactNode } from 'react';
+import { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 interface CardGroupProps {
@@ -20,11 +20,11 @@ export function CardGroup({ title, subtitle, items, className }: Readonly<CardGr
         <h2 className="text-lg font-semibold text-main">{title}</h2>
         {subtitle && <p className="text-sm text-muted mt-0.5">{subtitle}</p>}
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {items.map((item) => (
           <div
             key={item.id}
-            className="border border-strong rounded-lg p-4 hover:border-slate-300 transition-colors"
+            className="border border-strong rounded-lg p-4 hover:border-primary-400 transition-colors"
           >
             <div className="flex flex-col gap-2">
               <div className="flex-1">

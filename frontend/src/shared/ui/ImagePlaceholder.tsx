@@ -17,7 +17,7 @@ export function ImagePlaceholder({ className, size = 'md' }: Readonly<ImagePlace
   return (
     <div
       className={cn(
-        'flex items-center justify-center bg-theme-surface border border-default border-2 border-dashed border-slate-300 rounded-lg',
+        'flex items-center justify-center bg-theme-surface border-2 border-dashed border-strong rounded-lg',
         sizeStyles[size],
         className
       )}

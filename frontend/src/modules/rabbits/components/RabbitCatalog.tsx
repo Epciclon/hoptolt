@@ -13,6 +13,7 @@ import { RabbitDetailsModal } from './RabbitDetailsModal';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { useSupabase } from '../../../hooks/useSupabase';
 import { formatRabbitAge, rabbitSexOptions } from '@/shared/utils/rabbitUtils';
+import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
 
 interface RabbitCatalogProps {
   onSuccess?: () => void;
@@ -23,6 +24,9 @@ export function RabbitCatalog({ onSuccess }: Readonly<RabbitCatalogProps>) {
   const { races } = useRaces();
   const { showToast } = useToast();
   const { deleteRabbitImage } = useSupabase();
+  const { can } = usePermissions();
+  const canUpdate = can('rabbits', 'canUpdate');
+  const canDelete = can('rabbits', 'canDelete');
 
   const [selectedRabbitId, setSelectedRabbitId] = useState<number | null>(null);
   const [toDelete, setToDelete] = useState<Rabbit | null>(null);
@@ -84,7 +88,7 @@ export function RabbitCatalog({ onSuccess }: Readonly<RabbitCatalogProps>) {
         <p className="text-sm text-muted text-center py-8 bg-theme-surface rounded-lg border border-strong">No hay conejos registrados con esos filtros.</p>
       )}
       {!loading && rabbits.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {rabbits.map((rabbit) => {
             const isSelected = selectedRabbitId === rabbit.id;
             return (
@@ -135,35 +139,45 @@ export function RabbitCatalog({ onSuccess }: Readonly<RabbitCatalogProps>) {
                   </>
                 }
                 actions={
-                  <>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 text-main"
-                      icon={<Pencil size={14} />}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingRabbit(rabbit);
-                        setShowEditModal(true);
-                      }}
-                    >
-                      Editar
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="danger"
-                      size="sm"
-                      className="flex-1"
-                      icon={<Trash2 size={14} />}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setToDelete(rabbit);
-                      }}
-                    >
-                      Eliminar
-                    </Button>
-                  </>
+                  (canUpdate || canDelete) ? (
+                    <>
+                      {canUpdate && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 text-main"
+                          icon={<Pencil size={14} />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingRabbit(rabbit);
+                            setShowEditModal(true);
+                          }}
+                        >
+                          Editar
+                        </Button>
+                      )}
+                      {canDelete && (
+                        <Button
+                          type="button"
+                          variant="danger"
+                          size="sm"
+                          className="flex-1"
+                          icon={<Trash2 size={14} />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setToDelete(rabbit);
+                          }}
+                        >
+                          Eliminar
+                        </Button>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-xs text-muted font-medium py-1 px-2 text-center w-full">
+                      Solo consulta
+                    </span>
+                  )
                 }
               />
             );
@@ -226,10 +240,10 @@ export function RabbitCatalog({ onSuccess }: Readonly<RabbitCatalogProps>) {
           setDetailsRabbit(null);
         }} 
         rabbit={detailsRabbit} 
-        onEdit={(rabbit) => {
+        onEdit={canUpdate ? (rabbit) => {
           setEditingRabbit(rabbit);
           setShowEditModal(true);
-        }}
+        } : undefined}
       />
     </div>
   );

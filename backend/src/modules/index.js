@@ -16,10 +16,12 @@ router.use(require('./cleaning/cleaning.routes'));
 router.use(require('./mortality/mortality.routes'));
 router.use(require('./reproduction/reproduction.routes'));
 
-// Módulos nuevos - Auth, FarmMembers, Invitations, Notifications
+// Módulos nuevos - Auth, FarmMembers, Invitations, Notifications, Incidents
 router.use(require('./auth/auth.routes'));
 router.use(require('./farmMember/farmMember.routes'));
 router.use(require('./invitation/invitation.routes'));
 router.use('/notifications', require('./notification/notification.routes'));
+router.use('/incidents', require('./incident/incident.routes'));
 
 module.exports = router;
+

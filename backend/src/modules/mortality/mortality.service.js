@@ -63,8 +63,9 @@ class MortalityService {
             result = await this._processAdultMortality(rabbit, rabbitId, cause, observations, dDate, galponId, profileId);
         }
 
+        const deathCount = isKits ? (Number(numberOfKits) || 1) : 1;
         const { notifyOwnerOnWorkerAction } = require('../../common/helpers/notification.helper');
-        await notifyOwnerOnWorkerAction(profileId, galponId, 'mortality', 'Mortalidad');
+        await notifyOwnerOnWorkerAction(profileId, galponId, 'mortality', 'Mortalidad', deathCount, 'caso');
 
         return result;
     }

@@ -9,10 +9,15 @@ import { useToast } from '@/shared/contexts/ToastContext';
 import { useAssignments } from '../hooks/useAssignments';
 import type { Assignment } from '../types/assignment.types';
 import { TransferRabbitModal } from './TransferRabbitModal';
+import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
 
 export function AssignmentTable() {
   const { assignments, loading, error, unassignRabbit } = useAssignments();
   const { showToast } = useToast();
+  const { can } = usePermissions();
+  const canCreate = can('assignments', 'canCreate');
+  const canDelete = can('assignments', 'canDelete');
+
   const [toUnassign, setToUnassign] = useState<{ cageId: number; rabbitIds: number[] } | null>(null);
   const [transferRabbitData, setTransferRabbitData] = useState<{ 
     rabbits: { id: number; name: string; code: string; age?: number; purpose?: string }[];
@@ -134,7 +139,7 @@ export function AssignmentTable() {
       )}
       {!loading && Object.keys(groupedByCage).length > 0 && filteredGroups.length > 0 && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start">
             {paginatedGroups.map(group => {
               const selectedIds = selectedRabbitsByCage[group.cageId] || [];
               return (
@@ -144,42 +149,48 @@ export function AssignmentTable() {
                   cageType={group.cageType}
                   footer={
                     selectedIds.length > 0 ? (
-                      <div className="flex gap-2 w-full animate-in fade-in slide-in-from-top-1 duration-200">
-                        {selectedIds.length > 0 && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              const selectedAssignments = group.assignments.filter(a => selectedIds.includes(a.rabbitId));
-                              setTransferRabbitData({
-                                rabbits: selectedAssignments.map(a => ({
-                                  id: a.rabbitId,
-                                  name: a.rabbitName || '',
-                                  code: a.rabbitCode || '',
-                                  age: a.rabbitAge,
-                                  purpose: (a as any).rabbitPurpose
-                                })),
-                                currentCageId: group.cageId,
-                                cageType: group.cageType
-                              });
-                            }}
-                            className="w-full text-main border-strong hover:bg-theme-hover"
-                          >
-                            {selectedIds.length === 1 ? 'Mover' : `Mover (${selectedIds.length})`}
-                          </Button>
-                        )}
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          icon={<LogOut size={12} />}
-                          onClick={() => handleUnassignCage(group.cageId)}
-                          className="w-full"
-                        >
-                          {group.cageType === 'reproducción' 
-                            ? 'Desasignar' 
-                            : `Desasignar (${selectedIds.length})`}
-                        </Button>
-                      </div>
+                      (canCreate || canDelete) ? (
+                        <div className="flex gap-2 w-full animate-in fade-in slide-in-from-top-1 duration-200">
+                          {canCreate && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const selectedAssignments = group.assignments.filter(a => selectedIds.includes(a.rabbitId));
+                                setTransferRabbitData({
+                                  rabbits: selectedAssignments.map(a => ({
+                                    id: a.rabbitId,
+                                    name: a.rabbitName || '',
+                                    code: a.rabbitCode || '',
+                                    age: a.rabbitAge,
+                                    purpose: (a as any).rabbitPurpose
+                                  })),
+                                  currentCageId: group.cageId,
+                                  cageType: group.cageType
+                                });
+                              }}
+                              className="w-full text-main border-strong hover:bg-theme-hover"
+                            >
+                              {selectedIds.length === 1 ? 'Mover' : `Mover ${selectedIds.length}`}
+                            </Button>
+                          )}
+                          {canDelete && (
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              icon={<LogOut size={12} />}
+                              onClick={() => handleUnassignCage(group.cageId)}
+                              className="w-full"
+                            >
+                              {selectedIds.length === 1 ? 'Desasignar' : `Desasignar ${selectedIds.length}`}
+                            </Button>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-center w-full py-1 text-xs text-muted font-medium">
+                          Solo consulta
+                        </div>
+                      )
                     ) : undefined
                   }
                 >

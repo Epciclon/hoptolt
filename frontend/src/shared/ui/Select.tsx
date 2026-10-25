@@ -33,24 +33,28 @@ export const Select = forwardRef<HTMLSelectElement, Readonly<SelectProps>>(
           id={selectId}
           required={required}
           className={cn(
-            'w-full px-3 py-2 text-sm rounded-lg border bg-card dark:bg-slate-900/50 text-main',
+            'w-full px-3 py-2 text-sm rounded-lg border bg-theme-surface dark:bg-slate-900 border-default text-main dark:text-slate-100',
             'transition-all duration-200 cursor-pointer',
-            'focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500',
+            'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500',
             'disabled:bg-theme-surface dark:disabled:bg-slate-800 disabled:text-theme-faint disabled:cursor-not-allowed',
             error
               ? 'border-red-400 dark:border-red-500 focus:ring-red-400/30 focus:border-red-400'
-              : 'border-slate-300 dark:border-slate-700',
+              : 'border-default',
             className,
           )}
           {...props}
         >
           {placeholder && (
-            <option value="" disabled>
+            <option value="" disabled className="bg-card dark:bg-slate-900 text-main dark:text-slate-100">
               {placeholder}
             </option>
           )}
           {options.map((opt) => (
-            <option key={opt.value} value={opt.value}>
+            <option
+              key={opt.value}
+              value={opt.value}
+              className="bg-card dark:bg-slate-900 text-main dark:text-slate-100 py-2"
+            >
               {opt.label}
             </option>
           ))}

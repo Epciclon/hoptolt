@@ -9,6 +9,7 @@ import { useToast } from '@/shared/contexts/ToastContext';
 import { formatDateTime } from '@/shared/utils/dateUtils';
 
 import { FilterBar } from '@/shared/ui/FilterBar';
+import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
 
 interface CleaningCatalogProps {
   onSuccess?: () => void;
@@ -32,6 +33,8 @@ const getEcuadorDateString = (date: Date) => {
 export function CleaningCatalog({ onSuccess }: Readonly<CleaningCatalogProps>) {
   const [searchTerm, setSearchTerm] = useState('');
   const { assignedRabbits, cleanings, loading, createCleaning, error } = useCleaning();
+  const { can } = usePermissions();
+  const canCreate = can('cleaning', 'canCreate');
 
   const { showToast } = useToast();
   const [submitting, setSubmitting] = useState(false);
@@ -252,13 +255,21 @@ export function CleaningCatalog({ onSuccess }: Readonly<CleaningCatalogProps>) {
         </>
       )}
 
-      <SelectionActionBar
-        count={selectedCageNumbers.length}
-        itemName="jaula"
-        buttonText="Registrar Limpieza"
-        onRegister={handleRegister}
-        isSubmitting={submitting}
-      />
+      {canCreate ? (
+        <SelectionActionBar
+          count={selectedCageNumbers.length}
+          itemName="jaula"
+          buttonText="Registrar Limpieza"
+          onRegister={handleRegister}
+          isSubmitting={submitting}
+        />
+      ) : (
+        selectedCageNumbers.length > 0 && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-theme-surface border border-strong shadow-lg rounded-xl px-4 py-2 text-xs text-muted font-medium">
+            Solo consulta
+          </div>
+        )
+      )}
     </div>
   );
 }

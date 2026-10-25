@@ -1,10 +1,19 @@
-const toGenealogyDTO = (g) => ({
-    id: g.id,
-    rabbitId: g.rabbitId,
-    fatherId: g.fatherId,
-    motherId: g.motherId,
-    galponId: g.galponId,
-    consanguinityWarning: g.consanguinityWarning || undefined,
+const toGenealogyDTO = (g) => {
+    if (!g) return null;
+    if (g.requiresConfirmation) {
+        return {
+            requiresConfirmation: true,
+            consanguinityWarning: g.consanguinityWarning
+        };
+    }
+    return {
+        id: g.id,
+        rabbitId: g.rabbitId,
+        fatherId: g.fatherId,
+        motherId: g.motherId,
+        galponId: g.galponId,
+        consanguinityWarning: g.consanguinityWarning || undefined,
+        requiresConfirmation: false,
     rabbit: g.rabbit ? {
         id: g.rabbit.id,
         code: g.rabbit.code,
@@ -31,7 +40,8 @@ const toGenealogyDTO = (g) => ({
     } : undefined,
     createdAt: g.createdAt,
     updatedAt: g.updatedAt
-});
+    };
+};
 
 // Nota: getGenealogyTree ya devuelve un objeto GenealogyTree bien formateado en el servicio,
 // pero si fuera necesario se podría mover aquí también.

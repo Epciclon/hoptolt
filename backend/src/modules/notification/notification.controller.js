@@ -46,7 +46,8 @@ class NotificationController {
 
     // Obtener contador de notificaciones no leídas
     getUnreadCount = catchAsync(async (req, res) => {
-        const count = await notificationService.getUnreadCount(req.user.id);
+        const { filter } = req.query;
+        const count = await notificationService.getUnreadCount(req.user.id, filter);
         res.json({ count });
     });
 

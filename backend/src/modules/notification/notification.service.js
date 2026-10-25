@@ -4,6 +4,7 @@ const { Notification, FarmMember, Galpon, Reproduction, Rabbit } = require('../.
 const { getPaginationParams, createPaginatedResponse } = require('../../common/helpers/pagination.helper');
 const growthService = require('../growth/growth.service');
 const { Op } = require('sequelize');
+const AppError = require('../../errors/AppError');
 
 const ongoingChecks = new Map();
 const lastChecksTimestamp = new Map();
@@ -90,8 +91,7 @@ class NotificationService {
                 }]
             });
 
-            await this._processWeaningAlerts(weaningReproductions, profileId, notifiedIds);
-            await this._cleanupStaleNotifications(notifiedIds, notificationMap, 'lactancia', weaningReproductions);
+            await this._processWeaningAlerts(weaningReproductions, profileId);
         } catch (error) {
             console.error('Error checking/creating weaning notifications:', error);
         }
@@ -137,8 +137,8 @@ class NotificationService {
             const assignments = await Assignment.findAll({
                 where: { status: 'asignado' },
                 include: [
-                    { 
-                        model: Cage, 
+                    {
+                        model: Cage,
                         as: 'cage',
                         where: { type: 'engorde' },
                         required: true
@@ -213,11 +213,12 @@ class NotificationService {
                 const rabbitId = Number(a.rabbit.id);
                 if (!notifiedIds.has(rabbitId)) {
                     notifiedIds.add(rabbitId);
+                    const rabbitLabel = a.rabbit.name ? `**${a.rabbit.name}** con código **${a.rabbit.code}**` : `con código **${a.rabbit.code}**`;
                     notificationsToCreate.push({
                         profileId,
                         type: 'info',
                         title: 'Pie de Cría Listo',
-                        message: `El conejo de pie de cría ${a.rabbit.name} (${a.rabbit.code}) en la jaula ${a.cage.number} ha cumplido 4 meses. Se sugiere moverlo a una jaula individual de reproducción.`,
+                        message: `El conejo de pie de cría ${rabbitLabel} en la jaula **${a.cage.number}** ha cumplido 4 meses. Se sugiere moverlo a una jaula individual de reproducción.`,
                         data: { type: 'maturity_info', rabbitId: rabbitId, cageId: a.cage.id }
                     });
                 }
@@ -226,7 +227,7 @@ class NotificationService {
             if (notificationsToCreate.length > 0) {
                 await Notification.bulkCreate(notificationsToCreate);
             }
-            
+
             // Cleanup stale (if they were moved or no longer mature/exist)
             if (notifiedIds.size > 0) {
                 const currentRelevantRabbitIds = new Set(relevantAssignments.map(a => Number(a.rabbit.id)));
@@ -296,6 +297,9 @@ class NotificationService {
                     where: { profileId, type: 'warning' }
                 });
                 const toDelete = [];
+                const { AuditLog } = require('../../domain/models');
+                const { recordSystemChange } = require('../../common/helpers/audit.helper');
+
                 for (const n of existingReminders) {
                     let d = n.data;
                     if (typeof d === 'string') {
@@ -303,6 +307,37 @@ class NotificationService {
                     }
                     if (d?.type === 'feeding_reminder') {
                         toDelete.push(n.id);
+
+                        // Si expiró el turno y aún tenía jaulas pendientes sin alimentar:
+                        if (d.galponId && d.shift && d.date && d.unfedCount > 0) {
+                            try {
+                                const cleanGalponId = Number(d.galponId);
+                                const existingLog = await AuditLog.findOne({
+                                    where: {
+                                        entity: 'feeding',
+                                        action: 'Turno cerrado con pendientes',
+                                        'details.galponId': cleanGalponId,
+                                        'details.shift': d.shift,
+                                        'details.date': d.date
+                                    }
+                                });
+
+                                if (!existingLog) {
+                                    const shiftLabel = d.shift === 'mañana' ? 'la mañana' : 'la tarde';
+                                    const cagesLabel = d.unfedCount === 1 ? '1 jaula con conejos' : `${d.unfedCount} jaulas con conejos`;
+                                    await recordSystemChange({
+                                        galponId: cleanGalponId,
+                                        action: 'Turno cerrado con pendientes',
+                                        entity: 'feeding',
+                                        entityId: cleanGalponId,
+                                        itemName: `Turno de ${shiftLabel}`,
+                                        summary: `HopTolt registró el cierre del turno de ${shiftLabel} con ${cagesLabel} sin alimentar y sin reporte de novedad`
+                                    });
+                                }
+                            } catch (logErr) {
+                                console.error('Error al registrar auditoría de omisión de alimentación:', logErr);
+                            }
+                        }
                     }
                 }
                 if (toDelete.length > 0) {
@@ -599,12 +634,18 @@ class NotificationService {
             });
 
             if (groupedNotif) {
-                await groupedNotif.update({
-                    title: 'Alerta de Limpieza Requerida',
-                    message,
-                    data: dataPayload,
-                    read: false
-                });
+                const prevData = typeof groupedNotif.data === 'string' ? JSON.parse(groupedNotif.data || '{}') : (groupedNotif.data || {});
+                const hasChanged = groupedNotif.title !== 'Alerta de Limpieza Requerida' ||
+                    groupedNotif.message !== message ||
+                    Number(prevData.cagesCount) !== Number(dataPayload.cagesCount);
+
+                if (hasChanged) {
+                    await groupedNotif.update({
+                        title: 'Alerta de Limpieza Requerida',
+                        message,
+                        data: dataPayload
+                    });
+                }
                 const toDelete = cleaningNotifications.filter(n => n.id !== groupedNotif.id).map(n => n.id);
                 if (toDelete.length > 0) {
                     await Notification.destroy({ where: { id: toDelete } });
@@ -683,7 +724,7 @@ class NotificationService {
         return toNotificationDTO(notification);
     }
 
-    async createRabbitAssignmentNotification(cageId, rabbitCode, isAssigned) {
+    async createRabbitAssignmentNotification(cageId, rabbitIdentifiers, isAssigned) {
         try {
             const { WorkerCage, FarmMember, Cage, Notification } = require('../../domain/models');
             const { Op } = require('sequelize');
@@ -697,22 +738,56 @@ class NotificationService {
             const memberIds = workerCages.map(wc => wc.farmMemberId);
             const members = await FarmMember.findAll({ where: { id: { [Op.in]: memberIds } } });
 
-            const notificationsToCreate = [];
+            const normalizedList = (Array.isArray(rabbitIdentifiers) ? rabbitIdentifiers : [rabbitIdentifiers]).map(item => {
+                if (typeof item === 'object' && item !== null) {
+                    return {
+                        label: item.name ? `${item.name} - ${item.code}` : (item.label || item.code || ''),
+                        isFemale: item.sex === 'hembra'
+                    };
+                }
+                return {
+                    label: String(item),
+                    isFemale: false
+                };
+            });
+            const count = normalizedList.length;
+            if (count === 0) return;
+
+            const first = normalizedList[0];
+            const isFemale = count === 1 && first.isFemale;
+            const noun = isFemale ? 'coneja' : 'conejo';
+            const article = isFemale ? 'La' : 'El';
+
+            let title = '';
+            let message = '';
+            if (isAssigned) {
+                title = count === 1 ? (isFemale ? 'Nueva Asignación de Coneja' : 'Nueva Asignación de Conejo') : 'Nuevas Asignaciones de Conejos';
+                message = count === 1
+                    ? `${article} ${noun} **${first.label}** ha sido ${isFemale ? 'asignada' : 'asignado'} a tu jaula ${cage.number}.`
+                    : `Se asignaron **${count} conejos** a tu jaula ${cage.number}: ${normalizedList.map(r => r.label).join(', ')}.`;
+            } else {
+                title = count === 1 ? (isFemale ? 'Coneja Removida' : 'Conejo Removido') : 'Conejos Removidos';
+                message = count === 1
+                    ? `${article} ${noun} **${first.label}** ha sido ${isFemale ? 'removida' : 'removido'} de tu jaula ${cage.number}.`
+                    : `Se removieron **${count} conejos** de tu jaula ${cage.number}.`;
+            }
 
             for (const member of members) {
                 if (member?.role !== 'worker' || member?.status !== 'active' || !member?.profileId) continue;
-
-                const title = isAssigned ? 'Nueva Asignación de Conejo' : 'Conejo Removido';
-                const message = isAssigned
-                    ? `El conejo con código ${rabbitCode} ha sido asignado a tu jaula ${cage.number}.`
-                    : `El conejo con código ${rabbitCode} ha sido removido de tu jaula ${cage.number}.`;
 
                 notificationsToCreate.push({
                     profileId: member.profileId,
                     type: 'info',
                     title,
                     message,
-                    data: { type: 'rabbit_assignment', cageId, rabbitCode, isAssigned }
+                    data: {
+                        type: 'rabbit_assignment',
+                        cageId,
+                        rabbitCode: first.label,
+                        rabbitsList: normalizedList.map(r => r.label),
+                        count,
+                        isAssigned
+                    }
                 });
             }
 
@@ -762,6 +837,20 @@ class NotificationService {
     async getNotificationsByProfile(profileId, options = {}) {
         await this._runAllChecks(profileId, options);
 
+        try {
+            const { Op } = require('sequelize');
+            const { Sequelize } = require('sequelize');
+            await Notification.destroy({
+                where: {
+                    profileId,
+                    [Op.or]: [
+                        Sequelize.literal(`COALESCE(("data"->>'type'), '') IN ('incident', 'incident_response')`),
+                        { title: { [Op.iLike]: '%novedad%' } }
+                    ]
+                }
+            });
+        } catch (_) { }
+
         const page = Number.parseInt(options.page) || 1;
         const limit = Number.parseInt(options.limit) || 12;
         const { limit: limitValue, offset, page: pageValue } = getPaginationParams(page, limit);
@@ -783,9 +872,9 @@ class NotificationService {
         );
     }
 
-    async getUnreadCount(profileId) {
+    async getUnreadCount(profileId, filter) {
         await this._runAllChecks(profileId);
-        return await notificationRepository.countUnread(profileId);
+        return await notificationRepository.countUnread(profileId, filter);
     }
 
     async markAsRead(id) {
@@ -800,6 +889,10 @@ class NotificationService {
     }
 
     async deleteNotification(id) {
+        const notif = await notificationRepository.findById(id);
+        if (notif && notif.data && notif.data.isContract) {
+            throw new AppError('Este aviso de responsabilidad no se puede borrar mientras mantengas los permisos correspondientes.', 400);
+        }
         return await notificationRepository.delete(id);
     }
 
@@ -819,10 +912,10 @@ class NotificationService {
                 conditions.push({ galponId: m.galponId });
             } else if (m.role === 'worker') {
                 const hasPermission = await WorkerPermission.findOne({
-                    where: { 
-                        farmMemberId: m.id, 
-                        moduleName: { [Op.in]: ['reproduccionyparto', 'reproduction'] }, 
-                        canRead: true 
+                    where: {
+                        farmMemberId: m.id,
+                        moduleName: { [Op.in]: ['reproduccionyparto', 'reproduction'] },
+                        canRead: true
                     }
                 });
 
@@ -858,7 +951,7 @@ class NotificationService {
     }
 
     _addNotifiedId(notifiedIds, notificationMap, notificationId, dataObj, filterType) {
-        if ((filterType === 'birth' && dataObj?.reproductionId) || (filterType === 'weaning' && dataObj?.type === 'weaning_alert' && dataObj?.reproductionId)) {
+        if ((filterType === 'birth' && dataObj?.type === 'birth_warning' && dataObj?.reproductionId) || (filterType === 'weaning' && dataObj?.type === 'weaning_alert' && dataObj?.reproductionId)) {
             notifiedIds.add(Number(dataObj.reproductionId));
             notificationMap.set(Number(dataObj.reproductionId), notificationId);
         } else if (filterType === 'cleaning' && dataObj?.type === 'cleaning_warning' && dataObj?.cageId) {
@@ -929,12 +1022,13 @@ class NotificationService {
             if (!notifiedIds.has(repId)) {
                 notifiedIds.add(repId);
                 const birthDateStr = typeof r.estimatedBirthDate === 'string' ? r.estimatedBirthDate : r.estimatedBirthDate.toISOString().split('T')[0];
-                const rabbitName = r.female?.name ? " (" + r.female.name + ")" : "";
+                const rabbitName = r.female?.name ? ` **${r.female.name}**` : '';
+                const rabbitCode = r.female?.code ? ` con código **${r.female.code}**` : '';
                 notificationsToCreate.push({
                     profileId,
                     type: 'warning',
                     title: 'Alerta de Parto Próximo',
-                    message: `La coneja con código ${r.female?.code}${rabbitName} tiene un parto estimado para el ${birthDateStr}. ¡Por favor prepara la jaula con al menos 3 días de anticipación!`,
+                    message: `La coneja${rabbitName}${rabbitCode} tiene un parto estimado para el **${birthDateStr}**. ¡Prepara la jaula con anticipación!`,
                     data: { type: 'birth_warning', reproductionId: repId, estimatedBirthDate: birthDateStr }
                 });
             }
@@ -949,7 +1043,7 @@ class NotificationService {
         if (notifiedIds.size === 0) return;
         const { Notification } = require('../../domain/models');
         const { Op } = require('sequelize');
-        
+
         const validReproductionIds = new Set(validReproductions.map(r => Number(r.id)));
         const notificationIdsToDelete = [];
 
@@ -965,25 +1059,83 @@ class NotificationService {
         }
     }
 
-    async _processWeaningAlerts(weaningReproductions, profileId, notifiedIds) {
-        const notificationsToCreate = [];
-        for (const r of weaningReproductions) {
-            const repId = Number(r.id);
-            if (!notifiedIds.has(repId)) {
-                notifiedIds.add(repId);
-                const rabbitName = r.female?.name ? ` **${r.female.name}**` : "";
-                notificationsToCreate.push({
-                    profileId,
-                    type: 'warning',
+    async _processWeaningAlerts(weaningReproductions, profileId) {
+        const { Notification } = require('../../domain/models');
+        const { Op } = require('sequelize');
+
+        const existingNotifications = await Notification.findAll({
+            where: {
+                profileId,
+                type: 'warning'
+            }
+        });
+
+        const weaningNotifications = existingNotifications.filter(n => {
+            const d = typeof n.data === 'string' ? JSON.parse(n.data || '{}') : (n.data || {});
+            return d.type === 'weaning_alert' || n.title?.includes('Destete');
+        });
+
+        if (!weaningReproductions || weaningReproductions.length === 0) {
+            const toDelete = weaningNotifications.map(n => n.id);
+            if (toDelete.length > 0) {
+                await Notification.destroy({ where: { id: { [Op.in]: toDelete } } });
+            }
+            return;
+        }
+
+        const count = weaningReproductions.length;
+        const reproductionsList = weaningReproductions.map(r => ({
+            id: Number(r.id),
+            code: r.female?.code || '',
+            name: r.female?.name || ''
+        }));
+
+        let message = '';
+        if (count === 1) {
+            const r = weaningReproductions[0];
+            const rabbitName = r.female?.name ? ` **${r.female.name}**` : '';
+            const rabbitCode = r.female?.code ? ` con código **${r.female.code}**` : '';
+            message = `La camada de la coneja${rabbitName}${rabbitCode} cumplió 30 días de lactancia. Es tiempo de realizar el destete.`;
+        } else {
+            message = `Tienes **${count} camadas** listas para destete en tu galpón. Es tiempo de realizar el destete.`;
+        }
+
+        const dataPayload = {
+            type: 'weaning_alert',
+            reproductionId: Number(weaningReproductions[0].id),
+            count,
+            reproductions: reproductionsList
+        };
+
+        if (weaningNotifications.length > 0) {
+            const mainNotif = weaningNotifications[0];
+            const prevData = typeof mainNotif.data === 'string' ? JSON.parse(mainNotif.data || '{}') : (mainNotif.data || {});
+            const hasChanged = mainNotif.title !== 'Recordatorio de Destete' ||
+                mainNotif.message !== message ||
+                Number(prevData.count) !== Number(count) ||
+                Number(prevData.reproductionId) !== Number(weaningReproductions[0].id);
+
+            if (hasChanged) {
+                await mainNotif.update({
                     title: 'Recordatorio de Destete',
-                    message: `La camada de la coneja ${rabbitName} ya cumplió 30 días de lactancia. Es tiempo de realizar el destete.`,
-                    data: { type: 'weaning_alert', reproductionId: repId }
+                    message,
+                    data: dataPayload
                 });
             }
-        }
-        if (notificationsToCreate.length > 0) {
-            const { Notification } = require('../../domain/models');
-            await Notification.bulkCreate(notificationsToCreate);
+
+            const extraIds = weaningNotifications.slice(1).map(n => n.id);
+            if (extraIds.length > 0) {
+                await Notification.destroy({ where: { id: { [Op.in]: extraIds } } });
+            }
+        } else {
+            await Notification.create({
+                profileId,
+                type: 'warning',
+                title: 'Recordatorio de Destete',
+                message,
+                data: dataPayload,
+                read: false
+            });
         }
     }
 

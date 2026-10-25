@@ -27,7 +27,8 @@ const schema = z.object({
     .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'Solo letras y espacios'),
   password: z
     .string()
-    .min(6, 'Mínimo 6 caracteres'),
+    .min(6, 'Mínimo 6 caracteres')
+    .regex(/[!@#$%^&*(),.?":{}|<>_]/, 'Debe contener al menos un carácter especial como @#$%'),
   confirmPassword: z.string().min(6, 'Debes confirmar tu contraseña'),
   terms: z.boolean().refine(val => val === true, {
     message: 'Debes aceptar los Términos y Condiciones para registrarte',
@@ -97,7 +98,7 @@ export default function RegisterPage() {
             <input
               {...register('fullName')}
               id="fullName"
-              className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-all text-base ${errors.fullName ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : 'border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
+              className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-all text-base bg-theme-surface dark:bg-slate-900 text-main dark:text-slate-100 ${errors.fullName ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : 'border-slate-300 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
                 }`}
               placeholder="Darwin P"
             />
@@ -108,7 +109,7 @@ export default function RegisterPage() {
             <input
               {...register('username')}
               id="username"
-              className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-all text-base ${errors.username ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : 'border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
+              className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-all text-base bg-theme-surface dark:bg-slate-900 text-main dark:text-slate-100 ${errors.username ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : 'border-slate-300 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
                 }`}
               placeholder="DarwinP"
             />
@@ -123,7 +124,7 @@ export default function RegisterPage() {
             {...register('email')}
             id="email"
             type="email"
-            className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-all text-base ${errors.email ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : 'border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
+            className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-all text-base bg-theme-surface dark:bg-slate-900 text-main dark:text-slate-100 ${errors.email ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : 'border-slate-300 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
               }`}
             placeholder="javierjacome0w0@gmail.com"
           />
@@ -139,7 +140,7 @@ export default function RegisterPage() {
                 {...register('password')}
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                className={`w-full px-4 py-3 pr-12 border-2 rounded-xl outline-none transition-all text-base ${errors.password ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : 'border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
+                className={`w-full px-4 py-3 pr-12 border-2 rounded-xl outline-none transition-all text-base bg-theme-surface dark:bg-slate-900 text-main dark:text-slate-100 ${errors.password ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : 'border-slate-300 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
                   }`}
                 placeholder="••••••"
               />
@@ -160,7 +161,7 @@ export default function RegisterPage() {
                 {...register('confirmPassword')}
                 id="confirmPassword"
                 type={showConfirmPassword ? 'text' : 'password'}
-                className={`w-full px-4 py-3 pr-12 border-2 rounded-xl outline-none transition-all text-base ${errors.confirmPassword ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : 'border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
+                className={`w-full px-4 py-3 pr-12 border-2 rounded-xl outline-none transition-all text-base bg-theme-surface dark:bg-slate-900 text-main dark:text-slate-100 ${errors.confirmPassword ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : 'border-slate-300 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
                   }`}
                 placeholder="••••••"
               />

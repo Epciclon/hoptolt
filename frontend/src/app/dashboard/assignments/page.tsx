@@ -7,10 +7,12 @@ import { AssignmentTable } from '@/modules/assignments/components/AssignmentTabl
 import { AssignRabbitForm } from '@/modules/assignments/components/AssignRabbitForm';
 import { GalponGuard } from '@/modules/galpones/components/GalponGuard';
 import { PermissionGuard } from '@/shared/layout/PermissionGuard';
+import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
 
 export default function AssignmentsPage() {
   const [modal, setModal] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const { can } = usePermissions();
 
   const openModal = () => setModal(true);
   const closeModal = () => setModal(false);
@@ -29,7 +31,9 @@ export default function AssignmentsPage() {
             subtitle="Supervisa las asignaciones actuales y revisa la capacidad de tus jaulas"
             tutorialUrl="https://youtu.be/0MqbR3yMm_8"
             actions={
-              <Button icon={<Plus size={16} />} onClick={openModal}>Asignar Conejo</Button>
+              can('assignments', 'canCreate') ? (
+                <Button icon={<Plus size={16} />} onClick={openModal}>Asignar Conejo</Button>
+              ) : null
             }
           />
           

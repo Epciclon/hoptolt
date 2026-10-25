@@ -9,6 +9,7 @@ import { formatDateTime } from '@/shared/utils/dateUtils';
 
 import { FilterBar } from '@/shared/ui/FilterBar';
 import { useState } from 'react';
+import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
 
 interface DewormingCatalogProps {
   onSuccess?: () => void;
@@ -17,6 +18,8 @@ interface DewormingCatalogProps {
 export function DewormingCatalog({ onSuccess }: Readonly<DewormingCatalogProps>) {
   const [searchTerm, setSearchTerm] = useState('');
   const { assignedRabbits, dewormingPeriod, loading, createDeworming, dewormings, isCreating } = useDeworming();
+  const { can } = usePermissions();
+  const canCreate = can('deworming', 'canCreate');
 
   const { showToast } = useToast();
   
@@ -119,13 +122,21 @@ export function DewormingCatalog({ onSuccess }: Readonly<DewormingCatalogProps>)
         )}
       </>
 
-      <SelectionActionBar
-        count={selectedRabbitIds.length}
-        itemName="conejo"
-        buttonText="Registrar Desparasitación"
-        onRegister={handleRegister}
-        isSubmitting={isCreating}
-      />
+      {canCreate ? (
+        <SelectionActionBar
+          count={selectedRabbitIds.length}
+          itemName="conejo"
+          buttonText="Registrar Desparasitación"
+          onRegister={handleRegister}
+          isSubmitting={isCreating}
+        />
+      ) : (
+        selectedRabbitIds.length > 0 && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-theme-surface border border-strong shadow-lg rounded-xl px-4 py-2 text-xs text-muted font-medium">
+            Solo consulta
+          </div>
+        )
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Bell, X, CheckCheck, Utensils, Clock } from 'lucide-react';
+import { Bell, X, CheckCheck } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotification';
 import { useInvitation } from '@/modules/invitation/hooks/useInvitation';
 import { useToast } from '@/shared/contexts/ToastContext';
@@ -11,205 +11,312 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { routeNotification } from '@/shared/utils/notificationRouting';
 import { useAuth } from '@/modules/auth/hooks/useAuth';
-import { useQueryClient } from '@tanstack/react-query';
-
+import { playNotificationSound } from '@/shared/utils/soundUtils';
+import { formatTime } from '@/shared/utils/dateUtils';
 
 export function NotificationIcon() {
-  const NOTIFICATION_LIMIT = 10;
-  const { notifications, markAsRead, markAllAsRead, deleteNotification, unreadCount } = useNotifications({ limit: NOTIFICATION_LIMIT });
+  const NOTIFICATION_LIMIT = 15;
+  const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications({ limit: NOTIFICATION_LIMIT, filter: 'notices' });
   const { acceptInvitation, revokeInvitation } = useInvitation();
   const { showToast } = useToast();
   const { user } = useAuth();
   const router = useRouter();
-  const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [accepting, setAccepting] = useState<number | null>(null);
   const [rejecting, setRejecting] = useState<number | null>(null);
-  
-  // Previa especial de Recordatorio de Alimentación
-  const [previewReminder, setPreviewReminder] = useState<any>(null);
-  const dismissedRemindersRef = useRef<Set<string>>(new Set());
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const previousUnreadCountRef = useRef(0);
-  const [isAnimating, setIsAnimating] = useState(false);
+  // Previa Flotante de Avisos y Novedades
+  const [activeInfoPreview, setActiveInfoPreview] = useState<any>(null);
+  const activeInfoRef = useRef<any>(null);
+  const infoTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [previewNotificationsEnabled, setPreviewNotificationsEnabled] = useState(true);
 
-  const playNotificationSound = () => {
-    try {
-      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-      // Check user activation to prevent Chrome autoplay warnings
-      const hasInteracted = (window as any).__hasInteracted || (navigator.userActivation ? navigator.userActivation.hasBeenActive : false);
-      
-      if (AudioContext && hasInteracted) {
-        const ctx = new AudioContext();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1);
-        
-        gain.gain.setValueAtTime(0, ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.05);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-        
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        
-        osc.start();
-        osc.stop(ctx.currentTime + 0.3);
+  useEffect(() => {
+    const syncSetting = () => {
+      const enabled = typeof window !== 'undefined' ? localStorage.getItem('hoptolt_preview_notifications') !== 'false' : true;
+      setPreviewNotificationsEnabled(enabled);
+      if (!enabled) {
+        if (infoTimerRef.current) {
+          clearTimeout(infoTimerRef.current);
+          infoTimerRef.current = null;
+        }
+        activeInfoRef.current = null;
+        setActiveInfoPreview(null);
       }
-    } catch (e) {
-      console.error('Error playing notification sound:', e);
+    };
+    syncSetting();
+    window.addEventListener('hoptolt_previews_changed', syncSetting);
+    window.addEventListener('storage', syncSetting);
+    return () => {
+      window.removeEventListener('hoptolt_previews_changed', syncSetting);
+      window.removeEventListener('storage', syncSetting);
+    };
+  }, []);
+
+  const [alertOffset, setAlertOffset] = useState<number>(0);
+
+  useEffect(() => {
+    const handleAlertChange = (e: any) => {
+      if (e.detail?.active && typeof e.detail?.height === 'number') {
+        setAlertOffset(e.detail.height + 12);
+      } else {
+        setAlertOffset(0);
+      }
+    };
+    window.addEventListener('hoptolt_alert_preview_change', handleAlertChange);
+
+    const checkInitial = () => {
+      const el = document.getElementById('hoptolt-alert-preview');
+      if (el) {
+        setAlertOffset(el.getBoundingClientRect().height + 12);
+      }
+    };
+    checkInitial();
+
+    return () => {
+      window.removeEventListener('hoptolt_alert_preview_change', handleAlertChange);
+    };
+  }, []);
+
+  const isWarningNotification = (n: any) => {
+    const t = n.data?.type;
+    if (t === 'incident' || t === 'incident_response') return false;
+    const title = (n.title || '').toLowerCase();
+    const msg = (n.message || '').toLowerCase();
+    if (title.includes('novedad') || msg.includes('novedad')) return false;
+
+    return n.type === 'warning' ||
+      t === 'feeding_reminder' ||
+      t === 'cleaning_warning' ||
+      t === 'birth_warning' ||
+      t === 'weaning_alert';
+  };
+
+  const getInfoWeight = (n: any) => {
+    if (n.type === 'invitation') return 100;
+    const t = n.data?.type;
+    const isAssignment = t === 'task_assignment' || (n.title && n.title.toLowerCase().includes('asignaci'));
+    if (isAssignment) return 95;
+    if (t === 'worker_action' || t === 'worker_sensitive_action') return 90;
+    if (t === 'reproduction') return 70;
+    if (t === 'maturity') return 60;
+    if (t === 'growth_summary' || t === 'growth') return 50;
+    return 30;
+  };
+
+  const getActionConfig = (notification: any) => {
+    const type = notification.data?.type;
+    const isAssignment = type === 'task_assignment' || (notification.title && notification.title.toLowerCase().includes('asignaci'));
+    if (isAssignment) {
+      return { label: 'Entendido', variant: 'primary' as const };
+    }
+    if (type === 'worker_sensitive_action') {
+      return { label: 'Ver Cambios', variant: 'primary' as const };
+    }
+    if (type === 'worker_action') {
+      return { label: 'Ver Historial', variant: 'outline' as const };
+    }
+    if (type === 'growth_summary') {
+      return { label: 'Ver Crecimiento', variant: 'outline' as const };
+    }
+    if (type === 'maturity') {
+      return { label: 'Ver Conejos', variant: 'outline' as const };
+    }
+    return { label: 'Ver Detalle', variant: 'outline' as const };
+  };
+
+  const getNotificationVersion = (n: any) => {
+    const logId = n.data?.lastLogId || n.data?.logId || 0;
+    const count = n.data?.changeCount || n.data?.totalCount || 1;
+    const time = new Date(n.updatedAt || n.createdAt).getTime();
+    return `${n.id}_${logId}_${count}_${time}`;
+  };
+
+  const isPreviewSeenOrDismissed = (n: any, userId: string) => {
+    if (typeof window === 'undefined') return false;
+    const version = getNotificationVersion(n);
+    const id = n.id;
+    return (
+      sessionStorage.getItem(`hoptolt_prev_seen_${userId}_${id}_${version}`) === 'true' ||
+      localStorage.getItem(`hoptolt_prev_seen_${userId}_${id}_${version}`) === 'true' ||
+      sessionStorage.getItem(`hoptolt_prev_dismissed_${userId}_${id}_${version}`) === 'true' ||
+      localStorage.getItem(`hoptolt_prev_dismissed_${userId}_${id}_${version}`) === 'true'
+    );
+  };
+
+  const markPreviewSeen = (n: any, userId: string) => {
+    if (typeof window !== 'undefined') {
+      const version = getNotificationVersion(n);
+      sessionStorage.setItem(`hoptolt_prev_seen_${userId}_${n.id}_${version}`, 'true');
+      localStorage.setItem(`hoptolt_prev_seen_${userId}_${n.id}_${version}`, 'true');
     }
   };
 
+  const markPreviewDismissed = (n: any, userId: string) => {
+    if (typeof window !== 'undefined') {
+      const version = getNotificationVersion(n);
+      sessionStorage.setItem(`hoptolt_prev_dismissed_${userId}_${n.id}_${version}`, 'true');
+      localStorage.setItem(`hoptolt_prev_dismissed_${userId}_${n.id}_${version}`, 'true');
+    }
+  };
+
+  const isInitialMountRef = useRef(true);
+  const previousUnreadInfosCountRef = useRef(0);
+  const previousTotalChangesRef = useRef(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  // Filtrado exclusivo de avisos generales y actividades
+  const infoNotifications = notifications.filter(n => !isWarningNotification(n));
+  const unreadInfos = infoNotifications.filter(n => !n.read);
+  const unreadInfosCount = unreadCount !== undefined ? unreadCount : unreadInfos.length;
+  const remainingInfosCount = Math.max(0, unreadInfosCount - 1);
+  const totalChanges = unreadInfos.reduce((sum: number, n: any) => sum + (n.data?.changeCount || 1), 0);
+
   useEffect(() => {
-    if (unreadCount > previousUnreadCountRef.current) {
-      // New notification arrived - animar icono de campana como si repicara
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      previousUnreadInfosCountRef.current = unreadInfosCount;
+      previousTotalChangesRef.current = totalChanges;
+      return;
+    }
+
+    if (unreadInfosCount > previousUnreadInfosCountRef.current || totalChanges > previousTotalChangesRef.current) {
       setIsAnimating(true);
       setTimeout(() => {
         setIsAnimating(false);
       }, 2500);
     }
-    previousUnreadCountRef.current = unreadCount;
-  }, [unreadCount]);
+    previousUnreadInfosCountRef.current = unreadInfosCount;
+    previousTotalChangesRef.current = totalChanges;
+  }, [unreadInfosCount, totalChanges]);
 
   useEffect(() => {
     const handleCloseNotifications = () => {
-      setIsOpen(false);
+      setTimeout(() => {
+        setIsOpen(false);
+      }, 0);
     };
     window.addEventListener('close-notifications', handleCloseNotifications);
-    
-    // Global listener to track first interaction to safely play sounds
-    if (typeof window !== 'undefined' && !(window as any).__interactionListenerAdded) {
-      (window as any).__hasInteracted = false;
-      const setInteracted = () => { (window as any).__hasInteracted = true; };
-      window.addEventListener('click', setInteracted, { once: true, capture: true });
-      window.addEventListener('keydown', setInteracted, { once: true, capture: true });
-      (window as any).__interactionListenerAdded = true;
-    }
 
     return () => window.removeEventListener('close-notifications', handleCloseNotifications);
   }, []);
 
-  // Welcome Toast
-  useEffect(() => {
-    if (typeof window !== 'undefined' && unreadCount > 0 && notifications.length > 0 && user?.id) {
-      const today = new Date().toDateString();
-      const storageKey = `welcome_notif_${user.id}_${today}`;
-      const shown = localStorage.getItem(storageKey);
-      
-      if (!shown) {
-        localStorage.setItem(storageKey, 'true');
-        
-        const unreadList = notifications.filter(n => !n.read);
-        if (unreadList.length > 0) {
-          const warnings = unreadList.filter(n => n.type === 'warning');
-          
-          // Calculamos "avisos" sumando infos, invitaciones y lo que el backend indique en unreadCount
-          const diff = unreadCount - unreadList.length;
-          const totalInfos = unreadList.length - warnings.length + (diff > 0 ? diff : 0);
-          
-          const parts = [];
-          if (warnings.length === 1) parts.push(`1 alerta importante`);
-          else if (warnings.length > 1) parts.push(`${warnings.length} alertas importantes`);
-          
-          if (totalInfos === 1) parts.push(`1 aviso`);
-          else if (totalInfos > 1) parts.push(`${totalInfos} avisos`);
-          
-          if (parts.length > 0) {
-            const summary = parts.join(' y ');
-            setTimeout(() => {
-              showToast(`Tienes ${summary} pendientes. ¡Dales un vistazo!`, 'info');
-            }, 1500);
-          }
-        }
-      }
-    }
-  }, [unreadCount, notifications, showToast, user?.id]);
-
   const lastUserRef = useRef<string | null>(null);
   useEffect(() => {
-    // Si cambia el usuario (login como otro usuario), limpiar marca de sesión anterior
     if (user?.id && lastUserRef.current && lastUserRef.current !== user.id) {
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem(`hoptolt_last_feeding_popup_${lastUserRef.current}`);
+      if (infoTimerRef.current) {
+        clearTimeout(infoTimerRef.current);
+        infoTimerRef.current = null;
       }
-      setPreviewReminder(null);
+      activeInfoRef.current = null;
+      setActiveInfoPreview(null);
     }
     lastUserRef.current = user?.id || null;
   }, [user?.id]);
 
-  // Previa temporal exclusiva para Recordatorio de Alimentación:
-  // 1) Al iniciar sesión si no se ha alimentado (inmediato).
-  // 2) Si se mantiene en el sistema, se muestra automáticamente cada 1 minuto sin requerir abrir/cerrar notificaciones.
   useEffect(() => {
-    const checkAndShowFeedingReminder = () => {
-      if (typeof window === 'undefined' || !user?.id) return;
-
-      const feedingReminder = notifications.find(
-        (n) => !n.read && n.data?.type === 'feeding_reminder'
-      );
-
-      if (!feedingReminder) {
-        setPreviewReminder(null);
-        if (timerRef.current) clearTimeout(timerRef.current);
-        return;
-      }
-
-      // Si el panel de notificaciones está abierto, no sobreponer la previa
-      if (isOpen) return;
-
-      const FEEDING_INTERVAL = 25 * 60 * 1000; // 25 minutos
-      const now = Date.now();
-      const storageIdKey = `hoptolt_last_feeding_popup_id_${user.id}`;
-      const storageTimeKey = `hoptolt_last_feeding_popup_${user.id}`;
-      const lastPopupId = typeof window !== 'undefined' ? localStorage.getItem(storageIdKey) : null;
-      const lastPopupStr = typeof window !== 'undefined' ? localStorage.getItem(storageTimeKey) : null;
-      const lastPopupTime = lastPopupStr ? Number.parseInt(lastPopupStr, 10) : 0;
-
-      // Se sincroniza por ID de notificación: si el backend renueva la alerta, ambos usuarios
-      // la reciben al mismo tiempo y se muestra simultáneamente.
-      const isNewNotification = lastPopupId !== String(feedingReminder.id);
-      const isTimeDue = lastPopupTime === 0 || (now - lastPopupTime >= FEEDING_INTERVAL);
-      const shouldShow = isNewNotification || isTimeDue;
-
-      if (shouldShow) {
-        setPreviewReminder(feedingReminder);
-        playNotificationSound();
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(storageIdKey, String(feedingReminder.id));
-          localStorage.setItem(storageTimeKey, now.toString());
-        }
-
-        if (timerRef.current) clearTimeout(timerRef.current);
-
-        const duration = 12000; // 12 segundos de visualización temporal
-        timerRef.current = setTimeout(() => {
-          setPreviewReminder(null);
-        }, duration);
-      }
+    return () => {
+      if (infoTimerRef.current) clearTimeout(infoTimerRef.current);
     };
+  }, []);
 
-    // Verificar inmediatamente al cambiar notificaciones o al cerrar el panel
-    checkAndShowFeedingReminder();
+  // Previa Flotante Informativa con sonido de notificación
+  useEffect(() => {
+    if (isOpen || !previewNotificationsEnabled) {
+      if (infoTimerRef.current) {
+        clearTimeout(infoTimerRef.current);
+        infoTimerRef.current = null;
+      }
+      activeInfoRef.current = null;
+      setActiveInfoPreview(null);
+      return;
+    }
+    if (typeof window === 'undefined' || !user?.id) return;
 
-    // Y además evaluar periódicamente cada 3 segundos para que aparezca solo en cuanto se cumpla el minuto
-    const interval = setInterval(checkAndShowFeedingReminder, 3000);
+    const now = Date.now();
+    const userId = user.id;
 
-    return () => clearInterval(interval);
-  }, [notifications, isOpen, user?.id, queryClient]);
+    if (activeInfoRef.current) {
+      const currentActive = unreadInfos.find(n => n.id === activeInfoRef.current.id);
+      if (!currentActive) {
+        if (infoTimerRef.current) {
+          clearTimeout(infoTimerRef.current);
+          infoTimerRef.current = null;
+        }
+        activeInfoRef.current = null;
+        setActiveInfoPreview(null);
+      } else {
+        const currentVersion = getNotificationVersion(currentActive);
+        const refVersion = getNotificationVersion(activeInfoRef.current);
+        if (currentVersion !== refVersion) {
+          activeInfoRef.current = currentActive;
+          setActiveInfoPreview(currentActive);
+          markPreviewSeen(currentActive, userId);
+          playNotificationSound();
 
-  const handleClosePreview = () => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    setPreviewReminder(null);
+          if (infoTimerRef.current) clearTimeout(infoTimerRef.current);
+          infoTimerRef.current = setTimeout(() => {
+            activeInfoRef.current = null;
+            setActiveInfoPreview(null);
+            infoTimerRef.current = null;
+          }, 14000);
+        }
+      }
+    }
+
+    if (!activeInfoRef.current) {
+      const sortedCandidates = [...unreadInfos].sort((a, b) => {
+        const wA = getInfoWeight(a);
+        const wB = getInfoWeight(b);
+        if (wA !== wB) return wB - wA;
+        const timeA = new Date(a.updatedAt || a.createdAt).getTime();
+        const timeB = new Date(b.updatedAt || b.createdAt).getTime();
+        return timeB - timeA;
+      });
+
+      const candidateInfo = sortedCandidates.find(n => {
+        if (isPreviewSeenOrDismissed(n, userId)) return false;
+
+        const isAssignment = n.data?.type === 'task_assignment' || (n.title && n.title.toLowerCase().includes('asignaci'));
+        if (n.type === 'invitation' || isAssignment) return true;
+
+        const notifTime = new Date(n.updatedAt || n.createdAt).getTime();
+        const diffMs = Math.abs(now - notifTime);
+        return diffMs < (10 * 60 * 1000);
+      }) || null;
+
+      if (candidateInfo) {
+        activeInfoRef.current = candidateInfo;
+        setActiveInfoPreview(candidateInfo);
+        markPreviewSeen(candidateInfo, userId);
+        playNotificationSound();
+
+        if (infoTimerRef.current) clearTimeout(infoTimerRef.current);
+        infoTimerRef.current = setTimeout(() => {
+          activeInfoRef.current = null;
+          setActiveInfoPreview(null);
+          infoTimerRef.current = null;
+        }, 14000);
+      }
+    }
+  }, [unreadInfos, isOpen, user?.id, previewNotificationsEnabled]);
+
+  const handleCloseInfoPreview = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (infoTimerRef.current) {
+      clearTimeout(infoTimerRef.current);
+      infoTimerRef.current = null;
+    }
+    const currentItem = activeInfoRef.current || activeInfoPreview;
+    if (currentItem && user?.id) {
+      markPreviewDismissed(currentItem, user.id);
+    }
+    activeInfoRef.current = null;
+    setActiveInfoPreview(null);
   };
 
   const getIconByType = (type: string) => {
     switch (type) {
-      case 'warning':
-        return '⚠';
       case 'info':
         return 'ℹ';
       case 'invitation':
@@ -221,8 +328,6 @@ export function NotificationIcon() {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'warning':
-        return 'bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-950/40 dark:border-yellow-900/60 dark:text-yellow-400';
       case 'info':
         return 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950/40 dark:border-blue-900/60 dark:text-blue-400';
       case 'invitation':
@@ -230,21 +335,6 @@ export function NotificationIcon() {
       default:
         return 'bg-theme-surface border-strong text-main';
     }
-  };
-
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-
-    if (minutes < 1) return 'Ahora';
-    if (minutes < 60) return `Hace ${minutes} min`;
-    if (hours < 24) return `Hace ${hours} h`;
-    if (days < 7) return `Hace ${days} d`;
-    return date.toLocaleDateString();
   };
 
   const handleAcceptInvitation = async (notification: any) => {
@@ -286,15 +376,7 @@ export function NotificationIcon() {
   };
 
   const handleNotificationClick = async (notification: any) => {
-    // Las advertencias del sistema (limpieza, parto, destete, alimentación) NO se deben marcar como leídas
-    // solo por hacer clic o navegar, ya que el usuario aún no ha realizado la acción en el módulo.
-    const isActionableWarning = notification.type === 'warning' ||
-      notification.data?.type === 'feeding_reminder' ||
-      notification.data?.type === 'cleaning_warning' ||
-      notification.data?.type === 'birth_warning' ||
-      notification.data?.type === 'weaning_alert';
-
-    if (!notification.read && !isActionableWarning) {
+    if (!notification.read) {
       try {
         await markAsRead(notification.id);
       } catch (error) {
@@ -305,149 +387,221 @@ export function NotificationIcon() {
     setIsOpen(false);
   };
 
-  const sortedNotifications = [...notifications].sort((a, b) => {
-    const getPriority = (item: any) => {
-      if (item.type === 'warning' && item.data?.type === 'feeding_reminder') return 0;
-      if (item.type === 'warning') return 1;
-      return 2;
-    };
-    const pA = getPriority(a);
-    const pB = getPriority(b);
-    if (pA !== pB) return pA - pB;
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  const sortedNotifications = [...infoNotifications].sort((a, b) => {
+    const pA = getInfoWeight(a);
+    const pB = getInfoWeight(b);
+    if (pA !== pB) return pB - pA;
+    const timeA = new Date(a.updatedAt || a.createdAt).getTime();
+    const timeB = new Date(b.updatedAt || b.createdAt).getTime();
+    return timeB - timeA;
   });
+
   const displayedNotifications = sortedNotifications.slice(0, NOTIFICATION_LIMIT);
-  const hasUnreadWarnings = notifications.some(n => !n.read && n.type === 'warning');
 
   return (
     <div className="relative">
-      <button type="button"
+      <button
+        type="button"
+        title="Notificaciones"
         onClick={() => {
-          if (previewReminder) {
-            handleClosePreview();
-          }
+          handleCloseInfoPreview();
+          window.dispatchEvent(new CustomEvent('close-alerts'));
           const newState = !isOpen;
           setIsOpen(newState);
           if (newState && window.innerWidth < 1024) {
             window.dispatchEvent(new CustomEvent('close-sidebar'));
           }
         }}
-        className="relative p-2 rounded-lg hover:bg-theme-surface border border-default transition-colors"
+        className={cn(
+          "relative p-2 rounded-lg border transition-all duration-200",
+          isOpen
+            ? "bg-theme-surface border-default text-main"
+            : "border-default hover:bg-theme-surface text-muted"
+        )}
       >
-        <Bell className={cn("w-5 h-5 text-muted transition-colors origin-top", 
-          (unreadCount > 0 || isAnimating) && "animate-bell-ring text-primary-500"
-        )} />
-        {unreadCount > 0 && (
-          <span className={cn(
-            "absolute top-0 right-0 flex min-w-[16px] h-[16px] px-1 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm pointer-events-none",
-            hasUnreadWarnings ? "animate-bounce" : "animate-pulse"
-          )}>
-            {unreadCount > 9 ? '9+' : unreadCount}
+        <Bell
+          className={cn(
+            "w-5 h-5 transition-transform origin-top text-muted",
+            unreadInfosCount > 0 && "animate-bell-ring text-primary-600 dark:text-primary-400"
+          )}
+        />
+        {unreadInfosCount > 0 && (
+          <span
+            className="absolute -top-1 -right-1 flex min-w-[18px] h-[18px] px-1 items-center justify-center rounded-full bg-primary-600 text-[10px] font-bold text-white shadow-sm pointer-events-none animate-badge-pop"
+          >
+            {unreadInfosCount > 9 ? '9+' : unreadInfosCount}
           </span>
         )}
       </button>
 
-      {/* Previa especial exclusiva de Recordatorio de Alimentación con el formato estándar */}
-      {previewReminder && !isOpen && (
-        <div className="fixed sm:absolute top-16 sm:top-full right-4 sm:right-0 left-4 sm:left-auto mt-2 w-auto sm:w-96 max-w-[calc(100vw-2rem)] bg-card rounded-xl shadow-lg border border-strong overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="p-4 border-b border-default flex justify-between items-center bg-theme-surface">
-            <div className="flex items-center gap-2">
-              <span className="flex h-2 w-2 rounded-full bg-primary-500 animate-pulse" />
-              <h3 className="font-semibold text-main text-base m-0">Notificaciones</h3>
-            </div>
-            <button
-              type="button"
-              onClick={handleClosePreview}
-              className="text-theme-faint hover:text-muted p-1 rounded hover:bg-theme-surface transition-colors cursor-pointer"
-              aria-label="Cerrar notificación"
-            >
-              <X size={16} />
-            </button>
-          </div>
-
-          <div
-            role="button"
-            tabIndex={0}
-            className="w-full text-left p-4 bg-primary-50/60 dark:bg-primary-900/20 hover:bg-theme-surface transition-colors cursor-pointer block focus:outline-none focus:ring-2 focus:ring-primary-500"
-            onClick={() => {
-              const reminder = previewReminder;
-              handleClosePreview();
-              handleNotificationClick(reminder);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                const reminder = previewReminder;
-                handleClosePreview();
-                handleNotificationClick(reminder);
-              }
-            }}
-          >
-            <div className="flex items-start gap-3">
-              <div className={cn('w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0', getTypeColor(previewReminder.type))}>
-                {getIconByType(previewReminder.type)}
+      {activeInfoPreview && !isOpen && (
+        <div
+          style={{ top: alertOffset > 0 ? `calc(4rem + ${alertOffset}px)` : '4rem' }}
+          className="fixed right-3 sm:right-6 left-3 sm:left-auto w-auto sm:w-96 max-w-[calc(100vw-1.5rem)] flex flex-col gap-2.5 z-[60] pointer-events-none transition-[top] duration-300 ease-out"
+        >
+          <div className="pointer-events-auto bg-card rounded-xl shadow-xl border border-blue-300 dark:border-blue-800/70 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="px-3.5 py-2 border-b border-default flex justify-between items-center bg-blue-500/10">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse shrink-0" />
+                <span className="font-semibold text-blue-900 dark:text-blue-300 text-xs uppercase tracking-wider">
+                  {activeInfoPreview.type === 'invitation'
+                    ? 'Invitación'
+                    : (activeInfoPreview.data?.type === 'task_assignment' || activeInfoPreview.title?.toLowerCase().includes('asignaci'))
+                    ? 'Nueva Asignación'
+                    : 'Aviso de Actividad'}
+                </span>
+                {remainingInfosCount > 0 && (
+                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-blue-200/80 dark:bg-blue-900/60 text-blue-900 dark:text-blue-200">
+                    + {remainingInfosCount} más
+                  </span>
+                )}
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-start gap-2">
+              <button
+                type="button"
+                onClick={handleCloseInfoPreview}
+                className="text-theme-faint hover:text-muted p-1 rounded hover:bg-theme-surface transition-colors cursor-pointer"
+                aria-label="Cerrar aviso"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            <div
+              role="button"
+              tabIndex={0}
+              className="w-full text-left p-4 bg-blue-50/50 dark:bg-blue-950/20 hover:bg-theme-surface transition-colors cursor-pointer block focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onClick={() => {
+                if (activeInfoPreview.type !== 'invitation') {
+                  const item = activeInfoPreview;
+                  handleCloseInfoPreview();
+                  handleNotificationClick(item);
+                }
+              }}
+              onKeyDown={(e) => {
+                if ((e.key === 'Enter' || e.key === ' ') && activeInfoPreview.type !== 'invitation') {
+                  e.preventDefault();
+                  const item = activeInfoPreview;
+                  handleCloseInfoPreview();
+                  handleNotificationClick(item);
+                }
+              }}
+            >
+              <div className="flex items-start gap-3">
+                <div className={cn('w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0', getTypeColor(activeInfoPreview.type))}>
+                  {getIconByType(activeInfoPreview.type)}
+                </div>
+                <div className="flex-1 min-w-0">
                   <h4 className="font-medium text-main text-sm flex items-center gap-2">
-                    {previewReminder.title}
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary-500 inline-block" />
+                    {activeInfoPreview.title}
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" />
                   </h4>
-                </div>
-                <p className="text-sm text-muted mt-1 leading-relaxed">
-                  {previewReminder.message.split(/(\*\*.*?\*\*)/g).map((part: string, i: number) => {
-                    if (part.startsWith('**') && part.endsWith('**')) {
-                      return <strong key={i} className="font-semibold text-main">{part.slice(2, -2)}</strong>;
-                    }
-                    return part;
-                  })}
-                </p>
-                <div className="mt-3 flex items-center justify-between gap-2 pt-2.5 border-t border-default">
-                  <p className="text-xs text-theme-faint">{formatTime(previewReminder.createdAt)}</p>
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const reminder = previewReminder;
-                      handleClosePreview();
-                      handleNotificationClick(reminder);
-                    }}
-                    className="text-xs py-1 px-3 shadow-sm"
-                  >
-                    Ir a Alimentar
-                  </Button>
+                  <p className="text-sm text-muted mt-1 leading-relaxed">
+                    {activeInfoPreview.message.split(/(\*\*.*?\*\*)/g).map((part: string, i: number) => {
+                      if (part.startsWith('**') && part.endsWith('**')) {
+                        return <strong key={i} className="font-semibold text-main">{part.slice(2, -2)}</strong>;
+                      }
+                      return part;
+                    })}
+                  </p>
+
+                  {activeInfoPreview.data?.workersList && activeInfoPreview.data.workersList.length > 1 && (
+                    <div className="mt-2 p-1.5 bg-card/70 rounded border border-default text-xs flex flex-wrap gap-x-3 gap-y-1">
+                      {activeInfoPreview.data.workersList.map((w: any) => (
+                        <span key={w.name} className="inline-flex items-center gap-1">
+                          <span className="font-medium text-main">{w.name}:</span>
+                          <span className="font-semibold text-main">{w.count}</span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {activeInfoPreview.data?.type === 'worker_sensitive_action' && activeInfoPreview.data?.modulesBreakdown && activeInfoPreview.data.modulesBreakdown.length > 0 && (
+                    <div className="mt-2.5 p-2 bg-theme-surface rounded-lg border border-default text-xs">
+                      <ul className="divide-y divide-default bg-card rounded border border-default max-h-28 overflow-y-auto">
+                        {activeInfoPreview.data.modulesBreakdown.map((m: any) => (
+                          <li key={m.module} className="flex items-center justify-between py-1 px-2.5">
+                            <span className="font-medium text-main">{m.label}</span>
+                            <span className="text-[10px] font-medium text-main bg-theme-surface px-2 py-0.5 rounded border border-default">
+                              {m.count} {m.count === 1 ? 'cambio' : 'cambios'}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <div className="mt-3 flex items-center justify-between gap-2 pt-2.5 border-t border-default">
+                    <p className="text-xs text-theme-faint">{formatTime(activeInfoPreview.updatedAt || activeInfoPreview.createdAt)}</p>
+
+                    {activeInfoPreview.type === 'invitation' ? (
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRejectInvitation(activeInfoPreview);
+                          }}
+                          disabled={accepting === activeInfoPreview.id || rejecting === activeInfoPreview.id}
+                          className="text-xs py-1 px-2.5 h-auto shadow-sm"
+                        >
+                          {rejecting === activeInfoPreview.id ? 'Rechazando...' : 'Rechazar'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAcceptInvitation(activeInfoPreview);
+                          }}
+                          disabled={accepting === activeInfoPreview.id || rejecting === activeInfoPreview.id}
+                          className="text-xs py-1 px-2.5 h-auto shadow-sm"
+                        >
+                          {accepting === activeInfoPreview.id ? 'Aceptando...' : 'Aceptar'}
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant={getActionConfig(activeInfoPreview).variant}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const item = activeInfoPreview;
+                          handleCloseInfoPreview();
+                          handleNotificationClick(item);
+                        }}
+                        className="text-xs py-1 px-3 shadow-sm h-auto"
+                      >
+                        {getActionConfig(activeInfoPreview).label}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-
-          <div className="p-2 border-t border-default bg-theme-surface">
-            <Link
-              href="/dashboard/notifications"
-              onClick={handleClosePreview}
-              className="w-full text-center block text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium py-1.5 hover:bg-theme-surface rounded transition-colors border-none cursor-pointer"
-            >
-              Ver todas las notificaciones
-            </Link>
           </div>
         </div>
       )}
 
+      {/* Popover de Notificaciones */}
       {isOpen && (
         <>
-          <button 
+          <button
             type="button"
-            className="fixed inset-0 z-40 bg-transparent border-none w-full h-full cursor-default" 
-            onClick={() => setIsOpen(false)} 
+            className="fixed inset-0 z-[60] bg-black/20 sm:bg-transparent border-none w-full h-full cursor-default"
+            onClick={() => setIsOpen(false)}
             aria-label="Cerrar notificaciones"
           />
-          <div className="fixed sm:absolute top-16 sm:top-full right-4 sm:right-0 left-4 sm:left-auto mt-2 w-auto sm:w-96 max-w-[calc(100vw-2rem)] bg-card rounded-xl shadow-lg border border-strong overflow-hidden z-50">
-            <div className="p-4 border-b border-default flex flex-col gap-3 bg-theme-surface">
+          <div className="fixed sm:absolute top-16 sm:top-full right-3 sm:right-0 left-3 sm:left-auto mt-2 w-auto sm:w-96 max-w-[calc(100vw-1.5rem)] bg-card rounded-xl shadow-2xl border border-strong overflow-hidden z-[60]">
+            <div className="p-3.5 border-b border-default flex flex-col gap-2.5 bg-theme-surface">
               <div className="flex justify-between items-center">
-                <h3 className="font-semibold text-main text-base m-0">Notificaciones</h3>
-                {unreadCount > 0 && (
-                  <button type="button"
+                <div className="flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                  <h3 className="font-semibold text-main text-sm m-0">Notificaciones</h3>
+                </div>
+                {unreadInfosCount > 0 && (
+                  <button
+                    type="button"
                     onClick={() => markAllAsRead()}
                     className="text-xs text-primary-600 hover:text-primary-700 flex items-center gap-1 font-medium bg-transparent border-none p-0 cursor-pointer"
                   >
@@ -459,177 +613,167 @@ export function NotificationIcon() {
               <Link
                 href="/dashboard/notifications"
                 onClick={() => setIsOpen(false)}
-                className="w-full text-center block text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium py-1.5 bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-100 dark:hover:bg-primary-900/40 rounded-md transition-colors border-none cursor-pointer"
+                className="w-full text-center block text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium py-1.5 bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-100 dark:hover:bg-primary-900/40 rounded-md transition-colors border-none cursor-pointer"
               >
                 Ver todas las notificaciones
               </Link>
             </div>
 
-            <div className="max-h-96 overflow-y-auto">
+            <div className="max-h-96 overflow-y-auto divide-y divide-default/60">
               {displayedNotifications.length === 0 ? (
                 <div className="p-8 text-center text-muted">
-                  <Bell className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-                  <p className="text-sm">No tienes notificaciones</p>
+                  <Bell className="w-10 h-10 mx-auto mb-2 text-slate-300 dark:text-slate-600" />
+                  <p className="text-sm font-medium text-main">Sin notificaciones pendientes</p>
+                  <p className="text-xs text-theme-faint mt-1">Aquí verás la actividad y avisos del equipo</p>
                 </div>
               ) : (
-                <>
-                  {displayedNotifications.map((notification) => (
-                    <div
-                      key={notification.id}
-                      role="button"
-                      tabIndex={0}
-                      className={cn(
-                        'w-full text-left p-4 border-b border-default hover:bg-theme-surface transition-colors cursor-pointer block focus:outline-none focus:ring-2 focus:ring-primary-500',
-                        !notification.read && 'bg-primary-50/60 dark:bg-primary-900/20'
-                      )}
-                      onClick={() => handleNotificationClick(notification)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          handleNotificationClick(notification);
-                        }
-                      }}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className={cn('w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold', getTypeColor(notification.type))}>
-                          {getIconByType(notification.type)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-start gap-2">
-                            <h4 className="font-medium text-main text-sm flex items-center gap-2">
-                              {notification.title}
-                              {!notification.read && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-primary-500 inline-block" />
-                              )}
-                            </h4>
-                            {!(notification.type === 'warning' || notification.type === 'invitation') && (
-                              <button type="button"
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  try {
-                                    await deleteNotification(notification.id);
-                                    showToast('Notificación eliminada', 'success');
-                                  } catch (error) {
-                                    console.error(error);
-                                    showToast('Error al eliminar notificación', 'error');
-                                  }
-                                }}
-                                className="text-theme-faint hover:text-muted"
-                              >
-                                <X size={14} />
-                              </button>
+                displayedNotifications.map((notification) => (
+                  <div
+                    key={notification.id}
+                    role="button"
+                    tabIndex={0}
+                    className={cn(
+                      'w-full text-left p-3.5 hover:bg-theme-surface transition-colors cursor-pointer block focus:outline-none focus:ring-2 focus:ring-primary-500',
+                      !notification.read && 'bg-primary-50/40 dark:bg-primary-900/15'
+                    )}
+                    onClick={() => handleNotificationClick(notification)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleNotificationClick(notification);
+                      }
+                    }}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5', getTypeColor(notification.type))}>
+                        {getIconByType(notification.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start gap-2">
+                          <h4 className="font-medium text-main text-xs sm:text-sm flex items-center gap-1.5">
+                            {notification.title}
+                            {!notification.read && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-primary-500 inline-block shrink-0" />
                             )}
-                          </div>
-                          <p className="text-sm text-muted mt-1">
-                            {notification.message.split(/(\*\*.*?\*\*)/g).map((part: string, i: number) => {
-                              if (part.startsWith('**') && part.endsWith('**')) {
-                                return <strong key={i} className="font-semibold text-main">{part.slice(2, -2)}</strong>;
-                              }
-                              return part;
-                            })}
-                          </p>
-                          <p className="text-xs text-theme-faint mt-2">{formatTime(notification.createdAt)}</p>
-                          {notification.type === 'invitation' && (
-                            <div className="flex gap-2 mt-3">
-                              <Button
-                                size="sm"
-                                variant="primary"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleAcceptInvitation(notification);
-                                }}
-                                disabled={accepting === notification.id || rejecting === notification.id}
-                              >
-                                {accepting === notification.id ? 'Aceptando...' : 'Aceptar'}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="danger"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRejectInvitation(notification);
-                                }}
-                                disabled={accepting === notification.id || rejecting === notification.id}
-                              >
-                                {rejecting === notification.id ? 'Rechazando...' : 'Rechazar'}
-                              </Button>
-                            </div>
-                          )}
-                          {notification.data?.type === 'growth_summary' && (
-                            <div className="mt-2 bg-theme-surface border border-default rounded-md p-2 border border-strong">
-                              <p className="text-xs text-main font-medium mb-1">
-                                Actualizaciones ({notification.data.updatesCount || 0})
-                              </p>
-                              <ul className="text-xs text-muted list-disc list-inside">
-                                {notification.data.details?.slice(0, 3).map((detail: string) => (
-                                  <li key={detail} className="truncate">{detail}</li>
-                                ))}
-                                {notification.data.details?.length > 3 && (
-                                  <li className="italic text-theme-faint">... y {notification.data.details.length - 3} más</li>
-                                )}
-                              </ul>
-                            </div>
-                          )}
-                          {notification.data?.type === 'feeding_reminder' && (
-                            <div className="mt-2.5 flex items-center justify-between gap-2 p-2 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40">
-                              <span className="text-xs text-amber-800 dark:text-amber-300 font-medium">
-                                Alimentación pendiente
-                              </span>
-                              <Button
-                                size="sm"
-                                variant="primary"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleNotificationClick(notification);
-                                }}
-                                className="text-xs py-0.5 px-2.5 h-auto"
-                              >
-                                Alimentar
-                              </Button>
-                            </div>
-                          )}
-                          {notification.data?.type === 'cleaning_warning' && (
-                            <div className="mt-2.5 flex flex-col gap-1.5 p-2 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40">
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="text-xs text-amber-800 dark:text-amber-300 font-medium">
-                                  {notification.data.pendingCages?.length || notification.data.cagesCount || 0} jaulas sin limpiar
-                                </span>
-                                <Button
-                                  size="sm"
-                                  variant="primary"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleNotificationClick(notification);
-                                  }}
-                                  className="text-xs py-0.5 px-2.5 h-auto"
-                                >
-                                  Limpiar
-                                </Button>
-                              </div>
-                              {notification.data.pendingCages && notification.data.pendingCages.length > 0 && (
-                                <ul className="text-xs text-muted max-h-24 overflow-y-auto bg-card/60 rounded p-1 divide-y divide-default/40">
-                                  {notification.data.pendingCages.slice(0, 5).map((cage: any) => (
-                                    <li key={cage.cageId || cage.cageNumber} className="flex items-center justify-between py-0.5 px-1">
-                                      <span className="font-medium text-main">Jaula {cage.cageNumber}</span>
-                                      <span className="text-amber-600 dark:text-amber-400 font-medium text-[11px]">
-                                        {cage.daysWithoutCleaning}d
-                                      </span>
-                                    </li>
-                                  ))}
-                                  {notification.data.pendingCages.length > 5 && (
-                                    <li className="italic text-theme-faint text-[10px] px-1 pt-0.5">
-                                      ... y {notification.data.pendingCages.length - 5} jaulas más
-                                    </li>
-                                  )}
-                                </ul>
-                              )}
-                            </div>
+                          </h4>
+                          {notification.type !== 'invitation' && (
+                            <button
+                              type="button"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                try {
+                                  await deleteNotification(notification.id);
+                                  showToast('Notificación eliminada', 'success');
+                                } catch (error) {
+                                  console.error(error);
+                                  showToast('Error al eliminar notificación', 'error');
+                                }
+                              }}
+                              className="text-theme-faint hover:text-muted p-0.5"
+                              aria-label="Eliminar notificación"
+                            >
+                              <X size={13} />
+                            </button>
                           )}
                         </div>
+                        <p className="text-xs text-muted mt-1 leading-relaxed">
+                          {notification.message.split(/(\*\*.*?\*\*)/g).map((part: string, i: number) => {
+                            if (part.startsWith('**') && part.endsWith('**')) {
+                              return <strong key={i} className="font-semibold text-main">{part.slice(2, -2)}</strong>;
+                            }
+                            return part;
+                          })}
+                        </p>
+                        <p className="text-[10px] text-theme-faint mt-1.5">{formatTime(notification.updatedAt || notification.createdAt)}</p>
+
+                        {notification.type === 'invitation' && (
+                          <div className="flex gap-2 mt-2">
+                            <Button
+                              size="sm"
+                              variant="primary"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAcceptInvitation(notification);
+                              }}
+                              disabled={accepting === notification.id || rejecting === notification.id}
+                              className="text-xs py-1 px-3"
+                            >
+                              {accepting === notification.id ? 'Aceptando...' : 'Aceptar'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="danger"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRejectInvitation(notification);
+                              }}
+                              disabled={accepting === notification.id || rejecting === notification.id}
+                              className="text-xs py-1 px-3"
+                            >
+                              {rejecting === notification.id ? 'Rechazando...' : 'Rechazar'}
+                            </Button>
+                          </div>
+                        )}
+
+                        {notification.data?.type === 'growth_summary' && (
+                          <div className="mt-2 bg-theme-surface border border-default rounded-md p-2">
+                            <p className="text-xs text-main font-medium mb-1">
+                              Actualizaciones • {notification.data.updatesCount || 0}
+                            </p>
+                            <ul className="text-xs text-muted list-disc list-inside">
+                              {notification.data.details?.slice(0, 3).map((detail: string) => (
+                                <li key={detail} className="truncate">{detail}</li>
+                              ))}
+                              {notification.data.details?.length > 3 && (
+                                <li className="italic text-theme-faint">... y más registros</li>
+                              )}
+                            </ul>
+                          </div>
+                        )}
+
+                        {notification.data?.type === 'worker_action' && notification.data?.workersList && notification.data.workersList.length > 1 && (
+                          <div className="mt-2 flex flex-col gap-1 p-2 rounded-md bg-theme-surface border border-default">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-[11px] text-main font-medium">
+                                Detalle por trabajador • {notification.data.totalCount || notification.data.totalItems || 0} {notification.data.unitName || notification.data.unit || 'registro'}s en total:
+                              </span>
+                            </div>
+                            <ul className="text-[11px] text-main max-h-24 overflow-y-auto bg-card rounded p-1 border border-default divide-y divide-default">
+                              {notification.data.workersList.map((worker: any) => (
+                                <li key={worker.name} className="flex items-center justify-between py-1 px-1.5">
+                                  <span className="font-medium text-main">{worker.name}</span>
+                                  <span className="text-[10px] font-medium text-main bg-theme-surface px-1.5 py-0.5 rounded border border-default">
+                                    {worker.count} {notification.data.unitName || notification.data.unit || 'registro'}{worker.count === 1 ? '' : 's'}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {notification.data?.type === 'worker_sensitive_action' && notification.data?.modulesBreakdown && notification.data.modulesBreakdown.length > 0 && (
+                          <div className="mt-2 flex flex-col gap-1 p-2 rounded-md bg-theme-surface border border-default">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-[11px] text-main font-medium">
+                                Detalle por módulo sensible:
+                              </span>
+                            </div>
+                            <ul className="text-[11px] text-main max-h-32 overflow-y-auto bg-card rounded p-1 border border-default divide-y divide-default">
+                              {notification.data.modulesBreakdown.map((m: any) => (
+                                <li key={m.module} className="flex items-center justify-between py-1 px-2">
+                                  <span className="font-medium text-main">{m.label}</span>
+                                  <span className="text-[10px] font-medium text-main bg-theme-surface px-2 py-0.5 rounded border border-default">
+                                    {m.count} {m.count === 1 ? 'cambio' : 'cambios'}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  ))}
-                </>
+                  </div>
+                ))
               )}
             </div>
           </div>

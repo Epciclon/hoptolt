@@ -50,6 +50,8 @@ const validateRegister = (req, res, next) => {
     // Contraseña
     if (!password || password.length < 6) {
         errors.push('La contraseña debe tener al menos 6 caracteres.');
+    } else if (!/[!@#$%^&*(),.?":{}|<>_]/.test(password)) {
+        errors.push('La contraseña debe contener al menos un carácter especial como @#$%.');
     }
 
     if (password !== confirmPassword) {

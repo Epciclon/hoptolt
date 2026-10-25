@@ -8,22 +8,22 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-100 p-8 sm:p-12">
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">Política de Privacidad y Tratamiento de Datos Personales</h1>
-        <p className="text-sm text-slate-500 mb-8">Última actualización: Agosto de 2026 | Versión 3.0.0</p>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-8 sm:p-12">
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">Política de Privacidad y Tratamiento de Datos Personales</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-8">Última actualización: Agosto de 2026 | Versión 3.0.0</p>
         
-        <div className="prose prose-slate prose-teal max-w-none space-y-8 text-slate-600 text-justify">
+        <div className="prose prose-slate dark:prose-invert prose-teal max-w-none space-y-8 text-slate-600 dark:text-slate-300 text-justify">
           
           <section>
-            <h2 className="text-xl font-semibold text-slate-800 mb-3">1. Marco Legal y Cumplimiento Normativo</h2>
+            <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-3">1. Marco Legal y Cumplimiento Normativo</h2>
             <p>
               En estricto cumplimiento con lo establecido en la <strong>Constitución de la República del Ecuador</strong> (Art. 66, numeral 19), que reconoce y garantiza a las personas el derecho a la protección de datos de carácter personal, y en conformidad con la <strong>Ley Orgánica de Protección de Datos Personales (LOPDP)</strong> (Registro Oficial Suplemento 459 de 26-may.-2021) y su respectivo Reglamento, <strong>Hoptolt Ecuador</strong> (en adelante, "el Responsable" o "la Empresa") expide la presente Política de Privacidad. El objetivo de este documento es informar de manera clara, precisa e inequívoca a los usuarios ("el Titular") sobre los lineamientos técnicos, jurídicos y organizacionales aplicables al tratamiento de su información.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-slate-800 mb-3">2. Definiciones Fundamentales</h2>
+            <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-3">2. Definiciones Fundamentales</h2>
             <ul className="list-disc pl-5 space-y-2 mt-2">
               <li><strong>Titular:</strong> Persona natural o jurídica cuyos datos son objeto de tratamiento.</li>
               <li><strong>Dato Personal:</strong> Cualquier información que identifica o hace identificable a una persona natural.</li>
@@ -33,7 +33,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-slate-800 mb-3">3. Naturaleza de la Información Recopilada</h2>
+            <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-3">3. Naturaleza de la Información Recopilada</h2>
             <p>El Responsable recopila las siguientes categorías de datos, de forma directa e indirecta:</p>
             <ul className="list-disc pl-5 space-y-2 mt-2">
               <li><strong>Datos de Identificación y Contacto:</strong> Nombres completos,        información ingresada, incluyendo datos básicos como tu correo electrónico, tu nombre, y los perfiles de tu &quot;granja&quot; o &quot;galpón&quot;, así como losencriptadas mediante algoritmos criptográficos asimétricos.</li>
@@ -43,7 +43,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-slate-800 mb-3">4. Finalidad y Base Legitimadora del Tratamiento</h2>
+            <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-3">4. Finalidad y Base Legitimadora del Tratamiento</h2>
             <p>De acuerdo con el Art. 7 de la LOPDP, el tratamiento de los datos personales se realiza bajo las siguientes bases legitimadoras: (i) <strong>Consentimiento expreso</strong> e inequívoco del Titular al momento de registrarse, y (ii) <strong>Ejecución de medidas precontractuales o contractuales</strong> para la prestación del servicio SaaS.</p>
             <p>Las finalidades específicas incluyen:</p>
             <ul className="list-disc pl-5 space-y-2 mt-2">
@@ -55,21 +55,21 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-slate-800 mb-3">5. Transferencias Internacionales y Encargados del Tratamiento</h2>
+            <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-3">5. Transferencias Internacionales y Encargados del Tratamiento</h2>
             <p>
               El Titular reconoce y autoriza expresamente que, debido a la naturaleza descentralizada de las infraestructuras de computación en la nube, sus datos pueden ser transferidos, alojados y procesados en servidores ubicados fuera de la jurisdicción de la República del Ecuador. Hoptolt emplea como &quot;Encargados del Tratamiento&quot; a proveedores tecnológicos de clase mundial (tales como Supabase y Amazon Web Services - AWS), los cuales cuentan con certificaciones internacionales de seguridad (ISO 27001, SOC 2). Estos terceros están sujetos a rigurosos Acuerdos de Confidencialidad (NDAs) y solo tratarán los datos conforme a nuestras instrucciones documentadas.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-slate-800 mb-3">6. Medidas de Seguridad y Ciberdefensa</h2>
+            <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-3">6. Medidas de Seguridad y Ciberdefensa</h2>
             <p>
               Nuestro sitio no utiliza cookies propias ni de terceros para fines de seguimiento o &quot;tracking&quot;. La única información almacenada en tu navegador esn la normativa ecuatoriana, Hoptolt ha implementado estrictas medidas de seguridad técnicas, físicas y administrativas para proteger la integridad, confidencialidad y disponibilidad de la Base de Datos. Esto incluye cifrado en tránsito (protocolo TLS 1.3), cifrado en reposo (AES-256), cortafuegos (firewalls) de aplicaciones web y controles de acceso basados en roles (RBAC). A pesar de estos esfuerzos, ningún sistema informático es infalible, por lo que el Titular asume el riesgo inherente a la transmisión de información a través de Internet.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-slate-800 mb-3">7. Derechos del Titular (Derechos ARCO+)</h2>
+            <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-3">7. Derechos del Titular (Derechos ARCO+)</h2>
             <p>Conforme al Capítulo III de la Ley Orgánica de Protección de Datos Personales de Ecuador, el Titular ejerce soberanía sobre su información y goza irrenunciablemente de los siguientes derechos:</p>
             <ul className="list-disc pl-5 space-y-2 mt-2">
               <li><strong>Derecho a la Información y Acceso:</strong> Conocer qué datos personales suyos poseemos y solicitar copias de los mismos.</li>
@@ -84,7 +84,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-slate-800 mb-3">8. Plazo de Conservación</h2>
+            <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-3">8. Plazo de Conservación</h2>
             <p>
               Los datos personales se conservarán mientras la cuenta del usuario se mantenga activa y sea necesario para cumplir con las finalidades descritas, o hasta que el Titular solicite su eliminación. Post-eliminación, ciertos datos transaccionales podrían retenerse temporalmente de forma bloqueada exclusivamente para cumplir con obligaciones legales, tributarias o para el ejercicio/defensa de reclamos jurídicos, respetando los plazos de prescripción de la legislación ecuatoriana.
             </p>

@@ -178,23 +178,23 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
                     <select
                       value={currentYear}
                       onChange={(e) => onYearChange(e.target.value)}
-                      className="border border-slate-300 rounded-md shadow-sm py-1.5 px-3 text-sm focus:ring-primary-500 focus:border-primary-500 min-w-[80px]"
+                      className="border border-default bg-theme-surface dark:bg-slate-900 text-main rounded-md shadow-sm py-1.5 px-3 text-sm focus:ring-primary-500 focus:border-primary-500 min-w-[80px]"
                     >
-                      {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                      {availableYears.map(y => <option key={y} value={y} className="bg-card dark:bg-slate-900 text-main">{y}</option>)}
                     </select>
                     <select
                       value={currentMonth}
                       onChange={(e) => onMonthChange(e.target.value)}
-                      className="border border-slate-300 rounded-md shadow-sm py-1.5 px-3 text-sm focus:ring-primary-500 focus:border-primary-500 min-w-[120px]"
+                      className="border border-default bg-theme-surface dark:bg-slate-900 text-main rounded-md shadow-sm py-1.5 px-3 text-sm focus:ring-primary-500 focus:border-primary-500 min-w-[120px]"
                     >
-                      {availableMonths.map(m => <option key={m} value={m}>{monthNames[m]}</option>)}
+                      {availableMonths.map(m => <option key={m} value={m} className="bg-card dark:bg-slate-900 text-main">{monthNames[m]}</option>)}
                     </select>
                     <select
                       value={currentDay}
                       onChange={(e) => onDayChange(e.target.value)}
-                      className="border border-slate-300 rounded-md shadow-sm py-1.5 px-3 text-sm focus:ring-primary-500 focus:border-primary-500 min-w-[70px]"
+                      className="border border-default bg-theme-surface dark:bg-slate-900 text-main rounded-md shadow-sm py-1.5 px-3 text-sm focus:ring-primary-500 focus:border-primary-500 min-w-[70px]"
                     >
-                      {availableDays.map(d => <option key={d} value={d}>{d}</option>)}
+                      {availableDays.map(d => <option key={d} value={d} className="bg-card dark:bg-slate-900 text-main">{d}</option>)}
                     </select>
                   </div>
                 );
@@ -215,7 +215,7 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
   // Vista Principal (Grid de Tarjetas)
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {members.map((member) => {
           const profile = member.profile;
           if (!profile) return null;

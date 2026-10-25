@@ -11,7 +11,8 @@ class DewormingRepository {
             where: whereClause,
             include: buildRabbitProfileIncludes(rabbitWhere, cageWhere),
             order: [['dewormingDate', 'DESC']],
-            ...options
+            ...options,
+            subQuery: false
         });
     }
 

@@ -93,10 +93,16 @@ export function GenealogyTreeModal({ rabbit, onClose }: Readonly<GenealogyTreeMo
               <div key={uid} className="flex flex-col items-center">
                 <div className={`${padding} border-2 rounded-lg ${fontSize} ${bgColor} ${minW} text-center shadow-sm`}>
                   <div className="flex justify-center mb-2">
-                    <RabbitAvatar imageUrl={node.imageUrl} alt={node.name} size="md" />
+                    <RabbitAvatar imageUrl={node.imageUrl} alt={node.name || node.code} size="md" />
                   </div>
-                  <div className="font-semibold">{node.code}</div>
-                  <div className="text-muted truncate">{node.name}</div>
+                  {node.name ? (
+                    <>
+                      <div className="font-semibold text-main truncate">{node.name}</div>
+                      <div className="text-xs text-muted">{node.code}</div>
+                    </>
+                  ) : (
+                    <div className="font-semibold text-main">{node.code}</div>
+                  )}
                   {(node.age !== undefined || (node as any).weight !== undefined) && (
                     <div className="flex justify-center gap-2 mt-1 text-[9px] text-muted">
                       {node.age !== undefined && <span>Edad: {node.age} {node.age === 1 ? 'mes' : 'meses'}</span>}
@@ -177,7 +183,7 @@ export function GenealogyTreeModal({ rabbit, onClose }: Readonly<GenealogyTreeMo
   // Cada nodo necesita unos 160px de espacio para que no haya colisiones.
   const minTreeWidth = actualLevels > 0 ? Math.pow(2, actualLevels - 1) * 160 : '100%';
 
-  const modalTitle = rabbit.name ? `Árbol Genealógico de ${rabbit.code} - ${rabbit.name}` : `Árbol Genealógico de ${rabbit.code}`;
+  const modalTitle = rabbit.name ? `Árbol Genealógico de ${rabbit.name} - ${rabbit.code}` : `Árbol Genealógico de ${rabbit.code}`;
 
   return (
     <Dialog

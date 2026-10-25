@@ -35,8 +35,10 @@ export function RabbitDetailsModal({
 
   const showPartosTab = rabbit.sex === 'hembra' && (rabbit.age ?? 0) >= 4;
 
+  const modalTitle = rabbit.name ? `Detalles: ${rabbit.name} - ${rabbit.code}` : `Detalles: ${rabbit.code}`;
+
   return (
-    <Dialog open={open} onClose={onClose} title={`Detalles: ${rabbit.code} - ${rabbit.name || 'Sin Nombre'}`} size="xl">
+    <Dialog open={open} onClose={onClose} title={modalTitle} size="xl">
       <div className="flex flex-col h-full bg-card">
         <div className="border-b border-strong">
           <nav className="flex gap-4 px-6" aria-label="Tabs">
@@ -44,8 +46,8 @@ export function RabbitDetailsModal({
               onClick={() => setActiveTab('info')}
               className={`py-4 px-1 inline-flex items-center gap-2 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'info'
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-muted hover:text-main hover:border-slate-300'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-muted hover:text-main hover:border-slate-300 dark:hover:border-slate-600'
               }`}
             >
               <Info size={16} />
@@ -55,8 +57,8 @@ export function RabbitDetailsModal({
               onClick={() => setActiveTab('medical')}
               className={`py-4 px-1 inline-flex items-center gap-2 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'medical'
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-muted hover:text-main hover:border-slate-300'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-muted hover:text-main hover:border-slate-300 dark:hover:border-slate-600'
               }`}
             >
               <Activity size={16} />
@@ -67,8 +69,8 @@ export function RabbitDetailsModal({
                 onClick={() => setActiveTab('partos')}
                 className={`py-4 px-1 inline-flex items-center gap-2 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === 'partos'
-                    ? 'border-primary-500 text-primary-600'
-                    : 'border-transparent text-muted hover:text-main hover:border-slate-300'
+                    ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                    : 'border-transparent text-muted hover:text-main hover:border-slate-300 dark:hover:border-slate-600'
                 }`}
               >
                 <Activity size={16} />

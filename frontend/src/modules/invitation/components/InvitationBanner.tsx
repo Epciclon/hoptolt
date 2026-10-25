@@ -53,7 +53,7 @@ export function InvitationBanner() {
             <div>
               <h3 className="text-sm font-semibold text-teal-800">Tienes una invitación pendiente</h3>
               <p className="text-xs text-teal-600 mt-0.5">
-                Has sido invitado por <span className="font-bold">{inv.inviter?.fullName || 'un usuario'}</span> a unirte como trabajador al galpón <span className="font-bold">&quot;{inv.galpon?.name}&quot;</span>.
+                Has sido invitado por <span className="font-bold">{inv.inviter?.fullName?.trim() || inv.inviter?.username || 'un usuario'}</span> a unirte como trabajador al galpón <span className="font-bold">&quot;{inv.galpon?.name}&quot;</span>.
               </p>
             </div>
           </div>

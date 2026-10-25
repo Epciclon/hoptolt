@@ -8,6 +8,7 @@ import { useMortality } from '../hooks/useMortality';
 import { MortalityForm } from './MortalityForm';
 
 import { FilterBar } from '@/shared/ui/FilterBar';
+import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
 
 interface MortalityCatalogProps {
   onSuccess?: () => void;
@@ -17,6 +18,8 @@ export function MortalityCatalog({ onSuccess }: Readonly<MortalityCatalogProps>)
   const [searchTerm, setSearchTerm] = useState('');
   const { assignedRabbits, loading } = useMortality();
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const { can } = usePermissions();
+  const canCreate = can('mortality', 'canCreate');
 
   const {
     selectedRabbitIds,
@@ -59,7 +62,7 @@ export function MortalityCatalog({ onSuccess }: Readonly<MortalityCatalogProps>)
         <p className="text-sm text-muted">No hay conejos con jaula asignada disponibles para registrar mortalidad.</p>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start">
             {paginatedGroups.map((group) => {
               const hasLactatingRabbit = group.rabbits.some(r => (r as any).isLactating);
             return (
@@ -100,12 +103,18 @@ export function MortalityCatalog({ onSuccess }: Readonly<MortalityCatalogProps>)
       {selectedRabbitIds.length > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 shadow-xl border-2 border-primary-500 bg-theme-surface p-3 rounded-2xl flex items-center justify-between gap-6 max-w-[90vw] min-w-[300px]">
           <span className="text-main font-semibold px-2">{selectedRabbitIds.length} conejo{selectedRabbitIds.length !== 1 ? 's' : ''} seleccionado{selectedRabbitIds.length !== 1 ? 's' : ''}</span>
-          <Button
-            onClick={() => setIsFormModalOpen(true)}
-            variant="primary"
-          >
-            Registrar Baja
-          </Button>
+          {canCreate ? (
+            <Button
+              onClick={() => setIsFormModalOpen(true)}
+              variant="primary"
+            >
+              Registrar Baja
+            </Button>
+          ) : (
+            <span className="text-xs text-muted font-medium px-2">
+              Solo consulta
+            </span>
+          )}
         </div>
       )}
 

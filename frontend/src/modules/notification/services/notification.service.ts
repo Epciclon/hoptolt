@@ -54,8 +54,8 @@ export const notificationService = {
     };
   },
 
-  async getUnreadCount(): Promise<{ count: number }> {
-    const response = await api.get(`${BASE_URL}/unread-count`);
+  async getUnreadCount(filter?: string): Promise<{ count: number }> {
+    const response = await api.get(`${BASE_URL}/unread-count`, { params: filter ? { filter } : undefined });
     return response.data;
   },
 

@@ -130,14 +130,204 @@ const requirePermission = (moduleName, action) => {
                 }
             }
 
+            // Si se solicita registrar genealogía (canCreate) y el trabajador tiene permiso de reproducción (canCreate),
+            // permitir el registro ya que el destete de crías en reproducción vincula automáticamente su árbol
+            if (moduleName === 'genealogy' && action === 'canCreate' && !permission?.[action]) {
+                const hasReproductionPermission = await WorkerPermission.findOne({
+                    where: {
+                        farmMemberId: membership.id,
+                        moduleName: { [Op.in]: ['reproduction', 'reproduccion', 'reproduccionyparto', 'reproducción y parto'] },
+                        canCreate: true
+                    }
+                });
+
+                if (hasReproductionPermission) {
+                    return next();
+                }
+            }
+
+            // Si se solicita registrar mortalidad (canCreate) y el trabajador tiene permiso de reproducción (canCreate o canUpdate),
+            // permitir el registro de bajas de gazapos durante lactancia o muerte de la coneja en gestación
+            if (moduleName === 'mortality' && action === 'canCreate' && !permission?.[action]) {
+                const hasReproductionPermission = await WorkerPermission.findOne({
+                    where: {
+                        farmMemberId: membership.id,
+                        moduleName: { [Op.in]: ['reproduction', 'reproduccion', 'reproduccionyparto', 'reproducción y parto'] },
+                        [Op.or]: [{ canCreate: true }, { canUpdate: true }]
+                    }
+                });
+
+                if (hasReproductionPermission) {
+                    return next();
+                }
+            }
+
+            // Si se solicita consultar mortalidad (canRead) y el trabajador tiene permiso de reproducción (canRead),
+            // permitir la consulta de bajas de gazapos para el panel e historial reproductivo
+            if (moduleName === 'mortality' && action === 'canRead' && !permission?.[action]) {
+                const hasReproductionPermission = await WorkerPermission.findOne({
+                    where: {
+                        farmMemberId: membership.id,
+                        moduleName: { [Op.in]: ['reproduction', 'reproduccion', 'reproduccionyparto', 'reproducción y parto'] },
+                        canRead: true
+                    }
+                });
+
+                if (hasReproductionPermission) {
+                    return next();
+                }
+            }
+
+            // Si se solicita registrar conejo (canCreate) y el trabajador tiene permiso de reproducción (canCreate o canUpdate),
+            // permitir el registro ya que en el destete se incorporan las nuevas crías
+            if (moduleName === 'rabbits' && action === 'canCreate' && !permission?.[action]) {
+                const hasReproductionPermission = await WorkerPermission.findOne({
+                    where: {
+                        farmMemberId: membership.id,
+                        moduleName: { [Op.in]: ['reproduction', 'reproduccion', 'reproduccionyparto', 'reproducción y parto'] },
+                        [Op.or]: [{ canCreate: true }, { canUpdate: true }]
+                    }
+                });
+
+                if (hasReproductionPermission) {
+                    return next();
+                }
+            }
+
+            // Si se solicita consultar conejos (canRead) y el trabajador tiene permisos en genealogía o reproducción,
+            // permitir la consulta para mostrar el catálogo genealógico, sugerir nombres y cargar datos de parejas
+            if (moduleName === 'rabbits' && action === 'canRead' && !permission?.[action]) {
+                const hasRelatedPermission = await WorkerPermission.findOne({
+                    where: {
+                        farmMemberId: membership.id,
+                        moduleName: { [Op.in]: ['genealogy', 'genealogia', 'genealogía', 'reproduction', 'reproduccion', 'reproduccionyparto', 'reproducción y parto'] },
+                        [Op.or]: [{ canRead: true }, { canCreate: true }, { canUpdate: true }]
+                    }
+                });
+
+                if (hasRelatedPermission) {
+                    return next();
+                }
+            }
+
+            // Si se solicita consultar historial reproductivo de una coneja y el trabajador tiene permiso en conejos (canRead)
+            if (moduleName === 'reproduction' && action === 'canRead' && !permission?.[action] && req.path?.includes('/female/')) {
+                const hasRabbitPermission = await WorkerPermission.findOne({
+                    where: {
+                        farmMemberId: membership.id,
+                        moduleName: { [Op.in]: ['rabbits', 'conejos', 'conejo'] },
+                        canRead: true
+                    }
+                });
+
+                if (hasRabbitPermission) {
+                    return next();
+                }
+            }
+
+            // Si se solicita cancelar reproducción con estado fallido (aborto, no preñada) y el trabajador tiene canUpdate
+            if (moduleName === 'reproduction' && action === 'canDelete' && req.body?.action === 'fail' && !permission?.[action]) {
+                const hasUpdatePermission = await WorkerPermission.findOne({
+                    where: {
+                        farmMemberId: membership.id,
+                        moduleName: { [Op.in]: ['reproduction', 'reproduccion', 'reproduccionyparto', 'reproducción y parto'] },
+                        canUpdate: true
+                    }
+                });
+
+                if (hasUpdatePermission) {
+                    return next();
+                }
+            }
+
+            // Si se solicita consultar conejos o jaulas (canRead) y el trabajador tiene permisos en asignaciones (canRead o canCreate),
+            // permitir la consulta para poblar los selectores de asignación
+            if ((moduleName === 'rabbits' || moduleName === 'cages') && action === 'canRead' && !permission?.[action]) {
+                const hasAssignmentPermission = await WorkerPermission.findOne({
+                    where: {
+                        farmMemberId: membership.id,
+                        moduleName: { [Op.in]: ['assignments', 'asignarjaula', 'asignaciones', 'asignar jaula', 'asignacion', 'asignación', 'asignar'] },
+                        [Op.or]: [{ canRead: true }, { canCreate: true }]
+                    }
+                });
+
+                if (hasAssignmentPermission) {
+                    return next();
+                }
+            }
+
+            // Si se solicita consultar vacunaciones o desparasitaciones y el trabajador tiene permiso de conejos (canRead),
+            // permitir la lectura para visualizar la ficha médica del conejo
+            if ((moduleName === 'deworming' || moduleName === 'vaccination') && action === 'canRead' && !permission?.[action]) {
+                const hasRabbitPermission = await WorkerPermission.findOne({
+                    where: {
+                        farmMemberId: membership.id,
+                        moduleName: { [Op.in]: ['rabbits', 'conejos', 'conejo'] },
+                        canRead: true
+                    }
+                });
+
+                if (hasRabbitPermission) {
+                    return next();
+                }
+            }
+
+            // Si se solicita consultar datos operativos para generar reportes y el trabajador tiene permiso en reportes (canRead),
+            // permitir la lectura de los módulos del reporte (alimentación, limpieza, vacunación, desparasitación, mortalidad, reproducción)
+            const reportableModules = ['feeding', 'cleaning', 'deworming', 'vaccination', 'mortality', 'reproduction'];
+            if (reportableModules.includes(moduleName) && action === 'canRead' && !permission?.[action]) {
+                const hasReportsPermission = await WorkerPermission.findOne({
+                    where: {
+                        farmMemberId: membership.id,
+                        moduleName: { [Op.in]: ['reports', 'reportes', 'reporte'] },
+                        canRead: true
+                    }
+                });
+
+                if (hasReportsPermission) {
+                    return next();
+                }
+            }
+
             if (!permission?.[action]) {
                 const actionNames = {
-                    canRead: 'leer',
+                    canRead: 'consultar',
                     canCreate: 'crear',
-                    canUpdate: 'modificar',
+                    canUpdate: 'editar',
                     canDelete: 'eliminar'
                 };
-                throw new AppError(`No tiene permisos para ${actionNames[action]} en el módulo ${moduleName}.`, 403);
+                const moduleDisplayNames = {
+                    'cages': 'Jaulas',
+                    'jaulas': 'Jaulas',
+                    'races': 'Razas',
+                    'razas': 'Razas',
+                    'rabbits': 'Conejos',
+                    'conejos': 'Conejos',
+                    'assignments': 'Asignaciones',
+                    'asignar': 'Asignaciones',
+                    'genealogy': 'Genealogía',
+                    'genealogia': 'Genealogía',
+                    'reports': 'Reportes',
+                    'reportes': 'Reportes',
+                    'feeding': 'Alimentación',
+                    'alimentacion': 'Alimentación',
+                    'vaccination': 'Vacunación',
+                    'vacunacion': 'Vacunación',
+                    'deworming': 'Desparasitación',
+                    'desparasitacion': 'Desparasitación',
+                    'cleaning': 'Limpieza',
+                    'limpieza': 'Limpieza',
+                    'mortality': 'Mortalidad',
+                    'mortalidad': 'Mortalidad',
+                    'reproduction': 'Reproducción y Parto',
+                    'reproduccionyparto': 'Reproducción y Parto',
+                    'farmMembers': 'Equipo de Trabajo',
+                    'usuarios': 'Equipo de Trabajo',
+                    'galpones': 'Galpones'
+                };
+                const actionText = actionNames[action] || action;
+                const moduleText = moduleDisplayNames[moduleName] || moduleName;
+                throw new AppError(`No tienes permisos para ${actionText} en el módulo ${moduleText}.`, 403);
             }
 
             next();

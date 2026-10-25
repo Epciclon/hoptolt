@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Input, Select, Button } from '@/shared/ui';
-import { Dices } from 'lucide-react';
+import { Dices, X } from 'lucide-react';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { rabbitService } from '../services/rabbit.service';
 import { raceService } from '@/modules/races/services/race.service';
@@ -75,11 +75,29 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
   const selectedPurpose = watch('purpose');
   const selectedBirthDate = watch('birthDate');
 
+  const isInitialMountRef = useRef(true);
+  const prevDateRef = useRef(defaultValues?.birthDate ? new Date(defaultValues.birthDate).toISOString().split('T')[0] : '');
+  const prevPurposeRef = useRef(defaultValues?.purpose || '');
+
   useEffect(() => {
-    if (mode === 'create' && selectedPurpose && selectedBirthDate) {
+    if (!selectedPurpose || !selectedBirthDate) return;
+
+    if (mode === 'create') {
       const age = calculateAgeMonths(selectedBirthDate);
       const estWeight = calculateEstimatedWeight(selectedPurpose, age);
       setValue('weight', estWeight, { shouldValidate: true });
+    } else if (mode === 'edit') {
+      if (isInitialMountRef.current) {
+        isInitialMountRef.current = false;
+        return;
+      }
+      if (selectedBirthDate !== prevDateRef.current || selectedPurpose !== prevPurposeRef.current) {
+        prevDateRef.current = selectedBirthDate;
+        prevPurposeRef.current = selectedPurpose;
+        const age = calculateAgeMonths(selectedBirthDate);
+        const estWeight = calculateEstimatedWeight(selectedPurpose, age);
+        setValue('weight', estWeight, { shouldValidate: true });
+      }
     }
   }, [selectedPurpose, selectedBirthDate, mode, setValue]);
 
@@ -95,6 +113,13 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
       showToast(err instanceof Error ? err.message : 'Error al subir la imagen.', 'error');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImageUrl(undefined);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -267,7 +292,7 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
       </div>
 
       <Input
-        label="Peso (kg)"
+        label="Peso en kg"
         type="number"
         step="0.01"
         required
@@ -280,19 +305,27 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
       <div className="border-t border-default pt-3 mt-1">
         <span className="block text-sm font-medium text-muted mb-2">Fotografía del conejo</span>
         {imageUrl ? (
-          <div className="mb-2 relative w-full h-32 bg-theme-surface border border-strong rounded-lg overflow-hidden">
+          <div className="mb-3 relative w-full h-64 border border-default rounded-lg overflow-hidden bg-theme-surface">
             <Image
               src={imageUrl}
               alt="Foto del conejo"
               fill
               unoptimized
               priority={true}
-              className="object-contain"
+              className="object-contain rounded-lg"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             />
+            <button
+              type="button"
+              onClick={handleRemoveImage}
+              className="absolute top-2 right-2 bg-rose-600 hover:bg-rose-700 text-white p-1.5 rounded-full shadow-md transition-colors z-10"
+              title="Quitar fotografía"
+            >
+              <X size={16} />
+            </button>
           </div>
         ) : (
-          <div className="mb-2">
+          <div className="mb-3">
             <ImagePlaceholder size="lg" />
           </div>
         )}
@@ -311,7 +344,7 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
             hover:file:bg-blue-100 dark:hover:file:bg-blue-800/60
             disabled:opacity-50 transition-colors"
         />
-        {uploading && <p className="text-sm text-muted mt-2">Subiendo imagen, por favor espera...</p>}
+        {uploading && <p className="text-sm text-muted mt-2">Subiendo imagen...</p>}
       </div>
 
       <div className="flex gap-3 justify-end pt-4 border-t border-default">

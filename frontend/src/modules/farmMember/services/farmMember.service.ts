@@ -1,4 +1,4 @@
-﻿import api from '@/lib/api';
+import api from '@/lib/api';
 import type { FarmMember, UpdateWorkerDto } from '../types/farmMember.types';
 
 export const farmMemberService = {
@@ -29,5 +29,21 @@ export const farmMemberService = {
 
   async removeWorker(id: number): Promise<void> {
     await api.delete(`/farm-members/${id}`);
+  },
+
+  async getAuditLogs(galponId: number, filters: import('../types/farmMember.types').AuditLogFilters = {}): Promise<import('../types/farmMember.types').AuditLogsResponse> {
+    const { data } = await api.get<{ success: boolean } & import('../types/farmMember.types').AuditLogsResponse>(
+      `/galpones/${galponId}/audit-logs`,
+      { params: filters }
+    );
+    return data;
+  },
+
+  async logReportAudit(galponId: number, data: { moduleName: string; moduleLabel: string; startDate?: string; endDate?: string; format?: string }): Promise<void> {
+    try {
+      await api.post(`/galpones/${galponId}/reports/audit`, data);
+    } catch (e) {
+      console.error('Error logging report audit:', e);
+    }
   }
 };

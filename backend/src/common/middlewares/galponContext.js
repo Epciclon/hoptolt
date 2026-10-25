@@ -14,6 +14,7 @@ exports.galponContext = async (req, res, next) => {
         }
 
         req.activeGalpon = activeGalpon;
+        req.galpon = activeGalpon;
         req.galponId = activeGalpon.id;
         next();
     } catch (error) {
