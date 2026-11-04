@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -40,7 +40,7 @@ export function useDashboardCalendar() {
     enabled: !!activeParams,
   });
 
-  const fetchCalendar = useCallback(async (year: number, month: number, type: string = 'births') => {
+  const fetchCalendar = useCallback((year: number, month: number, type: string = 'births') => {
     setActiveParams({ year, month, type });
   }, []);
 

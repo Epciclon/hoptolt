@@ -106,7 +106,7 @@ export function useFeeding(filters?: { profileId?: string; date?: string }) {
   });
 
   const createFeeding = async (payload: { cageIds: number[]; foodTypes: string[]; justification?: string; shift?: 'mañana' | 'tarde' }) => {
-    return createFeedingMutation.mutateAsync(payload);
+    return await createFeedingMutation.mutateAsync(payload);
   };
 
   const filteredAssignedRabbits = assignedCageIds.length > 0

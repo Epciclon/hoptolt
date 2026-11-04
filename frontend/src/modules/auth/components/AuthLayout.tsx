@@ -20,7 +20,7 @@ export function AuthLayout({ children }: Readonly<{ children: ReactNode }>) {
             {/* Logo */}
             <div className="flex items-center mb-5 lg:mb-6 animate-fade-in-left">
               <div className="w-12 h-12 lg:w-14 lg:h-14 mr-4 animate-bounce-slow">
-                <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-lg">
+                <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-lg" aria-hidden="true">
                   <circle cx="50" cy="35" r="15" fill="currentColor" opacity="0.8" />
                   <ellipse cx="42" cy="28" rx="4" ry="8" fill="currentColor" />
                   <ellipse cx="58" cy="28" rx="4" ry="8" fill="currentColor" />

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 import { Button } from '@/shared/ui';
 
@@ -64,6 +64,22 @@ export function ZoomableViewer({ children }: Readonly<ZoomableViewerProps>) {
     setScale(prev => Math.min(Math.max(Number((prev + factor).toFixed(2)), 0.3), 2.5));
   };
 
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const step = 40;
+      if (e.key === 'ArrowUp') { e.preventDefault(); setPosition(p => ({ ...p, y: p.y + step })); }
+      if (e.key === 'ArrowDown') { e.preventDefault(); setPosition(p => ({ ...p, y: p.y - step })); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); setPosition(p => ({ ...p, x: p.x + step })); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); setPosition(p => ({ ...p, x: p.x - step })); }
+      if (e.key === '+') { e.preventDefault(); handleZoomIn(); }
+      if (e.key === '-') { e.preventDefault(); handleZoomOut(); }
+    };
+    el.addEventListener('keydown', handleKeyDown);
+    return () => el.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   return (
     <div className="relative w-full h-[520px] sm:h-[580px] border border-strong rounded-xl bg-theme-surface overflow-hidden flex flex-col select-none">
       {/* Barra de herramientas compacta y responsiva */}
@@ -100,8 +116,6 @@ export function ZoomableViewer({ children }: Readonly<ZoomableViewerProps>) {
 
       {/* Visor interactivo con Pointer Events para mouse y táctil */}
       <div
-        role="application"
-        aria-label="Visor interactivo arrastrable y ampliable"
         className={`w-full h-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} focus:outline-none touch-none`}
         ref={containerRef}
         onPointerDown={handlePointerDown}
@@ -109,15 +123,6 @@ export function ZoomableViewer({ children }: Readonly<ZoomableViewerProps>) {
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}
         onWheel={handleWheel}
-        onKeyDown={(e) => {
-          const step = 40;
-          if (e.key === 'ArrowUp') { e.preventDefault(); setPosition(p => ({ ...p, y: p.y + step })); }
-          if (e.key === 'ArrowDown') { e.preventDefault(); setPosition(p => ({ ...p, y: p.y - step })); }
-          if (e.key === 'ArrowLeft') { e.preventDefault(); setPosition(p => ({ ...p, x: p.x + step })); }
-          if (e.key === 'ArrowRight') { e.preventDefault(); setPosition(p => ({ ...p, x: p.x - step })); }
-          if (e.key === '+') { e.preventDefault(); handleZoomIn(); }
-          if (e.key === '-') { e.preventDefault(); handleZoomOut(); }
-        }}
       >
         <div 
           className="origin-top transition-transform duration-75 ease-out flex justify-center pt-14 sm:pt-16 pb-20"

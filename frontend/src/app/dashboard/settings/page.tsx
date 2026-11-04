@@ -62,7 +62,7 @@ const NAV_ITEMS: NavItem[] = [
 
 function CheckIcon() {
   return (
-    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 12 12">
+    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 12 12" aria-hidden="true">
       <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );

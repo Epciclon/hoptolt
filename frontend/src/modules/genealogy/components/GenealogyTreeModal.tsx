@@ -109,7 +109,7 @@ export function GenealogyTreeModal({ rabbit, onClose }: Readonly<GenealogyTreeMo
         </div>
 
         {nextGeneration && nextGeneration.some(slot => slot.node !== null) && (
-          <svg className="w-full h-14" style={{ minHeight: '56px' }}>
+          <svg className="w-full h-14" style={{ minHeight: '56px' }} aria-hidden="true">
             {generation.map((slot, index) => {
               const { node, uid } = slot;
               if (!node) return null;

@@ -189,7 +189,7 @@ export function AssignRabbitForm({ onSuccess, onCancel }: Readonly<AssignRabbitF
               className="flex items-center justify-center p-2 rounded-full hover:bg-theme-hover text-muted hover:text-main transition-colors"
               title="Volver a seleccionar jaula"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="m15 18-6-6 6-6"/>
               </svg>
             </button>
@@ -256,7 +256,7 @@ export function AssignRabbitForm({ onSuccess, onCancel }: Readonly<AssignRabbitF
                               className="absolute top-2 right-2 flex items-center justify-center w-6 h-6 bg-card border border-strong rounded-full text-muted hover:text-main shadow-sm opacity-0 group-hover:opacity-100 transition-all z-10"
                               title="Quitar"
                             >
-                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                 <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
                               </svg>
                             </button>

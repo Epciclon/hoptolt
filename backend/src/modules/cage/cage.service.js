@@ -144,46 +144,43 @@ class CageService {
         return createPaginatedResponse(enrichedCages, pageValue, limitValue, total);
     }
 
-    async editCage(id, data, profileId) {
-        const cage = await cageRepository.findById(id);
-        if (!cage) throw new AppError('No se encontró la jaula.', 404);
-
-        await this._assertGalponAccess(cage.galponId, profileId);
-
-        if (data.status === 'mantenimiento' && cage.status !== 'mantenimiento') {
-            const assignedCount = await assignmentRepository.countActiveByCageId(id);
+    async _validateCageMaintenanceStatus(cageId, dataStatus, currentStatus) {
+        if (dataStatus === 'mantenimiento' && currentStatus !== 'mantenimiento') {
+            const assignedCount = await assignmentRepository.countActiveByCageId(cageId);
             if (assignedCount > 0) {
                 throw new AppError('No se puede cambiar el estado a mantenimiento porque hay conejos asignados. Primero debe desasignarlos.', 400);
             }
         }
+    }
 
-        if (data.type && data.type !== cage.type) {
-            const activeAssignments = await assignmentRepository.findActiveByCageId(id);
-            if (activeAssignments && activeAssignments.length > 0) {
-                const rabbitRepo = require('../rabbit/rabbit.repository');
-                const assignmentService = require('../assignment/assignment.service');
-                const { Op } = require('sequelize');
-                
-                const rabbitIds = activeAssignments.map(a => a.rabbitId);
-                const rabbits = await rabbitRepo.findAll({ where: { id: { [Op.in]: rabbitIds } } });
-                
-                const simulatedCage = { ...(typeof cage.get === 'function' ? cage.get({ plain: true }) : cage), type: data.type };
-                
-                if (data.type === 'reproducción' && rabbits.length > 1) {
-                     throw new AppError('No puedes cambiar esta jaula a reproducción porque actualmente tiene más de 1 conejo asignado.', 400);
-                }
-                
-                assignmentService.validateCompatibility(simulatedCage, rabbits, []);
-            }
+    async _validateCageTypeChange(cage, newType) {
+        if (!newType || newType === cage.type) return;
+
+        const activeAssignments = await assignmentRepository.findActiveByCageId(cage.id);
+        if (!activeAssignments || activeAssignments.length === 0) return;
+
+        const rabbitRepo = require('../rabbit/rabbit.repository');
+        const assignmentService = require('../assignment/assignment.service');
+        const { Op } = require('sequelize');
+
+        const rabbitIds = activeAssignments.map(a => a.rabbitId);
+        const rabbits = await rabbitRepo.findAll({ where: { id: { [Op.in]: rabbitIds } } });
+
+        if (newType === 'reproducción' && rabbits.length > 1) {
+            throw new AppError('No puedes cambiar esta jaula a reproducción porque actualmente tiene más de 1 conejo asignado.', 400);
         }
 
+        const rawCage = typeof cage.get === 'function' ? cage.get({ plain: true }) : cage;
+        const simulatedCage = { ...rawCage, type: newType };
+        assignmentService.validateCompatibility(simulatedCage, rabbits, []);
+    }
+
+    _recordEditCageAudit(cage, updated, profileId) {
         const before = {
             type: cage.type,
             capacity: cage.capacity,
             status: cage.status
         };
-
-        const updated = await cageRepository.update(cage, data);
 
         recordWorkerChange({
             galponId: cage.galponId,
@@ -200,6 +197,18 @@ class CageService {
                 status: updated.status
             }
         }).catch(err => console.error('Error recording worker change on editCage:', err));
+    }
+
+    async editCage(id, data, profileId) {
+        const cage = await cageRepository.findById(id);
+        if (!cage) throw new AppError('No se encontró la jaula.', 404);
+
+        await this._assertGalponAccess(cage.galponId, profileId);
+        await this._validateCageMaintenanceStatus(id, data.status, cage.status);
+        await this._validateCageTypeChange(cage, data.type);
+
+        const updated = await cageRepository.update(cage, data);
+        this._recordEditCageAudit(cage, updated, profileId);
 
         return updated;
     }

@@ -1,9 +1,91 @@
-const genealogyRepository = require('./genealogy.repository');
 const { Rabbit } = require('../../domain/models');
+const genealogyRepository = require('./genealogy.repository');
 const AppError = require('../../errors/AppError');
 const { recordWorkerChange } = require('../../common/helpers/audit.helper');
 
 class GenealogyService {
+    async _resolveRabbitLabelById(rabbitId, fallbackLabel = 'Sin padre registrado') {
+        if (!rabbitId) return fallbackLabel;
+        const rabbit = await Rabbit.findByPk(rabbitId, { paranoid: false });
+        if (!rabbit) return fallbackLabel;
+        return rabbit.name ? `${rabbit.name} - ${rabbit.code}` : rabbit.code;
+    }
+
+    _recordGenealogyAudit(rabbit, beforeData, afterData, action, galponId, profileId) {
+        if (!profileId) return;
+        const rabbitLabel = rabbit.name ? `${rabbit.name} - ${rabbit.code}` : rabbit.code;
+        const isFemale = rabbit.sex === 'hembra';
+        const prefix = isFemale ? 'Coneja' : 'Conejo';
+        const article = isFemale ? 'de la coneja' : 'del conejo';
+        const verb = action === 'crear' ? 'Registró' : 'Actualizó';
+
+        recordWorkerChange({
+            galponId: galponId || rabbit.galponId,
+            profileId,
+            action,
+            entity: 'genealogy',
+            entityId: rabbit.id,
+            itemName: `${prefix} ${rabbitLabel}`,
+            summary: `${verb} el árbol genealógico ${article} ${rabbitLabel}`,
+            before: beforeData,
+            after: afterData
+        }).catch(err => console.error(`Error recording worker change on ${action} Genealogy:`, err));
+    }
+
+    async _updateExistingGenealogy(existing, rabbit, fatherId, motherId, consanguinityWarning, galponId, profileId) {
+        const [prevFatherLabel, prevMotherLabel] = await Promise.all([
+            this._resolveRabbitLabelById(existing.fatherId, 'Sin padre registrado'),
+            this._resolveRabbitLabelById(existing.motherId, 'Sin madre registrada')
+        ]);
+
+        const newTargetFatherId = fatherId !== undefined ? (fatherId || null) : existing.fatherId;
+        const newTargetMotherId = motherId !== undefined ? (motherId || null) : existing.motherId;
+        const hasChanged = (existing.fatherId || null) !== newTargetFatherId ||
+                           (existing.motherId || null) !== newTargetMotherId;
+
+        const result = await genealogyRepository.update(existing, { fatherId: newTargetFatherId, motherId: newTargetMotherId });
+
+        const [fatherLabel, motherLabel] = await Promise.all([
+            this._resolveRabbitLabelById(newTargetFatherId, 'Sin padre registrado'),
+            this._resolveRabbitLabelById(newTargetMotherId, 'Sin madre registrada')
+        ]);
+
+        if (profileId && hasChanged) {
+            this._recordGenealogyAudit(
+                rabbit,
+                { father: prevFatherLabel, mother: prevMotherLabel },
+                { father: fatherLabel, mother: motherLabel },
+                'modificar',
+                galponId,
+                profileId
+            );
+        }
+
+        return { ...result.toJSON(), consanguinityWarning };
+    }
+
+    async _createNewGenealogy(rabbit, fatherId, motherId, consanguinityWarning, galponId, profileId) {
+        const result = await genealogyRepository.create({ rabbitId: rabbit.id, fatherId, motherId, galponId });
+
+        const [fatherLabel, motherLabel] = await Promise.all([
+            this._resolveRabbitLabelById(fatherId, 'Sin padre registrado'),
+            this._resolveRabbitLabelById(motherId, 'Sin madre registrada')
+        ]);
+
+        if (profileId) {
+            this._recordGenealogyAudit(
+                rabbit,
+                null,
+                { father: fatherLabel, mother: motherLabel },
+                'crear',
+                galponId,
+                profileId
+            );
+        }
+
+        return { ...result.toJSON(), consanguinityWarning };
+    }
+
     async registerGenealogy(data, galponId, profileId = null) {
         const { rabbitId, fatherId, motherId } = data;
 
@@ -35,101 +117,48 @@ class GenealogyService {
             };
         }
 
-        const rabbitLabel = rabbit.name ? `${rabbit.name} - ${rabbit.code}` : rabbit.code;
-        const isFemale = rabbit.sex === 'hembra';
-        const prefix = isFemale ? 'Coneja' : 'Conejo';
-        const article = isFemale ? 'de la coneja' : 'del conejo';
-
-        const targetFatherId = fatherId;
-        const targetMotherId = motherId;
-        const [fatherObj, motherObj, existing] = await Promise.all([
-            targetFatherId ? Rabbit.findByPk(targetFatherId, { paranoid: false }) : Promise.resolve(null),
-            targetMotherId ? Rabbit.findByPk(targetMotherId, { paranoid: false }) : Promise.resolve(null),
-            genealogyRepository.findByRabbitId(rabbitId)
-        ]);
-
-        const fatherLabel = fatherObj ? (fatherObj.name ? `${fatherObj.name} - ${fatherObj.code}` : fatherObj.code) : 'Sin padre registrado';
-        const motherLabel = motherObj ? (motherObj.name ? `${motherObj.name} - ${motherObj.code}` : motherObj.code) : 'Sin madre registrada';
-
+        const existing = await genealogyRepository.findByRabbitId(rabbitId);
         if (existing) {
-            const [prevFatherObj, prevMotherObj] = await Promise.all([
-                existing.fatherId ? Rabbit.findByPk(existing.fatherId, { paranoid: false }) : Promise.resolve(null),
-                existing.motherId ? Rabbit.findByPk(existing.motherId, { paranoid: false }) : Promise.resolve(null)
-            ]);
-            const prevFatherLabel = prevFatherObj ? (prevFatherObj.name ? `${prevFatherObj.name} - ${prevFatherObj.code}` : prevFatherObj.code) : 'Sin padre registrado';
-            const prevMotherLabel = prevMotherObj ? (prevMotherObj.name ? `${prevMotherObj.name} - ${prevMotherObj.code}` : prevMotherObj.code) : 'Sin madre registrada';
-
-            const beforeData = { father: prevFatherLabel, mother: prevMotherLabel };
-            const newTargetFatherId = fatherId !== undefined ? (fatherId || null) : existing.fatherId;
-            const newTargetMotherId = motherId !== undefined ? (motherId || null) : existing.motherId;
-            const hasChanged = (existing.fatherId || null) !== newTargetFatherId ||
-                               (existing.motherId || null) !== newTargetMotherId;
-
-            const result = await genealogyRepository.update(existing, { fatherId: newTargetFatherId, motherId: newTargetMotherId });
-            
-            if (profileId && hasChanged) {
-                recordWorkerChange({
-                    galponId,
-                    profileId,
-                    action: 'modificar',
-                    entity: 'genealogy',
-                    entityId: rabbit.id,
-                    itemName: `${prefix} ${rabbitLabel}`,
-                    summary: `Actualizó el árbol genealógico ${article} ${rabbitLabel}`,
-                    before: beforeData,
-                    after: { father: fatherLabel, mother: motherLabel }
-                }).catch(err => console.error('Error recording worker change on update Genealogy:', err));
-            }
-
-            return { ...result.toJSON(), consanguinityWarning };
+            return this._updateExistingGenealogy(existing, rabbit, fatherId, motherId, consanguinityWarning, galponId, profileId);
         }
 
-        const result = await genealogyRepository.create({ rabbitId, fatherId, motherId, galponId });
-
-        if (profileId) {
-            recordWorkerChange({
-                galponId,
-                profileId,
-                action: 'crear',
-                entity: 'genealogy',
-                entityId: rabbit.id,
-                itemName: `${prefix} ${rabbitLabel}`,
-                summary: `Registró el árbol genealógico ${article} ${rabbitLabel}`,
-                before: null,
-                after: { father: fatherLabel, mother: motherLabel }
-            }).catch(err => console.error('Error recording worker change on create Genealogy:', err));
-        }
-
-        return { ...result.toJSON(), consanguinityWarning };
+        return this._createNewGenealogy(rabbit, fatherId, motherId, consanguinityWarning, galponId, profileId);
     }
 
     async checkConsanguinity(rabbitId1, rabbitId2) {
+        if (!rabbitId1 || !rabbitId2) return false;
         if (rabbitId1 === rabbitId2) return true;
-
-        const [ancestorsOf2, ancestorsOf1, genealogy1, genealogy2] = await Promise.all([
-            this.getAncestors(rabbitId2, 5),
-            this.getAncestors(rabbitId1, 5),
-            genealogyRepository.findByRabbitId(rabbitId1),
-            genealogyRepository.findByRabbitId(rabbitId2)
-        ]);
-
-        if (ancestorsOf2.includes(rabbitId1)) return true;
-        if (ancestorsOf1.includes(rabbitId2)) return true;
 
         const [ancestors1, ancestors2] = await Promise.all([
             this.getAncestors(rabbitId1, 3),
             this.getAncestors(rabbitId2, 3)
         ]);
 
-        const commonAncestors = ancestors1.filter(id => ancestors2.includes(id));
-        if (commonAncestors.length > 0) return true;
+        const set1 = new Set(ancestors1);
+        set1.add(rabbitId1);
 
-        if (genealogy1 && genealogy2) {
-            if (genealogy1.fatherId && genealogy1.fatherId === genealogy2.fatherId) return true;
-            if (genealogy1.motherId && genealogy1.motherId === genealogy2.motherId) return true;
+        const set2 = new Set(ancestors2);
+        set2.add(rabbitId2);
+
+        for (const id of set1) {
+            if (set2.has(id)) return true;
         }
 
         return false;
+    }
+
+    _collectParentsFromGenealogies(genealogies, ancestors) {
+        const nextLevelIds = [];
+        for (const genealogy of genealogies) {
+            if (!genealogy) continue;
+            for (const parentId of [genealogy.fatherId, genealogy.motherId]) {
+                if (parentId && !ancestors.has(parentId)) {
+                    ancestors.add(parentId);
+                    nextLevelIds.push(parentId);
+                }
+            }
+        }
+        return nextLevelIds;
     }
 
     async getAncestors(rabbitId, levels) {
@@ -140,45 +169,34 @@ class GenealogyService {
             const genealogies = await Promise.all(
                 currentLevelIds.map(id => genealogyRepository.findByRabbitId(id))
             );
-            const nextLevelIds = [];
-            for (const genealogy of genealogies) {
-                if (genealogy) {
-                    if (genealogy.fatherId && !ancestors.has(genealogy.fatherId)) {
-                        ancestors.add(genealogy.fatherId);
-                        nextLevelIds.push(genealogy.fatherId);
-                    }
-                    if (genealogy.motherId && !ancestors.has(genealogy.motherId)) {
-                        ancestors.add(genealogy.motherId);
-                        nextLevelIds.push(genealogy.motherId);
-                    }
-                }
-            }
-            currentLevelIds = nextLevelIds;
+            currentLevelIds = this._collectParentsFromGenealogies(genealogies, ancestors);
         }
 
         return Array.from(ancestors);
     }
 
     async checkMotherMultiplePartners(motherId, currentFatherId, excludeRabbitId = null) {
-        const mothersChildren = await genealogyRepository.findChildrenByMother(motherId);
-        const fatherIds = new Set();
-        mothersChildren.forEach(g => {
-            if (g.rabbitId !== excludeRabbitId && g.fatherId) {
-                fatherIds.add(g.fatherId);
-            }
-        });
-        return fatherIds.size > 1;
+        const { Op } = require('sequelize');
+        const whereClause = { motherId };
+        if (excludeRabbitId) {
+            whereClause.rabbitId = { [Op.ne]: excludeRabbitId };
+        }
+        const offspring = await genealogyRepository.findAll({ where: whereClause });
+        const partnerIds = new Set(offspring.map(g => g.fatherId).filter(Boolean));
+        partnerIds.delete(currentFatherId);
+        return partnerIds.size > 0;
     }
 
     async checkFatherMultiplePartners(fatherId, currentMotherId, excludeRabbitId = null) {
-        const fathersChildren = await genealogyRepository.findChildrenByFather(fatherId);
-        const motherIds = new Set();
-        fathersChildren.forEach(g => {
-            if (g.rabbitId !== excludeRabbitId && g.motherId) {
-                motherIds.add(g.motherId);
-            }
-        });
-        return motherIds.size > 1;
+        const { Op } = require('sequelize');
+        const whereClause = { fatherId };
+        if (excludeRabbitId) {
+            whereClause.rabbitId = { [Op.ne]: excludeRabbitId };
+        }
+        const offspring = await genealogyRepository.findAll({ where: whereClause });
+        const partnerIds = new Set(offspring.map(g => g.motherId).filter(Boolean));
+        partnerIds.delete(currentMotherId);
+        return partnerIds.size > 0;
     }
 
     async getGenealogy(rabbitId) {
@@ -221,14 +239,10 @@ class GenealogyService {
             };
         }
 
-        const [prevFatherObj, prevMotherObj] = await Promise.all([
-            genealogy.fatherId ? Rabbit.findByPk(genealogy.fatherId, { paranoid: false }) : Promise.resolve(null),
-            genealogy.motherId ? Rabbit.findByPk(genealogy.motherId, { paranoid: false }) : Promise.resolve(null)
+        const [prevFatherLabel, prevMotherLabel] = await Promise.all([
+            this._resolveRabbitLabelById(genealogy.fatherId, 'Sin padre registrado'),
+            this._resolveRabbitLabelById(genealogy.motherId, 'Sin madre registrada')
         ]);
-        const prevFatherLabel = prevFatherObj ? (prevFatherObj.name ? `${prevFatherObj.name} - ${prevFatherObj.code}` : prevFatherObj.code) : 'Sin padre registrado';
-        const prevMotherLabel = prevMotherObj ? (prevMotherObj.name ? `${prevMotherObj.name} - ${prevMotherObj.code}` : prevMotherObj.code) : 'Sin madre registrada';
-
-        const beforeData = { father: prevFatherLabel, mother: prevMotherLabel };
 
         const hasChanged = (genealogy.fatherId || null) !== (newFatherId || null) ||
                            (genealogy.motherId || null) !== (newMotherId || null);
@@ -239,30 +253,20 @@ class GenealogyService {
         genealogy.changed('motherId', true);
         const result = await genealogy.save();
 
-        const [fatherObj, motherObj] = await Promise.all([
-            result.fatherId ? Rabbit.findByPk(result.fatherId, { paranoid: false }) : Promise.resolve(null),
-            result.motherId ? Rabbit.findByPk(result.motherId, { paranoid: false }) : Promise.resolve(null)
+        const [fatherLabel, motherLabel] = await Promise.all([
+            this._resolveRabbitLabelById(result.fatherId, 'Sin padre registrado'),
+            this._resolveRabbitLabelById(result.motherId, 'Sin madre registrada')
         ]);
-        const fatherLabel = fatherObj ? (fatherObj.name ? `${fatherObj.name} - ${fatherObj.code}` : fatherObj.code) : 'Sin padre registrado';
-        const motherLabel = motherObj ? (motherObj.name ? `${motherObj.name} - ${motherObj.code}` : motherObj.code) : 'Sin madre registrada';
-
-        const rabbitLabel = rabbit.name ? `${rabbit.name} - ${rabbit.code}` : rabbit.code;
-        const isFemale = rabbit.sex === 'hembra';
-        const prefix = isFemale ? 'Coneja' : 'Conejo';
-        const article = isFemale ? 'de la coneja' : 'del conejo';
 
         if (profileId && hasChanged) {
-            recordWorkerChange({
-                galponId: galponId || rabbit.galponId,
-                profileId,
-                action: 'modificar',
-                entity: 'genealogy',
-                entityId: rabbit.id,
-                itemName: `${prefix} ${rabbitLabel}`,
-                summary: `Actualizó el árbol genealógico ${article} ${rabbitLabel}`,
-                before: beforeData,
-                after: { father: fatherLabel, mother: motherLabel }
-            }).catch(err => console.error('Error recording worker change on editGenealogy:', err));
+            this._recordGenealogyAudit(
+                rabbit,
+                { father: prevFatherLabel, mother: prevMotherLabel },
+                { father: fatherLabel, mother: motherLabel },
+                'modificar',
+                galponId,
+                profileId
+            );
         }
 
         return { ...result.toJSON(), consanguinityWarning };

@@ -76,7 +76,7 @@ export function useAssignments() {
   });
 
   const moveRabbit = async (payload: { rabbitId: number; currentCageId: number; targetCageId: number }) => {
-    return moveRabbitMutation.mutateAsync(payload);
+    return await moveRabbitMutation.mutateAsync(payload);
   };
 
   const moveRabbitsMutation = useMutation({
@@ -90,7 +90,7 @@ export function useAssignments() {
   });
 
   const moveRabbits = async (payload: { rabbitIds: number[]; currentCageId: number; targetCageId: number }) => {
-    return moveRabbitsMutation.mutateAsync(payload);
+    return await moveRabbitsMutation.mutateAsync(payload);
   };
 
   return {

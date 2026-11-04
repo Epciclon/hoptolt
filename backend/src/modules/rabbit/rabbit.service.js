@@ -191,18 +191,7 @@ class RabbitService {
         return rabbitRepository.findByRace(raceName.trim());
     }
 
-    async editRabbit(id, data, profileId) {
-        const rabbit = await rabbitRepository.findById(id);
-        if (!rabbit) throw new AppError('Conejo no encontrado.', 404);
-
-        // Verificar que el usuario tiene acceso al galpón
-        await this._assertGalponAccess(rabbit.galponId, profileId);
-
-        // Si se actualiza birthDate, recalcular edad
-        if (data.birthDate) {
-            data.age = this.calculateAge(data.birthDate);
-        }
-
+    _detectRabbitAttributeChanges(rabbit, data) {
         const normalize = str => (str || '').toString().trim().toLowerCase();
         const sexChanged = data.sex !== undefined && normalize(data.sex) !== normalize(rabbit.sex);
         const purposeChanged = data.purpose !== undefined && normalize(data.purpose) !== normalize(rabbit.purpose);
@@ -214,58 +203,43 @@ class RabbitService {
                 birthDateChanged = true;
             }
         }
+        return { sexChanged, purposeChanged, birthDateChanged };
+    }
 
-        // Validar si el conejo está asignado y el cambio rompería las reglas
-        if (birthDateChanged || sexChanged || purposeChanged) {
-            const assignmentRepository = require('../assignment/assignment.repository');
-            const cageRepository = require('../cage/cage.repository');
-            const assignmentService = require('../assignment/assignment.service');
-            
-            const activeAssignment = await assignmentRepository.findActiveByRabbitId(id);
-            if (activeAssignment) {
-                const [cage, activeAssignments] = await Promise.all([
-                    cageRepository.findById(activeAssignment.cageId),
-                    assignmentRepository.findActiveByCageId(activeAssignment.cageId)
-                ]);
-                
-                const otherRabbitIds = activeAssignments.filter(a => a.rabbitId !== id).map(a => a.rabbitId);
-                const otherRabbits = otherRabbitIds.length > 0 
-                    ? await rabbitRepository.findAll({ where: { id: { [Op.in]: otherRabbitIds } } })
-                    : [];
-                
-                // Simular el conejo actualizado
-                const simulatedRabbit = { 
-                    ...(typeof rabbit.get === 'function' ? rabbit.get({ plain: true }) : rabbit), 
-                    ...data 
-                };
-                
-                if (cage.type === 'reproducción' && simulatedRabbit.purpose === 'Engorde') {
-                    throw new AppError('No puedes cambiar el propósito a Engorde porque este conejo está en una jaula de reproducción. Desasígnalo primero.', 400);
-                }
-                
-                // Validate against other rabbits in the same cage
-                assignmentService.validateCompatibility(cage, [simulatedRabbit], otherRabbits);
-            }
-        }
+    async _validateRabbitCompatibilityOnEdit(rabbit, data, sexChanged, purposeChanged, birthDateChanged) {
+        if (!birthDateChanged && !sexChanged && !purposeChanged) return;
 
-        const before = {
-            name: rabbit.name,
-            race: rabbit.race,
-            sex: rabbit.sex,
-            purpose: rabbit.purpose,
-            weight: rabbit.weight != null ? Number(rabbit.weight) : null,
-            birthDate: rabbit.birthDate,
-            imageUrl: rabbit.imageUrl || null
+        const assignmentRepository = require('../assignment/assignment.repository');
+        const cageRepository = require('../cage/cage.repository');
+        const assignmentService = require('../assignment/assignment.service');
+        const { Op } = require('sequelize');
+        
+        const activeAssignment = await assignmentRepository.findActiveByRabbitId(rabbit.id);
+        if (!activeAssignment) return;
+
+        const [cage, activeAssignments] = await Promise.all([
+            cageRepository.findById(activeAssignment.cageId),
+            assignmentRepository.findActiveByCageId(activeAssignment.cageId)
+        ]);
+        
+        const otherRabbitIds = activeAssignments.filter(a => a.rabbitId !== rabbit.id).map(a => a.rabbitId);
+        const otherRabbits = otherRabbitIds.length > 0 
+            ? await rabbitRepository.findAll({ where: { id: { [Op.in]: otherRabbitIds } } })
+            : [];
+        
+        const simulatedRabbit = { 
+            ...(typeof rabbit.get === 'function' ? rabbit.get({ plain: true }) : rabbit), 
+            ...data 
         };
-
-        const updatedRabbit = await rabbitRepository.update(rabbit, data);
-
-        // Si el usuario cambia la fecha de nacimiento o el propósito, la curva estimada antigua se rompe.
-        if (birthDateChanged || purposeChanged) {
-            const growthService = require('../growth/growth.service');
-            await growthService.rebuildGrowthHistory(updatedRabbit || rabbit.id);
+        
+        if (cage.type === 'reproducción' && simulatedRabbit.purpose === 'Engorde') {
+            throw new AppError('No puedes cambiar el propósito a Engorde porque este conejo está en una jaula de reproducción. Desasígnalo primero.', 400);
         }
+        
+        assignmentService.validateCompatibility(cage, [simulatedRabbit], otherRabbits);
+    }
 
+    _recordEditRabbitAudit(rabbit, updatedRabbit, before, profileId) {
         const updatedName = updatedRabbit.name || rabbit.name;
         const rabbitLabel = updatedName ? `${updatedName} - ${rabbit.code}` : rabbit.code;
         const currentSex = updatedRabbit.sex || rabbit.sex;
@@ -292,6 +266,44 @@ class RabbitService {
                 imageUrl: updatedRabbit.imageUrl || null
             }
         }).catch(err => console.error('Error recording worker change on editRabbit:', err));
+    }
+
+    async editRabbit(id, data, profileId) {
+        const rabbit = await rabbitRepository.findById(id);
+        if (!rabbit) throw new AppError('Conejo no encontrado.', 404);
+
+        // Verificar que el usuario tiene acceso al galpón
+        await this._assertGalponAccess(rabbit.galponId, profileId);
+
+        // Si se actualiza birthDate, recalcular edad
+        if (data.birthDate) {
+            data.age = this.calculateAge(data.birthDate);
+        }
+
+        const { sexChanged, purposeChanged, birthDateChanged } = this._detectRabbitAttributeChanges(rabbit, data);
+
+        // Validar si el conejo está asignado y el cambio rompería las reglas
+        await this._validateRabbitCompatibilityOnEdit(rabbit, data, sexChanged, purposeChanged, birthDateChanged);
+
+        const before = {
+            name: rabbit.name,
+            race: rabbit.race,
+            sex: rabbit.sex,
+            purpose: rabbit.purpose,
+            weight: rabbit.weight != null ? Number(rabbit.weight) : null,
+            birthDate: rabbit.birthDate,
+            imageUrl: rabbit.imageUrl || null
+        };
+
+        const updatedRabbit = await rabbitRepository.update(rabbit, data);
+
+        // Si el usuario cambia la fecha de nacimiento o el propósito, la curva estimada antigua se rompe.
+        if (birthDateChanged || purposeChanged) {
+            const growthService = require('../growth/growth.service');
+            await growthService.rebuildGrowthHistory(updatedRabbit || rabbit.id);
+        }
+
+        this._recordEditRabbitAudit(rabbit, updatedRabbit, before, profileId);
 
         return updatedRabbit;
     }

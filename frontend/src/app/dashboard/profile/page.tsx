@@ -8,6 +8,25 @@ import { Card, Button, Input, Dialog } from '@/shared/ui';
 import { User, Lock, Trash2, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+function validatePasswordChange(current: string, newPass: string, confirm: string): string | null {
+  if (!current || !newPass || !confirm) {
+    return 'Por favor completa todos los campos de contraseña';
+  }
+  if (newPass.length < 6) {
+    return 'La nueva contraseña debe tener al menos 6 caracteres';
+  }
+  if (!/\d/.test(newPass)) {
+    return 'La nueva contraseña debe contener al menos un número';
+  }
+  if (!/[!@#$%^&*(),.?":{}|<>_]/.test(newPass)) {
+    return 'La nueva contraseña debe contener al menos un carácter especial como @#$%';
+  }
+  if (newPass !== confirm) {
+    return 'La nueva contraseña y su confirmación no coinciden';
+  }
+  return null;
+}
+
 export default function ProfilePage() {
   const { user, refetchUser, logout } = useAuth();
   const { showToast } = useToast();
@@ -56,28 +75,9 @@ export default function ProfilePage() {
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      showToast('Por favor completa todos los campos de contraseña', 'error');
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      showToast('La nueva contraseña debe tener al menos 6 caracteres', 'error');
-      return;
-    }
-
-    if (!/\d/.test(newPassword)) {
-      showToast('La nueva contraseña debe contener al menos un número', 'error');
-      return;
-    }
-
-    if (!/[!@#$%^&*(),.?":{}|<>_]/.test(newPassword)) {
-      showToast('La nueva contraseña debe contener al menos un carácter especial como @#$%', 'error');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      showToast('La nueva contraseña y su confirmación no coinciden', 'error');
+    const validationError = validatePasswordChange(currentPassword, newPassword, confirmPassword);
+    if (validationError) {
+      showToast(validationError, 'error');
       return;
     }
 

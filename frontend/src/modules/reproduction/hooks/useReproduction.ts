@@ -128,9 +128,9 @@ export function useReproduction(filters?: { profileId?: string; date?: string; s
     },
   });
 
-  const registerBirth = async (id: number, payload: { bornKits?: number; actualBirthDate?: string }) => registerBirthMutation.mutateAsync({ id, payload });
-  const cancelReproduction = async (id: number, action: 'delete' | 'fail', reason?: string) => cancelReproductionMutation.mutateAsync({ id, action, reason });
-  const finishLactation = async (id: number) => finishLactationMutation.mutateAsync(id);
+  const registerBirth = (id: number, payload: { bornKits?: number; actualBirthDate?: string }) => registerBirthMutation.mutateAsync({ id, payload });
+  const cancelReproduction = (id: number, action: 'delete' | 'fail', reason?: string) => cancelReproductionMutation.mutateAsync({ id, action, reason });
+  const finishLactation = (id: number) => finishLactationMutation.mutateAsync(id);
 
   return {
     reproductions: reproductionsData?.reproductions || [],

@@ -66,6 +66,59 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
+async function handleSessionSignOut() {
+  try {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+  } catch {
+    // ignorar
+  }
+  if (typeof window !== 'undefined') {
+    window.location.href = '/login';
+  }
+}
+
+async function handleRefreshToken(originalRequest: any) {
+  if (isRefreshing) {
+    return new Promise((resolve, reject) => {
+      failedQueue.push({ resolve, reject });
+    })
+      .then((token) => {
+        if (token) {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+        }
+        return api(originalRequest);
+      })
+      .catch((err) => {
+        throw err;
+      });
+  }
+
+  originalRequest._retry = true;
+  isRefreshing = true;
+
+  try {
+    const supabase = createClient();
+    const { data, error: refreshError } = await supabase.auth.refreshSession();
+
+    if (!refreshError && data?.session?.access_token) {
+      const newToken = data.session.access_token;
+      api.defaults.headers.common.Authorization = `Bearer ${newToken}`;
+      originalRequest.headers.Authorization = `Bearer ${newToken}`;
+      processQueue(null, newToken);
+      return api(originalRequest);
+    }
+
+    processQueue(refreshError || new Error('Sesión expirada'), null);
+    await handleSessionSignOut();
+  } catch (refreshErr) {
+    processQueue(refreshErr, null);
+    await handleSessionSignOut();
+  } finally {
+    isRefreshing = false;
+  }
+}
+
 // Interceptor de RESPONSE: maneja renovación con Refresh Token en 401 y errores globales
 api.interceptors.response.use(
   (response) => response,
@@ -74,52 +127,7 @@ api.interceptors.response.use(
 
     // Si el backend devuelve 401 y aún no se ha reintentado la petición, usar el refresh token
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        })
-          .then((token) => {
-            if (token) {
-              originalRequest.headers.Authorization = `Bearer ${token}`;
-            }
-            return api(originalRequest);
-          })
-          .catch((err) => Promise.reject(err));
-      }
-
-      originalRequest._retry = true;
-      isRefreshing = true;
-
-      try {
-        const supabase = createClient();
-        const { data, error: refreshError } = await supabase.auth.refreshSession();
-
-        if (!refreshError && data?.session?.access_token) {
-          const newToken = data.session.access_token;
-          api.defaults.headers.common.Authorization = `Bearer ${newToken}`;
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
-          processQueue(null, newToken);
-          return api(originalRequest);
-        } else {
-          // Si el refresh token falló o fue revocado, limpiar sesión y redirigir
-          processQueue(refreshError || new Error('Sesión expirada'), null);
-          await supabase.auth.signOut();
-          if (typeof window !== 'undefined') {
-            window.location.href = '/login';
-          }
-        }
-      } catch (refreshErr) {
-        processQueue(refreshErr, null);
-        try {
-          const supabase = createClient();
-          await supabase.auth.signOut();
-        } catch { /* ignorar */ }
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login';
-        }
-      } finally {
-        isRefreshing = false;
-      }
+      return handleRefreshToken(originalRequest);
     }
 
     const message =

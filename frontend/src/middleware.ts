@@ -21,6 +21,37 @@ function isRecoverySession(accessToken?: string): boolean {
   }
 }
 
+function checkRecoveryParamRedirect(request: NextRequest, pathname: string): NextResponse | null {
+  const isRecoveryParam =
+    request.nextUrl.searchParams.get('type') === 'recovery' ||
+    request.nextUrl.searchParams.has('token_hash') ||
+    request.nextUrl.searchParams.has('code');
+
+  if (isRecoveryParam && !pathname.startsWith('/reset-password')) {
+    const resetUrl = new URL('/reset-password', request.url);
+    request.nextUrl.searchParams.forEach((val, key) => {
+      resetUrl.searchParams.set(key, val);
+    });
+    return NextResponse.redirect(resetUrl);
+  }
+  return null;
+}
+
+function checkUserAccessRedirect(user: any, pathname: string, isGuestOnly: boolean, isPublic: boolean, request: NextRequest): NextResponse | null {
+  if (user && pathname === '/') {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+  if (user && isGuestOnly) {
+    return NextResponse.redirect(new URL('/active-session', request.url));
+  }
+  if (!user && !isPublic) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+  return null;
+}
+
 /**
  * Middleware de protección de rutas de Next.js.
  * - Rutas públicas (/login, /register, /forgot-password, /reset-password): accesibles sin sesión.
@@ -28,36 +59,25 @@ function isRecoverySession(accessToken?: string): boolean {
  * - Parámetros o sesión de recuperación: bloquea estrictamente el acceso a cualquier ruta interna y redirige a /reset-password.
  */
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
+  const { pathname } = request.nextUrl;
 
-  // 1. Si la petición incluye parámetros de recuperación pero apunta a otra ruta (ej: /dashboard/feeding)
-  const isRecoveryParam =
-    request.nextUrl.searchParams.get('type') === 'recovery' ||
-    request.nextUrl.searchParams.has('token_hash') ||
-    request.nextUrl.searchParams.has('code')
-
-  if (isRecoveryParam && !pathname.startsWith('/reset-password')) {
-    const resetUrl = new URL('/reset-password', request.url)
-    request.nextUrl.searchParams.forEach((val, key) => {
-      resetUrl.searchParams.set(key, val)
-    })
-    return NextResponse.redirect(resetUrl)
-  }
+  const recoveryRedirect = checkRecoveryParamRedirect(request, pathname);
+  if (recoveryRedirect) return recoveryRedirect;
 
   // Rutas públicas que no requieren autenticación previa
-  const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/terms', '/privacy']
-  const isPublic = publicPaths.some((p) => pathname.startsWith(p))
+  const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/terms', '/privacy'];
+  const isPublic = publicPaths.some((p) => pathname.startsWith(p));
 
   // Rutas de autenticación para invitados (si ya tiene sesión, no debe ir a login, register, forgot-password ni reset-password)
-  const guestOnlyPaths = ['/login', '/register', '/forgot-password', '/reset-password']
+  const guestOnlyPaths = ['/login', '/register', '/forgot-password', '/reset-password'];
   const isRecoveryLink = pathname.startsWith('/reset-password') && (
     request.nextUrl.searchParams.has('code') ||
     request.nextUrl.searchParams.has('token_hash')
-  )
-  const isGuestOnly = guestOnlyPaths.some((p) => pathname.startsWith(p)) && !isRecoveryLink
+  );
+  const isGuestOnly = guestOnlyPaths.some((p) => pathname.startsWith(p)) && !isRecoveryLink;
 
   // Crear cliente Supabase SSR con cookies del request
-  let response = NextResponse.next({ request })
+  let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -65,59 +85,43 @@ export async function middleware(request: NextRequest) {
     {
       cookies: {
         getAll() {
-          return request.cookies.getAll()
+          return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options)
-          })
+            response.cookies.set(name, value, options);
+          });
         },
       },
     }
-  )
+  );
 
   // E2E test bypass for local development
   if (process.env.NODE_ENV !== 'production' && request.cookies.get('e2e_bypass')?.value === 'true') {
-    return response
+    return response;
   }
 
-  const { data: { session } } = await supabase.auth.getSession()
-  const user = session?.user
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
 
   // 2. Si la sesión activa proviene de un flujo de recuperación (AMR === 'recovery'),
   // BLOQUEAR acceso a cualquier ruta interna y obligar a ir a /reset-password
-  if (session?.access_token && isRecoverySession(session.access_token)) {
-    if (!pathname.startsWith('/reset-password')) {
-      return NextResponse.redirect(new URL('/reset-password', request.url))
-    }
+  if (session?.access_token && isRecoverySession(session.access_token) && !pathname.startsWith('/reset-password')) {
+    return NextResponse.redirect(new URL('/reset-password', request.url));
   }
 
-  // Si está autenticado e intenta acceder a la raíz → redirigir al dashboard
-  if (user && pathname === '/') {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
-  }
-
-  // Si está autenticado e intenta ir a rutas exclusivas de invitados (login/register/forgot-password) → redirigir a /active-session
-  if (user && isGuestOnly) {
-    return NextResponse.redirect(new URL('/active-session', request.url))
-  }
-
-  // Si NO está autenticado e intenta acceder a una ruta protegida → redirigir a login
-  if (!user && !isPublic) {
-    const loginUrl = new URL('/login', request.url)
-    loginUrl.searchParams.set('redirect', pathname)
-    return NextResponse.redirect(loginUrl)
-  }
+  const accessRedirect = checkUserAccessRedirect(user, pathname, isGuestOnly, isPublic, request);
+  if (accessRedirect) return accessRedirect;
 
   // Agregar headers para prevenir cacheo de páginas protegidas
   if (!isPublic) {
-    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0')
-    response.headers.set('Pragma', 'no-cache')
-    response.headers.set('Expires', '0')
-    response.headers.set('Surrogate-Control', 'no-store')
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    response.headers.set('Surrogate-Control', 'no-store');
   }
 
-  return response
+  return response;
 }
 
 export const config = {

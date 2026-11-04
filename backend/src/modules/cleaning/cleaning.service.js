@@ -120,6 +120,41 @@ class CleaningService {
         return createdCleanings;
     }
 
+    async _processSingleCleaningWarning(w, cleanedSet) {
+        if (!w.data) return;
+        let dataObj = typeof w.data === 'string' ? JSON.parse(w.data) : w.data;
+        if (dataObj?.type !== 'cleaning_warning') return;
+
+        // Caso 1: Notificación agrupada con lista de jaulas pendientes
+        if (Array.isArray(dataObj.pendingCages)) {
+            const remainingCages = dataObj.pendingCages.filter(c => !cleanedSet.has(Number(c.cageId)));
+
+            if (remainingCages.length === 0) {
+                // Todas las jaulas fueron limpiadas: eliminar alerta
+                await w.destroy();
+            } else if (remainingCages.length < dataObj.pendingCages.length) {
+                // Se limpiaron algunas: actualizar la lista dinámicamente
+                const count = remainingCages.length;
+                const newMessage = count === 1
+                    ? `Tienes 1 jaula con 3 o más días de ocupación sin limpieza en tu galpón. ¡Por favor realiza la limpieza lo antes posible!`
+                    : `Tienes ${count} jaulas con 3 o más días de ocupación sin limpieza en tu galpón. ¡Por favor realiza la limpieza lo antes posible!`;
+
+                await w.update({
+                    message: newMessage,
+                    data: {
+                        ...dataObj,
+                        pendingCages: remainingCages,
+                        cagesCount: count
+                    }
+                });
+            }
+        } 
+        // Caso 2: Notificación legacy individual
+        else if (dataObj.cageId && cleanedSet.has(Number(dataObj.cageId))) {
+            await w.destroy();
+        }
+    }
+
     async _bulkClearCleaningWarnings(cageIds, galponId, Notification) {
         if (!cageIds || cageIds.length === 0) return;
         const cleanedSet = new Set(cageIds.map(Number));
@@ -132,38 +167,7 @@ class CleaningService {
         });
 
         for (const w of warnings) {
-            if (!w.data) continue;
-            let dataObj = typeof w.data === 'string' ? JSON.parse(w.data) : w.data;
-            if (dataObj?.type !== 'cleaning_warning') continue;
-
-            // Caso 1: Notificación agrupada con lista de jaulas pendientes
-            if (Array.isArray(dataObj.pendingCages)) {
-                const remainingCages = dataObj.pendingCages.filter(c => !cleanedSet.has(Number(c.cageId)));
-
-                if (remainingCages.length === 0) {
-                    // Todas las jaulas fueron limpiadas: eliminar alerta
-                    await w.destroy();
-                } else if (remainingCages.length < dataObj.pendingCages.length) {
-                    // Se limpiaron algunas: actualizar la lista dinámicamente
-                    const count = remainingCages.length;
-                    const newMessage = count === 1
-                        ? `Tienes 1 jaula con 3 o más días de ocupación sin limpieza en tu galpón. ¡Por favor realiza la limpieza lo antes posible!`
-                        : `Tienes ${count} jaulas con 3 o más días de ocupación sin limpieza en tu galpón. ¡Por favor realiza la limpieza lo antes posible!`;
-
-                    await w.update({
-                        message: newMessage,
-                        data: {
-                            ...dataObj,
-                            pendingCages: remainingCages,
-                            cagesCount: count
-                        }
-                    });
-                }
-            } 
-            // Caso 2: Notificación legacy individual
-            else if (dataObj.cageId && cleanedSet.has(Number(dataObj.cageId))) {
-                await w.destroy();
-            }
+            await this._processSingleCleaningWarning(w, cleanedSet);
         }
     }
 

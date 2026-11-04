@@ -132,6 +132,83 @@ class NotificationService {
         return promise;
     }
 
+    async _filterMaturityAssignmentsByAccess(matureAssignments, memberships, ownedGalpones) {
+        const { WorkerCage, WorkerPermission } = require('../../domain/models');
+        const { Op } = require('sequelize');
+        const relevantAssignments = [];
+
+        for (const a of matureAssignments) {
+            const cageGalponId = a.cage.galponId;
+            const isOwner = ownedGalpones.some(g => g.id === cageGalponId) ||
+                memberships.some(m => m.galponId === cageGalponId && m.role === 'owner');
+
+            if (isOwner) {
+                relevantAssignments.push(a);
+                continue;
+            }
+
+            const workerMembership = memberships.find(m => m.galponId === cageGalponId && m.role === 'worker');
+            if (!workerMembership) continue;
+
+            const [hasPermission, isCageAssigned] = await Promise.all([
+                WorkerPermission.findOne({
+                    where: {
+                        farmMemberId: workerMembership.id,
+                        moduleName: { [Op.in]: ['reproduccionyparto', 'reproduction', 'rabbits', 'conejos', 'assignments', 'asignaciones'] },
+                        canRead: true
+                    }
+                }),
+                WorkerCage.findOne({
+                    where: { farmMemberId: workerMembership.id, cageId: a.cage.id }
+                })
+            ]);
+
+            if (hasPermission && isCageAssigned) {
+                relevantAssignments.push(a);
+            }
+        }
+        return relevantAssignments;
+    }
+
+    async _syncMaturityNotifications(profileId, relevantAssignments, notifiedIds, notificationMap) {
+        const { Notification } = require('../../domain/models');
+        const { Op } = require('sequelize');
+        const notificationsToCreate = [];
+
+        for (const a of relevantAssignments) {
+            const rabbitId = Number(a.rabbit.id);
+            if (!notifiedIds.has(rabbitId)) {
+                notifiedIds.add(rabbitId);
+                const rabbitLabel = a.rabbit.name ? `**${a.rabbit.name}** con código **${a.rabbit.code}**` : `con código **${a.rabbit.code}**`;
+                notificationsToCreate.push({
+                    profileId,
+                    type: 'info',
+                    title: 'Pie de Cría Listo',
+                    message: `El conejo de pie de cría ${rabbitLabel} en la jaula **${a.cage.number}** ha cumplido 4 meses. Se sugiere moverlo a una jaula individual de reproducción.`,
+                    data: { type: 'maturity_info', rabbitId: rabbitId, cageId: a.cage.id }
+                });
+            }
+        }
+
+        if (notificationsToCreate.length > 0) {
+            await Notification.bulkCreate(notificationsToCreate);
+        }
+
+        if (notifiedIds.size > 0) {
+            const currentRelevantRabbitIds = new Set(relevantAssignments.map(a => Number(a.rabbit.id)));
+            const notificationIdsToDelete = [];
+            for (const notifiedId of notifiedIds) {
+                if (!currentRelevantRabbitIds.has(notifiedId)) {
+                    const notifId = notificationMap.get(notifiedId);
+                    if (notifId) notificationIdsToDelete.push(notifId);
+                }
+            }
+            if (notificationIdsToDelete.length > 0) {
+                await Notification.destroy({ where: { id: { [Op.in]: notificationIdsToDelete } } });
+            }
+        }
+    }
+
     async _runMaturityCheck(profileId) {
         try {
             const { Assignment, Cage, Rabbit, Notification, FarmMember, Galpon } = require('../../domain/models');
@@ -178,76 +255,9 @@ class NotificationService {
                 FarmMember.findAll({ where: { profileId, status: 'active' } }),
                 Galpon.findAll({ where: { profileId } })
             ]);
-            const { WorkerCage, WorkerPermission } = require('../../domain/models');
 
-            const relevantAssignments = [];
-            for (const a of matureAssignments) {
-                const cageGalponId = a.cage.galponId;
-                const isOwner = ownedGalpones.some(g => g.id === cageGalponId) ||
-                    memberships.some(m => m.galponId === cageGalponId && m.role === 'owner');
-
-                if (isOwner) {
-                    relevantAssignments.push(a);
-                    continue;
-                }
-
-                // If user is a worker in this galpon:
-                const workerMembership = memberships.find(m => m.galponId === cageGalponId && m.role === 'worker');
-                if (workerMembership) {
-                    const [hasPermission, isCageAssigned] = await Promise.all([
-                        WorkerPermission.findOne({
-                            where: {
-                                farmMemberId: workerMembership.id,
-                                moduleName: { [Op.in]: ['reproduccionyparto', 'reproduction', 'rabbits', 'conejos', 'assignments', 'asignaciones'] },
-                                canRead: true
-                            }
-                        }),
-                        WorkerCage.findOne({
-                            where: { farmMemberId: workerMembership.id, cageId: a.cage.id }
-                        })
-                    ]);
-
-                    if (hasPermission && isCageAssigned) {
-                        relevantAssignments.push(a);
-                    }
-                }
-            }
-
-            const notificationsToCreate = [];
-
-            for (const a of relevantAssignments) {
-                const rabbitId = Number(a.rabbit.id);
-                if (!notifiedIds.has(rabbitId)) {
-                    notifiedIds.add(rabbitId);
-                    const rabbitLabel = a.rabbit.name ? `**${a.rabbit.name}** con código **${a.rabbit.code}**` : `con código **${a.rabbit.code}**`;
-                    notificationsToCreate.push({
-                        profileId,
-                        type: 'info',
-                        title: 'Pie de Cría Listo',
-                        message: `El conejo de pie de cría ${rabbitLabel} en la jaula **${a.cage.number}** ha cumplido 4 meses. Se sugiere moverlo a una jaula individual de reproducción.`,
-                        data: { type: 'maturity_info', rabbitId: rabbitId, cageId: a.cage.id }
-                    });
-                }
-            }
-
-            if (notificationsToCreate.length > 0) {
-                await Notification.bulkCreate(notificationsToCreate);
-            }
-
-            // Cleanup stale (if they were moved or no longer mature/exist)
-            if (notifiedIds.size > 0) {
-                const currentRelevantRabbitIds = new Set(relevantAssignments.map(a => Number(a.rabbit.id)));
-                const notificationIdsToDelete = [];
-                for (const notifiedId of notifiedIds) {
-                    if (!currentRelevantRabbitIds.has(notifiedId)) {
-                        const notifId = notificationMap.get(notifiedId);
-                        if (notifId) notificationIdsToDelete.push(notifId);
-                    }
-                }
-                if (notificationIdsToDelete.length > 0) {
-                    await Notification.destroy({ where: { id: { [Op.in]: notificationIdsToDelete } } });
-                }
-            }
+            const relevantAssignments = await this._filterMaturityAssignmentsByAccess(matureAssignments, memberships, ownedGalpones);
+            await this._syncMaturityNotifications(profileId, relevantAssignments, notifiedIds, notificationMap);
         } catch (error) {
             console.error('Error checking/creating maturity notifications:', error);
         }
@@ -260,261 +270,288 @@ class NotificationService {
         return promise;
     }
 
+    _determineActiveFeedingShift(now) {
+        const timeFormatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'America/Guayaquil',
+            hour: 'numeric',
+            minute: 'numeric',
+            hour12: false
+        });
+        const parts = timeFormatter.formatToParts(now);
+        const currentHour = Number.parseInt(parts.find(p => p.type === 'hour').value, 10);
+
+        let activeShift = null;
+        let dateForShift = now;
+
+        if (currentHour >= 9 && currentHour < 12) {
+            activeShift = 'mañana';
+            dateForShift = now;
+        } else if (currentHour >= 17) {
+            activeShift = 'tarde';
+            dateForShift = now;
+        } else if (currentHour < 4) {
+            activeShift = 'tarde';
+            dateForShift = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+        }
+
+        return { activeShift, dateForShift };
+    }
+
+    async _cleanupInactiveShiftReminders(profileId) {
+        const { Notification, AuditLog } = require('../../domain/models');
+        const { recordSystemChange } = require('../../common/helpers/audit.helper');
+        const { Op } = require('sequelize');
+
+        const existingReminders = await Notification.findAll({
+            where: { profileId, type: 'warning' }
+        });
+        const toDelete = [];
+
+        for (const n of existingReminders) {
+            let d = n.data;
+            if (typeof d === 'string') {
+                try { d = JSON.parse(d); } catch (e) { continue; }
+            }
+            if (d?.type !== 'feeding_reminder') continue;
+
+            toDelete.push(n.id);
+            if (!d.galponId || !d.shift || !d.date || !(d.unfedCount > 0)) continue;
+
+            try {
+                const cleanGalponId = Number(d.galponId);
+                const existingLog = await AuditLog.findOne({
+                    where: {
+                        entity: 'feeding',
+                        action: 'Turno cerrado con pendientes',
+                        'details.galponId': cleanGalponId,
+                        'details.shift': d.shift,
+                        'details.date': d.date
+                    }
+                });
+
+                if (!existingLog) {
+                    const shiftLabel = d.shift === 'mañana' ? 'la mañana' : 'la tarde';
+                    const cagesLabel = d.unfedCount === 1 ? '1 jaula' : `${d.unfedCount} jaulas`;
+                    const cagesListStr = Array.isArray(d.cages) && d.cages.length > 0 ? ` [jaulas: ${d.cages.join(', ')}]` : '';
+
+                    await recordSystemChange({
+                        galponId: cleanGalponId,
+                        action: 'Turno cerrado con pendientes',
+                        entity: 'feeding',
+                        entityId: cleanGalponId,
+                        itemName: `Turno de ${shiftLabel}`,
+                        summary: `HopTolt registró el cierre del turno de ${shiftLabel} con ${cagesLabel}${cagesListStr} sin alimentar y sin reporte de novedad`,
+                        cages: d.cages || [],
+                        unfedCount: d.unfedCount,
+                        shift: d.shift,
+                        date: d.date
+                    });
+                }
+            } catch (logErr) {
+                console.error('Error al registrar auditoría de omisión de alimentación:', logErr);
+            }
+        }
+
+        if (toDelete.length > 0) {
+            await Notification.destroy({ where: { id: { [Op.in]: toDelete } } });
+        }
+    }
+
+    async _getAccessibleGalponesForFeeding(profileId) {
+        const { Galpon, FarmMember, WorkerPermission } = require('../../domain/models');
+        const { Op } = require('sequelize');
+
+        const [ownedGalpones, memberships] = await Promise.all([
+            Galpon.findAll({ where: { profileId } }),
+            FarmMember.findAll({ where: { profileId, status: 'active' } })
+        ]);
+
+        const accessibleGalponMap = new Map();
+        for (const og of ownedGalpones) {
+            accessibleGalponMap.set(og.id, { galpon: og, isOwner: true });
+        }
+
+        for (const m of memberships) {
+            if (m.role === 'owner') {
+                if (!accessibleGalponMap.has(m.galponId)) {
+                    const g = await Galpon.findByPk(m.galponId);
+                    if (g) accessibleGalponMap.set(m.galponId, { galpon: g, isOwner: true });
+                }
+            } else if (m.role === 'worker') {
+                const hasPermission = await WorkerPermission.findOne({
+                    where: {
+                        farmMemberId: m.id,
+                        moduleName: { [Op.in]: ['alimentacion', 'feeding'] },
+                        [Op.or]: [{ canRead: true }, { canCreate: true }]
+                    }
+                });
+                if (hasPermission && !accessibleGalponMap.has(m.galponId)) {
+                    const g = await Galpon.findByPk(m.galponId);
+                    if (g) accessibleGalponMap.set(m.galponId, { galpon: g, isOwner: false, memberId: m.id });
+                }
+            }
+        }
+        return accessibleGalponMap;
+    }
+
+    async _findPendingFeedingForGalpon(entry, activeShift, startOfDay, endOfDay) {
+        const { Cage, Assignment, Feeding, WorkerCage } = require('../../domain/models');
+        const { Op } = require('sequelize');
+        const { galpon, isOwner, memberId } = entry;
+        let cageIdsToCheck = [];
+
+        if (isOwner) {
+            const activeAssignments = await Assignment.findAll({
+                where: { status: 'asignado' },
+                include: [{
+                    model: Cage,
+                    as: 'cage',
+                    where: { galponId: galpon.id },
+                    required: true,
+                    attributes: ['id']
+                }],
+                attributes: ['cageId']
+            });
+            cageIdsToCheck = Array.from(new Set(activeAssignments.map(a => Number(a.cageId))));
+        } else {
+            const workerCages = await WorkerCage.findAll({ where: { farmMemberId: memberId } });
+            const assignedCageIds = workerCages.map(wc => Number(wc.cageId));
+            if (assignedCageIds.length > 0) {
+                const activeAssignments = await Assignment.findAll({
+                    where: {
+                        status: 'asignado',
+                        cageId: { [Op.in]: assignedCageIds }
+                    },
+                    include: [{
+                        model: Cage,
+                        as: 'cage',
+                        where: { galponId: galpon.id },
+                        required: true,
+                        attributes: ['id']
+                    }],
+                    attributes: ['cageId']
+                });
+                cageIdsToCheck = Array.from(new Set(activeAssignments.map(a => Number(a.cageId))));
+            }
+        }
+
+        if (cageIdsToCheck.length === 0) return null;
+
+        const fedRecords = await Feeding.findAll({
+            where: {
+                galponId: galpon.id,
+                cageId: { [Op.in]: cageIdsToCheck },
+                shift: activeShift,
+                feedingDate: { [Op.between]: [startOfDay, endOfDay] }
+            },
+            attributes: ['cageId']
+        });
+        const fedCageIds = new Set(fedRecords.map(f => Number(f.cageId)));
+        const unfedCageIds = cageIdsToCheck.filter(id => !fedCageIds.has(id));
+
+        if (unfedCageIds.length === 0) return null;
+
+        return {
+            galpon,
+            unfedCount: unfedCageIds.length,
+            unfedCageIds
+        };
+    }
+
+    async _filterAndCreateFeedingNotifications(profileId, galponIdsWithPendingFeeding, activeShift, todayStr) {
+        const { Notification } = require('../../domain/models');
+        const { Op } = require('sequelize');
+
+        const existingReminders = await Notification.findAll({
+            where: { profileId, type: 'warning' }
+        });
+
+        const toDelete = [];
+        const alreadyNotifiedGalponIds = new Set();
+
+        for (const n of existingReminders) {
+            let d = n.data;
+            if (typeof d === 'string') {
+                try { d = JSON.parse(d); } catch (e) { continue; }
+            }
+            if (d?.type !== 'feeding_reminder') continue;
+
+            const reminderGalponId = Number(d.galponId);
+            if (d.shift !== activeShift || d.date !== todayStr || !galponIdsWithPendingFeeding.has(reminderGalponId)) {
+                toDelete.push(n.id);
+            } else {
+                const nowMs = Date.now();
+                const lastNotifiedMs = d.lastNotifiedAt ? new Date(d.lastNotifiedAt).getTime() : new Date(n.createdAt).getTime();
+                const FEEDING_INTERVAL = 60 * 60 * 1000;
+                const JITTER_BUFFER = 5000;
+                const isIntervalDue = (nowMs - lastNotifiedMs) >= (FEEDING_INTERVAL - JITTER_BUFFER);
+                const hasLegacyMessage = n.message?.includes('Son más de las') || n.message?.includes('(hora límite:') || n.message?.includes('Son las');
+
+                if (isIntervalDue || hasLegacyMessage) {
+                    toDelete.push(n.id);
+                } else {
+                    alreadyNotifiedGalponIds.add(reminderGalponId);
+                }
+            }
+        }
+
+        if (toDelete.length > 0) {
+            await Notification.destroy({ where: { id: { [Op.in]: toDelete } } });
+        }
+
+        const notificationsToCreate = [];
+        for (const [galponId, pendingInfo] of galponIdsWithPendingFeeding.entries()) {
+            if (!alreadyNotifiedGalponIds.has(galponId)) {
+                const shiftStr = activeShift === 'mañana' ? 'la mañana' : 'la tarde';
+
+                notificationsToCreate.push({
+                    profileId,
+                    type: 'warning',
+                    title: 'Recordatorio de Alimentación',
+                    message: `Aún no se ha registrado la alimentación de ${shiftStr} en el galpón **"${pendingInfo.galpon.name}"** para tus conejos. ¡Por favor regístrala lo antes posible!`,
+                    data: {
+                        type: 'feeding_reminder',
+                        shift: activeShift,
+                        date: todayStr,
+                        galponId,
+                        unfedCount: pendingInfo.unfedCount,
+                        cages: pendingInfo.unfedCageIds || [],
+                        lastNotifiedAt: new Date().toISOString()
+                    },
+                    createdAt: new Date()
+                });
+            }
+        }
+
+        if (notificationsToCreate.length > 0) {
+            await Notification.bulkCreate(notificationsToCreate);
+        }
+    }
+
     async _runFeedingCheck(profileId, options = {}) {
         try {
-            const { Notification, FarmMember, Galpon, Cage, Assignment, Feeding, WorkerPermission, WorkerCage } = require('../../domain/models');
-            const { Op } = require('sequelize');
             const feedingRepository = require('../feeding/feeding.repository');
-
-            // Determinar hora y minutos actuales en Ecuador (GMT-5)
             const now = new Date();
-            const timeFormatter = new Intl.DateTimeFormat('en-US', {
-                timeZone: 'America/Guayaquil',
-                hour: 'numeric',
-                minute: 'numeric',
-                hour12: false
-            });
-            const parts = timeFormatter.formatToParts(now);
-            const currentHour = Number.parseInt(parts.find(p => p.type === 'hour').value, 10);
-
-            let activeShift = null;
-            let dateForShift = now;
-
-            if (currentHour >= 9 && currentHour < 12) {
-                activeShift = 'mañana';
-                dateForShift = now;
-            } else if (currentHour >= 17) {
-                activeShift = 'tarde';
-                dateForShift = now;
-            } else if (currentHour < 4) {
-                activeShift = 'tarde';
-                dateForShift = new Date(now.getTime() - 6 * 60 * 60 * 1000);
-            }
+            const { activeShift, dateForShift } = this._determineActiveFeedingShift(now);
 
             if (!activeShift) {
-                const existingReminders = await Notification.findAll({
-                    where: { profileId, type: 'warning' }
-                });
-                const toDelete = [];
-                const { AuditLog } = require('../../domain/models');
-                const { recordSystemChange } = require('../../common/helpers/audit.helper');
-
-                for (const n of existingReminders) {
-                    let d = n.data;
-                    if (typeof d === 'string') {
-                        try { d = JSON.parse(d); } catch (e) { continue; }
-                    }
-                    if (d?.type === 'feeding_reminder') {
-                        toDelete.push(n.id);
-
-                        if (d.galponId && d.shift && d.date && d.unfedCount > 0) {
-                            try {
-                                const cleanGalponId = Number(d.galponId);
-                                const existingLog = await AuditLog.findOne({
-                                    where: {
-                                        entity: 'feeding',
-                                        action: 'Turno cerrado con pendientes',
-                                        'details.galponId': cleanGalponId,
-                                        'details.shift': d.shift,
-                                        'details.date': d.date
-                                    }
-                                });
-
-                                if (!existingLog) {
-                                    const shiftLabel = d.shift === 'mañana' ? 'la mañana' : 'la tarde';
-                                    const cagesLabel = d.unfedCount === 1 ? '1 jaula' : `${d.unfedCount} jaulas`;
-                                    const cagesListStr = Array.isArray(d.cages) && d.cages.length > 0 ? ` [jaulas: ${d.cages.join(', ')}]` : '';
-
-                                    await recordSystemChange({
-                                        galponId: cleanGalponId,
-                                        action: 'Turno cerrado con pendientes',
-                                        entity: 'feeding',
-                                        entityId: cleanGalponId,
-                                        itemName: `Turno de ${shiftLabel}`,
-                                        summary: `HopTolt registró el cierre del turno de ${shiftLabel} con ${cagesLabel}${cagesListStr} sin alimentar y sin reporte de novedad`,
-                                        cages: d.cages || [],
-                                        unfedCount: d.unfedCount,
-                                        shift: d.shift,
-                                        date: d.date
-                                    });
-                                }
-                            } catch (logErr) {
-                                console.error('Error al registrar auditoría de omisión de alimentación:', logErr);
-                            }
-                        }
-                    }
-                }
-                if (toDelete.length > 0) {
-                    await Notification.destroy({ where: { id: { [Op.in]: toDelete } } });
-                }
+                await this._cleanupInactiveShiftReminders(profileId);
                 return;
             }
 
-            // Obtener galpones y membresías del usuario en paralelo
-            const [ownedGalpones, memberships] = await Promise.all([
-                Galpon.findAll({ where: { profileId } }),
-                FarmMember.findAll({ where: { profileId, status: 'active' } })
-            ]);
-
-            const accessibleGalponMap = new Map();
-            for (const og of ownedGalpones) {
-                accessibleGalponMap.set(og.id, { galpon: og, isOwner: true });
-            }
-
-            for (const m of memberships) {
-                if (m.role === 'owner') {
-                    if (!accessibleGalponMap.has(m.galponId)) {
-                        const g = await Galpon.findByPk(m.galponId);
-                        if (g) accessibleGalponMap.set(m.galponId, { galpon: g, isOwner: true });
-                    }
-                } else if (m.role === 'worker') {
-                    const hasPermission = await WorkerPermission.findOne({
-                        where: {
-                            farmMemberId: m.id,
-                            moduleName: { [Op.in]: ['alimentacion', 'feeding'] },
-                            [Op.or]: [
-                                { canRead: true },
-                                { canCreate: true }
-                            ]
-                        }
-                    });
-                    if (hasPermission && !accessibleGalponMap.has(m.galponId)) {
-                        const g = await Galpon.findByPk(m.galponId);
-                        if (g) accessibleGalponMap.set(m.galponId, { galpon: g, isOwner: false, memberId: m.id });
-                    }
-                }
-            }
-
+            const accessibleGalponMap = await this._getAccessibleGalponesForFeeding(profileId);
             const { startOfDay, endOfDay } = feedingRepository._getEcuadorDayBounds(dateForShift);
             const galponIdsWithPendingFeeding = new Map();
 
             for (const [, entry] of accessibleGalponMap.entries()) {
-                const { galpon, isOwner, memberId } = entry;
-                let cageIdsToCheck = [];
-
-                if (isOwner) {
-                    const activeAssignments = await Assignment.findAll({
-                        where: { status: 'asignado' },
-                        include: [{
-                            model: Cage,
-                            as: 'cage',
-                            where: { galponId: galpon.id },
-                            required: true,
-                            attributes: ['id']
-                        }],
-                        attributes: ['cageId']
-                    });
-                    cageIdsToCheck = Array.from(new Set(activeAssignments.map(a => Number(a.cageId))));
-                } else {
-                    const workerCages = await WorkerCage.findAll({ where: { farmMemberId: memberId } });
-                    const assignedCageIds = workerCages.map(wc => Number(wc.cageId));
-                    if (assignedCageIds.length > 0) {
-                        const activeAssignments = await Assignment.findAll({
-                            where: {
-                                status: 'asignado',
-                                cageId: { [Op.in]: assignedCageIds }
-                            },
-                            include: [{
-                                model: Cage,
-                                as: 'cage',
-                                where: { galponId: galpon.id },
-                                required: true,
-                                attributes: ['id']
-                            }],
-                            attributes: ['cageId']
-                        });
-                        cageIdsToCheck = Array.from(new Set(activeAssignments.map(a => Number(a.cageId))));
-                    }
-                }
-
-                if (cageIdsToCheck.length > 0) {
-                    const fedRecords = await Feeding.findAll({
-                        where: {
-                            galponId: galpon.id,
-                            cageId: { [Op.in]: cageIdsToCheck },
-                            shift: activeShift,
-                            feedingDate: { [Op.between]: [startOfDay, endOfDay] }
-                        },
-                        attributes: ['cageId']
-                    });
-                    const fedCageIds = new Set(fedRecords.map(f => Number(f.cageId)));
-                    const unfedCageIds = cageIdsToCheck.filter(id => !fedCageIds.has(id));
-
-                    if (unfedCageIds.length > 0) {
-                        galponIdsWithPendingFeeding.set(galpon.id, {
-                            galpon,
-                            unfedCount: unfedCageIds.length,
-                            unfedCageIds
-                        });
-                    }
+                const pendingInfo = await this._findPendingFeedingForGalpon(entry, activeShift, startOfDay, endOfDay);
+                if (pendingInfo) {
+                    galponIdsWithPendingFeeding.set(entry.galpon.id, pendingInfo);
                 }
             }
-
-            const existingReminders = await Notification.findAll({
-                where: { profileId, type: 'warning' }
-            });
 
             const todayStr = dateForShift.toLocaleDateString('sv', { timeZone: 'America/Guayaquil' });
-            const toDelete = [];
-            const alreadyNotifiedGalponIds = new Set();
-
-            for (const n of existingReminders) {
-                let d = n.data;
-                if (typeof d === 'string') {
-                    try { d = JSON.parse(d); } catch (e) { continue; }
-                }
-                if (d?.type === 'feeding_reminder') {
-                    const reminderGalponId = Number(d.galponId);
-                    if (d.shift !== activeShift || d.date !== todayStr || !galponIdsWithPendingFeeding.has(reminderGalponId)) {
-                        toDelete.push(n.id);
-                    } else {
-                        const nowMs = Date.now();
-                        const lastNotifiedMs = d.lastNotifiedAt ? new Date(d.lastNotifiedAt).getTime() : new Date(n.createdAt).getTime();
-                        const FEEDING_INTERVAL = 60 * 60 * 1000;
-                        const JITTER_BUFFER = 5000;
-                        const isIntervalDue = (nowMs - lastNotifiedMs) >= (FEEDING_INTERVAL - JITTER_BUFFER);
-                        const hasLegacyMessage = n.message?.includes('Son más de las') || n.message?.includes('(hora límite:') || n.message?.includes('Son las');
-
-                        if (isIntervalDue || hasLegacyMessage) {
-                            toDelete.push(n.id);
-                        } else {
-                            alreadyNotifiedGalponIds.add(reminderGalponId);
-                        }
-                    }
-                }
-            }
-
-            if (toDelete.length > 0) {
-                await Notification.destroy({ where: { id: { [Op.in]: toDelete } } });
-            }
-
-            const notificationsToCreate = [];
-            for (const [galponId, pendingInfo] of galponIdsWithPendingFeeding.entries()) {
-                if (!alreadyNotifiedGalponIds.has(galponId)) {
-                    const shiftStr = activeShift === 'mañana' ? 'la mañana' : 'la tarde';
-
-                    notificationsToCreate.push({
-                        profileId,
-                        type: 'warning',
-                        title: 'Recordatorio de Alimentación',
-                        message: `Aún no se ha registrado la alimentación de ${shiftStr} en el galpón **"${pendingInfo.galpon.name}"** para tus conejos. ¡Por favor regístrala lo antes posible!`,
-                        data: {
-                            type: 'feeding_reminder',
-                            shift: activeShift,
-                            date: todayStr,
-                            galponId,
-                            unfedCount: pendingInfo.unfedCount,
-                            cages: pendingInfo.unfedCageIds || [],
-                            lastNotifiedAt: new Date().toISOString()
-                        },
-                        createdAt: new Date()
-                    });
-                }
-            }
-
-            if (notificationsToCreate.length > 0) {
-                await Notification.bulkCreate(notificationsToCreate);
-            }
+            await this._filterAndCreateFeedingNotifications(profileId, galponIdsWithPendingFeeding, activeShift, todayStr);
         } catch (error) {
             console.error('Error checking/creating feeding notifications:', error);
         }
@@ -544,13 +581,113 @@ class NotificationService {
         }
     }
 
+    _findDirtyCages(cagesToCheck, cleanings, assignments, todayMs) {
+        const cleaningMap = new Map();
+        for (const c of cleanings) {
+            if (!cleaningMap.has(c.cageId)) cleaningMap.set(c.cageId, c);
+        }
+
+        const assignmentMap = new Map();
+        for (const a of assignments) {
+            if (!assignmentMap.has(a.cageId)) assignmentMap.set(a.cageId, []);
+            assignmentMap.get(a.cageId).push(a);
+        }
+
+        const dirtyCages = [];
+        for (const cage of cagesToCheck) {
+            const lastCleaning = cleaningMap.get(cage.id);
+            const cageAssignments = assignmentMap.get(cage.id) || [];
+
+            let startDate = null;
+            if (lastCleaning?.cleaningDate) {
+                startDate = new Date(lastCleaning.cleaningDate);
+            } else if (cageAssignments.length > 0) {
+                const firstAssignment = cageAssignments[0];
+                startDate = firstAssignment?.assignedAt ? new Date(firstAssignment.assignedAt) : null;
+            }
+
+            if (!startDate) continue;
+
+            const startMs = startDate.getTime();
+            const merged = this._mergeIntervals(cageAssignments, startMs, todayMs);
+            const daysWithoutCleaning = this._calculateDaysWithoutCleaning(merged);
+
+            if (daysWithoutCleaning >= 3) {
+                dirtyCages.push({
+                    cageId: cage.id,
+                    cageNumber: cage.number,
+                    daysWithoutCleaning,
+                    galponId: cage.galponId
+                });
+            }
+        }
+        return dirtyCages;
+    }
+
+    async _syncCleaningNotification(profileId, dirtyCages, cleaningNotifications) {
+        const { Notification } = require('../../domain/models');
+        dirtyCages.sort((a, b) => a.cageNumber - b.cageNumber);
+
+        const count = dirtyCages.length;
+        const message = count === 1
+            ? `Tienes 1 jaula con 3 o más días de ocupación sin limpieza en tu galpón. ¡Por favor realiza la limpieza lo antes posible!`
+            : `Tienes ${count} jaulas con 3 o más días de ocupación sin limpieza en tu galpón. ¡Por favor realiza la limpieza lo antes posible!`;
+
+        const dataPayload = {
+            type: 'cleaning_warning',
+            pendingCages: dirtyCages.map(c => ({
+                cageId: c.cageId,
+                cageNumber: c.cageNumber,
+                daysWithoutCleaning: c.daysWithoutCleaning
+            })),
+            cagesCount: count
+        };
+
+        const groupedNotif = cleaningNotifications.find(n => {
+            const d = typeof n.data === 'string' ? JSON.parse(n.data || '{}') : (n.data || {});
+            return Array.isArray(d.pendingCages);
+        });
+
+        if (groupedNotif) {
+            const prevData = typeof groupedNotif.data === 'string' ? JSON.parse(groupedNotif.data || '{}') : (groupedNotif.data || {});
+            const hasChanged = groupedNotif.title !== 'Alerta de Limpieza Requerida' ||
+                groupedNotif.message !== message ||
+                Number(prevData.cagesCount) !== Number(dataPayload.cagesCount);
+
+            if (hasChanged) {
+                await groupedNotif.update({
+                    title: 'Alerta de Limpieza Requerida',
+                    message,
+                    data: dataPayload
+                });
+            }
+            const toDelete = cleaningNotifications.filter(n => n.id !== groupedNotif.id).map(n => n.id);
+            if (toDelete.length > 0) {
+                await Notification.destroy({ where: { id: toDelete } });
+            }
+        } else {
+            const toDelete = cleaningNotifications.map(n => n.id);
+            if (toDelete.length > 0) {
+                await Notification.destroy({ where: { id: toDelete } });
+            }
+            await Notification.create({
+                profileId,
+                type: 'warning',
+                title: 'Alerta de Limpieza Requerida',
+                message,
+                data: dataPayload,
+                read: false
+            });
+        }
+    }
+
     async _processCleaningNotifications(profileId, cagesToCheck) {
         const { Cleaning, Notification, Assignment } = require('../../domain/models');
         const { Op } = require('sequelize');
         const todayMs = Date.now();
 
         const cageIds = (cagesToCheck || []).map(c => c.id);
-        const dirtyCages = [];
+        let dirtyCages = [];
 
         if (cageIds.length > 0) {
             const [cleanings, assignments] = await Promise.all([
@@ -563,45 +700,7 @@ class NotificationService {
                     order: [['assignedAt', 'ASC']]
                 })
             ]);
-
-            const cleaningMap = new Map();
-            for (const c of cleanings) {
-                if (!cleaningMap.has(c.cageId)) cleaningMap.set(c.cageId, c);
-            }
-
-            const assignmentMap = new Map();
-            for (const a of assignments) {
-                if (!assignmentMap.has(a.cageId)) assignmentMap.set(a.cageId, []);
-                assignmentMap.get(a.cageId).push(a);
-            }
-
-            for (const cage of cagesToCheck) {
-                const lastCleaning = cleaningMap.get(cage.id);
-                const cageAssignments = assignmentMap.get(cage.id) || [];
-
-                let startDate = null;
-                if (lastCleaning?.cleaningDate) {
-                    startDate = new Date(lastCleaning.cleaningDate);
-                } else if (cageAssignments.length > 0) {
-                    const firstAssignment = cageAssignments[0];
-                    startDate = firstAssignment?.assignedAt ? new Date(firstAssignment.assignedAt) : null;
-                }
-
-                if (!startDate) continue;
-
-                const startMs = startDate.getTime();
-                const merged = this._mergeIntervals(cageAssignments, startMs, todayMs);
-                const daysWithoutCleaning = this._calculateDaysWithoutCleaning(merged);
-
-                if (daysWithoutCleaning >= 3) {
-                    dirtyCages.push({
-                        cageId: cage.id,
-                        cageNumber: cage.number,
-                        daysWithoutCleaning,
-                        galponId: cage.galponId
-                    });
-                }
-            }
+            dirtyCages = this._findDirtyCages(cagesToCheck, cleanings, assignments, todayMs);
         }
 
         const existingNotifications = await Notification.findAll({
@@ -616,59 +715,7 @@ class NotificationService {
         });
 
         if (dirtyCages.length > 0) {
-            dirtyCages.sort((a, b) => a.cageNumber - b.cageNumber);
-
-            const count = dirtyCages.length;
-            const message = count === 1
-                ? `Tienes 1 jaula con 3 o más días de ocupación sin limpieza en tu galpón. ¡Por favor realiza la limpieza lo antes posible!`
-                : `Tienes ${count} jaulas con 3 o más días de ocupación sin limpieza en tu galpón. ¡Por favor realiza la limpieza lo antes posible!`;
-
-            const dataPayload = {
-                type: 'cleaning_warning',
-                pendingCages: dirtyCages.map(c => ({
-                    cageId: c.cageId,
-                    cageNumber: c.cageNumber,
-                    daysWithoutCleaning: c.daysWithoutCleaning
-                })),
-                cagesCount: count
-            };
-
-            const groupedNotif = cleaningNotifications.find(n => {
-                const d = typeof n.data === 'string' ? JSON.parse(n.data || '{}') : (n.data || {});
-                return Array.isArray(d.pendingCages);
-            });
-
-            if (groupedNotif) {
-                const prevData = typeof groupedNotif.data === 'string' ? JSON.parse(groupedNotif.data || '{}') : (groupedNotif.data || {});
-                const hasChanged = groupedNotif.title !== 'Alerta de Limpieza Requerida' ||
-                    groupedNotif.message !== message ||
-                    Number(prevData.cagesCount) !== Number(dataPayload.cagesCount);
-
-                if (hasChanged) {
-                    await groupedNotif.update({
-                        title: 'Alerta de Limpieza Requerida',
-                        message,
-                        data: dataPayload
-                    });
-                }
-                const toDelete = cleaningNotifications.filter(n => n.id !== groupedNotif.id).map(n => n.id);
-                if (toDelete.length > 0) {
-                    await Notification.destroy({ where: { id: toDelete } });
-                }
-            } else {
-                const toDelete = cleaningNotifications.map(n => n.id);
-                if (toDelete.length > 0) {
-                    await Notification.destroy({ where: { id: toDelete } });
-                }
-                await Notification.create({
-                    profileId,
-                    type: 'warning',
-                    title: 'Alerta de Limpieza Requerida',
-                    message,
-                    data: dataPayload,
-                    read: false
-                });
-            }
+            await this._syncCleaningNotification(profileId, dirtyCages, cleaningNotifications);
         } else {
             const toDelete = cleaningNotifications.map(n => n.id);
             if (toDelete.length > 0) {
@@ -729,6 +776,44 @@ class NotificationService {
         return toNotificationDTO(notification);
     }
 
+    _normalizeRabbitIdentifiers(rabbitIdentifiers) {
+        const rawList = Array.isArray(rabbitIdentifiers) ? rabbitIdentifiers : [rabbitIdentifiers];
+        return rawList.map(item => {
+            if (typeof item === 'object' && item !== null) {
+                return {
+                    label: item.name ? `${item.name} - ${item.code}` : (item.label || item.code || ''),
+                    isFemale: item.sex === 'hembra'
+                };
+            }
+            return {
+                label: String(item),
+                isFemale: false
+            };
+        });
+    }
+
+    _buildAssignmentNotificationContent(cageNumber, normalizedList, isAssigned) {
+        const count = normalizedList.length;
+        const first = normalizedList[0];
+        const isFemale = count === 1 && first.isFemale;
+        const noun = isFemale ? 'coneja' : 'conejo';
+        const article = isFemale ? 'La' : 'El';
+
+        if (isAssigned) {
+            const title = count === 1 ? (isFemale ? 'Nueva Asignación de Coneja' : 'Nueva Asignación de Conejo') : 'Nuevas Asignaciones de Conejos';
+            const message = count === 1
+                ? `${article} ${noun} **${first.label}** ha sido ${isFemale ? 'asignada' : 'asignado'} a tu jaula ${cageNumber}.`
+                : `Se asignaron **${count} conejos** a tu jaula ${cageNumber}: ${normalizedList.map(r => r.label).join(', ')}.`;
+            return { title, message };
+        }
+
+        const title = count === 1 ? (isFemale ? 'Coneja Removida' : 'Conejo Removido') : 'Conejos Removidos';
+        const message = count === 1
+            ? `${article} ${noun} **${first.label}** ha sido ${isFemale ? 'removida' : 'removido'} de tu jaula ${cageNumber}.`
+            : `Se removieron **${count} conejos** de tu jaula ${cageNumber}.`;
+        return { title, message };
+    }
+
     async createRabbitAssignmentNotification(cageId, rabbitIdentifiers, isAssigned) {
         try {
             const { WorkerCage, FarmMember, Cage, Notification } = require('../../domain/models');
@@ -743,39 +828,12 @@ class NotificationService {
             const memberIds = workerCages.map(wc => wc.farmMemberId);
             const members = await FarmMember.findAll({ where: { id: { [Op.in]: memberIds } } });
 
-            const normalizedList = (Array.isArray(rabbitIdentifiers) ? rabbitIdentifiers : [rabbitIdentifiers]).map(item => {
-                if (typeof item === 'object' && item !== null) {
-                    return {
-                        label: item.name ? `${item.name} - ${item.code}` : (item.label || item.code || ''),
-                        isFemale: item.sex === 'hembra'
-                    };
-                }
-                return {
-                    label: String(item),
-                    isFemale: false
-                };
-            });
+            const normalizedList = this._normalizeRabbitIdentifiers(rabbitIdentifiers);
             const count = normalizedList.length;
             if (count === 0) return;
 
             const first = normalizedList[0];
-            const isFemale = count === 1 && first.isFemale;
-            const noun = isFemale ? 'coneja' : 'conejo';
-            const article = isFemale ? 'La' : 'El';
-
-            let title = '';
-            let message = '';
-            if (isAssigned) {
-                title = count === 1 ? (isFemale ? 'Nueva Asignación de Coneja' : 'Nueva Asignación de Conejo') : 'Nuevas Asignaciones de Conejos';
-                message = count === 1
-                    ? `${article} ${noun} **${first.label}** ha sido ${isFemale ? 'asignada' : 'asignado'} a tu jaula ${cage.number}.`
-                    : `Se asignaron **${count} conejos** a tu jaula ${cage.number}: ${normalizedList.map(r => r.label).join(', ')}.`;
-            } else {
-                title = count === 1 ? (isFemale ? 'Coneja Removida' : 'Conejo Removido') : 'Conejos Removidos';
-                message = count === 1
-                    ? `${article} ${noun} **${first.label}** ha sido ${isFemale ? 'removida' : 'removido'} de tu jaula ${cage.number}.`
-                    : `Se removieron **${count} conejos** de tu jaula ${cage.number}.`;
-            }
+            const { title, message } = this._buildAssignmentNotificationContent(cage.number, normalizedList, isAssigned);
 
             const notificationsToCreate = [];
             for (const member of members) {
@@ -855,7 +913,7 @@ class NotificationService {
 
         const { Op, Sequelize } = require('sequelize');
         const [, notifications, total] = await Promise.all([
-            Notification.destroy({
+            Promise.resolve(Notification.destroy ? Notification.destroy({
                 where: {
                     profileId,
                     [Op.or]: [
@@ -863,7 +921,7 @@ class NotificationService {
                         { title: { [Op.iLike]: '%novedad%' } }
                     ]
                 }
-            }).catch(() => {}),
+            }) : null).catch(() => {}),
             notificationRepository.findByProfileId(profileId, queryOptions),
             notificationRepository.countByProfileId(profileId, queryOptions)
         ]);
@@ -971,12 +1029,37 @@ class NotificationService {
         }
     }
 
+    async _getWorkerCleaningCages(m, assignedCageIds) {
+        const { Cage, WorkerCage, WorkerPermission } = require('../../domain/models');
+        const { Op } = require('sequelize');
+
+        const [hasPermission, workerCages] = await Promise.all([
+            WorkerPermission.findOne({
+                where: {
+                    farmMemberId: m.id,
+                    moduleName: { [Op.in]: ['limpieza', 'cleaning'] },
+                    canRead: true
+                }
+            }),
+            WorkerCage.findAll({ where: { farmMemberId: m.id } })
+        ]);
+
+        if (!hasPermission) return [];
+        const cageIds = workerCages.map(wc => wc.cageId).filter(id => assignedCageIds.has(Number(id)));
+        if (cageIds.length === 0) return [];
+
+        return Cage.findAll({
+            where: { id: { [Op.in]: cageIds }, galponId: m.galponId }
+        });
+    }
+
     async _getCagesToCheckForCleaning(profileId, assignedCageIds) {
         const [memberships, ownedGalpones] = await Promise.all([
             FarmMember.findAll({ where: { profileId, status: 'active' } }),
             Galpon.findAll({ where: { profileId } })
         ]);
-        const { Cage, WorkerCage, WorkerPermission } = require('../../domain/models');
+        const { Cage } = require('../../domain/models');
+        const { Op } = require('sequelize');
 
         const cagesToCheck = [];
 
@@ -992,29 +1075,11 @@ class NotificationService {
                 const ownerCages = await Cage.findAll({
                     where: { galponId: m.galponId, id: { [Op.in]: Array.from(assignedCageIds) } }
                 });
-                for (const c of ownerCages) {
-                    if (!cagesToCheck.some(x => x.id === c.id)) cagesToCheck.push(c);
-                }
+                this._addUniqueCages(cagesToCheck, ownerCages);
             } else if (m.role === 'worker') {
-                const [hasPermission, workerCages] = await Promise.all([
-                    WorkerPermission.findOne({
-                        where: {
-                            farmMemberId: m.id,
-                            moduleName: { [Op.in]: ['limpieza', 'cleaning'] },
-                            canRead: true
-                        }
-                    }),
-                    WorkerCage.findAll({ where: { farmMemberId: m.id } })
-                ]);
-
-                if (hasPermission) {
-                    const cageIds = workerCages.map(wc => wc.cageId).filter(id => assignedCageIds.has(Number(id)));
-                    if (cageIds.length > 0) {
-                        const assignedCages = await Cage.findAll({
-                            where: { id: { [Op.in]: cageIds }, galponId: m.galponId }
-                        });
-                        this._addUniqueCages(cagesToCheck, assignedCages);
-                    }
+                const assignedCages = await this._getWorkerCleaningCages(m, assignedCageIds);
+                if (assignedCages.length > 0) {
+                    this._addUniqueCages(cagesToCheck, assignedCages);
                 }
             }
         }
@@ -1071,6 +1136,53 @@ class NotificationService {
         }
     }
 
+    _buildWeaningAlertMessage(weaningReproductions) {
+        const count = weaningReproductions.length;
+        if (count === 1) {
+            const r = weaningReproductions[0];
+            const rabbitName = r.female?.name ? ` **${r.female.name}**` : '';
+            const rabbitCode = r.female?.code ? ` con código **${r.female.code}**` : '';
+            return `La camada de la coneja${rabbitName}${rabbitCode} cumplió 30 días de lactancia. Es tiempo de realizar el destete.`;
+        }
+        return `Tienes **${count} camadas** listas para destete en tu galpón. Es tiempo de realizar el destete.`;
+    }
+
+    async _syncWeaningNotification(weaningNotifications, profileId, message, dataPayload, weaningReproductions) {
+        const { Notification } = require('../../domain/models');
+        const { Op } = require('sequelize');
+
+        if (weaningNotifications.length > 0) {
+            const mainNotif = weaningNotifications[0];
+            const prevData = typeof mainNotif.data === 'string' ? JSON.parse(mainNotif.data || '{}') : (mainNotif.data || {});
+            const hasChanged = mainNotif.title !== 'Recordatorio de Destete' ||
+                mainNotif.message !== message ||
+                Number(prevData.count) !== Number(dataPayload.count) ||
+                Number(prevData.reproductionId) !== Number(weaningReproductions[0].id);
+
+            if (hasChanged) {
+                await mainNotif.update({
+                    title: 'Recordatorio de Destete',
+                    message,
+                    data: dataPayload
+                });
+            }
+
+            const extraIds = weaningNotifications.slice(1).map(n => n.id);
+            if (extraIds.length > 0) {
+                await Notification.destroy({ where: { id: { [Op.in]: extraIds } } });
+            }
+        } else {
+            await Notification.create({
+                profileId,
+                type: 'warning',
+                title: 'Recordatorio de Destete',
+                message,
+                data: dataPayload,
+                read: false
+            });
+        }
+    }
+
     async _processWeaningAlerts(weaningReproductions, profileId) {
         const { Notification } = require('../../domain/models');
         const { Op } = require('sequelize');
@@ -1102,16 +1214,7 @@ class NotificationService {
             name: r.female?.name || ''
         }));
 
-        let message = '';
-        if (count === 1) {
-            const r = weaningReproductions[0];
-            const rabbitName = r.female?.name ? ` **${r.female.name}**` : '';
-            const rabbitCode = r.female?.code ? ` con código **${r.female.code}**` : '';
-            message = `La camada de la coneja${rabbitName}${rabbitCode} cumplió 30 días de lactancia. Es tiempo de realizar el destete.`;
-        } else {
-            message = `Tienes **${count} camadas** listas para destete en tu galpón. Es tiempo de realizar el destete.`;
-        }
-
+        const message = this._buildWeaningAlertMessage(weaningReproductions);
         const dataPayload = {
             type: 'weaning_alert',
             reproductionId: Number(weaningReproductions[0].id),
@@ -1119,36 +1222,7 @@ class NotificationService {
             reproductions: reproductionsList
         };
 
-        if (weaningNotifications.length > 0) {
-            const mainNotif = weaningNotifications[0];
-            const prevData = typeof mainNotif.data === 'string' ? JSON.parse(mainNotif.data || '{}') : (mainNotif.data || {});
-            const hasChanged = mainNotif.title !== 'Recordatorio de Destete' ||
-                mainNotif.message !== message ||
-                Number(prevData.count) !== Number(count) ||
-                Number(prevData.reproductionId) !== Number(weaningReproductions[0].id);
-
-            if (hasChanged) {
-                await mainNotif.update({
-                    title: 'Recordatorio de Destete',
-                    message,
-                    data: dataPayload
-                });
-            }
-
-            const extraIds = weaningNotifications.slice(1).map(n => n.id);
-            if (extraIds.length > 0) {
-                await Notification.destroy({ where: { id: { [Op.in]: extraIds } } });
-            }
-        } else {
-            await Notification.create({
-                profileId,
-                type: 'warning',
-                title: 'Recordatorio de Destete',
-                message,
-                data: dataPayload,
-                read: false
-            });
-        }
+        await this._syncWeaningNotification(weaningNotifications, profileId, message, dataPayload, weaningReproductions);
     }
 }
 

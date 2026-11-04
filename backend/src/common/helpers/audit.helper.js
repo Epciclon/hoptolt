@@ -1,5 +1,94 @@
 const { AuditLog, FarmMember, Profile, Notification } = require('../../domain/models');
 
+function buildAuditSingleChangeMessage(workerName, entity, action, itemName, entityLabel) {
+    if (entity === 'reports') {
+        return action === 'descargar'
+            ? `**${workerName}** descargó el **${itemName || 'Reporte'}** en PDF`
+            : `**${workerName}** consultó la vista previa de **${itemName || 'Reportes'}**`;
+    }
+    const actionVerbs = {
+        crear: 'agregó',
+        eliminar: 'eliminó'
+    };
+    const verb = actionVerbs[action] || 'modificó';
+    return itemName
+        ? `**${workerName}** ${verb} **${itemName}** en **${entityLabel}**`
+        : `**${workerName}** ${verb} un registro en **${entityLabel}**`;
+}
+
+function buildAuditWorkerMessage(workerName, totalChangesToday, entity, action, itemName, entityLabel) {
+    if (totalChangesToday === 1) {
+        return buildAuditSingleChangeMessage(workerName, entity, action, itemName, entityLabel);
+    }
+    return `**${workerName}** realizó ${totalChangesToday} cambios hoy`;
+}
+
+async function updateOrCreateAuditNotification({
+    existingNotification,
+    ownerProfileId,
+    message,
+    totalChangesToday,
+    distinctEntities,
+    modulesBreakdown,
+    action,
+    entity,
+    entityLabel,
+    itemName,
+    createdLogId,
+    galponId,
+    workerName,
+    workerProfileId,
+    todayDateStr
+}) {
+    if (existingNotification) {
+        const updatedData = {
+            ...existingNotification.data,
+            changeCount: totalChangesToday,
+            modulesCount: distinctEntities.length,
+            modules: distinctEntities,
+            modulesBreakdown,
+            lastAction: action,
+            lastModule: entity,
+            lastModuleLabel: entityLabel,
+            lastItemName: itemName || '',
+            lastLogId: createdLogId
+        };
+
+        existingNotification.changed('data', true);
+        await existingNotification.update({
+            message,
+            data: updatedData,
+            read: false,
+            updatedAt: new Date()
+        });
+        return;
+    }
+
+    await Notification.create({
+        profileId: ownerProfileId,
+        type: 'info',
+        title: 'Control de Cambios',
+        message,
+        data: {
+            type: 'worker_sensitive_action',
+            module: entity,
+            moduleLabel: entityLabel,
+            galponId: Number(galponId),
+            action,
+            logId: createdLogId,
+            lastLogId: createdLogId,
+            workerName,
+            workerProfileId,
+            changeCount: totalChangesToday,
+            modulesCount: distinctEntities.length,
+            modules: distinctEntities,
+            modulesBreakdown,
+            lastItemName: itemName || '',
+            date: todayDateStr
+        }
+    });
+}
+
 /**
  * Registra un movimiento realizado por un trabajador en módulos sensibles de un galpón.
  * Si el usuario es propietario del galpón, no se registra para no saturar con acciones propias.
@@ -108,76 +197,25 @@ async function recordWorkerChange({
             }));
             modulesBreakdown.sort((a, b) => b.count - a.count);
 
-            // Armar mensaje claro y amigable sin paréntesis
-            let message = '';
-            if (totalChangesToday === 1) {
-                if (entity === 'reports') {
-                    message = action === 'descargar'
-                        ? `**${workerName}** descargó el **${itemName || 'Reporte'}** en PDF`
-                        : `**${workerName}** consultó la vista previa de **${itemName || 'Reportes'}**`;
-                } else if (action === 'crear') {
-                    message = itemName
-                        ? `**${workerName}** agregó **${itemName}** en **${entityLabel}**`
-                        : `**${workerName}** agregó un registro en **${entityLabel}**`;
-                } else if (action === 'eliminar') {
-                    message = itemName
-                        ? `**${workerName}** eliminó **${itemName}** en **${entityLabel}**`
-                        : `**${workerName}** eliminó un registro en **${entityLabel}**`;
-                } else {
-                    message = itemName
-                        ? `**${workerName}** modificó **${itemName}** en **${entityLabel}**`
-                        : `**${workerName}** modificó un registro en **${entityLabel}**`;
-                }
-            } else {
-                message = `**${workerName}** realizó ${totalChangesToday} cambios hoy`;
-            }
+            const message = buildAuditWorkerMessage(workerName, totalChangesToday, entity, action, itemName, entityLabel);
 
-            if (existingNotification) {
-                const updatedData = {
-                    ...existingNotification.data,
-                    changeCount: totalChangesToday,
-                    modulesCount: distinctEntities.length,
-                    modules: distinctEntities,
-                    modulesBreakdown,
-                    lastAction: action,
-                    lastModule: entity,
-                    lastModuleLabel: entityLabel,
-                    lastItemName: itemName || '',
-                    lastLogId: createdLog.id
-                };
-
-                existingNotification.changed('data', true);
-                await existingNotification.update({
-                    message,
-                    data: updatedData,
-                    read: false,
-                    updatedAt: new Date()
-                });
-            } else {
-                await Notification.create({
-                    profileId: ownerMember.profileId,
-                    type: 'info',
-                    title: 'Control de Cambios',
-                    message,
-                    data: {
-                        type: 'worker_sensitive_action',
-                        module: entity,
-                        moduleLabel: entityLabel,
-                        galponId: Number(galponId),
-                        action,
-                        logId: createdLog.id,
-                        lastLogId: createdLog.id,
-                        workerName,
-                        workerProfileId: profileId,
-                        changeCount: totalChangesToday,
-                        modulesCount: distinctEntities.length,
-                        modules: distinctEntities,
-                        modulesBreakdown,
-                        lastItemName: itemName || '',
-                        date: todayStart.toISOString().split('T')[0]
-                    }
-                });
-            }
+            await updateOrCreateAuditNotification({
+                existingNotification,
+                ownerProfileId: ownerMember.profileId,
+                message,
+                totalChangesToday,
+                distinctEntities,
+                modulesBreakdown,
+                action,
+                entity,
+                entityLabel,
+                itemName,
+                createdLogId: createdLog.id,
+                galponId,
+                workerName,
+                workerProfileId: profileId,
+                todayDateStr: todayStart.toISOString().split('T')[0]
+            });
         }
     } catch (err) {
         console.error('Error al registrar movimiento en auditoría:', err);

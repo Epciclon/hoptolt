@@ -119,28 +119,14 @@ const VALUE_TRANSLATIONS: Record<string, string> = {
   'vista previa': 'Vista previa'
 };
 
-function formatValue(key: string, val: any): string {
-  if (val === null || val === undefined || val === '') return 'Ninguno';
-  if (key === 'imageUrl') {
-    if (!val || val === 'null') return 'Sin fotografía';
-    return 'Fotografía registrada';
-  }
-  if (key === 'weight') {
-    const num = Number(val);
-    if (!Number.isNaN(num)) return `${num} kg`;
-    return String(val);
-  }
-  if (typeof val === 'boolean') return val ? 'Sí' : 'No';
-  if (Array.isArray(val)) {
-    if (val.length === 0) return 'Ninguno';
-    return val.map((v) => formatValue(key, v)).join(', ');
-  }
-  if (typeof val === 'number') {
-    if (key === 'capacity') return `${val} ${val === 1 ? 'conejo' : 'conejos'}`;
-    if (key === 'rabbitId') return `Conejo #${val}`;
-    if (key === 'cageId') return `Jaula #${val}`;
-    return String(val);
-  }
+function formatNumberValue(key: string, val: number): string {
+  if (key === 'capacity') return `${val} ${val === 1 ? 'conejo' : 'conejos'}`;
+  if (key === 'rabbitId') return `Conejo #${val}`;
+  if (key === 'cageId') return `Jaula #${val}`;
+  return String(val);
+}
+
+function formatStringValue(key: string, val: any): string {
   const strVal = String(val).trim();
   const lower = strVal.toLowerCase();
   if (VALUE_TRANSLATIONS[lower]) return VALUE_TRANSLATIONS[lower];
@@ -153,6 +139,23 @@ function formatValue(key: string, val: any): string {
   }
 
   return strVal.charAt(0).toUpperCase() + strVal.slice(1);
+}
+
+function formatValue(key: string, val: any): string {
+  if (val === null || val === undefined || val === '') return 'Ninguno';
+  if (key === 'imageUrl') {
+    return (!val || val === 'null') ? 'Sin fotografía' : 'Fotografía registrada';
+  }
+  if (key === 'weight') {
+    const num = Number(val);
+    return !Number.isNaN(num) ? `${num} kg` : String(val);
+  }
+  if (typeof val === 'boolean') return val ? 'Sí' : 'No';
+  if (Array.isArray(val)) {
+    return val.length === 0 ? 'Ninguno' : val.map((v) => formatValue(key, v)).join(', ');
+  }
+  if (typeof val === 'number') return formatNumberValue(key, val);
+  return formatStringValue(key, val);
 }
 
 interface DiffItem {

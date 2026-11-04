@@ -36,6 +36,181 @@ const getModuleLabel = (mod?: string | null) => {
   }
 };
 
+interface IncidentsMetricsBarProps {
+  userRole: string;
+  counts: { total?: number; pending?: number; reviewed?: number };
+}
+
+function IncidentsMetricsBar({ userRole, counts }: IncidentsMetricsBarProps) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x border-b border-default bg-card">
+      <div className="p-4 md:p-5 flex items-center justify-between">
+        <div>
+          <p className="text-xs font-semibold text-muted">
+            {userRole === 'owner' ? 'Total Registradas' : 'Mis Novedades'}
+          </p>
+          <p className="text-2xl md:text-3xl font-bold text-main mt-1">{counts.total || 0}</p>
+          <p className="text-xs text-muted mt-0.5">
+            {userRole === 'owner' ? 'Reportes de todo el personal' : 'Reportadas por mi usuario'}
+          </p>
+        </div>
+        <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/50 flex items-center justify-center">
+          <ShieldCheck size={20} />
+        </div>
+      </div>
+
+      <div className="p-4 md:p-5 flex items-center justify-between">
+        <div>
+          <p className="text-xs font-semibold text-muted">
+            {userRole === 'owner' ? 'Pendientes de Atención' : 'Mis Pendientes'}
+          </p>
+          <p className="text-2xl md:text-3xl font-bold text-main mt-1">{counts.pending || 0}</p>
+          <p className="text-xs text-muted mt-0.5">
+            {userRole === 'owner' ? 'Por revisar y contestar' : 'En espera de revisión'}
+          </p>
+        </div>
+        <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50 flex items-center justify-center">
+          <Clock size={20} />
+        </div>
+      </div>
+
+      <div className="p-4 md:p-5 flex items-center justify-between">
+        <div>
+          <p className="text-xs font-semibold text-muted">
+            {userRole === 'owner' ? 'Atendidas' : 'Mis Atendidas'}
+          </p>
+          <p className="text-2xl md:text-3xl font-bold text-main mt-1">
+            {counts.reviewed ?? Math.max(0, (counts.total || 0) - (counts.pending || 0))}
+          </p>
+          <p className="text-xs text-muted mt-0.5">
+            {userRole === 'owner' ? 'Con respuesta enviada' : 'Con respuesta recibida'}
+          </p>
+        </div>
+        <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50 flex items-center justify-center">
+          <CheckCircle2 size={20} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface IncidentCardItemProps {
+  incident: Incident;
+  userRole: string;
+  onOpenDetail: (incident: Incident) => void;
+  onDeleteRequest: (id: number) => void;
+}
+
+function IncidentCardItem({ incident, userRole, onOpenDetail, onDeleteRequest }: IncidentCardItemProps) {
+  const isUnread = userRole === 'owner' ? !incident.ownerRead : !incident.workerRead;
+  const reporterName = incident.reporter?.fullName || incident.reporter?.username || 'Trabajador';
+  const isResolvedOrReviewed = incident.status === 'resolved' || incident.status === 'reviewed';
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpenDetail(incident)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpenDetail(incident);
+        }
+      }}
+      className={cn(
+        'p-3.5 sm:p-5 hover:bg-theme-surface/50 transition-colors flex flex-col gap-2.5 sm:gap-3 cursor-pointer group focus:outline-none',
+        isUnread && 'bg-primary-50/50 dark:bg-primary-900/15'
+      )}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-950/50 text-primary-700 dark:text-primary-300 flex items-center justify-center font-bold text-xs shrink-0 border border-primary-200 dark:border-primary-800/40">
+            {isResolvedOrReviewed ? (
+              <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-400" />
+            ) : (
+              <Clock size={16} className="text-amber-600 dark:text-amber-400" />
+            )}
+          </div>
+          <div className="min-w-0 truncate">
+            <span className="font-semibold text-main text-xs sm:text-sm block truncate">
+              {userRole === 'owner' ? (
+                <>
+                  <span className="hidden sm:inline">Reportado por </span>
+                  <span className="sm:hidden">Por </span>
+                  {reporterName}
+                </>
+              ) : (
+                'Mi reporte'
+              )}
+            </span>
+            <span className="text-xs text-muted hidden sm:block truncate">
+              {userRole === 'owner' ? 'Personal del galpón' : reporterName}
+            </span>
+          </div>
+        </div>
+
+        <span className="text-xs text-theme-faint shrink-0 whitespace-nowrap">
+          {formatFriendlyDate(incident.createdAt)}
+        </span>
+      </div>
+
+      <div>
+        <h3 className="text-sm sm:text-base font-semibold text-main mb-1 group-hover:text-primary-600 transition-colors">
+          {incident.title}
+        </h3>
+        <p className="text-xs sm:text-sm text-muted line-clamp-2 leading-relaxed">
+          {incident.description}
+        </p>
+      </div>
+
+      {incident.ownerResponse && (
+        <div className="p-2.5 sm:p-3 rounded-xl bg-theme-surface border border-default text-xs text-main">
+          <div className="flex items-center gap-1.5 font-semibold text-primary-600 dark:text-primary-400 mb-1">
+            <CheckCircle2 size={14} />
+            <span>Respuesta de la administración:</span>
+          </div>
+          <p className="text-muted leading-relaxed line-clamp-2">
+            {incident.ownerResponse}
+          </p>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between gap-2 pt-2 border-t border-default/50">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <span className="px-2 py-0.5 rounded-md bg-theme-surface border border-default text-xs font-semibold text-muted">
+            {incident.category}
+          </span>
+          {getModuleLabel(incident.module) && (
+            <span className="hidden sm:inline-flex px-2 py-0.5 rounded-md bg-primary-500/10 border border-primary-500/20 text-xs font-semibold text-primary-600 dark:text-primary-400">
+              {getModuleLabel(incident.module)}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {userRole !== 'owner' && incident.status === 'pending' && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeleteRequest(incident.id);
+              }}
+              title="Eliminar novedad"
+              className="p-1 rounded-lg text-muted hover:text-red-600 hover:bg-red-500/10 transition-colors cursor-pointer"
+            >
+              <Trash2 size={15} />
+            </button>
+          )}
+          <span className="text-xs sm:text-sm text-primary-600 dark:text-primary-400 font-semibold flex items-center gap-1 whitespace-nowrap">
+            {userRole === 'owner' && incident.status === 'pending' ? 'Atender novedad' : 'Ver detalle'}
+            <ChevronRight size={14} />
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function IncidentsPage() {
   const { user, loading: authLoading } = useAuthContext();
 
@@ -187,56 +362,8 @@ export default function IncidentsPage() {
           )}
         </div>
 
-        {/* Barra de Métricas: Números uniformes en text-main para modo claro y oscuro */}
-        {/* Barra de Métricas: Números uniformes en text-main para modo claro y oscuro */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x border-b border-default bg-card">
-          <div className="p-4 md:p-5 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-muted">
-                {userRole === 'owner' ? 'Total Registradas' : 'Mis Novedades'}
-              </p>
-              <p className="text-2xl md:text-3xl font-bold text-main mt-1">{counts.total || 0}</p>
-              <p className="text-xs text-muted mt-0.5">
-                {userRole === 'owner' ? 'Reportes de todo el personal' : 'Reportadas por mi usuario'}
-              </p>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/50 flex items-center justify-center">
-              <ShieldCheck size={20} />
-            </div>
-          </div>
-
-          <div className="p-4 md:p-5 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-muted">
-                {userRole === 'owner' ? 'Pendientes de Atención' : 'Mis Pendientes'}
-              </p>
-              <p className="text-2xl md:text-3xl font-bold text-main mt-1">{counts.pending || 0}</p>
-              <p className="text-xs text-muted mt-0.5">
-                {userRole === 'owner' ? 'Por revisar y contestar' : 'En espera de revisión'}
-              </p>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50 flex items-center justify-center">
-              <Clock size={20} />
-            </div>
-          </div>
-
-          <div className="p-4 md:p-5 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-muted">
-                {userRole === 'owner' ? 'Atendidas' : 'Mis Atendidas'}
-              </p>
-              <p className="text-2xl md:text-3xl font-bold text-main mt-1">
-                {counts.reviewed ?? Math.max(0, (counts.total || 0) - (counts.pending || 0))}
-              </p>
-              <p className="text-xs text-muted mt-0.5">
-                {userRole === 'owner' ? 'Con respuesta enviada' : 'Con respuesta recibida'}
-              </p>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50 flex items-center justify-center">
-              <CheckCircle2 size={20} />
-            </div>
-          </div>
-        </div>
+        {/* Barra de Métricas */}
+        <IncidentsMetricsBar userRole={userRole} counts={counts} />
 
         {/* Barra de Filtros y Búsqueda */}
         <div className="p-3.5 sm:p-5 border-b border-default bg-card space-y-4">
@@ -380,118 +507,15 @@ export default function IncidentsPage() {
             </div>
           ) : (
             <div className="divide-y divide-default">
-              {sortedIncidents.map((incident: Incident) => {
-                const isUnread = userRole === 'owner' ? !incident.ownerRead : !incident.workerRead;
-                const reporterName = incident.reporter?.fullName || incident.reporter?.username || 'Trabajador';
-                return (
-                  <div
-                    key={incident.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => handleOpenDetail(incident)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        handleOpenDetail(incident);
-                      }
-                    }}
-                    className={cn(
-                      'p-3.5 sm:p-5 hover:bg-theme-surface/50 transition-colors flex flex-col gap-2.5 sm:gap-3 cursor-pointer group focus:outline-none',
-                      isUnread && 'bg-primary-50/50 dark:bg-primary-900/15'
-                    )}
-                  >
-                    {/* Fila Superior: Actor/Reportador y Fecha */}
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-950/50 text-primary-700 dark:text-primary-300 flex items-center justify-center font-bold text-xs shrink-0 border border-primary-200 dark:border-primary-800/40">
-                          {incident.status === 'resolved' || incident.status === 'reviewed' ? (
-                            <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-400" />
-                          ) : (
-                            <Clock size={16} className="text-amber-600 dark:text-amber-400" />
-                          )}
-                        </div>
-                        <div className="min-w-0 truncate">
-                          <span className="font-semibold text-main text-xs sm:text-sm block truncate">
-                            {userRole === 'owner' ? (
-                              <>
-                                <span className="hidden sm:inline">Reportado por </span>
-                                <span className="sm:hidden">Por </span>
-                                {reporterName}
-                              </>
-                            ) : (
-                              'Mi reporte'
-                            )}
-                          </span>
-                          <span className="text-xs text-muted hidden sm:block truncate">
-                            {userRole === 'owner' ? 'Personal del galpón' : reporterName}
-                          </span>
-                        </div>
-                      </div>
-
-                      <span className="text-xs text-theme-faint shrink-0 whitespace-nowrap">
-                        {formatFriendlyDate(incident.createdAt)}
-                      </span>
-                    </div>
-
-                    {/* Fila Central: Título y Explicación */}
-                    <div>
-                      <h3 className="text-sm sm:text-base font-semibold text-main mb-1 group-hover:text-primary-600 transition-colors">
-                        {incident.title}
-                      </h3>
-                      <p className="text-xs sm:text-sm text-muted line-clamp-2 leading-relaxed">
-                        {incident.description}
-                      </p>
-                    </div>
-
-                    {/* Respuesta de la Administración si existe */}
-                    {incident.ownerResponse && (
-                      <div className="p-2.5 sm:p-3 rounded-xl bg-theme-surface border border-default text-xs text-main">
-                        <div className="flex items-center gap-1.5 font-semibold text-primary-600 dark:text-primary-400 mb-1">
-                          <CheckCircle2 size={14} />
-                          <span>Respuesta de la administración:</span>
-                        </div>
-                        <p className="text-muted leading-relaxed line-clamp-2">
-                          {incident.ownerResponse}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Fila Inferior: Badges a la izquierda, Acción a la derecha */}
-                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-default/50">
-                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                        <span className="px-2 py-0.5 rounded-md bg-theme-surface border border-default text-xs font-semibold text-muted">
-                          {incident.category}
-                        </span>
-                        {getModuleLabel(incident.module) && (
-                          <span className="hidden sm:inline-flex px-2 py-0.5 rounded-md bg-primary-500/10 border border-primary-500/20 text-xs font-semibold text-primary-600 dark:text-primary-400">
-                            {getModuleLabel(incident.module)}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0">
-                        {userRole !== 'owner' && incident.status === 'pending' && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setIncidentToDelete(incident.id);
-                            }}
-                            title="Eliminar novedad"
-                            className="p-1 rounded-lg text-muted hover:text-red-600 hover:bg-red-500/10 transition-colors cursor-pointer"
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        )}
-                        <span className="text-xs sm:text-sm text-primary-600 dark:text-primary-400 font-semibold flex items-center gap-1 whitespace-nowrap">
-                          {userRole === 'owner' && incident.status === 'pending' ? 'Atender novedad' : 'Ver detalle'}
-                          <ChevronRight size={14} />
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              {sortedIncidents.map((incident: Incident) => (
+                <IncidentCardItem
+                  key={incident.id}
+                  incident={incident}
+                  userRole={userRole}
+                  onOpenDetail={handleOpenDetail}
+                  onDeleteRequest={setIncidentToDelete}
+                />
+              ))}
             </div>
           )}
         </div>

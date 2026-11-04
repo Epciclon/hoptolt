@@ -131,6 +131,72 @@ class GrowthService {
         updatesResult.rabbitsToUpdate.push(updates);
     }
 
+    async _saveRabbitGrowthUpdates(rabbitsToUpdate, rabbits) {
+        if (!rabbitsToUpdate || rabbitsToUpdate.length === 0) return;
+        const rabbitMap = new Map(rabbits.map(r => [r.id, r]));
+        const { recordSystemChange } = require('../../common/helpers/audit.helper');
+
+        await Promise.all(rabbitsToUpdate.map(async update => {
+            const rabbit = rabbitMap.get(update.rabbitId);
+            if (!rabbit) return;
+            const oldAge = rabbit.age;
+            const oldWeight = rabbit.weight;
+            rabbit.age = update.age;
+            if (update.weight !== undefined) rabbit.weight = update.weight;
+            await rabbit.save();
+            
+            const rabbitLabel = rabbit.name ? `${rabbit.name} - ${rabbit.code}` : rabbit.code;
+            const beforeData = { age: oldAge };
+            const afterData = { age: update.age };
+            if (update.weight !== undefined && update.weight !== null && update.weight !== oldWeight) {
+                beforeData.weight = oldWeight;
+                afterData.weight = update.weight;
+            }
+
+            await recordSystemChange({
+                galponId: rabbit.galponId,
+                action: 'Cálculo de crecimiento',
+                entity: 'growth',
+                entityId: rabbit.id,
+                itemName: rabbitLabel,
+                summary: `HopTolt actualizó la edad a ${update.age} meses` + (update.weight && update.weight !== oldWeight ? ` y peso estimado a ${update.weight} kg` : '') + ` para el conejo ${rabbitLabel}`,
+                before: beforeData,
+                after: afterData
+            });
+        }));
+    }
+
+    async _filterWorkerGrowthMessages(workerMemberships, messages) {
+        const { WorkerPermission, WorkerCage, Assignment } = require('../../domain/models');
+        const allowedRabbitIds = new Set();
+
+        for (const wm of workerMemberships) {
+            const hasPermission = await WorkerPermission.findOne({
+                where: {
+                    farmMemberId: wm.id,
+                    moduleName: { [Op.in]: ['conejos', 'rabbits'] },
+                    canRead: true
+                }
+            });
+
+            if (!hasPermission) continue;
+
+            const workerCages = await WorkerCage.findAll({ where: { farmMemberId: wm.id } });
+            const cageIds = workerCages.map(wc => wc.cageId);
+            if (cageIds.length > 0) {
+                const activeAssignments = await Assignment.findAll({
+                    where: {
+                        cageId: { [Op.in]: cageIds },
+                        status: 'asignado'
+                    }
+                });
+                activeAssignments.forEach(a => allowedRabbitIds.add(Number(a.rabbitId)));
+            }
+        }
+
+        return messages.filter(m => allowedRabbitIds.has(Number(m.rabbitId))).map(m => m.text);
+    }
+
     async _applyGrowthUpdates(updatesResult, rabbits, profileId, today, todayStr, AuditLog, Growth, Notification, preloadedMemberships, preloadedOwnedGalpones) {
         const { messages, rabbitsToUpdate, catchUpGrowths } = updatesResult;
 
@@ -145,38 +211,7 @@ class GrowthService {
             await Growth.bulkCreate(growthRecords);
         }
 
-        if (rabbitsToUpdate.length > 0) {
-            const rabbitMap = new Map(rabbits.map(r => [r.id, r]));
-
-            const { recordSystemChange } = require('../../common/helpers/audit.helper');
-            await Promise.all(rabbitsToUpdate.map(async update => {
-                const rabbit = rabbitMap.get(update.rabbitId);
-                const oldAge = rabbit.age;
-                const oldWeight = rabbit.weight;
-                rabbit.age = update.age;
-                if (update.weight !== undefined) rabbit.weight = update.weight;
-                await rabbit.save();
-                
-                const rabbitLabel = rabbit.name ? `${rabbit.name} - ${rabbit.code}` : rabbit.code;
-                const beforeData = { age: oldAge };
-                const afterData = { age: update.age };
-                if (update.weight !== undefined && update.weight !== null && update.weight !== oldWeight) {
-                    beforeData.weight = oldWeight;
-                    afterData.weight = update.weight;
-                }
-
-                await recordSystemChange({
-                    galponId: rabbit.galponId,
-                    action: 'Cálculo de crecimiento',
-                    entity: 'growth',
-                    entityId: rabbit.id,
-                    itemName: rabbitLabel,
-                    summary: `HopTolt actualizó la edad a ${update.age} meses` + (update.weight && update.weight !== oldWeight ? ` y peso estimado a ${update.weight} kg` : '') + ` para el conejo ${rabbitLabel}`,
-                    before: beforeData,
-                    after: afterData
-                });
-            }));
-        }
+        await this._saveRabbitGrowthUpdates(rabbitsToUpdate, rabbits);
 
         const memberships = preloadedMemberships || await FarmMember.findAll({ where: { profileId, status: 'active' } });
         const ownedGalpones = preloadedOwnedGalpones || await Galpon.findAll({ where: { profileId } });
@@ -193,34 +228,7 @@ class GrowthService {
         } else {
             // Usuario es trabajador: solo recibe notificaciones si tiene permisos en el módulo y jaulas asignadas
             const workerMemberships = memberships.filter(m => m.role === 'worker');
-            let allowedRabbitIds = new Set();
-
-            for (const wm of workerMemberships) {
-                const { WorkerPermission, WorkerCage, Assignment } = require('../../domain/models');
-                const hasPermission = await WorkerPermission.findOne({
-                    where: {
-                        farmMemberId: wm.id,
-                        moduleName: { [Op.in]: ['conejos', 'rabbits'] },
-                        canRead: true
-                    }
-                });
-
-                if (hasPermission) {
-                    const workerCages = await WorkerCage.findAll({ where: { farmMemberId: wm.id } });
-                    const cageIds = workerCages.map(wc => wc.cageId);
-                    if (cageIds.length > 0) {
-                        const activeAssignments = await Assignment.findAll({
-                            where: {
-                                cageId: { [Op.in]: cageIds },
-                                status: 'asignado'
-                            }
-                        });
-                        activeAssignments.forEach(a => allowedRabbitIds.add(Number(a.rabbitId)));
-                    }
-                }
-            }
-
-            userMessages = messages.filter(m => allowedRabbitIds.has(Number(m.rabbitId))).map(m => m.text);
+            userMessages = await this._filterWorkerGrowthMessages(workerMemberships, messages);
         }
 
         if (userMessages.length > 0) {
