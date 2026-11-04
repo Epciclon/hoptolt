@@ -31,7 +31,7 @@ const getModuleLabel = (mod?: string | null) => {
   }
 };
 
-function IncidentAffectedCages({ incident }: { incident: Incident }) {
+function IncidentAffectedCages({ incident }: Readonly<{ incident: Incident }>) {
   if (!((incident.cages && incident.cages.length > 0) || incident.cage)) return null;
 
   const cagesToShow = (incident.cages && incident.cages.length > 0)
@@ -57,7 +57,7 @@ function IncidentAffectedCages({ incident }: { incident: Incident }) {
   );
 }
 
-function IncidentResponseStatusView({ incident, userRole }: { incident: Incident; userRole: string }) {
+function IncidentResponseStatusView({ incident, userRole }: Readonly<{ incident: Incident; userRole: string }>) {
   if (incident.ownerResponse) {
     return (
       <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-1.5">
@@ -118,7 +118,7 @@ function IncidentOwnerResponseForm({
   error,
   isResponding,
   onSubmit,
-}: IncidentOwnerResponseFormProps) {
+}: Readonly<IncidentOwnerResponseFormProps>) {
   return (
     <form onSubmit={onSubmit} className="space-y-3 pt-3 border-t border-default">
       <div className="flex items-center justify-between">

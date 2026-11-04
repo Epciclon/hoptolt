@@ -283,7 +283,7 @@ export function IncidentFloatingWidget() {
 
   // Escuchar en vivo nuevas novedades y respuestas mediante Supabase Realtime
   useEffect(() => {
-    if (!user || !user?.activeGalponId) return;
+    if (!user?.activeGalponId) return;
 
     const channelId = `widget_incidents_rt_${user.id}_${crypto.randomUUID()}`;
     const channel = supabase.channel(channelId)
@@ -300,7 +300,7 @@ export function IncidentFloatingWidget() {
             const deletedId = payload.old?.id;
             if (deletedId) {
               queryClient.setQueriesData({ queryKey: ['incidents', 'list'] }, (old: any) => {
-                if (!old || !old.incidents) return old;
+                if (!old?.incidents) return old;
                 return {
                   ...old,
                   incidents: old.incidents.filter((item: any) => item.id !== deletedId),
@@ -455,7 +455,7 @@ export function IncidentFloatingWidget() {
     return [...incidents].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() || b.id - a.id);
   }, [incidents]);
 
-  if (!user || !user.activeGalponId) {
+  if (!user?.activeGalponId) {
     return null;
   }
 

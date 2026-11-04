@@ -241,7 +241,7 @@ function getWorkerRoleLabel(isOwner: boolean, status: string): string {
   return 'Trabajador';
 }
 
-function AuditWorkerCard({ member, isExpanded, onSelect, onToggleExpand }: AuditWorkerCardProps) {
+function AuditWorkerCard({ member, isExpanded, onSelect, onToggleExpand }: Readonly<AuditWorkerCardProps>) {
   const profile = member.profile;
   if (!profile) return null;
 
@@ -301,9 +301,10 @@ function AuditWorkerCard({ member, isExpanded, onSelect, onToggleExpand }: Audit
             <Box size={13} />
             {member.status === 'inactive' ? 'Estado' : `Jaulas Asignadas: ${assignedCages.length}`}
           </div>
-          {member.status === 'inactive' ? (
+          {member.status === 'inactive' && (
             <span className="text-xs text-amber-600 dark:text-amber-400 italic">Desvinculado del galpón</span>
-          ) : assignedCages.length > 0 ? (
+          )}
+          {member.status !== 'inactive' && assignedCages.length > 0 && (
             <div className="flex flex-wrap gap-1.5 items-center">
               {visibleCages.map((wc: any) => (
                 <span key={wc.id} className="text-xs font-semibold bg-theme-surface border border-default text-main px-2 py-0.5 rounded-md min-w-[1.75rem] text-center" title={`Jaula ${wc.cage?.number ?? wc.cageId}`}>
@@ -321,7 +322,8 @@ function AuditWorkerCard({ member, isExpanded, onSelect, onToggleExpand }: Audit
                 </button>
               )}
             </div>
-          ) : (
+          )}
+          {member.status !== 'inactive' && assignedCages.length === 0 && (
             <span className="text-xs text-theme-faint italic">Ninguna</span>
           )}
         </div>

@@ -25,7 +25,9 @@ const extractUserIdFromAuthHeader = (authHeader) => {
                 return payload.sub;
             }
         }
-    } catch (_) {}
+    } catch {
+        // Token malformado o no decodificable: se retorna null para limitar por IP
+    }
     return null;
 };
 

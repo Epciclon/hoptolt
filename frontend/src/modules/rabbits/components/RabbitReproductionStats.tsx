@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { reproductionService } from '@/modules/reproduction/services/reproduction.service';
 
-export function RabbitReproductionStats({ rabbitId }: { rabbitId: number }) {
+export function RabbitReproductionStats({ rabbitId }: Readonly<{ rabbitId: number }>) {
   const { data: reproductions = [] } = useQuery({
     queryKey: ['reproductions', 'female', rabbitId],
     queryFn: () => reproductionService.getByFemaleId(rabbitId),

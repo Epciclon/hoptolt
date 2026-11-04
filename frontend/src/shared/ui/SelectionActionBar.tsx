@@ -23,9 +23,8 @@ export function SelectionActionBar({
 
   const isFeminine = itemName.trim().toLowerCase().endsWith('a');
   const pluralSuffix = count !== 1 ? 's' : '';
-  const selectedText = isFeminine
-    ? (count !== 1 ? 'seleccionadas' : 'seleccionada')
-    : (count !== 1 ? 'seleccionados' : 'seleccionado');
+  const genderSuffix = isFeminine ? 'a' : 'o';
+  const selectedText = `seleccionad${genderSuffix}${pluralSuffix}`;
 
   const mobileLabel = mobileButtonText || (buttonText.startsWith('Registrar ') ? 'Registrar' : buttonText);
 

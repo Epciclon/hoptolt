@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Button, Input, Dialog } from '@/shared/ui';
+import { Button, Input, Dialog, RabbitAvatar } from '@/shared/ui';
 import { useMortality } from '../hooks/useMortality';
 import { useToast } from '@/shared/contexts/ToastContext';
-import { RabbitAvatar } from '@/shared/ui';
 import type { AssignedRabbit } from '@/modules/assignments/types/assignment.types';
 
 interface MortalityFormProps {

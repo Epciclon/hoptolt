@@ -64,12 +64,13 @@ const ERROR_PATTERNS: ErrorPattern[] = [
 
 function extractRawMessage(error: unknown): string {
   if (typeof error === 'string') return error;
+  if (typeof error === 'number' || typeof error === 'boolean') return String(error);
   if (error && typeof error === 'object') {
     const errObj = error as Record<string, unknown>;
     const msg = errObj.message || errObj.error_description || errObj.msg || errObj.error;
     if (typeof msg === 'string') return msg;
   }
-  return String(error || '');
+  return '';
 }
 
 /**
@@ -90,7 +91,7 @@ export function translateAuthError(error: unknown): string {
   const clean = rawMessage.trim();
 
   // 1. Rate limiting con segundos específicos
-  const secondsMatch = clean.match(/after (\d+) seconds?/i);
+  const secondsMatch = /after (\d+) seconds?/i.exec(clean);
   if (secondsMatch) {
     const secs = secondsMatch[1];
     return `Por motivos de seguridad, debes esperar ${secs} segundo${secs === '1' ? '' : 's'} antes de volver a solicitarlo.`;

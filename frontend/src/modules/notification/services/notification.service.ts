@@ -26,7 +26,7 @@ export interface NotificationsResponse {
 export const notificationService = {
   async getAll(params?: GetNotificationsParams): Promise<NotificationsResponse> {
     const { data } = await api.get<{ success?: boolean; notifications?: Notification[]; pagination?: any }>(BASE_URL, { params });
-    if (data && data.notifications) {
+    if (data?.notifications) {
       return {
         notifications: data.notifications,
         pagination: data.pagination || {
@@ -74,7 +74,7 @@ export const notificationService = {
     return response.data;
   },
 
-  // Este método es solo para uso interno del sistema (no expuesto al frontend)
+  // Este método es solo para uso interno del sistema
   async create(data: CreateNotificationDTO): Promise<Notification> {
     const response = await api.post(BASE_URL, data);
     return response.data;

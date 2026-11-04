@@ -48,7 +48,7 @@ export function matchesSmartSearch(
   }
 
   // Prefijo "jaula X" o "j X"
-  const cageMatch = q.match(/^(?:jaula|j)\s*(\d+)$/i);
+  const cageMatch = /^(?:jaula|j)\s*(\d+)$/i.exec(q);
   if (cageMatch) {
     const targetNum = Number.parseInt(cageMatch[1], 10);
     return cageNumber === targetNum;

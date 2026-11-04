@@ -166,9 +166,9 @@ class CleaningService {
             }
         });
 
-        for (const w of warnings) {
-            await this._processSingleCleaningWarning(w, cleanedSet);
-        }
+        await Promise.all(
+            warnings.map(w => this._processSingleCleaningWarning(w, cleanedSet))
+        );
     }
 
     async getCleanings(galponId, profileId, page = 1, limit = 10, filters = {}) {

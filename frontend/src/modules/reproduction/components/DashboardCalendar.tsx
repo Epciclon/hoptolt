@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { RabbitAvatar } from '@/shared/ui';
 import { ChevronLeft, ChevronRight, Baby, Heart, CalendarDays } from 'lucide-react';
-import { Alert, Dialog, Button, FilterBar } from '@/shared/ui';
+import { Alert, Dialog, Button, FilterBar, RabbitAvatar } from '@/shared/ui';
 import { useSearchParams } from 'next/navigation';
 import { useDashboardCalendar } from '../hooks/useDashboardCalendar';
 import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';

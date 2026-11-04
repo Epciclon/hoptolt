@@ -132,47 +132,63 @@ class NotificationService {
         return promise;
     }
 
-    async _filterMaturityAssignmentsByAccess(matureAssignments, memberships, ownedGalpones) {
+    async _checkSingleMaturityAccess(a, memberships, ownedGalpones) {
         const { WorkerCage, WorkerPermission } = require('../../domain/models');
         const { Op } = require('sequelize');
-        const relevantAssignments = [];
+        const cageGalponId = a.cage.galponId;
+        const isOwner = ownedGalpones.some(g => g.id === cageGalponId) ||
+            memberships.some(m => m.galponId === cageGalponId && m.role === 'owner');
 
-        for (const a of matureAssignments) {
-            const cageGalponId = a.cage.galponId;
-            const isOwner = ownedGalpones.some(g => g.id === cageGalponId) ||
-                memberships.some(m => m.galponId === cageGalponId && m.role === 'owner');
+        if (isOwner) return a;
 
-            if (isOwner) {
-                relevantAssignments.push(a);
-                continue;
-            }
+        const workerMembership = memberships.find(m => m.galponId === cageGalponId && m.role === 'worker');
+        if (!workerMembership) return null;
 
-            const workerMembership = memberships.find(m => m.galponId === cageGalponId && m.role === 'worker');
-            if (!workerMembership) continue;
+        const [hasPermission, isCageAssigned] = await Promise.all([
+            WorkerPermission.findOne({
+                where: {
+                    farmMemberId: workerMembership.id,
+                    moduleName: { [Op.in]: ['reproduccionyparto', 'reproduction', 'rabbits', 'conejos', 'assignments', 'asignaciones'] },
+                    canRead: true
+                }
+            }),
+            WorkerCage.findOne({
+                where: { farmMemberId: workerMembership.id, cageId: a.cage.id }
+            })
+        ]);
 
-            const [hasPermission, isCageAssigned] = await Promise.all([
-                WorkerPermission.findOne({
-                    where: {
-                        farmMemberId: workerMembership.id,
-                        moduleName: { [Op.in]: ['reproduccionyparto', 'reproduction', 'rabbits', 'conejos', 'assignments', 'asignaciones'] },
-                        canRead: true
-                    }
-                }),
-                WorkerCage.findOne({
-                    where: { farmMemberId: workerMembership.id, cageId: a.cage.id }
-                })
-            ]);
+        return (hasPermission && isCageAssigned) ? a : null;
+    }
 
-            if (hasPermission && isCageAssigned) {
-                relevantAssignments.push(a);
+    async _filterMaturityAssignmentsByAccess(matureAssignments, memberships, ownedGalpones) {
+        const results = await Promise.all(
+            matureAssignments.map(a => this._checkSingleMaturityAccess(a, memberships, ownedGalpones))
+        );
+        return results.filter(Boolean);
+    }
+
+    async _deleteStaleMaturityNotifications(relevantAssignments, notifiedIds, notificationMap) {
+        if (notifiedIds.size === 0) return;
+        const { Notification } = require('../../domain/models');
+        const { Op } = require('sequelize');
+
+        const currentRelevantRabbitIds = new Set(relevantAssignments.map(a => Number(a.rabbit.id)));
+        const notificationIdsToDelete = [];
+
+        for (const notifiedId of notifiedIds) {
+            if (!currentRelevantRabbitIds.has(notifiedId)) {
+                const notifId = notificationMap.get(notifiedId);
+                if (notifId) notificationIdsToDelete.push(notifId);
             }
         }
-        return relevantAssignments;
+
+        if (notificationIdsToDelete.length > 0) {
+            await Notification.destroy({ where: { id: { [Op.in]: notificationIdsToDelete } } });
+        }
     }
 
     async _syncMaturityNotifications(profileId, relevantAssignments, notifiedIds, notificationMap) {
         const { Notification } = require('../../domain/models');
-        const { Op } = require('sequelize');
         const notificationsToCreate = [];
 
         for (const a of relevantAssignments) {
@@ -194,19 +210,7 @@ class NotificationService {
             await Notification.bulkCreate(notificationsToCreate);
         }
 
-        if (notifiedIds.size > 0) {
-            const currentRelevantRabbitIds = new Set(relevantAssignments.map(a => Number(a.rabbit.id)));
-            const notificationIdsToDelete = [];
-            for (const notifiedId of notifiedIds) {
-                if (!currentRelevantRabbitIds.has(notifiedId)) {
-                    const notifId = notificationMap.get(notifiedId);
-                    if (notifId) notificationIdsToDelete.push(notifId);
-                }
-            }
-            if (notificationIdsToDelete.length > 0) {
-                await Notification.destroy({ where: { id: { [Op.in]: notificationIdsToDelete } } });
-            }
-        }
+        await this._deleteStaleMaturityNotifications(relevantAssignments, notifiedIds, notificationMap);
     }
 
     async _runMaturityCheck(profileId) {
@@ -297,69 +301,107 @@ class NotificationService {
         return { activeShift, dateForShift };
     }
 
-    async _cleanupInactiveShiftReminders(profileId) {
-        const { Notification, AuditLog } = require('../../domain/models');
+    _parseNotificationData(rawData) {
+        if (!rawData) return null;
+        if (typeof rawData === 'string') {
+            try { return JSON.parse(rawData); } catch { return null; }
+        }
+        return rawData;
+    }
+
+    async _recordPendingFeedingShiftAudit(d) {
+        if (!d.galponId || !d.shift || !d.date || d.unfedCount <= 0) return;
+
+        const { AuditLog } = require('../../domain/models');
         const { recordSystemChange } = require('../../common/helpers/audit.helper');
+
+        try {
+            const cleanGalponId = Number(d.galponId);
+            const existingLog = await AuditLog.findOne({
+                where: {
+                    entity: 'feeding',
+                    action: 'Turno cerrado con pendientes',
+                    'details.galponId': cleanGalponId,
+                    'details.shift': d.shift,
+                    'details.date': d.date
+                }
+            });
+
+            if (!existingLog) {
+                const shiftLabel = d.shift === 'mañana' ? 'la mañana' : 'la tarde';
+                const cagesLabel = d.unfedCount === 1 ? '1 jaula' : `${d.unfedCount} jaulas`;
+                const cagesListStr = Array.isArray(d.cages) && d.cages.length > 0 ? ` [jaulas: ${d.cages.join(', ')}]` : '';
+
+                await recordSystemChange({
+                    galponId: cleanGalponId,
+                    action: 'Turno cerrado con pendientes',
+                    entity: 'feeding',
+                    entityId: cleanGalponId,
+                    itemName: `Turno de ${shiftLabel}`,
+                    summary: `HopTolt registró el cierre del turno de ${shiftLabel} con ${cagesLabel}${cagesListStr} sin alimentar y sin reporte de novedad`,
+                    cages: d.cages || [],
+                    unfedCount: d.unfedCount,
+                    shift: d.shift,
+                    date: d.date
+                });
+            }
+        } catch (logErr) {
+            console.error('Error al registrar auditoría de omisión de alimentación:', logErr);
+        }
+    }
+
+    async _cleanupInactiveShiftReminders(profileId) {
+        const { Notification } = require('../../domain/models');
         const { Op } = require('sequelize');
 
         const existingReminders = await Notification.findAll({
             where: { profileId, type: 'warning' }
         });
         const toDelete = [];
+        const auditPayloads = [];
 
         for (const n of existingReminders) {
-            let d = n.data;
-            if (typeof d === 'string') {
-                try { d = JSON.parse(d); } catch (e) { continue; }
-            }
+            const d = this._parseNotificationData(n.data);
             if (d?.type !== 'feeding_reminder') continue;
 
             toDelete.push(n.id);
-            if (!d.galponId || !d.shift || !d.date || !(d.unfedCount > 0)) continue;
-
-            try {
-                const cleanGalponId = Number(d.galponId);
-                const existingLog = await AuditLog.findOne({
-                    where: {
-                        entity: 'feeding',
-                        action: 'Turno cerrado con pendientes',
-                        'details.galponId': cleanGalponId,
-                        'details.shift': d.shift,
-                        'details.date': d.date
-                    }
-                });
-
-                if (!existingLog) {
-                    const shiftLabel = d.shift === 'mañana' ? 'la mañana' : 'la tarde';
-                    const cagesLabel = d.unfedCount === 1 ? '1 jaula' : `${d.unfedCount} jaulas`;
-                    const cagesListStr = Array.isArray(d.cages) && d.cages.length > 0 ? ` [jaulas: ${d.cages.join(', ')}]` : '';
-
-                    await recordSystemChange({
-                        galponId: cleanGalponId,
-                        action: 'Turno cerrado con pendientes',
-                        entity: 'feeding',
-                        entityId: cleanGalponId,
-                        itemName: `Turno de ${shiftLabel}`,
-                        summary: `HopTolt registró el cierre del turno de ${shiftLabel} con ${cagesLabel}${cagesListStr} sin alimentar y sin reporte de novedad`,
-                        cages: d.cages || [],
-                        unfedCount: d.unfedCount,
-                        shift: d.shift,
-                        date: d.date
-                    });
-                }
-            } catch (logErr) {
-                console.error('Error al registrar auditoría de omisión de alimentación:', logErr);
-            }
+            auditPayloads.push(d);
         }
+
+        await Promise.all(auditPayloads.map(d => this._recordPendingFeedingShiftAudit(d)));
 
         if (toDelete.length > 0) {
             await Notification.destroy({ where: { id: { [Op.in]: toDelete } } });
         }
     }
 
-    async _getAccessibleGalponesForFeeding(profileId) {
-        const { Galpon, FarmMember, WorkerPermission } = require('../../domain/models');
+    async _resolveMembershipFeedingGalpon(m) {
+        const { Galpon, WorkerPermission } = require('../../domain/models');
         const { Op } = require('sequelize');
+
+        if (m.role === 'owner') {
+            const g = await Galpon.findByPk(m.galponId);
+            return g ? { galponId: m.galponId, entry: { galpon: g, isOwner: true } } : null;
+        }
+
+        if (m.role === 'worker') {
+            const hasPermission = await WorkerPermission.findOne({
+                where: {
+                    farmMemberId: m.id,
+                    moduleName: { [Op.in]: ['alimentacion', 'feeding'] },
+                    [Op.or]: [{ canRead: true }, { canCreate: true }]
+                }
+            });
+            if (!hasPermission) return null;
+            const g = await Galpon.findByPk(m.galponId);
+            return g ? { galponId: m.galponId, entry: { galpon: g, isOwner: false, memberId: m.id } } : null;
+        }
+
+        return null;
+    }
+
+    async _getAccessibleGalponesForFeeding(profileId) {
+        const { Galpon, FarmMember } = require('../../domain/models');
 
         const [ownedGalpones, memberships] = await Promise.all([
             Galpon.findAll({ where: { profileId } }),
@@ -371,24 +413,14 @@ class NotificationService {
             accessibleGalponMap.set(og.id, { galpon: og, isOwner: true });
         }
 
-        for (const m of memberships) {
-            if (m.role === 'owner') {
-                if (!accessibleGalponMap.has(m.galponId)) {
-                    const g = await Galpon.findByPk(m.galponId);
-                    if (g) accessibleGalponMap.set(m.galponId, { galpon: g, isOwner: true });
-                }
-            } else if (m.role === 'worker') {
-                const hasPermission = await WorkerPermission.findOne({
-                    where: {
-                        farmMemberId: m.id,
-                        moduleName: { [Op.in]: ['alimentacion', 'feeding'] },
-                        [Op.or]: [{ canRead: true }, { canCreate: true }]
-                    }
-                });
-                if (hasPermission && !accessibleGalponMap.has(m.galponId)) {
-                    const g = await Galpon.findByPk(m.galponId);
-                    if (g) accessibleGalponMap.set(m.galponId, { galpon: g, isOwner: false, memberId: m.id });
-                }
+        const unmappedMemberships = memberships.filter(m => !accessibleGalponMap.has(m.galponId));
+        const resolvedEntries = await Promise.all(
+            unmappedMemberships.map(m => this._resolveMembershipFeedingGalpon(m))
+        );
+
+        for (const item of resolvedEntries) {
+            if (item && !accessibleGalponMap.has(item.galponId)) {
+                accessibleGalponMap.set(item.galponId, item.entry);
             }
         }
         return accessibleGalponMap;
@@ -458,6 +490,24 @@ class NotificationService {
         };
     }
 
+    _shouldDeleteFeedingReminder(n, d, activeShift, todayStr, galponIdsWithPendingFeeding) {
+        const reminderGalponId = Number(d.galponId);
+        if (d.shift !== activeShift || d.date !== todayStr || !galponIdsWithPendingFeeding.has(reminderGalponId)) {
+            return true;
+        }
+        const nowMs = Date.now();
+        const lastNotifiedMs = d.lastNotifiedAt ? new Date(d.lastNotifiedAt).getTime() : new Date(n.createdAt).getTime();
+        const FEEDING_INTERVAL = 60 * 60 * 1000;
+        const JITTER_BUFFER = 5000;
+        const isIntervalDue = (nowMs - lastNotifiedMs) >= (FEEDING_INTERVAL - JITTER_BUFFER);
+        const hasLegacyMessage = Boolean(
+            n.message?.includes('Son más de las') ||
+            n.message?.includes('(hora límite:') ||
+            n.message?.includes('Son las')
+        );
+        return isIntervalDue || hasLegacyMessage;
+    }
+
     async _filterAndCreateFeedingNotifications(profileId, galponIdsWithPendingFeeding, activeShift, todayStr) {
         const { Notification } = require('../../domain/models');
         const { Op } = require('sequelize');
@@ -470,28 +520,13 @@ class NotificationService {
         const alreadyNotifiedGalponIds = new Set();
 
         for (const n of existingReminders) {
-            let d = n.data;
-            if (typeof d === 'string') {
-                try { d = JSON.parse(d); } catch (e) { continue; }
-            }
+            const d = this._parseNotificationData(n.data);
             if (d?.type !== 'feeding_reminder') continue;
 
-            const reminderGalponId = Number(d.galponId);
-            if (d.shift !== activeShift || d.date !== todayStr || !galponIdsWithPendingFeeding.has(reminderGalponId)) {
+            if (this._shouldDeleteFeedingReminder(n, d, activeShift, todayStr, galponIdsWithPendingFeeding)) {
                 toDelete.push(n.id);
             } else {
-                const nowMs = Date.now();
-                const lastNotifiedMs = d.lastNotifiedAt ? new Date(d.lastNotifiedAt).getTime() : new Date(n.createdAt).getTime();
-                const FEEDING_INTERVAL = 60 * 60 * 1000;
-                const JITTER_BUFFER = 5000;
-                const isIntervalDue = (nowMs - lastNotifiedMs) >= (FEEDING_INTERVAL - JITTER_BUFFER);
-                const hasLegacyMessage = n.message?.includes('Son más de las') || n.message?.includes('(hora límite:') || n.message?.includes('Son las');
-
-                if (isIntervalDue || hasLegacyMessage) {
-                    toDelete.push(n.id);
-                } else {
-                    alreadyNotifiedGalponIds.add(reminderGalponId);
-                }
+                alreadyNotifiedGalponIds.add(Number(d.galponId));
             }
         }
 
@@ -543,10 +578,13 @@ class NotificationService {
             const { startOfDay, endOfDay } = feedingRepository._getEcuadorDayBounds(dateForShift);
             const galponIdsWithPendingFeeding = new Map();
 
-            for (const [, entry] of accessibleGalponMap.entries()) {
-                const pendingInfo = await this._findPendingFeedingForGalpon(entry, activeShift, startOfDay, endOfDay);
+            const entries = Array.from(accessibleGalponMap.values());
+            const pendingResults = await Promise.all(
+                entries.map(entry => this._findPendingFeedingForGalpon(entry, activeShift, startOfDay, endOfDay))
+            );
+            for (const pendingInfo of pendingResults) {
                 if (pendingInfo) {
-                    galponIdsWithPendingFeeding.set(entry.galpon.id, pendingInfo);
+                    galponIdsWithPendingFeeding.set(pendingInfo.galpon.id, pendingInfo);
                 }
             }
 
@@ -573,12 +611,22 @@ class NotificationService {
                 if (m.profileId) profileIds.add(m.profileId);
             }
 
-            for (const profileId of profileIds) {
-                await this.checkAndCreateFeedingNotifications(profileId);
-            }
+            await Promise.all(
+                Array.from(profileIds).map(profileId => this.checkAndCreateFeedingNotifications(profileId))
+            );
         } catch (error) {
             console.error('Error checking all profiles feeding notifications:', error.message);
         }
+    }
+
+    _getCageCleaningStartDate(lastCleaning, cageAssignments) {
+        if (lastCleaning?.cleaningDate) {
+            return new Date(lastCleaning.cleaningDate);
+        }
+        if (cageAssignments.length > 0 && cageAssignments[0]?.assignedAt) {
+            return new Date(cageAssignments[0].assignedAt);
+        }
+        return null;
     }
 
     _findDirtyCages(cagesToCheck, cleanings, assignments, todayMs) {
@@ -597,14 +645,7 @@ class NotificationService {
         for (const cage of cagesToCheck) {
             const lastCleaning = cleaningMap.get(cage.id);
             const cageAssignments = assignmentMap.get(cage.id) || [];
-
-            let startDate = null;
-            if (lastCleaning?.cleaningDate) {
-                startDate = new Date(lastCleaning.cleaningDate);
-            } else if (cageAssignments.length > 0) {
-                const firstAssignment = cageAssignments[0];
-                startDate = firstAssignment?.assignedAt ? new Date(firstAssignment.assignedAt) : null;
-            }
+            const startDate = this._getCageCleaningStartDate(lastCleaning, cageAssignments);
 
             if (!startDate) continue;
 
@@ -792,34 +833,45 @@ class NotificationService {
         });
     }
 
-    _buildAssignmentNotificationContent(cageNumber, normalizedList, isAssigned) {
-        const count = normalizedList.length;
-        const first = normalizedList[0];
-        const isFemale = count === 1 && first.isFemale;
+    _buildSingleRabbitAssignmentText(cageNumber, first, isAssigned) {
+        const isFemale = Boolean(first.isFemale);
         const noun = isFemale ? 'coneja' : 'conejo';
         const article = isFemale ? 'La' : 'El';
 
         if (isAssigned) {
-            let title = 'Nuevas Asignaciones de Conejos';
-            if (count === 1) {
-                title = isFemale ? 'Nueva Asignación de Coneja' : 'Nueva Asignación de Conejo';
-            }
-            let message = `Se asignaron **${count} conejos** a tu jaula ${cageNumber}: ${normalizedList.map(r => r.label).join(', ')}.`;
-            if (count === 1) {
-                message = `${article} ${noun} **${first.label}** ha sido ${isFemale ? 'asignada' : 'asignado'} a tu jaula ${cageNumber}.`;
-            }
-            return { title, message };
+            const title = isFemale ? 'Nueva Asignación de Coneja' : 'Nueva Asignación de Conejo';
+            const actionWord = isFemale ? 'asignada' : 'asignado';
+            return {
+                title,
+                message: `${article} ${noun} **${first.label}** ha sido ${actionWord} a tu jaula ${cageNumber}.`
+            };
         }
 
-        let title = 'Conejos Removidos';
+        const title = isFemale ? 'Coneja Removida' : 'Conejo Removido';
+        const actionWord = isFemale ? 'removida' : 'removido';
+        return {
+            title,
+            message: `${article} ${noun} **${first.label}** ha sido ${actionWord} de tu jaula ${cageNumber}.`
+        };
+    }
+
+    _buildAssignmentNotificationContent(cageNumber, normalizedList, isAssigned) {
+        const count = normalizedList.length;
         if (count === 1) {
-            title = isFemale ? 'Coneja Removida' : 'Conejo Removido';
+            return this._buildSingleRabbitAssignmentText(cageNumber, normalizedList[0], isAssigned);
         }
-        let message = `Se removieron **${count} conejos** de tu jaula ${cageNumber}.`;
-        if (count === 1) {
-            message = `${article} ${noun} **${first.label}** ha sido ${isFemale ? 'removida' : 'removido'} de tu jaula ${cageNumber}.`;
+
+        if (isAssigned) {
+            return {
+                title: 'Nuevas Asignaciones de Conejos',
+                message: `Se asignaron **${count} conejos** a tu jaula ${cageNumber}: ${normalizedList.map(r => r.label).join(', ')}.`
+            };
         }
-        return { title, message };
+
+        return {
+            title: 'Conejos Removidos',
+            message: `Se removieron **${count} conejos** de tu jaula ${cageNumber}.`
+        };
     }
 
     async createRabbitAssignmentNotification(cageId, rabbitIdentifiers, isAssigned) {
@@ -966,12 +1018,39 @@ class NotificationService {
         return await notificationRepository.delete(id);
     }
 
+    async _resolveMembershipReproductionCondition(m) {
+        if (m.role === 'owner') {
+            return { galponId: m.galponId };
+        }
+        if (m.role !== 'worker') return null;
+
+        const { WorkerCage, WorkerPermission } = require('../../domain/models');
+        const [hasPermission, workerCages] = await Promise.all([
+            WorkerPermission.findOne({
+                where: {
+                    farmMemberId: m.id,
+                    moduleName: { [Op.in]: ['reproduccionyparto', 'reproduction'] },
+                    canRead: true
+                }
+            }),
+            WorkerCage.findAll({ where: { farmMemberId: m.id } })
+        ]);
+
+        if (!hasPermission) return null;
+        const cageIds = workerCages.map(wc => wc.cageId);
+        if (cageIds.length === 0) return null;
+
+        return {
+            galponId: m.galponId,
+            '$female.assignments.cageId$': { [Op.in]: cageIds }
+        };
+    }
+
     async _getReproductionConditions(profileId) {
         const [memberships, ownedGalpones] = await Promise.all([
             FarmMember.findAll({ where: { profileId, status: 'active' } }),
             Galpon.findAll({ where: { profileId } })
         ]);
-        const { WorkerCage, WorkerPermission } = require('../../domain/models');
 
         const conditions = [];
 
@@ -979,32 +1058,14 @@ class NotificationService {
             conditions.push({ galponId: { [Op.in]: ownedGalpones.map(g => g.id) } });
         }
 
-        for (const m of memberships) {
-            if (m.role === 'owner') {
-                conditions.push({ galponId: m.galponId });
-            } else if (m.role === 'worker') {
-                const [hasPermission, workerCages] = await Promise.all([
-                    WorkerPermission.findOne({
-                        where: {
-                            farmMemberId: m.id,
-                            moduleName: { [Op.in]: ['reproduccionyparto', 'reproduction'] },
-                            canRead: true
-                        }
-                    }),
-                    WorkerCage.findAll({ where: { farmMemberId: m.id } })
-                ]);
+        const resolvedConditions = await Promise.all(
+            memberships.map(m => this._resolveMembershipReproductionCondition(m))
+        );
 
-                if (hasPermission) {
-                    const cageIds = workerCages.map(wc => wc.cageId);
-                    if (cageIds.length > 0) {
-                        conditions.push({
-                            galponId: m.galponId,
-                            '$female.assignments.cageId$': { [Op.in]: cageIds }
-                        });
-                    }
-                }
-            }
+        for (const cond of resolvedConditions) {
+            if (cond) conditions.push(cond);
         }
+
         return conditions;
     }
 
@@ -1014,10 +1075,8 @@ class NotificationService {
         const notificationMap = new Map();
         for (const w of warnings) {
             if (w.data) {
-                let dataObj = w.data;
-                if (typeof dataObj === 'string') {
-                    try { dataObj = JSON.parse(dataObj); } catch (e) { console.error("Error parsing notification data", e); continue; }
-                }
+                const dataObj = this._parseNotificationData(w.data);
+                if (!dataObj) continue;
                 this._addNotifiedId(notifiedIds, notificationMap, w.id, dataObj, filterType);
             }
         }
@@ -1061,6 +1120,21 @@ class NotificationService {
         });
     }
 
+    async _resolveMembershipCleaningCages(m, assignedCageIds) {
+        const { Cage } = require('../../domain/models');
+        const { Op } = require('sequelize');
+
+        if (m.role === 'owner') {
+            return Cage.findAll({
+                where: { galponId: m.galponId, id: { [Op.in]: Array.from(assignedCageIds) } }
+            });
+        }
+        if (m.role === 'worker') {
+            return this._getWorkerCleaningCages(m, assignedCageIds);
+        }
+        return [];
+    }
+
     async _getCagesToCheckForCleaning(profileId, assignedCageIds) {
         const [memberships, ownedGalpones] = await Promise.all([
             FarmMember.findAll({ where: { profileId, status: 'active' } }),
@@ -1078,17 +1152,13 @@ class NotificationService {
             cagesToCheck.push(...ownerCages);
         }
 
-        for (const m of memberships) {
-            if (m.role === 'owner') {
-                const ownerCages = await Cage.findAll({
-                    where: { galponId: m.galponId, id: { [Op.in]: Array.from(assignedCageIds) } }
-                });
-                this._addUniqueCages(cagesToCheck, ownerCages);
-            } else if (m.role === 'worker') {
-                const assignedCages = await this._getWorkerCleaningCages(m, assignedCageIds);
-                if (assignedCages.length > 0) {
-                    this._addUniqueCages(cagesToCheck, assignedCages);
-                }
+        const membershipCagesLists = await Promise.all(
+            memberships.map(m => this._resolveMembershipCleaningCages(m, assignedCageIds))
+        );
+
+        for (const cageList of membershipCagesLists) {
+            if (cageList.length > 0) {
+                this._addUniqueCages(cagesToCheck, cageList);
             }
         }
         return cagesToCheck;

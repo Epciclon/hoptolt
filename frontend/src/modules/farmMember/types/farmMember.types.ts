@@ -38,7 +38,7 @@ export interface UpdateWorkerDto {
 
 export interface AuditLogItem {
   id: number;
-  action: 'crear' | 'modificar' | 'eliminar' | 'consultar' | 'descargar' | string;
+  action: string;
   entity: string;
   entityId: string | number;
   profileId?: string | null;

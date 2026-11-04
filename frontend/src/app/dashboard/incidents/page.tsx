@@ -41,7 +41,7 @@ interface IncidentsMetricsBarProps {
   counts: { total?: number; pending?: number; reviewed?: number };
 }
 
-function IncidentsMetricsBar({ userRole, counts }: IncidentsMetricsBarProps) {
+function IncidentsMetricsBar({ userRole, counts }: Readonly<IncidentsMetricsBarProps>) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x border-b border-default bg-card">
       <div className="p-4 md:p-5 flex items-center justify-between">
@@ -101,7 +101,7 @@ interface IncidentCardItemProps {
   onDeleteRequest: (id: number) => void;
 }
 
-function IncidentCardItem({ incident, userRole, onOpenDetail, onDeleteRequest }: IncidentCardItemProps) {
+function IncidentCardItem({ incident, userRole, onOpenDetail, onDeleteRequest }: Readonly<IncidentCardItemProps>) {
   const isUnread = userRole === 'owner' ? !incident.ownerRead : !incident.workerRead;
   const reporterName = incident.reporter?.fullName || incident.reporter?.username || 'Trabajador';
   const isResolvedOrReviewed = incident.status === 'resolved' || incident.status === 'reviewed';
@@ -233,7 +233,7 @@ function IncidentsListBody({
   onOpenDetail,
   onDeleteRequest,
   onRegisterClick,
-}: IncidentsListBodyProps) {
+}: Readonly<IncidentsListBodyProps>) {
   if (loading) {
     return (
       <div className="p-12 text-center text-theme-faint">
@@ -282,6 +282,122 @@ function IncidentsListBody({
           onDeleteRequest={onDeleteRequest}
         />
       ))}
+    </div>
+  );
+}
+
+interface IncidentsFiltersBarProps {
+  status: string;
+  category: string;
+  moduleFilter: string;
+  search: string;
+  filterConfigs: FilterConfig[];
+  onStatusChange: (status: string) => void;
+  onSearchChange: (search: string) => void;
+  onResetFilters: () => void;
+}
+
+function IncidentsFiltersBar({
+  status,
+  category,
+  moduleFilter,
+  search,
+  filterConfigs,
+  onStatusChange,
+  onSearchChange,
+  onResetFilters,
+}: Readonly<IncidentsFiltersBarProps>) {
+  const hasActiveFilters = category !== 'all' || moduleFilter !== 'all' || status !== 'all' || Boolean(search);
+
+  return (
+    <div className="p-3.5 sm:p-5 border-b border-default bg-card space-y-4">
+      {/* Fila 1: Control segmentado centrado como en Notificaciones */}
+      <div className="flex flex-col sm:flex-row items-center justify-between sm:justify-center relative w-full gap-2">
+        <div className="grid grid-cols-3 gap-1 p-1 bg-theme-surface rounded-xl border border-default w-full sm:w-88 max-w-sm shrink-0">
+          <button
+            type="button"
+            onClick={() => onStatusChange('all')}
+            className={cn(
+              'py-1.5 px-3 text-xs font-semibold rounded-lg transition-all text-center cursor-pointer',
+              status === 'all'
+                ? 'bg-primary-500 text-white shadow-xs'
+                : 'text-muted hover:text-main'
+            )}
+          >
+            Todas
+          </button>
+          <button
+            type="button"
+            onClick={() => onStatusChange('pending')}
+            className={cn(
+              'py-1.5 px-3 text-xs font-semibold rounded-lg transition-all text-center cursor-pointer',
+              status === 'pending'
+                ? 'bg-primary-500 text-white shadow-xs'
+                : 'text-muted hover:text-main'
+            )}
+          >
+            Pendientes
+          </button>
+          <button
+            type="button"
+            onClick={() => onStatusChange('reviewed')}
+            className={cn(
+              'py-1.5 px-3 text-xs font-semibold rounded-lg transition-all text-center cursor-pointer',
+              status === 'reviewed'
+                ? 'bg-primary-500 text-white shadow-xs'
+                : 'text-muted hover:text-main'
+            )}
+          >
+            Atendidas
+          </button>
+        </div>
+
+        {hasActiveFilters && (
+          <button
+            type="button"
+            onClick={onResetFilters}
+            className="self-end sm:self-auto sm:absolute sm:right-0 text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1 font-semibold cursor-pointer"
+          >
+            <RotateCcw size={12} />
+            <span>Limpiar filtros</span>
+          </button>
+        )}
+      </div>
+
+      {/* Fila 2: Búsqueda y selectores de filtros sin apilarse en doble fila */}
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 sm:gap-3 w-full">
+        <div className="relative flex-1 min-w-0">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-theme-faint">
+            <Search size={16} />
+          </div>
+          <input
+            type="text"
+            className="w-full pl-9 pr-3 py-2 bg-theme-surface dark:bg-slate-900 text-main dark:text-slate-100 border border-default rounded-lg text-sm transition-colors placeholder:text-theme-faint placeholder:truncate focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500"
+            placeholder="Buscar novedades..."
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+          />
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full md:w-auto shrink-0">
+          <div className="w-full sm:w-44 min-w-0">
+            <Select
+              options={filterConfigs[0].options}
+              value={filterConfigs[0].value}
+              onChange={(e) => filterConfigs[0].onChange(e.target.value)}
+              placeholder={filterConfigs[0].placeholder}
+            />
+          </div>
+          <div className="w-full sm:w-44 min-w-0">
+            <Select
+              options={filterConfigs[1].options}
+              value={filterConfigs[1].value}
+              onChange={(e) => filterConfigs[1].onChange(e.target.value)}
+              placeholder={filterConfigs[1].placeholder}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -441,113 +557,28 @@ export default function IncidentsPage() {
         <IncidentsMetricsBar userRole={userRole} counts={counts} />
 
         {/* Barra de Filtros y Búsqueda */}
-        <div className="p-3.5 sm:p-5 border-b border-default bg-card space-y-4">
-          {/* Fila 1: Control segmentado centrado como en Notificaciones */}
-          <div className="flex flex-col sm:flex-row items-center justify-between sm:justify-center relative w-full gap-2">
-            <div className="grid grid-cols-3 gap-1 p-1 bg-theme-surface rounded-xl border border-default w-full sm:w-88 max-w-sm shrink-0">
-              <button
-                type="button"
-                onClick={() => {
-                  setStatus('all');
-                  setPage(1);
-                }}
-                className={cn(
-                  'py-1.5 px-3 text-xs font-semibold rounded-lg transition-all text-center cursor-pointer',
-                  status === 'all'
-                    ? 'bg-primary-500 text-white shadow-xs'
-                    : 'text-muted hover:text-main'
-                )}
-              >
-                Todas
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setStatus('pending');
-                  setPage(1);
-                }}
-                className={cn(
-                  'py-1.5 px-3 text-xs font-semibold rounded-lg transition-all text-center cursor-pointer',
-                  status === 'pending'
-                    ? 'bg-primary-500 text-white shadow-xs'
-                    : 'text-muted hover:text-main'
-                )}
-              >
-                Pendientes
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setStatus('reviewed');
-                  setPage(1);
-                }}
-                className={cn(
-                  'py-1.5 px-3 text-xs font-semibold rounded-lg transition-all text-center cursor-pointer',
-                  status === 'reviewed'
-                    ? 'bg-primary-500 text-white shadow-xs'
-                    : 'text-muted hover:text-main'
-                )}
-              >
-                Atendidas
-              </button>
-            </div>
-
-            {(category !== 'all' || moduleFilter !== 'all' || status !== 'all' || search) && (
-              <button
-                type="button"
-                onClick={() => {
-                  setCategory('all');
-                  setModuleFilter('all');
-                  setStatus('all');
-                  setSearch('');
-                  setPage(1);
-                }}
-                className="self-end sm:self-auto sm:absolute sm:right-0 text-xs text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1 font-semibold cursor-pointer"
-              >
-                <RotateCcw size={12} />
-                <span>Limpiar filtros</span>
-              </button>
-            )}
-          </div>
-
-          {/* Fila 2: Búsqueda y selectores de filtros sin apilarse en doble fila */}
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 sm:gap-3 w-full">
-            <div className="relative flex-1 min-w-0">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-theme-faint">
-                <Search size={16} />
-              </div>
-              <input
-                type="text"
-                className="w-full pl-9 pr-3 py-2 bg-theme-surface dark:bg-slate-900 text-main dark:text-slate-100 border border-default rounded-lg text-sm transition-colors placeholder:text-theme-faint placeholder:truncate focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500"
-                placeholder="Buscar novedades..."
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPage(1);
-                }}
-              />
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full md:w-auto shrink-0">
-              <div className="w-full sm:w-44 min-w-0">
-                <Select
-                  options={filterConfigs[0].options}
-                  value={filterConfigs[0].value}
-                  onChange={(e) => filterConfigs[0].onChange(e.target.value)}
-                  placeholder={filterConfigs[0].placeholder}
-                />
-              </div>
-              <div className="w-full sm:w-44 min-w-0">
-                <Select
-                  options={filterConfigs[1].options}
-                  value={filterConfigs[1].value}
-                  onChange={(e) => filterConfigs[1].onChange(e.target.value)}
-                  placeholder={filterConfigs[1].placeholder}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
+        <IncidentsFiltersBar
+          status={status}
+          category={category}
+          moduleFilter={moduleFilter}
+          search={search}
+          filterConfigs={filterConfigs}
+          onStatusChange={(newStatus) => {
+            setStatus(newStatus);
+            setPage(1);
+          }}
+          onSearchChange={(newSearch) => {
+            setSearch(newSearch);
+            setPage(1);
+          }}
+          onResetFilters={() => {
+            setCategory('all');
+            setModuleFilter('all');
+            setStatus('all');
+            setSearch('');
+            setPage(1);
+          }}
+        />
 
         {/* Listado unificado con divide-y idéntico a Notificaciones */}
         <div className="p-0 bg-card">

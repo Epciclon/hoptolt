@@ -80,11 +80,11 @@ async function handleSessionSignOut() {
 
 async function handleRefreshToken(originalRequest: any) {
   if (isRefreshing) {
-    return new Promise((resolve, reject) => {
+    return new Promise<string | null>((resolve, reject) => {
       failedQueue.push({ resolve, reject });
     })
       .then((token) => {
-        if (token) {
+        if (typeof token === 'string' && token) {
           originalRequest.headers.Authorization = `Bearer ${token}`;
         }
         return api(originalRequest);

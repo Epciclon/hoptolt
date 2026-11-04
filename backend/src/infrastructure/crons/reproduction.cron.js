@@ -2,6 +2,58 @@ const cron = require('node-cron');
 const { Op } = require('sequelize');
 const { Reproduction } = require('../../domain/models');
 
+const processMontaToGestacion = async (rep) => {
+    const { notifyAutomatedPhaseChange } = require('../../common/helpers/reproductionNotification.helper');
+    const { recordSystemChange } = require('../../common/helpers/audit.helper');
+    const reproductionRepository = require('../../modules/reproduction/reproduction.repository');
+
+    await rep.update({
+        status: 'gestacion',
+        updatedBySystem: true
+    });
+    await notifyAutomatedPhaseChange(rep, 2, 'Gestación');
+
+    const fullRep = await reproductionRepository.findByIdWithDetails(rep.id);
+    const code = fullRep?.female?.code || 'Coneja';
+    const name = fullRep?.female?.name ? ` ${fullRep.female.name}` : '';
+    const femaleLabel = `${code}${name}`.trim();
+
+    await recordSystemChange({
+        galponId: rep.galponId,
+        action: 'Paso a gestación',
+        entity: 'reproduction',
+        entityId: rep.id,
+        itemName: femaleLabel,
+        summary: `HopTolt avanzó automáticamente a la coneja ${femaleLabel} a Fase 2 Gestación tras cumplirse 24 horas de la monta`
+    });
+};
+
+const processGestacionToLactancia = async (rep) => {
+    const { notifyAutomatedPhaseChange } = require('../../common/helpers/reproductionNotification.helper');
+    const { recordSystemChange } = require('../../common/helpers/audit.helper');
+    const reproductionRepository = require('../../modules/reproduction/reproduction.repository');
+
+    await rep.update({
+        status: 'lactancia',
+        updatedBySystem: true
+    });
+    await notifyAutomatedPhaseChange(rep, 3, 'Lactancia');
+
+    const fullRep = await reproductionRepository.findByIdWithDetails(rep.id);
+    const code = fullRep?.female?.code || 'Coneja';
+    const name = fullRep?.female?.name ? ` ${fullRep.female.name}` : '';
+    const femaleLabel = `${code}${name}`.trim();
+
+    await recordSystemChange({
+        galponId: rep.galponId,
+        action: 'Paso a lactancia',
+        entity: 'reproduction',
+        entityId: rep.id,
+        itemName: femaleLabel,
+        summary: `HopTolt avanzó automáticamente a la coneja ${femaleLabel} a Fase 3 Lactancia tras cumplirse 31 días de gestación estimada`
+    });
+};
+
 // Correr cada hora ('0 * * * *')
 const startReproductionCron = () => {
     cron.schedule('0 * * * *', async () => {
@@ -20,35 +72,11 @@ const startReproductionCron = () => {
                 }
             });
 
-            const { notifyAutomatedPhaseChange } = require('../../common/helpers/reproductionNotification.helper');
-            const { recordSystemChange } = require('../../common/helpers/audit.helper');
-            const reproductionRepository = require('../../modules/reproduction/reproduction.repository');
-
-            for (const rep of montasToTransition) {
-                await rep.update({
-                    status: 'gestacion',
-                    updatedBySystem: true
-                });
-                await notifyAutomatedPhaseChange(rep, 2, 'Gestación');
-
-                const fullRep = await reproductionRepository.findByIdWithDetails(rep.id);
-                const code = fullRep?.female?.code || 'Coneja';
-                const name = fullRep?.female?.name ? ` ${fullRep.female.name}` : '';
-                const femaleLabel = `${code}${name}`.trim();
-
-                await recordSystemChange({
-                    galponId: rep.galponId,
-                    action: 'Paso a gestación',
-                    entity: 'reproduction',
-                    entityId: rep.id,
-                    itemName: femaleLabel,
-                    summary: `HopTolt avanzó automáticamente a la coneja ${femaleLabel} a Fase 2 Gestación tras cumplirse 24 horas de la monta`
-                });
-            }
+            await Promise.all(montasToTransition.map(rep => processMontaToGestacion(rep)));
 
             // 2. Fase 2 a Fase 3 (Gestación a Lactancia) - Producción: 31 días desde mountDate
             const threshold2 = new Date(now.getTime() - (31 * 24 * 60 * 60 * 1000));
-            
+
             const gestacionesToTransition = await Reproduction.findAll({
                 where: {
                     status: 'gestacion',
@@ -58,27 +86,7 @@ const startReproductionCron = () => {
                 }
             });
 
-            for (const rep of gestacionesToTransition) {
-                await rep.update({
-                    status: 'lactancia',
-                    updatedBySystem: true
-                });
-                await notifyAutomatedPhaseChange(rep, 3, 'Lactancia');
-
-                const fullRep = await reproductionRepository.findByIdWithDetails(rep.id);
-                const code = fullRep?.female?.code || 'Coneja';
-                const name = fullRep?.female?.name ? ` ${fullRep.female.name}` : '';
-                const femaleLabel = `${code}${name}`.trim();
-
-                await recordSystemChange({
-                    galponId: rep.galponId,
-                    action: 'Paso a lactancia',
-                    entity: 'reproduction',
-                    entityId: rep.id,
-                    itemName: femaleLabel,
-                    summary: `HopTolt avanzó automáticamente a la coneja ${femaleLabel} a Fase 3 Lactancia tras cumplirse 31 días de gestación estimada`
-                });
-            }
+            await Promise.all(gestacionesToTransition.map(rep => processGestacionToLactancia(rep)));
         } catch (error) {
             console.error('Error en el cron de reproducción:', error.message);
         }

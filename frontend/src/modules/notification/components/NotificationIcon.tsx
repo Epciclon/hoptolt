@@ -31,7 +31,7 @@ const isWarningNotification = (n: any) => {
 const getInfoWeight = (n: any) => {
   if (n.type === 'invitation') return 100;
   const t = n.data?.type;
-  const isAssignment = t === 'task_assignment' || (n.title && n.title.toLowerCase().includes('asignaci'));
+  const isAssignment = t === 'task_assignment' || n.title?.toLowerCase().includes('asignaci');
   if (isAssignment) return 95;
   if (t === 'worker_action' || t === 'worker_sensitive_action') return 90;
   if (t === 'reproduction') return 70;
@@ -90,7 +90,7 @@ function selectCandidateInfoNotification(unreadInfos: any[], userId: string, now
   return sortedCandidates.find(n => {
     if (isPreviewSeenOrDismissed(n, userId)) return false;
 
-    const isAssignment = n.data?.type === 'task_assignment' || (n.title && n.title.toLowerCase().includes('asignaci'));
+    const isAssignment = n.data?.type === 'task_assignment' || n.title?.toLowerCase().includes('asignaci');
     if (n.type === 'invitation' || isAssignment) return true;
 
     const notifTime = new Date(n.updatedAt || n.createdAt).getTime();
@@ -165,7 +165,7 @@ export function NotificationIcon() {
 
   const getActionConfig = (notification: any) => {
     const type = notification.data?.type;
-    const isAssignment = type === 'task_assignment' || (notification.title && notification.title.toLowerCase().includes('asignaci'));
+    const isAssignment = type === 'task_assignment' || notification.title?.toLowerCase().includes('asignaci');
     if (isAssignment) {
       return { label: 'Entendido', variant: 'primary' as const };
     }

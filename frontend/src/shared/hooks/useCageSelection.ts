@@ -40,7 +40,7 @@ export function useCageSelection(
     }
 
     // Si escribe "jaula 1", "j 1", etc.: buscar por número de jaula
-    const cageMatch = q.match(/^(?:jaula|j)\s*(\d+)$/i);
+    const cageMatch = /^(?:jaula|j)\s*(\d+)$/i.exec(q);
     if (cageMatch) {
       const targetNum = Number.parseInt(cageMatch[1], 10);
       return allCageGroups.filter(g => g.cageNumber === targetNum);

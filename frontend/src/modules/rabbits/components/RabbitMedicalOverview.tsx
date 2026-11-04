@@ -10,7 +10,7 @@ interface RabbitMedicalOverviewProps {
   rabbit: Rabbit;
 }
 
-export function RabbitMedicalOverview({ rabbit }: RabbitMedicalOverviewProps) {
+export function RabbitMedicalOverview({ rabbit }: Readonly<RabbitMedicalOverviewProps>) {
   // Consultamos sin filtros específicos de conejo
   const { dewormings, dewormingPeriod, loading: loadingDeworm } = useDeworming({});
   const { vaccinations, galponVaccines, loading: loadingVac } = useVaccination({});

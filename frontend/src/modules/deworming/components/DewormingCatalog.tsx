@@ -6,7 +6,6 @@ import { useToast } from '@/shared/contexts/ToastContext';
 import { useDeworming } from '../hooks/useDeworming';
 import { useCageSelection } from '@/shared/hooks/useCageSelection';
 import { formatDateTime } from '@/shared/utils/dateUtils';
-
 import { FilterBar } from '@/shared/ui/FilterBar';
 import { useState } from 'react';
 import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
@@ -49,8 +48,6 @@ export function DewormingCatalog({ onSuccess }: Readonly<DewormingCatalogProps>)
   };
 
   const submitDeworming = async () => {
-
-
     try {
       await createDeworming({
         rabbitIds: selectedRabbitIds,
@@ -60,7 +57,6 @@ export function DewormingCatalog({ onSuccess }: Readonly<DewormingCatalogProps>)
       onSuccess?.();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error inesperado.';
-      // Contar cuántos conejos tienen problemas (líneas que empiezan con "El conejo")
       const errorLines = errorMessage.split('\n').filter(line => line.trim().startsWith('El conejo'));
       const hasValidRabbits = errorLines.length < selectedRabbitIds.length;
 
@@ -78,8 +74,6 @@ export function DewormingCatalog({ onSuccess }: Readonly<DewormingCatalogProps>)
 
   return (
     <div className="flex flex-col gap-4">
-
-
       <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 rounded-lg shadow-sm">
         <p className="text-sm font-medium text-emerald-900 dark:text-emerald-300">
           Período de desparasitación configurado: <strong>{dewormingPeriod} días</strong>
@@ -94,33 +88,32 @@ export function DewormingCatalog({ onSuccess }: Readonly<DewormingCatalogProps>)
         />
       </div>
 
-      <>
-        <CageGroupGrid
-          cageGroups={paginatedGroups}
-          selectedRabbitIds={selectedRabbitIds}
-          onToggleRabbit={toggleRabbit}
-          renderExtras={(rabbit) => {
-            const lastDeworming = getRabbitLastDeworming(rabbit.id);
-            return (
-              <>
-                <p className="text-xs text-muted mb-0.5">Última desparasitación:</p>
-                <p className="text-xs font-medium text-main truncate" title={lastDeworming ? formatDateTime(lastDeworming.dewormingDate) : 'Nunca'}>
-                  {lastDeworming ? formatDateTime(lastDeworming.dewormingDate) : 'Nunca'}
-                </p>
-              </>
-            );
-          }}
-        />
-        {totalPages > 1 && (
-          <div className="mt-6 flex justify-center">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-            />
-          </div>
-        )}
-      </>
+      <CageGroupGrid
+        cageGroups={paginatedGroups}
+        selectedRabbitIds={selectedRabbitIds}
+        onToggleRabbit={toggleRabbit}
+        renderExtras={(rabbit) => {
+          const lastDeworming = getRabbitLastDeworming(rabbit.id);
+          return (
+            <>
+              <p className="text-xs text-muted mb-0.5">Última desparasitación:</p>
+              <p className="text-xs font-medium text-main truncate" title={lastDeworming ? formatDateTime(lastDeworming.dewormingDate) : 'Nunca'}>
+                {lastDeworming ? formatDateTime(lastDeworming.dewormingDate) : 'Nunca'}
+              </p>
+            </>
+          );
+        }}
+      />
+
+      {totalPages > 1 && (
+        <div className="mt-6 flex justify-center">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      )}
 
       {canCreate ? (
         <SelectionActionBar

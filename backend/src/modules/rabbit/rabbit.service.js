@@ -51,13 +51,15 @@ class RabbitService {
         }
 
         // Generar código numérico garantizando unicidad en el galpón
-        let code = '';
-        let codeExists = true;
-        while (codeExists) {
-            const randomNum = crypto.randomInt(1000).toString().padStart(3, '0');
-            code = `${prefix}${randomNum}`;
-            const exists = await rabbitRepository.findByGalpon(galponId, { where: { code } });
-            codeExists = exists.length > 0;
+        return this._generateUniqueCodeRecursive(prefix, galponId);
+    }
+
+    async _generateUniqueCodeRecursive(prefix, galponId) {
+        const randomNum = crypto.randomInt(1000).toString().padStart(3, '0');
+        const code = `${prefix}${randomNum}`;
+        const exists = await rabbitRepository.findByGalpon(galponId, { where: { code } });
+        if (exists.length > 0) {
+            return this._generateUniqueCodeRecursive(prefix, galponId);
         }
         return code;
     }
@@ -354,34 +356,24 @@ class RabbitService {
         return raceRepository.findAll();
     }
 
+    async _findUniqueSuggestedNameRecursive(sex, galponId, attempts = 0) {
+        const suggestedName = generateRandomName(sex);
+        if (!galponId) return suggestedName;
+
+        const existing = await rabbitRepository.findByNameAndGalpon(suggestedName, galponId);
+        if (!existing) return suggestedName;
+
+        if (attempts + 1 < 10) {
+            return this._findUniqueSuggestedNameRecursive(sex, galponId, attempts + 1);
+        }
+
+        const num = crypto.randomInt(100, 1000);
+        return `${suggestedName} ${num}`;
+    }
+
     async suggestName(sex, galponId) {
-        if (!['macho', 'hembra'].includes(sex)) {
-            sex = 'macho'; // fallback por defecto
-        }
-        
-        let attempts = 0;
-        let suggestedName = '';
-        let isUnique = false;
-        
-        while (!isUnique && attempts < 10) {
-            suggestedName = generateRandomName(sex);
-            if (galponId) {
-                const existing = await rabbitRepository.findByNameAndGalpon(suggestedName, galponId);
-                if (!existing) {
-                    isUnique = true;
-                }
-            } else {
-                isUnique = true;
-            }
-            attempts++;
-        }
-        
-        if (!isUnique) {
-            const num = crypto.randomInt(100, 1000);
-            suggestedName = `${suggestedName} ${num}`;
-        }
-        
-        return suggestedName;
+        const normalizedSex = ['macho', 'hembra'].includes(sex) ? sex : 'macho';
+        return this._findUniqueSuggestedNameRecursive(normalizedSex, galponId, 0);
     }
 
     async getPotentialFathers(galponId, profileId) {

@@ -9,7 +9,7 @@ interface RabbitReproductionHistoryProps {
   rabbitId: number;
 }
 
-export function RabbitReproductionHistory({ rabbitId }: RabbitReproductionHistoryProps) {
+export function RabbitReproductionHistory({ rabbitId }: Readonly<RabbitReproductionHistoryProps>) {
   const { data: reproductions = [], isLoading, error: queryError } = useQuery({
     queryKey: ['reproductions', 'female', rabbitId],
     queryFn: () => reproductionService.getByFemaleId(rabbitId),

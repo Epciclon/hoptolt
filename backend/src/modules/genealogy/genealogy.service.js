@@ -161,17 +161,21 @@ class GenealogyService {
         return nextLevelIds;
     }
 
+    async _fetchAncestorsRecursive(currentLevelIds, remainingLevels, ancestors) {
+        if (remainingLevels <= 0 || currentLevelIds.length === 0) return;
+
+        const genealogies = await Promise.all(
+            currentLevelIds.map(id => genealogyRepository.findByRabbitId(id))
+        );
+        const nextLevelIds = this._collectParentsFromGenealogies(genealogies, ancestors);
+        if (nextLevelIds.length > 0 && remainingLevels > 1) {
+            await this._fetchAncestorsRecursive(nextLevelIds, remainingLevels - 1, ancestors);
+        }
+    }
+
     async getAncestors(rabbitId, levels) {
         const ancestors = new Set();
-        let currentLevelIds = [rabbitId];
-
-        for (let level = 0; level < levels && currentLevelIds.length > 0; level++) {
-            const genealogies = await Promise.all(
-                currentLevelIds.map(id => genealogyRepository.findByRabbitId(id))
-            );
-            currentLevelIds = this._collectParentsFromGenealogies(genealogies, ancestors);
-        }
-
+        await this._fetchAncestorsRecursive([rabbitId], levels, ancestors);
         return Array.from(ancestors);
     }
 

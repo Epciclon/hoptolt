@@ -20,9 +20,9 @@ export function useIncidents(params?: GetIncidentsParams) {
   const category = params?.category ?? '';
   const moduleName = params?.module ?? '';
   const search = params?.search ?? '';
-  const isQueryEnabled = params?.enabled !== false && !!user && !!user?.activeGalponId;
+  const isQueryEnabled = params?.enabled !== false && Boolean(user?.activeGalponId);
 
-  // Query: Incidents list (Gestionado por caché inteligente y Realtime)
+  // Query: Incidents list
   const {
     data,
     isPending,
@@ -35,7 +35,7 @@ export function useIncidents(params?: GetIncidentsParams) {
     placeholderData: (previousData) => previousData,
     staleTime: 2000,
     gcTime: 1000 * 60 * 30,
-    refetchInterval: 4000, // Actualización asíncrona automática cada 4 segundos
+    refetchInterval: 4000,
     refetchIntervalInBackground: true,
     refetchOnWindowFocus: true
   });
@@ -43,7 +43,7 @@ export function useIncidents(params?: GetIncidentsParams) {
   // Solo se considera loading inicial si NO hay ningún dato previo
   const loading = isQueryEnabled && isPending && !data;
 
-  // Query: Counts (Gestionado por caché y Realtime)
+  // Query: Counts
   const {
     data: countsData,
     refetch: refetchCounts
@@ -59,7 +59,7 @@ export function useIncidents(params?: GetIncidentsParams) {
     refetchOnWindowFocus: true
   });
 
-  // Realtime subscription via Supabase (Eventos push inmediatos en vivo)
+  // Realtime subscription via Supabase
   useEffect(() => {
     if (!isQueryEnabled || !user) return;
 
@@ -76,7 +76,6 @@ export function useIncidents(params?: GetIncidentsParams) {
           if (payload.eventType === 'DELETE' && payload.old?.id) {
             window.dispatchEvent(new CustomEvent('incident-deleted', { detail: { incidentId: payload.old.id } }));
           }
-          // Invalida inmediatamente todas las consultas de novedades
           queryClient.invalidateQueries({ queryKey: ['incidents'] });
         }
       )
@@ -89,7 +88,6 @@ export function useIncidents(params?: GetIncidentsParams) {
           filter: `profileId=eq.${user.id}`
         },
         () => {
-          // Cuando llega una notificación de novedad, actualiza novedades al instante
           queryClient.invalidateQueries({ queryKey: ['incidents'] });
         }
       )
@@ -146,20 +144,17 @@ export function useIncidents(params?: GetIncidentsParams) {
     }
   });
 
-  // Mutation: Delete Incident (Solo para trabajador en estado pendiente con eliminación optimista instantánea)
+  // Mutation: Delete Incident
   const deleteMutation = useMutation({
     mutationFn: (id: number) => incidentService.delete(id),
     onMutate: async (id: number) => {
-      // Cancelar consultas activas para evitar sobrescrituras
       await queryClient.cancelQueries({ queryKey: ['incidents'] });
 
-      // Guardar snapshot previo para rollback en caso de error
       const previousLists = queryClient.getQueriesData({ queryKey: ['incidents', 'list'] });
       const previousCounts = queryClient.getQueriesData({ queryKey: ['incidents', 'counts'] });
 
-      // 1. Eliminar inmediatamente de la lista en memoria
       queryClient.setQueriesData({ queryKey: ['incidents', 'list'] }, (old: any) => {
-        if (!old || !old.incidents) return old;
+        if (!old?.incidents) return old;
         return {
           ...old,
           incidents: old.incidents.filter((item: any) => item.id !== id),
@@ -170,7 +165,6 @@ export function useIncidents(params?: GetIncidentsParams) {
         };
       });
 
-      // 2. Decrementar conteos en memoria al instante
       queryClient.setQueriesData({ queryKey: ['incidents', 'counts'] }, (old: any) => {
         if (!old) return old;
         return {
@@ -181,14 +175,12 @@ export function useIncidents(params?: GetIncidentsParams) {
         };
       });
 
-      // Notificar a componentes locales de la actualización
       window.dispatchEvent(new CustomEvent('incident-deleted', { detail: { incidentId: id } }));
       window.dispatchEvent(new CustomEvent('incidents-updated'));
 
       return { previousLists, previousCounts };
     },
     onError: (err: any, _id, context) => {
-      // Restaurar estado si falla la petición en el servidor
       if (context?.previousLists) {
         context.previousLists.forEach(([key, val]) => queryClient.setQueryData(key, val));
       }
@@ -202,7 +194,6 @@ export function useIncidents(params?: GetIncidentsParams) {
       showToast('Novedad eliminada exitosamente.', 'success');
     },
     onSettled: async () => {
-      // Sincronizar estado real con el servidor
       await queryClient.invalidateQueries({ queryKey: ['incidents'] });
     }
   });

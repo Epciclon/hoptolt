@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -11,7 +11,6 @@ import { Eye, EyeOff } from 'lucide-react';
 import { AuthLayout } from '@/modules/auth/components/AuthLayout';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
-import { useEffect } from 'react';
 
 const schema = z.object({
   username: z

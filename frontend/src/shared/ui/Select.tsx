@@ -27,9 +27,8 @@ export const Select = forwardRef<HTMLSelectElement, Readonly<SelectProps>>(
     const selectId = id ?? label?.toLowerCase().replace(/\s+/g, '-');
 
     const selectedOption = options.find((opt) => opt.value === value);
-    const displayLabel = selectedOption
-      ? selectedOption.label
-      : placeholder || (options[0] ? options[0].label : 'Seleccionar...');
+    const fallbackLabel = options[0] ? options[0].label : 'Seleccionar...';
+    const displayLabel = selectedOption ? selectedOption.label : (placeholder || fallbackLabel);
 
     useEffect(() => {
       const handleClickOutside = (e: MouseEvent) => {
@@ -147,8 +146,6 @@ export const Select = forwardRef<HTMLSelectElement, Readonly<SelectProps>>(
                           ? 'bg-primary-50 dark:bg-primary-900/25 text-primary-600 dark:text-primary-400 font-semibold'
                           : 'text-main hover:bg-theme-surface'
                       )}
-                      role="option"
-                      aria-selected={isSelected}
                     >
                       <span className="truncate">{opt.label}</span>
                       {isSelected && (

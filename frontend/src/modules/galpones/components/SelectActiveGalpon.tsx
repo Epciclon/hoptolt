@@ -1,13 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Table } from '@/shared/ui';
+import { Button, Table, FullScreenLoader } from '@/shared/ui';
 import type { Column } from '@/shared/ui/Table';
 import { useGalpones } from '../hooks/useGalpones';
 import { useActiveGalpon } from '../hooks/useActiveGalpon';
 import type { Galpon } from '../types/galpon.types';
 import { getGalponBaseColumns } from '../utils/galponUtils';
-import { FullScreenLoader } from '@/shared/ui';
 
 export function SelectActiveGalpon() {
   const { galpones, loading } = useGalpones();

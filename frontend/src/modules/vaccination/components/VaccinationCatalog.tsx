@@ -189,38 +189,36 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
         />
       </div>
 
-      <>
-        <CageGroupGrid
-          cageGroups={paginatedGroups}
-          selectedRabbitIds={selectedRabbitIds}
-          onToggleRabbit={toggleRabbit}
-          renderExtras={(rabbit) => {
-            const lastVaccination = getRabbitLastVaccination(rabbit.id);
-            return (
-              <>
-                <p className="text-xs text-muted mb-0.5">Última vacunación:</p>
-                <p className="text-xs font-medium text-main truncate" title={lastVaccination ? lastVaccination.vaccines.join(', ') : 'Nunca'}>
-                  {lastVaccination ? lastVaccination.vaccines.join(', ') : 'Nunca'}
+      <CageGroupGrid
+        cageGroups={paginatedGroups}
+        selectedRabbitIds={selectedRabbitIds}
+        onToggleRabbit={toggleRabbit}
+        renderExtras={(rabbit) => {
+          const lastVaccination = getRabbitLastVaccination(rabbit.id);
+          return (
+            <>
+              <p className="text-xs text-muted mb-0.5">Última vacunación:</p>
+              <p className="text-xs font-medium text-main truncate" title={lastVaccination ? lastVaccination.vaccines.join(', ') : 'Nunca'}>
+                {lastVaccination ? lastVaccination.vaccines.join(', ') : 'Nunca'}
+              </p>
+              {lastVaccination && (
+                <p className="text-xs text-muted mt-0.5">
+                  {formatDateTime(lastVaccination.vaccinationDate)}
                 </p>
-                {lastVaccination && (
-                  <p className="text-xs text-muted mt-0.5">
-                    {formatDateTime(lastVaccination.vaccinationDate)}
-                  </p>
-                )}
-              </>
-            );
-          }}
-        />
-        {totalPages > 1 && (
-          <div className="mt-6 flex justify-center">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-            />
-          </div>
-        )}
-      </>
+              )}
+            </>
+          );
+        }}
+      />
+      {totalPages > 1 && (
+        <div className="mt-6 flex justify-center">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      )}
 
       {canCreate ? (
         <SelectionActionBar

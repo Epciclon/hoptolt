@@ -74,7 +74,7 @@ function FeedingProgressStats({
   currentEcuadorShift,
   selectedCageNumbers,
   toggleCage,
-}: FeedingProgressStatsProps) {
+}: Readonly<FeedingProgressStatsProps>) {
   return (
     <div className="bg-card border border-strong rounded-lg p-4 sm:p-5 w-full">
       <h3 className="text-sm font-semibold text-main mb-4 flex items-center gap-2">

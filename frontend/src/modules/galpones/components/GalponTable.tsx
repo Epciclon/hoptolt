@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
-import { Table, Button, ConfirmDialog } from '@/shared/ui';
+import { Table, Button, ConfirmDialog, FullScreenLoader } from '@/shared/ui';
 import type { Column } from '@/shared/ui/Table';
 import { useGalpones } from '../hooks/useGalpones';
 import { useActiveGalpon } from '../hooks/useActiveGalpon';
@@ -11,7 +11,6 @@ import { useToast } from '@/shared/contexts/ToastContext';
 import type { Galpon } from '../types/galpon.types';
 import { getGalponBaseColumns } from '../utils/galponUtils';
 import { FilterBar } from '@/shared/ui/FilterBar';
-import { FullScreenLoader } from '@/shared/ui';
 
 interface GalponTableProps {
   onEdit?: (galpon: Galpon) => void;
@@ -30,7 +29,7 @@ export function GalponTable({ onEdit }: Readonly<GalponTableProps>) {
   const filteredGalpones = galpones.filter(g => 
     !searchTerm || 
     g.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (g.location && g.location.toLowerCase().includes(searchTerm.toLowerCase()))
+    g.location?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleConfirmDelete = async () => {

@@ -174,33 +174,36 @@ class GrowthService {
         }));
     }
 
-    async _filterWorkerGrowthMessages(workerMemberships, messages) {
+    async _getAllowedRabbitIdsForWorker(wm) {
         const { WorkerPermission, WorkerCage, Assignment } = require('../../domain/models');
-        const allowedRabbitIds = new Set();
-
-        for (const wm of workerMemberships) {
-            const hasPermission = await WorkerPermission.findOne({
-                where: {
-                    farmMemberId: wm.id,
-                    moduleName: { [Op.in]: ['conejos', 'rabbits'] },
-                    canRead: true
-                }
-            });
-
-            if (!hasPermission) continue;
-
-            const workerCages = await WorkerCage.findAll({ where: { farmMemberId: wm.id } });
-            const cageIds = workerCages.map(wc => wc.cageId);
-            if (cageIds.length > 0) {
-                const activeAssignments = await Assignment.findAll({
-                    where: {
-                        cageId: { [Op.in]: cageIds },
-                        status: 'asignado'
-                    }
-                });
-                activeAssignments.forEach(a => allowedRabbitIds.add(Number(a.rabbitId)));
+        const hasPermission = await WorkerPermission.findOne({
+            where: {
+                farmMemberId: wm.id,
+                moduleName: { [Op.in]: ['conejos', 'rabbits'] },
+                canRead: true
             }
-        }
+        });
+
+        if (!hasPermission) return [];
+
+        const workerCages = await WorkerCage.findAll({ where: { farmMemberId: wm.id } });
+        const cageIds = workerCages.map(wc => wc.cageId);
+        if (cageIds.length === 0) return [];
+
+        const activeAssignments = await Assignment.findAll({
+            where: {
+                cageId: { [Op.in]: cageIds },
+                status: 'asignado'
+            }
+        });
+        return activeAssignments.map(a => Number(a.rabbitId));
+    }
+
+    async _filterWorkerGrowthMessages(workerMemberships, messages) {
+        const results = await Promise.all(
+            workerMemberships.map(wm => this._getAllowedRabbitIdsForWorker(wm))
+        );
+        const allowedRabbitIds = new Set(results.flat());
 
         return messages.filter(m => allowedRabbitIds.has(Number(m.rabbitId))).map(m => m.text);
     }
