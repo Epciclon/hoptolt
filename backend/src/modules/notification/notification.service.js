@@ -324,14 +324,22 @@ class NotificationService {
 
                                 if (!existingLog) {
                                     const shiftLabel = d.shift === 'mañana' ? 'la mañana' : 'la tarde';
-                                    const cagesLabel = d.unfedCount === 1 ? '1 jaula con conejos' : `${d.unfedCount} jaulas con conejos`;
+                                    const cagesLabel = d.unfedCount === 1 ? '1 jaula' : `${d.unfedCount} jaulas`;
+                                    const cagesListStr = Array.isArray(d.cages) && d.cages.length > 0 ? ` [jaulas: ${d.cages.join(', ')}]` : '';
+
+
+
                                     await recordSystemChange({
                                         galponId: cleanGalponId,
                                         action: 'Turno cerrado con pendientes',
                                         entity: 'feeding',
                                         entityId: cleanGalponId,
                                         itemName: `Turno de ${shiftLabel}`,
-                                        summary: `HopTolt registró el cierre del turno de ${shiftLabel} con ${cagesLabel} sin alimentar y sin reporte de novedad`
+                                        summary: `HopTolt registró el cierre del turno de ${shiftLabel} con ${cagesLabel}${cagesListStr} sin alimentar y sin reporte de novedad`,
+                                        cages: d.cages || [],
+                                        unfedCount: d.unfedCount,
+                                        shift: d.shift,
+                                        date: d.date
                                     });
                                 }
                             } catch (logErr) {
@@ -440,7 +448,8 @@ class NotificationService {
                     if (unfedCageIds.length > 0) {
                         galponIdsWithPendingFeeding.set(galpon.id, {
                             galpon,
-                            unfedCount: unfedCageIds.length
+                            unfedCount: unfedCageIds.length,
+                            unfedCageIds
                         });
                     }
                 }
@@ -504,6 +513,7 @@ class NotificationService {
                             date: todayStr,
                             galponId,
                             unfedCount: pendingInfo.unfedCount,
+                            cages: pendingInfo.unfedCageIds || [],
                             lastNotifiedAt: new Date().toISOString()
                         },
                         createdAt: new Date()

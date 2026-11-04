@@ -130,7 +130,7 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
   return (
     <div className="flex flex-col gap-4">
 
-      <div className="bg-card border border-default rounded-xl p-4 relative z-10">
+      <div className="bg-card border border-default rounded-xl p-4 relative z-30">
         <span className="block text-sm font-semibold text-main mb-2">Vacunas</span>
         <div className="relative" ref={vaccineDropdownRef}>
           <Input
@@ -143,7 +143,7 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
             onFocus={() => setShowVaccineDropdown(true)}
           />
           {showVaccineDropdown && (
-            <div className="absolute z-20 w-full border border-default dark:border-slate-700 rounded-lg max-h-48 overflow-y-auto bg-card dark:bg-slate-900 mt-1.5 shadow-2xl">
+            <div className="absolute z-50 w-full border border-default dark:border-slate-700 rounded-lg max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto bg-card dark:bg-slate-900 mt-1.5 shadow-2xl">
               {filteredVaccines.length === 0 ? (
                 <p className="text-muted text-sm p-3">No hay vacunas disponibles</p>
               ) : (
@@ -154,7 +154,7 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
                     onClick={() => handleVaccineSelect(vaccine.name)}
                     className="w-full text-left px-3.5 py-2.5 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 hover:text-emerald-700 dark:hover:text-emerald-300 border-b border-default dark:border-slate-800 last:border-b-0 text-sm font-medium transition-colors flex items-center justify-between"
                   >
-                    <span>{vaccine.name} <span className="text-xs text-muted font-normal">(cada {vaccine.period} días)</span></span>
+                    <span>{vaccine.name} <span className="text-xs text-muted font-normal">- cada {vaccine.period} días</span></span>
                     <span className="text-xs text-muted font-normal">+ Agregar</span>
                   </button>
                 ))
@@ -198,12 +198,12 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
             const lastVaccination = getRabbitLastVaccination(rabbit.id);
             return (
               <>
-                <p className="text-[10px] text-muted mb-0.5">Última vacunación:</p>
+                <p className="text-xs text-muted mb-0.5">Última vacunación:</p>
                 <p className="text-xs font-medium text-main truncate" title={lastVaccination ? lastVaccination.vaccines.join(', ') : 'Nunca'}>
                   {lastVaccination ? lastVaccination.vaccines.join(', ') : 'Nunca'}
                 </p>
                 {lastVaccination && (
-                  <p className="text-[10px] text-muted mt-0.5">
+                  <p className="text-xs text-muted mt-0.5">
                     {formatDateTime(lastVaccination.vaccinationDate)}
                   </p>
                 )}
@@ -229,6 +229,7 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
           buttonText="Registrar Vacunación"
           onRegister={handleRegister}
           isSubmitting={isCreating}
+          isDisabled={selectedVaccines.length === 0}
         />
       ) : (
         selectedRabbitIds.length > 0 && (

@@ -592,8 +592,8 @@ export function NotificationIcon() {
             onClick={() => setIsOpen(false)}
             aria-label="Cerrar notificaciones"
           />
-          <div className="fixed sm:absolute top-16 sm:top-full right-3 sm:right-0 left-3 sm:left-auto mt-2 w-auto sm:w-96 max-w-[calc(100vw-1.5rem)] bg-card rounded-xl shadow-2xl border border-strong overflow-hidden z-[60]">
-            <div className="p-3.5 border-b border-default flex flex-col gap-2.5 bg-theme-surface">
+          <div className="fixed sm:absolute top-16 sm:top-full right-3 sm:right-0 left-3 sm:left-auto mt-2 w-auto sm:w-96 max-w-[calc(100vw-1.5rem)] bg-card rounded-xl shadow-2xl border border-strong overflow-hidden z-[60] flex flex-col max-h-[calc(100dvh-5rem)] sm:max-h-[520px]">
+            <div className="p-3.5 border-b border-default flex flex-col gap-2.5 bg-theme-surface shrink-0">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <Bell className="w-4 h-4 text-primary-600 dark:text-primary-400" />
@@ -619,7 +619,7 @@ export function NotificationIcon() {
               </Link>
             </div>
 
-            <div className="max-h-96 overflow-y-auto divide-y divide-default/60">
+            <div className="flex-1 overflow-y-auto divide-y divide-default/60 overscroll-contain">
               {displayedNotifications.length === 0 ? (
                 <div className="p-8 text-center text-muted">
                   <Bell className="w-10 h-10 mx-auto mb-2 text-slate-300 dark:text-slate-600" />
@@ -684,7 +684,7 @@ export function NotificationIcon() {
                             return part;
                           })}
                         </p>
-                        <p className="text-[10px] text-theme-faint mt-1.5">{formatTime(notification.updatedAt || notification.createdAt)}</p>
+                        <p className="text-xs text-theme-faint mt-2 font-medium">{formatTime(notification.updatedAt || notification.createdAt)}</p>
 
                         {notification.type === 'invitation' && (
                           <div className="flex gap-2 mt-2">

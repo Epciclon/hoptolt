@@ -27,6 +27,7 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
   const { activeGalpon } = useActiveGalpon();
   const [selectedWorker, setSelectedWorker] = useState<FarmMember | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(getEcuadorDateString());
+  const [expandedWorkers, setExpandedWorkers] = useState<Record<string, boolean>>({});
 
   // Resetea la vista si cambian de galpón
   useEffect(() => {
@@ -121,22 +122,22 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
       <div className="space-y-4">
         {/* Header del Detalle */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card p-4 rounded-xl shadow-sm border border-strong">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full">
             <Button 
               variant="outline" 
               size="sm"
               icon={<ArrowLeft size={16} />} 
               onClick={() => setSelectedWorker(null)}
-              className="shrink-0"
+              className="self-start sm:self-auto shrink-0"
             >
               Volver
             </Button>
-            <div>
-              <div className="flex items-center gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-lg font-bold text-main">Historial de {profileName}</h2>
                 {isInactive && (
                   <span className="px-2 py-0.5 text-xs rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-700 font-semibold">
-                    Inactivo / Ex-trabajador
+                    Inactivo - Ex-trabajador
                   </span>
                 )}
               </div>
@@ -145,7 +146,7 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
                   {isOwner 
                     ? 'Propietario del Galpón' 
                     : isInactive 
-                      ? 'Ex-trabajador desvinculado (registros históricos conservados)' 
+                      ? 'Ex-trabajador desvinculado - registros históricos conservados' 
                       : 'Trabajador del Galpón'}
                 </p>
                 <p className="text-xs text-muted">
@@ -155,7 +156,7 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-2 w-full sm:w-auto">
             <span className="text-sm font-medium text-muted">Filtrar por fecha:</span>
             {(() => {
               if (!fetchActiveDates) {
@@ -165,7 +166,7 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
                     max={maxDate}
-                    className="w-40"
+                    className="w-full sm:w-40"
                   />
                 );
               }
@@ -174,27 +175,30 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
               }
               if (activeDates && activeDates.length > 0) {
                 return (
-                  <div className="flex items-center gap-2">
+                  <div className="grid grid-cols-[1fr_1.8fr_1.2fr] gap-2 w-full sm:flex sm:items-center sm:w-auto">
                     <select
-                      value={currentYear}
-                      onChange={(e) => onYearChange(e.target.value)}
-                      className="border border-default bg-theme-surface dark:bg-slate-900 text-main rounded-md shadow-sm py-1.5 px-3 text-sm focus:ring-primary-500 focus:border-primary-500 min-w-[80px]"
+                      value={currentDay}
+                      onChange={(e) => onDayChange(e.target.value)}
+                      className="border border-default bg-theme-surface dark:bg-slate-900 text-main rounded-md shadow-sm py-1.5 px-2 text-xs sm:text-sm focus:ring-primary-500 focus:border-primary-500 w-full sm:w-auto sm:min-w-[64px]"
+                      title="Día"
                     >
-                      {availableYears.map(y => <option key={y} value={y} className="bg-card dark:bg-slate-900 text-main">{y}</option>)}
+                      {availableDays.map(d => <option key={d} value={d} className="bg-card dark:bg-slate-900 text-main">{d}</option>)}
                     </select>
                     <select
                       value={currentMonth}
                       onChange={(e) => onMonthChange(e.target.value)}
-                      className="border border-default bg-theme-surface dark:bg-slate-900 text-main rounded-md shadow-sm py-1.5 px-3 text-sm focus:ring-primary-500 focus:border-primary-500 min-w-[120px]"
+                      className="border border-default bg-theme-surface dark:bg-slate-900 text-main rounded-md shadow-sm py-1.5 px-2 text-xs sm:text-sm focus:ring-primary-500 focus:border-primary-500 w-full sm:w-auto sm:min-w-[120px]"
+                      title="Mes"
                     >
                       {availableMonths.map(m => <option key={m} value={m} className="bg-card dark:bg-slate-900 text-main">{monthNames[m]}</option>)}
                     </select>
                     <select
-                      value={currentDay}
-                      onChange={(e) => onDayChange(e.target.value)}
-                      className="border border-default bg-theme-surface dark:bg-slate-900 text-main rounded-md shadow-sm py-1.5 px-3 text-sm focus:ring-primary-500 focus:border-primary-500 min-w-[70px]"
+                      value={currentYear}
+                      onChange={(e) => onYearChange(e.target.value)}
+                      className="border border-default bg-theme-surface dark:bg-slate-900 text-main rounded-md shadow-sm py-1.5 px-2 text-xs sm:text-sm focus:ring-primary-500 focus:border-primary-500 w-full sm:w-auto sm:min-w-[85px]"
+                      title="Año"
                     >
-                      {availableDays.map(d => <option key={d} value={d} className="bg-card dark:bg-slate-900 text-main">{d}</option>)}
+                      {availableYears.map(y => <option key={y} value={y} className="bg-card dark:bg-slate-900 text-main">{y}</option>)}
                     </select>
                   </div>
                 );
@@ -205,8 +209,10 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
         </div>
 
         {/* Tabla inyectada por el módulo */}
-        <div className="bg-card rounded-xl shadow-sm border border-strong overflow-hidden p-4">
-          {renderTable(selectedWorker.profile.id, selectedDate)}
+        <div className="bg-card rounded-xl shadow-sm border border-strong p-2 sm:p-4 overflow-hidden">
+          <div className="w-full overflow-x-auto">
+            {renderTable(selectedWorker.profile.id, selectedDate)}
+          </div>
         </div>
       </div>
     );
@@ -279,20 +285,41 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
                   <div className="mt-2 pt-2 border-t border-default">
                     <div className="flex items-center gap-1.5 text-xs font-semibold text-muted uppercase mb-1.5">
                       <Box size={13} />
-                      {member.status === 'inactive' ? 'Estado' : `Jaulas Asignadas (${assignedCages.length})`}
+                      {member.status === 'inactive' ? 'Estado' : `Jaulas Asignadas: ${assignedCages.length}`}
                     </div>
                     {member.status === 'inactive' ? (
                       <span className="text-xs text-amber-600 dark:text-amber-400 italic">Desvinculado del galpón</span>
                     ) : assignedCages.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {assignedCages.slice(0, 5).map(wc => (
-                          <span key={wc.id} className="text-[11px] bg-theme-surface border border-default text-muted px-1.5 py-0.5 rounded">
-                            Jaula {wc.cage?.number ?? wc.cageId}
+                      <div className="flex flex-wrap gap-1.5 items-center">
+                        {(expandedWorkers[member.id] ? assignedCages : assignedCages.slice(0, 8)).map(wc => (
+                          <span key={wc.id} className="text-xs font-semibold bg-theme-surface border border-default text-main px-2 py-0.5 rounded-md min-w-[1.75rem] text-center" title={`Jaula ${wc.cage?.number ?? wc.cageId}`}>
+                            {wc.cage?.number ?? wc.cageId}
                           </span>
                         ))}
-                        {assignedCages.length > 5 && (
-                          <span className="text-[11px] bg-theme-surface border border-default text-muted px-1.5 py-0.5 rounded">
-                            +{assignedCages.length - 5}
+                        {assignedCages.length > 8 && (
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedWorkers(prev => ({
+                                ...prev,
+                                [member.id]: !prev[member.id]
+                              }));
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.stopPropagation();
+                                setExpandedWorkers(prev => ({
+                                  ...prev,
+                                  [member.id]: !prev[member.id]
+                                }));
+                              }
+                            }}
+                            className="cursor-pointer text-xs font-semibold bg-theme-surface border border-default hover:border-primary-500 text-primary-600 dark:text-primary-400 px-2 py-0.5 rounded-md transition-colors"
+                            title={expandedWorkers[member.id] ? 'Ver menos' : 'Ver todas'}
+                          >
+                            {expandedWorkers[member.id] ? 'Menos' : `+${assignedCages.length - 8}`}
                           </span>
                         )}
                       </div>

@@ -154,7 +154,7 @@ export function AssignRabbitForm({ onSuccess, onCancel }: Readonly<AssignRabbitF
             value={cageSearch}
             onChange={(e) => setCageSearch(e.target.value)}
           />
-          <div className="border border-strong rounded-md overflow-y-auto bg-card shadow-inner max-h-80 mt-2">
+          <div className="border border-strong rounded-md overflow-y-auto bg-card shadow-inner max-h-48 sm:max-h-64 xl:max-h-80 mt-2">
             {filteredCages.length === 0 ? (
               <p className="text-muted text-sm p-4 text-center">No se encontraron jaulas con espacio disponible.</p>
             ) : (

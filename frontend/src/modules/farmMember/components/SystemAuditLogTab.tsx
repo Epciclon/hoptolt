@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { farmMemberService } from '../services/farmMember.service';
 import type { AuditLogItem, AuditLogFilters } from '../types/farmMember.types';
-import { SectionMessage, Button } from '@/shared/ui';
-import { Filter, RotateCcw, ChevronLeft, ChevronRight, ShieldCheck, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
+import { SectionMessage, Button, Dialog } from '@/shared/ui';
+import { Pagination } from '@/shared/ui/Pagination';
+import { Filter, RotateCcw, ShieldCheck, Sparkles } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { formatFriendlyDate, formatDateTime } from '@/shared/utils/dateUtils';
 
@@ -44,6 +45,9 @@ const FIELD_LABELS: Record<string, string> = {
   shift: 'Turno',
   status: 'Estado',
   unfedCount: 'Jaulas sin alimentar',
+  workerName: 'Trabajador encargado',
+  workerId: 'ID del trabajador',
+  cages: 'Jaulas pendientes',
   itemName: 'Elemento afectado',
   rabbitCode: 'Código de conejo',
   rabbitName: 'Nombre de conejo'
@@ -61,6 +65,14 @@ function formatValue(key: string, val: any): string {
     if (!Number.isNaN(num)) return `${num} meses`;
     return String(val);
   }
+  if (Array.isArray(val)) {
+    if (val.length === 0) return 'Ninguno';
+    return val.map((v) => {
+      if (typeof v === 'object' && v?.number !== undefined) return `Jaula ${v.number}`;
+      if (typeof v === 'number' || !Number.isNaN(Number(v))) return `Jaula ${v}`;
+      return String(v);
+    }).join(', ');
+  }
   if (typeof val === 'number') return String(val);
   return String(val).trim();
 }
@@ -72,7 +84,7 @@ interface DiffItem {
   afterVal: string;
 }
 
-function computeDiff(before: any, after: any): DiffItem[] {
+function computeDiff(before: any, after: any, action?: string): DiffItem[] {
   const b = before && typeof before === 'object' ? before : {};
   const a = after && typeof after === 'object' ? after : {};
   const allKeys = Array.from(new Set([...Object.keys(b), ...Object.keys(a)]));
@@ -84,12 +96,25 @@ function computeDiff(before: any, after: any): DiffItem[] {
 
     const bVal = b[k];
     const aVal = a[k];
+
+    // Si es cálculo de crecimiento y el peso no se modificó o viene como Ninguno
+    if (action === 'Cálculo de crecimiento' && k === 'weight' && (aVal === undefined || aVal === null || aVal === '')) {
+      continue;
+    }
+
     if (JSON.stringify(bVal) !== JSON.stringify(aVal)) {
+      const bStr = formatValue(k, bVal);
+      const aStr = formatValue(k, aVal);
+
+      if (action === 'Cálculo de crecimiento' && k === 'weight' && aStr === 'Ninguno') {
+        continue;
+      }
+
       changed.push({
         key: k,
         label: FIELD_LABELS[k] || k,
-        beforeVal: formatValue(k, bVal),
-        afterVal: formatValue(k, aVal)
+        beforeVal: bStr,
+        afterVal: aStr
       });
     }
   }
@@ -98,12 +123,12 @@ function computeDiff(before: any, after: any): DiffItem[] {
 }
 
 function renderDetailsView(log: AuditLogItem) {
-  const { action, details } = log;
+  const { details, action } = log;
   const before = details?.before;
   const after = details?.after;
 
   if (before && after) {
-    const changed = computeDiff(before, after);
+    const changed = computeDiff(before, after, action);
 
     return (
       <div className="space-y-2.5">
@@ -116,12 +141,12 @@ function renderDetailsView(log: AuditLogItem) {
             {changed.map((item) => (
               <div key={item.key} className="bg-theme-surface border border-default rounded-xl p-3 shadow-2xs flex flex-col justify-between gap-2">
                 <span className="font-semibold text-muted text-xs block">{item.label}</span>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="line-through text-xs font-medium text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2.5 py-1 rounded-md border border-rose-200 dark:border-rose-900/30">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
+                  <span className="line-through text-xs font-medium text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2.5 py-1 rounded-md border border-rose-200 dark:border-rose-900/30 break-words [word-break:break-word]">
                     {item.beforeVal}
                   </span>
-                  <span className="text-muted font-bold text-sm">➔</span>
-                  <span className="font-semibold text-xs text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-md border border-emerald-200 dark:border-emerald-900/30">
+                  <span className="text-muted font-bold text-sm self-start sm:self-center">➔</span>
+                  <span className="font-semibold text-xs text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-md border border-emerald-200 dark:border-emerald-900/30 break-words [word-break:break-word]">
                     {item.afterVal}
                   </span>
                 </div>
@@ -160,21 +185,33 @@ function renderDetailsView(log: AuditLogItem) {
   }
 
   return (
-    <div className="text-xs text-muted">
-      <span>Proceso completado sin detalles adicionales</span>
+    <div className="space-y-2">
+      {before && (
+        <div>
+          <span className="text-xs font-semibold text-muted block mb-1">Estado anterior</span>
+          <span className="text-xs text-main">{String(before)}</span>
+        </div>
+      )}
+      {after && (
+        <div>
+          <span className="text-xs font-semibold text-muted block mb-1">Nuevo estado</span>
+          <span className="text-xs text-main">{String(after)}</span>
+        </div>
+      )}
     </div>
   );
 }
 
-export function SystemAuditLogTab({ galponId }: SystemAuditLogTabProps) {
+export function SystemAuditLogTab({ galponId }: Readonly<SystemAuditLogTabProps>) {
   const queryClient = useQueryClient();
+  const [page, setPage] = useState(1);
+  const [selectedLogForDetails, setSelectedLogForDetails] = useState<AuditLogItem | null>(null);
 
+  // Filtros
   const [selectedEntity, setSelectedEntity] = useState<string>('');
   const [selectedAction, setSelectedAction] = useState<string>('');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
-  const [page, setPage] = useState<number>(1);
-  const [expandedLogId, setExpandedLogId] = useState<number | null>(null);
 
   const filters: AuditLogFilters = {
     entity: selectedEntity || undefined,
@@ -183,29 +220,29 @@ export function SystemAuditLogTab({ galponId }: SystemAuditLogTabProps) {
     endDate: endDate || undefined,
     isSystem: true,
     page,
-    limit: 20
+    limit: 15
   };
 
-  const { data, isLoading, isFetching } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['systemAuditLogs', galponId, filters],
     queryFn: () => farmMemberService.getAuditLogs(galponId, filters),
     enabled: Boolean(galponId),
-    staleTime: 10 * 1000,
-    refetchInterval: 15 * 1000,
-    refetchOnWindowFocus: true
+    placeholderData: (previousData) => previousData,
+    staleTime: 30 * 1000,
+    refetchInterval: 30 * 1000,
+    refetchOnWindowFocus: false
   });
 
   const logs = data?.logs || [];
-  const total = data?.total || 0;
   const totalPages = data?.totalPages || 1;
-  const loading = isLoading || isFetching;
+  const total = data?.total || 0;
+  const loading = isLoading && !data;
 
-  // Suscripción Realtime para invalidar la caché inmediatamente ante nuevos registros
+  // Suscripción Realtime para invalidar la caché ante nuevos registros automáticos
   useEffect(() => {
     const supabase = createClient();
-    const channelId = `realtime_system_audit_${galponId}_${crypto.randomUUID()}`;
-    const channel = supabase
-      .channel(channelId)
+    const channelId = `realtime_system_audit_logs_${galponId}_${crypto.randomUUID()}`;
+    const channel = supabase.channel(channelId)
       .on(
         'postgres_changes',
         {
@@ -236,7 +273,7 @@ export function SystemAuditLogTab({ galponId }: SystemAuditLogTabProps) {
 
   return (
     <div className="space-y-4">
-      <SectionMessage message="Registro de movimientos y procesos ejecutados automáticamente por HopTolt en este galpón." />
+      <SectionMessage message="Registro automático de acciones ejecutadas por el sistema HopTolt en este galpón." />
 
       {/* Barra de Filtros */}
       <div className="bg-card rounded-xl p-4 border border-strong shadow-sm space-y-3">
@@ -248,9 +285,9 @@ export function SystemAuditLogTab({ galponId }: SystemAuditLogTabProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Filtro por Proceso */}
           <div>
-            <label htmlFor="filter-system-process" className="block text-xs font-medium text-muted mb-1">Proceso</label>
+            <label htmlFor="filter-process-select" className="block text-xs font-medium text-muted mb-1">Proceso</label>
             <select
-              id="filter-system-process"
+              id="filter-process-select"
               value={selectedEntity}
               onChange={(e) => { setSelectedEntity(e.target.value); setPage(1); }}
               className="w-full text-sm bg-theme-surface dark:bg-slate-900 border border-default rounded-lg px-3 py-2 text-main dark:text-slate-100 focus:ring-2 focus:ring-primary-500 outline-none"
@@ -264,9 +301,9 @@ export function SystemAuditLogTab({ galponId }: SystemAuditLogTabProps) {
 
           {/* Filtro por Acción */}
           <div>
-            <label htmlFor="filter-system-action" className="block text-xs font-medium text-muted mb-1">Acción</label>
+            <label htmlFor="filter-action-select" className="block text-xs font-medium text-muted mb-1">Acción</label>
             <select
-              id="filter-system-action"
+              id="filter-action-select"
               value={selectedAction}
               onChange={(e) => { setSelectedAction(e.target.value); setPage(1); }}
               className="w-full text-sm bg-theme-surface dark:bg-slate-900 border border-default rounded-lg px-3 py-2 text-main dark:text-slate-100 focus:ring-2 focus:ring-primary-500 outline-none"
@@ -281,9 +318,9 @@ export function SystemAuditLogTab({ galponId }: SystemAuditLogTabProps) {
 
           {/* Fecha Desde */}
           <div>
-            <label htmlFor="filter-system-start-date" className="block text-xs font-medium text-muted mb-1">Desde</label>
+            <label htmlFor="filter-start-date" className="block text-xs font-medium text-muted mb-1">Desde</label>
             <input
-              id="filter-system-start-date"
+              id="filter-start-date"
               type="date"
               value={startDate}
               onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
@@ -293,9 +330,9 @@ export function SystemAuditLogTab({ galponId }: SystemAuditLogTabProps) {
 
           {/* Fecha Hasta */}
           <div>
-            <label htmlFor="filter-system-end-date" className="block text-xs font-medium text-muted mb-1">Hasta</label>
+            <label htmlFor="filter-end-date" className="block text-xs font-medium text-muted mb-1">Hasta</label>
             <input
-              id="filter-system-end-date"
+              id="filter-end-date"
               type="date"
               value={endDate}
               onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
@@ -350,121 +387,141 @@ export function SystemAuditLogTab({ galponId }: SystemAuditLogTabProps) {
 
           return (
             <div className="divide-y divide-default">
-              {logs.map((log) => {
+              {logs.map((log: AuditLogItem) => {
                 const actionConf = ACTION_CONFIG[log.action] || {
                   label: log.action,
                   className: 'bg-gray-100 text-gray-800 dark:bg-slate-800 dark:text-slate-200 border-gray-200 dark:border-slate-700'
                 };
                 const entityLabel = ENTITY_LABELS[log.entity] || log.entity;
-                const isExpanded = expandedLogId === log.id;
                 const hasDetailedDiff = Boolean(log.details?.before || log.details?.after || log.details?.unfedCount);
 
                 return (
                   <div
                     key={log.id}
-                    className="p-4 hover:bg-theme-surface/50 transition-colors"
+                    className="p-3.5 sm:p-4 hover:bg-theme-surface/50 transition-colors flex flex-col gap-2.5 sm:gap-3"
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      {/* Avatar y Usuario */}
-                      <div className="flex items-start gap-3 min-w-0">
-                        <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-950/50 text-primary-700 dark:text-primary-300 flex items-center justify-center font-bold text-sm shrink-0 border border-primary-200 dark:border-primary-800/40">
-                          <Sparkles size={18} />
+                    {/* Fila Superior: Actor del Sistema y Fecha */}
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-primary-100 dark:bg-primary-950/50 text-primary-700 dark:text-primary-300 flex items-center justify-center font-bold text-xs sm:text-sm shrink-0 border border-primary-200 dark:border-primary-800/40">
+                          <Sparkles size={16} />
                         </div>
-
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-semibold text-main text-sm">
-                              HopTolt
-                            </span>
-                            <span className="text-xs text-muted">
-                              @hoptolt
-                            </span>
-
-                            {/* Badge Proceso */}
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-theme-surface border border-default text-main">
-                              {entityLabel}
-                            </span>
-
-                            {/* Badge Acción */}
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${actionConf.className}`}>
-                              {actionConf.label}
-                            </span>
-                          </div>
-
-                          {/* Resumen del cambio */}
-                          <p className="text-sm text-main mt-1.5 leading-relaxed">
-                            {log.details?.summary || `Realizó una acción automática en ${entityLabel}`}
-                          </p>
+                        <div className="min-w-0 truncate">
+                          <span className="font-semibold text-main text-xs sm:text-sm block truncate">
+                            HopTolt
+                          </span>
+                          <span className="text-[11px] sm:text-xs text-muted block truncate">
+                            @hoptolt
+                          </span>
                         </div>
                       </div>
 
-                      {/* Fecha y botón de detalles */}
-                      <div className="flex flex-col items-end gap-1 shrink-0">
-                        <span className="text-xs text-theme-faint" title={formatDateTime(log.createdAt)}>
-                          {formatFriendlyDate(log.createdAt)}
-                        </span>
-
-                        {hasDetailedDiff && (
-                          <button
-                            type="button"
-                            onClick={() => setExpandedLogId(isExpanded ? null : log.id)}
-                            className="inline-flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 font-medium cursor-pointer mt-1"
-                          >
-                            <span>{isExpanded ? 'Ocultar detalle' : 'Ver detalle'}</span>
-                            {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                          </button>
-                        )}
-                      </div>
+                      <span className="text-xs text-theme-faint shrink-0 whitespace-nowrap" title={formatDateTime(log.createdAt)}>
+                        {formatFriendlyDate(log.createdAt)}
+                      </span>
                     </div>
 
-                    {/* Panel desplegable con comparativa visual */}
-                    {isExpanded && (
-                      <div className="mt-4 pt-4 border-t border-default pl-0 sm:pl-13">
-                        {renderDetailsView(log)}
+                    {/* Resumen del cambio a ancho completo */}
+                    <p className="text-xs sm:text-sm text-main leading-relaxed break-words">
+                      {log.details?.summary || `Realizó una acción automática en ${entityLabel}`}
+                    </p>
+
+                    {/* Fila Inferior: Badges y Botón de Detalles */}
+                    <div className="flex items-center justify-between gap-2 pt-1 border-t border-default/50">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-theme-surface border border-default text-main">
+                          {entityLabel}
+                        </span>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${actionConf.className}`}>
+                          {actionConf.label}
+                        </span>
                       </div>
-                    )}
+
+                      {hasDetailedDiff && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedLogForDetails(log)}
+                          className="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium cursor-pointer shrink-0 py-1 px-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-950/30 transition-colors"
+                        >
+                          Ver detalle →
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}
             </div>
           );
         })()}
+      </div>
 
-        {/* Paginación */}
-        {totalPages > 1 && (
-          <div className="p-4 border-t border-default flex items-center justify-between bg-card text-xs">
-            <span className="text-muted">
-              Total {total} registros
-            </span>
+      {/* Paginación */}
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
+      )}
 
-            <div className="flex items-center gap-2">
+      {/* Modal de Detalle */}
+      <Dialog
+        open={Boolean(selectedLogForDetails)}
+        onClose={() => setSelectedLogForDetails(null)}
+        title="Detalle del movimiento de HopTolt"
+        size="2xl"
+      >
+        {selectedLogForDetails && (
+          <div className="space-y-3 pt-1">
+            <div className="bg-theme-surface border border-default rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-full bg-primary-100 dark:bg-primary-950/50 text-primary-700 dark:text-primary-300 flex items-center justify-center font-bold text-sm shrink-0 border border-primary-200 dark:border-primary-800/40">
+                  <Sparkles size={18} />
+                </div>
+                <div>
+                  <div className="font-semibold text-main text-sm">
+                    HopTolt
+                  </div>
+                  <div className="text-xs text-muted">
+                    @hoptolt
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-theme-surface border border-default text-main">
+                  {ENTITY_LABELS[selectedLogForDetails.entity] || selectedLogForDetails.entity}
+                </span>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${(ACTION_CONFIG[selectedLogForDetails.action] || { className: 'bg-gray-100 text-gray-800 dark:bg-slate-800 dark:text-slate-200 border-gray-200 dark:border-slate-700' }).className}`}>
+                  {(ACTION_CONFIG[selectedLogForDetails.action] || { label: selectedLogForDetails.action }).label}
+                </span>
+              </div>
+            </div>
+
+            <div className="text-xs sm:text-sm text-main font-medium leading-relaxed bg-primary-50/50 dark:bg-primary-950/20 border border-primary-100 dark:border-primary-900/30 rounded-xl p-2.5 sm:p-3">
+              {selectedLogForDetails.details?.summary || `Movimiento registrado en ${ENTITY_LABELS[selectedLogForDetails.entity] || selectedLogForDetails.entity}`}
+            </div>
+
+            <div className="text-xs text-muted flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 px-1">
+              <span className="shrink-0">Fecha y hora del registro:</span>
+              <span className="font-medium text-main">{formatDateTime(selectedLogForDetails.createdAt)}</span>
+            </div>
+
+            <div className="pt-2 border-t border-default">
+              {renderDetailsView(selectedLogForDetails)}
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-default">
               <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
+                variant="outline"
+                onClick={() => setSelectedLogForDetails(null)}
               >
-                <ChevronLeft size={14} />
-                <span>Anterior</span>
-              </Button>
-
-              <span className="text-muted font-medium px-2">
-                Página {page} de {totalPages}
-              </span>
-
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
-              >
-                <span>Siguiente</span>
-                <ChevronRight size={14} />
+                Cerrar
               </Button>
             </div>
           </div>
         )}
-      </div>
+      </Dialog>
     </div>
   );
 }

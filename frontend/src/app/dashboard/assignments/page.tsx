@@ -37,9 +37,9 @@ export default function AssignmentsPage() {
             }
           />
           
-          <div className="p-6">
-            <AssignmentTable key={refreshKey} />
-          </div>
+
+          <AssignmentTable key={refreshKey} />
+
 
           <Dialog
             open={modal}

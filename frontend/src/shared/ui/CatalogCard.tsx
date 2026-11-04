@@ -89,7 +89,7 @@ export function CatalogCard({
         )}
 
         {details && (
-          <div className="flex gap-4 text-xs text-muted mt-auto bg-theme-surface border border-default/70 p-2 rounded-md w-full justify-center shadow-inner mb-2 pointer-events-none">
+          <div className="w-full mt-auto mb-2 pointer-events-none">
             {details}
           </div>
         )}

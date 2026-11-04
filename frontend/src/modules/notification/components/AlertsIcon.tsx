@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { AlertTriangle, X, CheckCheck } from 'lucide-react';
+import { AlertTriangle, X } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotification';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { Button } from '@/shared/ui';
@@ -464,27 +464,12 @@ export function AlertsIcon() {
             onClick={() => setIsOpen(false)}
             aria-label="Cerrar alertas"
           />
-          <div className="fixed sm:absolute top-16 sm:top-full right-3 sm:right-0 left-3 sm:left-auto mt-2 w-auto sm:w-96 max-w-[calc(100vw-1.5rem)] bg-card rounded-xl shadow-2xl border border-strong overflow-hidden z-[60]">
-            <div className="p-3.5 border-b border-default flex flex-col gap-2.5 bg-theme-surface">
+          <div className="fixed sm:absolute top-16 sm:top-full right-3 sm:right-0 left-3 sm:left-auto mt-2 w-auto sm:w-96 max-w-[calc(100vw-1.5rem)] bg-card rounded-xl shadow-2xl border border-strong overflow-hidden z-[60] flex flex-col max-h-[calc(100dvh-5rem)] sm:max-h-[520px]">
+            <div className="p-3.5 border-b border-default flex flex-col gap-2.5 bg-theme-surface shrink-0">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 text-amber-500" />
                   <h3 className="font-semibold text-main text-sm m-0">Alertas del Galpón</h3>
-                </div>
-                <div className="flex items-center gap-2">
-                  {unreadAlertsCount > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => markAllAsRead()}
-                      className="text-xs text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 flex items-center gap-1 font-medium bg-transparent border-none p-0 cursor-pointer"
-                    >
-                      <CheckCheck size={14} />
-                      Marcar leídas
-                    </button>
-                  )}
-                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-theme-surface border border-default text-main">
-                    {unreadAlertsCount} {unreadAlertsCount === 1 ? 'pendiente' : 'pendientes'}
-                  </span>
                 </div>
               </div>
               <Link
@@ -496,7 +481,7 @@ export function AlertsIcon() {
               </Link>
             </div>
 
-            <div className="max-h-96 overflow-y-auto divide-y divide-default/60">
+            <div className="flex-1 overflow-y-auto divide-y divide-default/60 overscroll-contain">
               {displayedAlerts.length === 0 ? (
                 <div className="p-8 text-center text-muted">
                   <AlertTriangle className="w-10 h-10 mx-auto mb-2 text-slate-300 dark:text-slate-600" />
@@ -559,7 +544,7 @@ export function AlertsIcon() {
                             return part;
                           })}
                         </p>
-                        <p className="text-[10px] text-theme-faint mt-1.5">{formatTime(notification.createdAt)}</p>
+                        <p className="text-xs text-theme-faint mt-2 font-medium">{formatTime(notification.createdAt)}</p>
                       </div>
                     </div>
                   </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Dialog, LoadingMessage, CageGroupCard, RabbitSelectableCard } from '@/shared/ui';
+import { Button, Dialog, LoadingMessage, CageGroupCard, RabbitSelectableCard, SelectionActionBar } from '@/shared/ui';
 import { Pagination } from '@/shared/ui/Pagination';
 import { useCageSelection } from '@/shared/hooks/useCageSelection';
 import { useMortality } from '../hooks/useMortality';
@@ -65,28 +65,28 @@ export function MortalityCatalog({ onSuccess }: Readonly<MortalityCatalogProps>)
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start">
             {paginatedGroups.map((group) => {
               const hasLactatingRabbit = group.rabbits.some(r => (r as any).isLactating);
-            return (
-            <CageGroupCard
-              key={group.cageNumber}
-              cageNumber={group.cageNumber}
-              cageType={group.cageType}
-              headerBadge={hasLactatingRabbit ? (
-                <span className="px-2 py-1 bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 text-[10px] font-medium rounded-full">
-                  Lactancia
-                </span>
-              ) : undefined}
-            >
-              {group.rabbits.map((rabbit) => (
-                <RabbitSelectableCard
-                  key={rabbit.id}
-                  rabbit={rabbit}
-                  isSelected={selectedRabbitIds.includes(rabbit.id)}
-                  onClick={() => toggleRabbit(rabbit.id)}
-                />
-              ))}
-            </CageGroupCard>
-            );
-          })}
+              return (
+                <CageGroupCard
+                  key={group.cageNumber}
+                  cageNumber={group.cageNumber}
+                  cageType={group.cageType}
+                  headerBadge={hasLactatingRabbit ? (
+                    <span className="px-2.5 py-0.5 bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 text-xs font-medium rounded-full whitespace-nowrap">
+                      Lactancia
+                    </span>
+                  ) : undefined}
+                >
+                  {group.rabbits.map((rabbit) => (
+                    <RabbitSelectableCard
+                      key={rabbit.id}
+                      rabbit={rabbit}
+                      isSelected={selectedRabbitIds.includes(rabbit.id)}
+                      onClick={() => toggleRabbit(rabbit.id)}
+                    />
+                  ))}
+                </CageGroupCard>
+              );
+            })}
           </div>
           {totalPages > 1 && (
             <div className="mt-6 flex justify-center">
@@ -101,21 +101,19 @@ export function MortalityCatalog({ onSuccess }: Readonly<MortalityCatalogProps>)
       )}
 
       {selectedRabbitIds.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 shadow-xl border-2 border-primary-500 bg-theme-surface p-3 rounded-2xl flex items-center justify-between gap-6 max-w-[90vw] min-w-[300px]">
-          <span className="text-main font-semibold px-2">{selectedRabbitIds.length} conejo{selectedRabbitIds.length !== 1 ? 's' : ''} seleccionado{selectedRabbitIds.length !== 1 ? 's' : ''}</span>
-          {canCreate ? (
-            <Button
-              onClick={() => setIsFormModalOpen(true)}
-              variant="primary"
-            >
-              Registrar Baja
-            </Button>
-          ) : (
-            <span className="text-xs text-muted font-medium px-2">
-              Solo consulta
-            </span>
-          )}
-        </div>
+        canCreate ? (
+          <SelectionActionBar
+            count={selectedRabbitIds.length}
+            itemName="conejo"
+            buttonText="Registrar Baja"
+            mobileButtonText="Baja"
+            onRegister={() => setIsFormModalOpen(true)}
+          />
+        ) : (
+          <div className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 bg-theme-surface border border-strong shadow-lg rounded-xl px-4 py-2 text-xs text-muted font-medium">
+            Solo consulta
+          </div>
+        )
       )}
 
       {/* Formulario Principal de Mortalidad en modal Dialog */}

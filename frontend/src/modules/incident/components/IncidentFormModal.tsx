@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { X, AlertTriangle, ShieldAlert, Info, ChevronDown, Check } from 'lucide-react';
-import { Button } from '@/shared/ui';
+import { Button, Dialog } from '@/shared/ui';
 import { cn } from '@/lib/utils';
 import { useIncidents } from '../hooks/useIncidents';
 import { cageService } from '@/modules/cages/services/cage.service';
@@ -237,30 +237,14 @@ export function IncidentFormModal({ isOpen, onClose, onSuccess }: Readonly<Incid
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-card border border-strong rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-default bg-theme-surface/50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary-500/10 text-primary-600 flex items-center justify-center border border-primary-500/20">
-              <ShieldAlert size={20} />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-main">Reportar Novedad del Galpón</h3>
-              <p className="text-xs text-muted">Informa sobre cualquier eventualidad o dificultad en las labores</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-muted hover:text-main p-1.5 rounded-lg hover:bg-theme-surface transition-colors"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
+    <Dialog
+      open={isOpen}
+      onClose={onClose}
+      title="Reportar Novedad del Galpón"
+      description="Informa sobre cualquier eventualidad o dificultad en las labores"
+      size="lg"
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
             <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
               <AlertTriangle size={16} className="shrink-0" />
@@ -314,7 +298,7 @@ export function IncidentFormModal({ isOpen, onClose, onSuccess }: Readonly<Incid
             </div>
 
             {showCategoryDropdown && (
-              <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-card border border-strong rounded-xl shadow-2xl max-h-52 overflow-y-auto py-1 animate-fadeIn divide-y divide-default">
+              <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-card border border-strong rounded-xl shadow-2xl max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto py-1 animate-fadeIn divide-y divide-default">
                 {filteredCategories.length === 0 ? (
                   <p className="px-3.5 py-2.5 text-xs text-muted">No se encontraron resultados</p>
                 ) : (
@@ -394,7 +378,7 @@ export function IncidentFormModal({ isOpen, onClose, onSuccess }: Readonly<Incid
               </div>
 
               {showModuleDropdown && (
-                <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-card border border-strong rounded-xl shadow-2xl max-h-52 overflow-y-auto py-1 animate-fadeIn divide-y divide-default">
+                <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-card border border-strong rounded-xl shadow-2xl max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto py-1 animate-fadeIn divide-y divide-default">
                   {filteredModules.length === 0 ? (
                     <p className="px-3.5 py-2.5 text-xs text-muted">No se encontraron resultados</p>
                   ) : (
@@ -498,7 +482,7 @@ export function IncidentFormModal({ isOpen, onClose, onSuccess }: Readonly<Incid
               </div>
 
               {showCageDropdown && (
-                <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-card border border-strong rounded-xl shadow-2xl max-h-52 overflow-y-auto py-1 animate-fadeIn divide-y divide-default">
+                <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-card border border-strong rounded-xl shadow-2xl max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto py-1 animate-fadeIn divide-y divide-default">
                   {loadingCages ? (
                     <p className="px-3.5 py-2.5 text-xs text-muted">
                       Cargando jaulas...
@@ -595,13 +579,14 @@ export function IncidentFormModal({ isOpen, onClose, onSuccess }: Readonly<Incid
             </span>
           </div>
 
-          {/* Botones de acción sin iconos como el resto de la aplicación */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-default">
+          {/* Botones de acción responsivos */}
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5 pt-3 border-t border-default">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
               disabled={isCreating}
+              className="w-full sm:w-auto"
             >
               Cancelar
             </Button>
@@ -609,12 +594,12 @@ export function IncidentFormModal({ isOpen, onClose, onSuccess }: Readonly<Incid
               type="submit"
               variant="primary"
               disabled={isCreating}
+              className="w-full sm:w-auto"
             >
               {isCreating ? 'Guardando...' : 'Registrar Novedad'}
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </Dialog>
   );
 }

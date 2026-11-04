@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Input, Select, Button } from '@/shared/ui';
-import { Dices, X } from 'lucide-react';
+import { Dices, X, Upload } from 'lucide-react';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { rabbitService } from '../services/rabbit.service';
 import { raceService } from '@/modules/races/services/race.service';
@@ -211,7 +211,7 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
       {mode === 'edit' ? (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <span className="block text-sm font-medium text-muted mb-1">Código</span>
             <div className="px-3 py-2.5 bg-theme-surface border border-strong rounded-lg text-main font-semibold">
@@ -272,7 +272,7 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input
           label="Fecha de nacimiento"
           type="date"
@@ -335,16 +335,36 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
           accept="image/*"
           onChange={handleImageUpload}
           disabled={uploading}
-          className="block w-full text-sm text-muted dark:text-slate-200
-            file:mr-4 file:py-2 file:px-4
-            file:rounded-lg file:border-0
-            file:text-sm file:font-semibold
-            file:bg-blue-50 file:text-blue-700
-            dark:file:bg-blue-900/50 dark:file:text-white
-            hover:file:bg-blue-100 dark:hover:file:bg-blue-800/60
-            disabled:opacity-50 transition-colors"
+          className="hidden"
+
+
+
+
+
+
+
         />
-        {uploading && <p className="text-sm text-muted mt-2">Subiendo imagen...</p>}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-default bg-theme-surface hover:bg-slate-100 dark:hover:bg-slate-800 text-main text-sm font-semibold shadow-sm transition-all cursor-pointer disabled:opacity-50"
+          >
+            <Upload size={16} className="text-primary-500 shrink-0" />
+            <span>{imageUrl ? 'Cambiar fotografía' : 'Seleccionar fotografía'}</span>
+          </button>
+          {uploading ? (
+            <span className="text-xs text-primary-500 font-medium flex items-center gap-1.5">
+              <div className="w-3.5 h-3.5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+              Subiendo fotografía...
+            </span>
+          ) : (
+            <span className="text-xs text-muted truncate max-w-full">
+              {imageUrl ? 'Fotografía lista' : 'Formatos JPG, PNG o WebP'}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="flex gap-3 justify-end pt-4 border-t border-default">

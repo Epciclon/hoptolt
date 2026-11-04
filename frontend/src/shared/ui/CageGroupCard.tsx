@@ -52,20 +52,18 @@ export function CageGroupCard({
       )}
 
       <div className="relative flex flex-col items-center justify-center mb-3 border-b border-strong pb-3 pointer-events-none w-full min-w-0">
-        {headerBadge && (
-          <div className="absolute right-0 top-0.5 shrink-0 pointer-events-none">
-            {headerBadge}
-          </div>
-        )}
         <h3 className="text-base sm:text-lg font-bold text-main text-center leading-snug">
           Jaula {cageNumber}
         </h3>
-        <span className="mt-1 px-2.5 py-0.5 bg-theme-surface border border-default text-main rounded-full text-[11px] font-medium capitalize max-w-[140px] truncate">
-          {cageType}
-        </span>
+        <div className="flex flex-wrap items-center justify-center gap-1.5 mt-1.5">
+          <span className="px-2.5 py-0.5 bg-theme-surface border border-default text-main rounded-full text-xs font-medium capitalize whitespace-nowrap">
+            {cageType}
+          </span>
+          {headerBadge}
+        </div>
       </div>
 
-      <div className={cn("flex-1 space-y-3 relative z-10", isSelectable ? "pointer-events-none" : "pointer-events-auto")}>
+      <div className={cn("flex-1 space-y-3 relative z-10 w-full min-w-0", isSelectable ? "pointer-events-none" : "pointer-events-auto")}>
         {visibleChildren}
       </div>
 

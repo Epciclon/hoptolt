@@ -27,8 +27,6 @@ export function GenealogyTreeModal({ rabbit, onClose }: Readonly<GenealogyTreeMo
     errorMessage = error;
   }
 
-
-
   interface GenSlot {
     node: GenealogyTree | null;
     uid: string;
@@ -69,18 +67,17 @@ export function GenealogyTreeModal({ rabbit, onClose }: Readonly<GenealogyTreeMo
     if (level === 0) bgColor = 'bg-blue-100 dark:bg-blue-900/40 border-blue-300 dark:border-blue-700/50';
     else if (level === 1) bgColor = 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700/50';
 
-    const padding = 'p-2';
-    const fontSize = 'text-xs';
-    const minW = 'min-w-[140px]';
-
     return (
       <div className="flex flex-col items-center w-full">
-        <div className="grid w-full gap-x-2" style={{ gridTemplateColumns: `repeat(${generation.length}, minmax(0, 1fr))` }}>
+        <div 
+          className="grid gap-x-4 w-full justify-items-center"
+          style={{ gridTemplateColumns: `repeat(${generation.length}, minmax(0, 1fr))` }}
+        >
           {generation.map((slot) => {
             const { node, uid } = slot;
             
             if (!node) {
-              return <div key={uid} className={`${minW}`}></div>;
+              return <div key={uid} className="w-[170px] shrink-0" />;
             }
 
             const isFather = uid.endsWith('-F');
@@ -90,35 +87,35 @@ export function GenealogyTreeModal({ rabbit, onClose }: Readonly<GenealogyTreeMo
             }
 
             return (
-              <div key={uid} className="flex flex-col items-center">
-                <div className={`${padding} border-2 rounded-lg ${fontSize} ${bgColor} ${minW} text-center shadow-sm`}>
-                  <div className="flex justify-center mb-2">
+              <div key={uid} className="flex flex-col items-center w-[170px] shrink-0">
+                <div className={`p-2.5 border-2 rounded-xl text-xs ${bgColor} w-full text-center shadow-sm transition-all`}>
+                  <div className="flex justify-center mb-1.5">
                     <RabbitAvatar imageUrl={node.imageUrl} alt={node.name || node.code} size="md" />
                   </div>
                   {node.name ? (
                     <>
-                      <div className="font-semibold text-main truncate">{node.name}</div>
-                      <div className="text-xs text-muted">{node.code}</div>
+                      <div className="font-semibold text-main truncate text-xs sm:text-sm">{node.name}</div>
+                      <div className="text-[11px] text-muted">{node.code}</div>
                     </>
                   ) : (
-                    <div className="font-semibold text-main">{node.code}</div>
+                    <div className="font-semibold text-main text-xs sm:text-sm">{node.code}</div>
                   )}
                   {(node.age !== undefined || (node as any).weight !== undefined) && (
-                    <div className="flex justify-center gap-2 mt-1 text-[9px] text-muted">
-                      {node.age !== undefined && <span>Edad: {node.age} {node.age === 1 ? 'mes' : 'meses'}</span>}
-                      {(node as any).weight !== undefined && <span>Peso: {(node as any).weight} kg</span>}
+                    <div className="flex justify-center gap-2 mt-1 text-[10px] text-muted">
+                      {node.age !== undefined && <span>{node.age} {node.age === 1 ? 'mes' : 'meses'}</span>}
+                      {(node as any).weight !== undefined && <span>{(node as any).weight} kg</span>}
                     </div>
                   )}
-                  {level === 0 && <div className="text-[10px] font-medium text-muted mt-1">Conejo seleccionado</div>}
+                  {level === 0 && <div className="text-[10px] font-medium text-primary-600 dark:text-primary-400 mt-1">Conejo seleccionado</div>}
                 </div>
-                {label && <div className="text-xs text-muted font-medium mt-1">{label}</div>}
+                {label && <div className="text-xs text-muted font-semibold mt-1">{label}</div>}
               </div>
             );
           })}
         </div>
 
         {nextGeneration && nextGeneration.some(slot => slot.node !== null) && (
-          <svg className="w-full h-16" style={{ minHeight: '64px' }}>
+          <svg className="w-full h-14" style={{ minHeight: '56px' }}>
             {generation.map((slot, index) => {
               const { node, uid } = slot;
               if (!node) return null;
@@ -179,9 +176,8 @@ export function GenealogyTreeModal({ rabbit, onClose }: Readonly<GenealogyTreeMo
 
   const actualLevels = tree ? getMaxDepth(tree) : 0;
   const treeGenerations = tree ? buildGenerations(tree, actualLevels) : [];
-  // Calculamos el ancho mínimo basándonos en la generación más ancha (nivel máximo)
-  // Cada nodo necesita unos 160px de espacio para que no haya colisiones.
-  const minTreeWidth = actualLevels > 0 ? Math.pow(2, actualLevels - 1) * 160 : '100%';
+  const maxSlots = Math.pow(2, Math.max(0, actualLevels - 1));
+  const minTreeWidth = Math.max(320, maxSlots * 170 + (maxSlots - 1) * 16);
 
   const modalTitle = rabbit.name ? `Árbol Genealógico de ${rabbit.name} - ${rabbit.code}` : `Árbol Genealógico de ${rabbit.code}`;
 
@@ -201,7 +197,10 @@ export function GenealogyTreeModal({ rabbit, onClose }: Readonly<GenealogyTreeMo
         )}
         {!loading && treeGenerations.length > 0 && (
           <ZoomableViewer>
-            <div className="flex flex-col gap-0 p-8 pb-32 mx-auto" style={{ minWidth: typeof minTreeWidth === 'number' ? `${minTreeWidth}px` : minTreeWidth }}>
+            <div 
+              className="flex flex-col gap-0 px-4 pt-12 sm:pt-16 pb-24 mx-auto"
+              style={{ width: `${minTreeWidth}px`, minWidth: `${minTreeWidth}px` }}
+            >
               {treeGenerations.map((generation, level) => (
                 <div key={generation.map(s => s.uid).join('-')} className="w-full">
                   {renderGeneration(generation, level, treeGenerations[level + 1])}

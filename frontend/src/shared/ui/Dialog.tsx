@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { ReactNode, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -16,6 +16,7 @@ interface DialogProps {
   children?: ReactNode;
   size?: DialogSize;
   hideClose?: boolean;
+  centerHeader?: boolean;
 }
 
 const sizeMap: Record<DialogSize, string> = {
@@ -27,7 +28,7 @@ const sizeMap: Record<DialogSize, string> = {
   '3xl': 'max-w-3xl',
 };
 
-export function Dialog({ open, onClose, title, description, children, size = 'md', hideClose = false }: Readonly<DialogProps>) {
+export function Dialog({ open, onClose, title, description, children, size = 'md', hideClose = false, centerHeader = false }: Readonly<DialogProps>) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -47,7 +48,7 @@ export function Dialog({ open, onClose, title, description, children, size = 'md
   return createPortal(
     <dialog
       open
-      className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-transparent border-none m-0 w-full h-full max-w-none max-h-none"
+      className="fixed inset-0 z-[999] flex items-center justify-center p-2.5 sm:p-4 bg-transparent border-none m-0 w-full h-full max-w-none max-h-none"
       aria-modal="true"
     >
       <button
@@ -58,27 +59,27 @@ export function Dialog({ open, onClose, title, description, children, size = 'md
       />
       <div
         className={cn(
-          'relative w-full bg-card rounded-2xl shadow-2xl flex flex-col',
+          'relative w-full mx-auto bg-card rounded-2xl shadow-2xl flex flex-col',
           'animate-in fade-in zoom-in-95 duration-200',
           'max-h-[92vh]',
           sizeMap[size],
         )}
       >
-        <div className="flex items-start justify-between px-6 pt-5 pb-4 border-b border-default shrink-0">
-          <div>
-            <h2 className="text-lg font-semibold text-main">{title}</h2>
-            {description && <p className="mt-0.5 text-sm text-muted">{description}</p>}
+        <div className={cn("flex items-start justify-between px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-default shrink-0", centerHeader && "text-center")}>
+          <div className={cn("min-w-0 flex-1", centerHeader && "text-center")}>
+            <h2 className="text-base sm:text-lg font-semibold text-main leading-snug">{title}</h2>
+            {description && <p className="mt-1 text-xs sm:text-sm text-muted leading-relaxed">{description}</p>}
           </div>
           {!hideClose && (
             <button type="button"
               onClick={onClose}
-              className="ml-4 mt-0.5 text-theme-faint hover:text-muted transition-colors"
+              className="ml-4 mt-0.5 text-theme-faint hover:text-muted transition-colors cursor-pointer shrink-0"
             >
               <X size={20} />
             </button>
           )}
         </div>
-        <div className="px-6 py-5 overflow-y-auto">{children}</div>
+        <div className="px-4 sm:px-6 py-4 sm:py-5 overflow-y-auto">{children}</div>
       </div>
     </dialog>,
     document.body
@@ -95,6 +96,7 @@ interface ConfirmDialogProps {
   cancelLabel?: string;
   loading?: boolean;
   variant?: 'danger' | 'warning' | 'primary';
+  centerHeader?: boolean;
 }
 
 const variantStyles = {
@@ -113,9 +115,10 @@ export function ConfirmDialog({
   cancelLabel = 'Cancelar',
   loading = false,
   variant = 'danger',
+  centerHeader = true,
 }: Readonly<ConfirmDialogProps>) {
   return (
-    <Dialog open={open} onClose={onClose} title={title} description={description} size="sm" hideClose>
+    <Dialog open={open} onClose={onClose} title={title} description={description} size="sm" hideClose centerHeader={centerHeader}>
       <div className="flex gap-3 pt-2">
         <Button
           variant="outline"

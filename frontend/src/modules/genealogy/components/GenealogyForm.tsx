@@ -322,7 +322,9 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
         </p>
 
         <div>
-          <span className="block text-sm font-medium text-muted mb-2">Conejo *</span>
+          <label className="block text-sm font-medium text-main mb-1.5">
+            Conejo <span className="text-muted ml-0.5">*</span>
+          </label>
           {selectedRabbit ? (
             <RabbitSelectableCard 
               rabbit={selectedRabbit} 
@@ -338,7 +340,7 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
                 disabled={!!rabbitId || !!editData}
               />
               {showRabbitDropdown && filteredRabbits.length > 0 && !rabbitId && !editData && (
-                <div className="absolute top-full left-0 right-0 bg-card border border-strong rounded-md mt-1 max-h-64 overflow-y-auto z-50 shadow-lg p-2 flex flex-col gap-2">
+                <div className="absolute top-full left-0 right-0 bg-card border border-strong rounded-md mt-1 max-h-48 sm:max-h-60 xl:max-h-80 overflow-y-auto z-50 shadow-lg p-2 flex flex-col gap-2">
                   {filteredRabbits.map(r => (
                     <RabbitSelectableCard
                       key={r.id}
@@ -369,7 +371,7 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
                 onFocus={() => setShowFatherDropdown(true)}
               />
               {showFatherDropdown && filteredFathers.length > 0 && (
-                <div className="absolute top-full left-0 right-0 bg-card border border-strong rounded-md mt-1 max-h-64 overflow-y-auto z-50 shadow-lg p-2 flex flex-col gap-2">
+                <div className="absolute top-full left-0 right-0 bg-card border border-strong rounded-md mt-1 max-h-48 sm:max-h-60 xl:max-h-80 overflow-y-auto z-50 shadow-lg p-2 flex flex-col gap-2">
                   {filteredFathers.map(r => (
                     <RabbitSelectableCard
                       key={r.id}
@@ -400,7 +402,7 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
                 onFocus={() => setShowMotherDropdown(true)}
               />
               {showMotherDropdown && filteredMothers.length > 0 && (
-                <div className="absolute top-full left-0 right-0 bg-card border border-strong rounded-md mt-1 max-h-64 overflow-y-auto z-50 shadow-lg p-2 flex flex-col gap-2">
+                <div className="absolute top-full left-0 right-0 bg-card border border-strong rounded-md mt-1 max-h-48 sm:max-h-60 xl:max-h-80 overflow-y-auto z-50 shadow-lg p-2 flex flex-col gap-2">
                   {filteredMothers.map(r => (
                     <RabbitSelectableCard
                       key={r.id}

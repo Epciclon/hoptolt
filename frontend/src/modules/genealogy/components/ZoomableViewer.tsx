@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState, MouseEvent as ReactMouseEvent } from 'react';
+import React, { useRef, useState } from 'react';
 import { ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 import { Button } from '@/shared/ui';
 
@@ -16,11 +16,11 @@ export function ZoomableViewer({ children }: Readonly<ZoomableViewerProps>) {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
   const handleZoomIn = () => {
-    setScale(prev => Math.min(prev + 0.2, 3));
+    setScale(prev => Math.min(Number((prev + 0.15).toFixed(2)), 2.5));
   };
 
   const handleZoomOut = () => {
-    setScale(prev => Math.max(prev - 0.2, 0.2));
+    setScale(prev => Math.max(Number((prev - 0.15).toFixed(2)), 0.3));
   };
 
   const handleReset = () => {
@@ -28,12 +28,16 @@ export function ZoomableViewer({ children }: Readonly<ZoomableViewerProps>) {
     setPosition({ x: 0, y: 0 });
   };
 
-  const handleMouseDown = (e: ReactMouseEvent) => {
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
     setIsDragging(true);
     setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
   };
 
-  const handleMouseMove = (e: ReactMouseEvent) => {
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDragging) return;
     setPosition({
       x: e.clientX - dragStart.x,
@@ -41,38 +45,70 @@ export function ZoomableViewer({ children }: Readonly<ZoomableViewerProps>) {
     });
   };
 
-  const handleMouseUp = () => {
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     setIsDragging(false);
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
   };
 
-  const handleMouseLeave = () => {
+  const handlePointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
     setIsDragging(false);
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
+  };
+
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    const factor = e.deltaY < 0 ? 0.1 : -0.1;
+    setScale(prev => Math.min(Math.max(Number((prev + factor).toFixed(2)), 0.3), 2.5));
   };
 
   return (
-    <div className="relative w-full h-[500px] border border-strong rounded-lg bg-theme-surface border border-default overflow-hidden flex flex-col">
-      {/* Barra de herramientas */}
-      <div className="absolute top-4 right-4 z-10 flex gap-2 bg-card p-2 rounded-lg shadow-lg border border-strong">
-        <Button variant="outline" size="sm" icon={<ZoomOut size={16} />} onClick={handleZoomOut} title="Alejar" />
-        <div className="flex items-center justify-center w-12 text-sm font-semibold text-muted">
+    <div className="relative w-full h-[520px] sm:h-[580px] border border-strong rounded-xl bg-theme-surface overflow-hidden flex flex-col select-none">
+      {/* Barra de herramientas compacta y responsiva */}
+      <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-20 flex items-center gap-1 sm:gap-2 bg-card/95 backdrop-blur-sm p-1 sm:p-1.5 rounded-xl shadow-lg border border-strong">
+        <Button
+          variant="outline"
+          size="sm"
+          icon={<ZoomOut size={15} />}
+          onClick={handleZoomOut}
+          title="Alejar"
+          className="h-7 w-7 sm:h-8 sm:w-8 p-0 shrink-0"
+        />
+        <div className="flex items-center justify-center min-w-[36px] sm:w-12 text-xs sm:text-sm font-semibold text-main">
           {Math.round(scale * 100)}%
         </div>
-        <Button variant="outline" size="sm" icon={<ZoomIn size={16} />} onClick={handleZoomIn} title="Acercar" />
-        <div className="w-px h-6 bg-slate-300 mx-1"></div>
-        <Button variant="outline" size="sm" icon={<Maximize size={16} />} onClick={handleReset} title="Restablecer vista" />
+        <Button
+          variant="outline"
+          size="sm"
+          icon={<ZoomIn size={15} />}
+          onClick={handleZoomIn}
+          title="Acercar"
+          className="h-7 w-7 sm:h-8 sm:w-8 p-0 shrink-0"
+        />
+        <div className="w-px h-5 bg-default mx-0.5 sm:mx-1" />
+        <Button
+          variant="outline"
+          size="sm"
+          icon={<Maximize size={15} />}
+          onClick={handleReset}
+          title="Restablecer vista"
+          className="h-7 w-7 sm:h-8 sm:w-8 p-0 shrink-0"
+        />
       </div>
 
-      {/* Visor interactivo - role="application" is an interactive ARIA landmark (WAI-ARIA spec) */}
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-tabindex */}
+      {/* Visor interactivo con Pointer Events para mouse y táctil */}
       <div
         role="application"
-        aria-label="Visor arrastrable y ampliable"
-        className={`w-full h-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`}
+        aria-label="Visor interactivo arrastrable y ampliable"
+        className={`w-full h-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} focus:outline-none touch-none`}
         ref={containerRef}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseLeave}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+        onWheel={handleWheel}
         onKeyDown={(e) => {
           const step = 40;
           if (e.key === 'ArrowUp') { e.preventDefault(); setPosition(p => ({ ...p, y: p.y + step })); }
@@ -82,10 +118,10 @@ export function ZoomableViewer({ children }: Readonly<ZoomableViewerProps>) {
           if (e.key === '+') { e.preventDefault(); handleZoomIn(); }
           if (e.key === '-') { e.preventDefault(); handleZoomOut(); }
         }}
-        style={{ touchAction: 'none' }} // Prevenir scroll en móviles al arrastrar
+        tabIndex={0}
       >
         <div 
-          className="origin-top transition-transform duration-100 ease-out flex justify-center pt-8"
+          className="origin-top transition-transform duration-75 ease-out flex justify-center pt-14 sm:pt-16 pb-20"
           style={{ 
             transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
             width: '100%',

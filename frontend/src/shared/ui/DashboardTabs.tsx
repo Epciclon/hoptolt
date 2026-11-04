@@ -16,12 +16,12 @@ interface DashboardTabsProps {
 
 export function DashboardTabs({ tabs, activeTab, onTabChange }: Readonly<DashboardTabsProps>) {
   return (
-    <div className="flex border-b border-strong mb-6 px-6 overflow-x-auto hide-scrollbar">
+    <div className="flex border-b border-strong mb-4 sm:mb-6 px-1.5 sm:px-6 overflow-x-auto hide-scrollbar">
       {tabs.map((tab) => (
         <button type="button"
           key={tab.id}
           onClick={() => onTabChange(tab.id)}
-          className={`flex items-center gap-2 px-6 py-3 border-b-2 transition-colors whitespace-nowrap ${
+          className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 sm:py-3 border-b-2 text-xs sm:text-sm transition-colors whitespace-nowrap shrink-0 ${
             activeTab === tab.id
               ? 'border-primary-500 text-primary-700 dark:text-primary-400 bg-primary-50/50 dark:bg-primary-900/20 font-semibold'
               : 'border-transparent text-muted hover:text-main hover:border-slate-300 dark:hover:border-slate-600 hover:bg-theme-surface'

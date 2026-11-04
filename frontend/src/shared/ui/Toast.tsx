@@ -55,12 +55,12 @@ export function ToastItem({ toast, onClose }: Readonly<ToastProps>) {
   };
 
   return (
-    <div className={cn('flex items-center gap-3 p-4 rounded-lg border shadow-lg min-w-80 animate-in slide-in-from-right', getStyles())}>
+    <div className={cn('flex items-center gap-3 p-3.5 sm:p-4 rounded-xl border shadow-lg w-full sm:w-auto sm:min-w-80 max-w-full sm:max-w-md animate-in fade-in slide-in-from-top-2 sm:slide-in-from-right duration-200', getStyles())}>
       {getIcon()}
       <p className="flex-1 text-sm font-medium whitespace-pre-wrap">{toast.message}</p>
       <button type="button"
         onClick={() => onClose(toast.id)}
-        className="text-current opacity-60 hover:opacity-100 transition-opacity"
+        className="text-current opacity-60 hover:opacity-100 transition-opacity p-1 shrink-0"
       >
         <X size={16} />
       </button>

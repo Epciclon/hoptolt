@@ -1,4 +1,3 @@
-﻿
 export interface DateTimeBadgeProps {
   dateString: string | null | undefined;
 }
@@ -12,9 +11,9 @@ export function DateTimeBadge({ dateString }: Readonly<DateTimeBadgeProps>) {
   const formattedTime = ecuadorDate.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', hour12: true });
 
   return (
-    <div className="flex flex-col">
-      <span className="text-main">{formattedDate}</span>
-      <span className="text-[11px] text-muted">{formattedTime}</span>
+    <div className="flex flex-col whitespace-nowrap min-w-[85px]">
+      <span className="text-main font-medium">{formattedDate}</span>
+      <span className="text-xs text-muted">{formattedTime}</span>
     </div>
   );
 }

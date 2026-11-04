@@ -509,16 +509,16 @@ export function IncidentFloatingWidget() {
   return (
     <>
       {/* Floating Action Button y Previa Flotante */}
-      <div className="fixed bottom-6 right-6 z-40">
+      <div className="fixed bottom-4 right-3 sm:bottom-6 sm:right-6 z-30">
         {/* Previa Flotante de Novedad Operativa */}
         {activeIncidentPreview && !isOpen && (
-          <div className="absolute bottom-16 right-0 w-[92vw] sm:w-96 max-w-sm bg-card border border-teal-400 dark:border-teal-700/80 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-3 duration-300 z-50">
+          <div className="fixed bottom-20 sm:bottom-24 inset-x-3 sm:inset-x-auto sm:right-6 sm:w-96 sm:max-w-sm bg-card border border-teal-400 dark:border-teal-700/80 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-3 duration-300 z-50">
             {/* Header de la Previa */}
             <div className="px-3.5 py-2.5 bg-gradient-to-r from-teal-700 via-teal-600 to-primary-700 text-white flex items-center justify-between shadow-sm">
               <div className="flex items-center gap-2 min-w-0">
                 <span className="w-2 h-2 rounded-full bg-emerald-300 animate-ping shrink-0" />
                 <ShieldAlert size={16} className="text-emerald-200 shrink-0" />
-                <span className="font-bold text-xs uppercase tracking-wider truncate">
+                <span className="font-bold text-xs truncate">
                   {!isOwner && activeIncidentPreview.ownerResponse
                     ? 'Respuesta a tu Novedad'
                     : 'Novedad en el Galpón'}
@@ -559,34 +559,34 @@ export function IncidentFloatingWidget() {
               }}
               className="p-3.5 bg-teal-50/40 dark:bg-teal-950/20 hover:bg-theme-surface transition-colors cursor-pointer block text-left focus:outline-none focus:ring-2 focus:ring-teal-500"
             >
-              <div className="flex items-center justify-between gap-2 mb-1.5">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-100 dark:bg-teal-900/60 text-teal-800 dark:text-teal-300 uppercase tracking-wide shrink-0">
+              <div className="flex items-center justify-between gap-2.5 mb-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-teal-100 dark:bg-teal-900/60 text-teal-800 dark:text-teal-300 shrink-0">
                     {activeIncidentPreview.category}
                   </span>
-                  {getModuleLabel(activeIncidentPreview.module) && (
-                    <span className="text-[10px] text-teal-700 dark:text-teal-400 font-medium truncate">
+                  {getModuleLabel(activeIncidentPreview.module) && activeIncidentPreview.module !== 'general' && (
+                    <span className="text-xs text-teal-700 dark:text-teal-400 font-medium truncate">
                       {getModuleLabel(activeIncidentPreview.module)}
                     </span>
                   )}
                 </div>
-                <span className="text-[10px] text-muted shrink-0">
+                <span className="text-xs text-muted shrink-0 whitespace-nowrap">
                   {formatFriendlyDate(activeIncidentPreview.createdAt)}
                 </span>
               </div>
 
-              <h4 className="text-xs font-bold text-main line-clamp-1">
+              <h4 className="text-sm font-bold text-main line-clamp-1">
                 {activeIncidentPreview.title}
               </h4>
 
-              <p className="text-[11px] text-muted mt-1 line-clamp-2 leading-relaxed">
+              <p className="text-xs text-muted mt-1 line-clamp-2 leading-relaxed">
                 {activeIncidentPreview.description}
               </p>
 
               {!isOwner && activeIncidentPreview.ownerResponse && (
-                <div className="mt-2 p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-800 dark:text-emerald-300">
-                  <div className="flex items-center gap-1 font-semibold text-[10px] uppercase mb-0.5 text-emerald-700 dark:text-emerald-300">
-                    <CheckCircle2 size={12} />
+                <div className="mt-2 p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-800 dark:text-emerald-300">
+                  <div className="flex items-center gap-1 font-semibold text-xs mb-0.5 text-emerald-700 dark:text-emerald-300">
+                    <CheckCircle2 size={13} />
                     <span>Respuesta del Propietario:</span>
                   </div>
                   <p className="line-clamp-2 leading-relaxed font-medium">
@@ -596,7 +596,7 @@ export function IncidentFloatingWidget() {
               )}
 
               <div className="mt-3 pt-2.5 border-t border-default/60 flex items-center justify-between gap-2">
-                <span className="text-[11px] text-muted truncate">
+                <span className="text-xs text-muted truncate">
                   {isOwner
                     ? activeIncidentPreview.reporter?.fullName || activeIncidentPreview.reporter?.username
                       ? `Por ${activeIncidentPreview.reporter?.fullName || activeIncidentPreview.reporter?.username}`
@@ -632,7 +632,7 @@ export function IncidentFloatingWidget() {
           type="button"
           onClick={() => setIsOpen(!isOpen)}
           aria-label="Abrir panel de novedades"
-          className={`relative group w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 transform active:scale-95 ${
+          className={`relative group w-12 h-12 sm:w-14 sm:h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 transform active:scale-95 ${
             isOpen
               ? 'bg-slate-800 text-white rotate-90'
               : 'bg-gradient-to-tr from-primary-700 via-primary-600 to-teal-500 text-white hover:shadow-primary-500/30 hover:scale-105'
@@ -647,9 +647,9 @@ export function IncidentFloatingWidget() {
           )}
 
           {isOpen ? (
-            <X size={24} className="relative z-10 transition-transform" />
+            <X size={20} className="relative z-10 transition-transform sm:w-6 sm:h-6" />
           ) : (
-            <ShieldAlert size={24} className={`relative z-10 ${hasAlert ? 'animate-bounce' : ''}`} />
+            <ShieldAlert size={20} className={`relative z-10 sm:w-6 sm:h-6 ${hasAlert ? 'animate-bounce' : ''}`} />
           )}
 
           {/* Unread Counter Badge */}
@@ -660,11 +660,21 @@ export function IncidentFloatingWidget() {
           )}
         </button>
 
+        {/* Backdrop on mobile */}
+        {isOpen && (
+          <button
+            type="button"
+            className="fixed inset-0 z-40 bg-black/20 sm:bg-transparent border-none w-full h-full cursor-default"
+            onClick={() => setIsOpen(false)}
+            aria-label="Cerrar novedades"
+          />
+        )}
+
         {/* Floating Panel Popover */}
         {isOpen && (
-          <div className="absolute bottom-16 right-0 w-[92vw] sm:w-[420px] max-w-lg bg-card border border-strong rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-fadeIn z-50">
+          <div className="fixed bottom-20 sm:bottom-24 inset-x-3 sm:inset-x-auto sm:right-6 sm:w-[420px] sm:max-w-lg bg-card border border-strong rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[calc(100dvh-6.5rem)] sm:max-h-[80vh] animate-fadeIn z-50">
             {/* Header limpio y directo */}
-            <div className="p-3.5 border-b border-default bg-theme-surface/80 flex items-center justify-between">
+            <div className="p-3 sm:p-3.5 border-b border-default bg-theme-surface/80 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-primary-500/10 text-primary-600 flex items-center justify-center border border-primary-500/20">
                   <ShieldAlert size={18} />
@@ -694,21 +704,21 @@ export function IncidentFloatingWidget() {
             </div>
 
             {/* Navigation Tabs según el Rol */}
-            <div className="flex border-b border-default bg-card px-2 pt-1 text-xs font-semibold">
+            <div className="flex border-b border-default bg-card px-2 pt-1 text-xs font-semibold shrink-0">
               {isOwner ? (
                 <>
                   <button
                     type="button"
                     onClick={() => setActiveTab('pending')}
-                    className={`flex-1 py-2 text-center border-b-2 transition-colors ${
+                    className={`flex-1 py-2.5 inline-flex items-center justify-center gap-1.5 border-b-2 font-semibold text-xs transition-colors ${
                       activeTab === 'pending'
-                        ? 'border-primary-500 text-primary-600'
+                        ? 'border-primary-500 text-primary-600 dark:text-primary-400'
                         : 'border-transparent text-muted hover:text-main'
                     }`}
                   >
-                    Pendientes
+                    <span>Pendientes</span>
                     {pendingCount > 0 && (
-                      <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/40 text-amber-800 dark:text-white font-bold text-[10px]">
+                      <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary-500 text-white font-bold text-[10px] leading-none shadow-xs">
                         {pendingCount}
                       </span>
                     )}
@@ -717,13 +727,13 @@ export function IncidentFloatingWidget() {
                   <button
                     type="button"
                     onClick={() => setActiveTab('reviewed')}
-                    className={`flex-1 py-2 text-center border-b-2 transition-colors ${
+                    className={`flex-1 py-2.5 inline-flex items-center justify-center gap-1.5 border-b-2 font-semibold text-xs transition-colors ${
                       activeTab === 'reviewed'
-                        ? 'border-primary-500 text-primary-600'
+                        ? 'border-primary-500 text-primary-600 dark:text-primary-400'
                         : 'border-transparent text-muted hover:text-main'
                     }`}
                   >
-                    Atendidas
+                    <span>Atendidas</span>
                   </button>
                 </>
               ) : (
@@ -731,15 +741,15 @@ export function IncidentFloatingWidget() {
                   <button
                     type="button"
                     onClick={() => setActiveTab('my-reports')}
-                    className={`flex-1 py-2 text-center border-b-2 transition-colors ${
+                    className={`flex-1 py-2.5 inline-flex items-center justify-center gap-1.5 border-b-2 font-semibold text-xs transition-colors ${
                       activeTab === 'my-reports'
-                        ? 'border-primary-500 text-primary-600'
+                        ? 'border-primary-500 text-primary-600 dark:text-primary-400'
                         : 'border-transparent text-muted hover:text-main'
                     }`}
                   >
-                    Mis Novedades
+                    <span>Mis Novedades</span>
                     {counts.total > 0 && (
-                      <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-primary-100 dark:bg-primary-500/40 text-primary-800 dark:text-white font-bold text-[10px]">
+                      <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary-500 text-white font-bold text-[10px] leading-none shadow-xs">
                         {counts.total}
                       </span>
                     )}
@@ -748,20 +758,20 @@ export function IncidentFloatingWidget() {
                   <button
                     type="button"
                     onClick={() => setActiveTab('report')}
-                    className={`flex-1 py-2 text-center border-b-2 transition-colors ${
+                    className={`flex-1 py-2.5 inline-flex items-center justify-center gap-1.5 border-b-2 font-semibold text-xs transition-colors ${
                       activeTab === 'report'
-                        ? 'border-primary-500 text-primary-600'
+                        ? 'border-primary-500 text-primary-600 dark:text-primary-400'
                         : 'border-transparent text-muted hover:text-main'
                     }`}
                   >
-                    + Reportar Novedad
+                    <span>+ Reportar Novedad</span>
                   </button>
                 </>
               )}
             </div>
 
             {/* Content Area */}
-            <div className="p-3 overflow-y-auto flex-1 space-y-2.5 max-h-[380px]">
+            <div className="p-3 overflow-y-auto flex-1 min-h-0 space-y-2.5">
               {!isOwner && activeTab === 'report' ? (
                 /* Report Form para Trabajador */
                 <form onSubmit={handleQuickSubmit} className="space-y-3 p-1">
@@ -773,7 +783,7 @@ export function IncidentFloatingWidget() {
                   )}
 
                   <div>
-                    <label className="block text-[11px] font-semibold text-main mb-1">
+                    <label className="block text-xs font-semibold text-main mb-1">
                       Tipo de Novedad
                     </label>
                     <select
@@ -791,7 +801,7 @@ export function IncidentFloatingWidget() {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-semibold text-main mb-1">
+                    <label className="block text-xs font-semibold text-main mb-1">
                       Motivo de la Novedad
                     </label>
                     <input
@@ -804,7 +814,7 @@ export function IncidentFloatingWidget() {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-semibold text-main mb-1">
+                    <label className="block text-xs font-semibold text-main mb-1">
                       Explicación Detallada
                     </label>
                     <textarea
@@ -820,7 +830,7 @@ export function IncidentFloatingWidget() {
                     <button
                       type="button"
                       onClick={() => setFormModalOpen(true)}
-                      className="text-[11px] text-primary-600 hover:underline flex items-center gap-1 font-medium"
+                      className="text-xs text-primary-600 hover:underline flex items-center gap-1 font-medium"
                     >
                       Formulario avanzado con jaulas
                     </button>
@@ -851,7 +861,7 @@ export function IncidentFloatingWidget() {
                             : 'Sin novedades atendidas'
                           : 'Sin novedades registradas'}
                       </p>
-                      <p className="text-[11px] text-muted mt-1">
+                      <p className="text-xs text-muted mt-1">
                         {isOwner
                           ? activeTab === 'pending'
                             ? 'No hay incidencias reportadas por los trabajadores pendientes de atención.'
@@ -872,35 +882,37 @@ export function IncidentFloatingWidget() {
                               : 'bg-theme-surface/60 hover:bg-theme-surface border-default'
                           }`}
                         >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              {getStatusBadge(incident.status)}
-                              <span className="text-[10px] text-primary-600 uppercase font-semibold">
+                          {/* Encabezado: Categoría y labor a la izquierda, fecha a la derecha */}
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                              <span className="text-xs text-primary-600 dark:text-primary-400 font-semibold">
                                 {incident.category}
                               </span>
-                              {getModuleLabel(incident.module) && (
-                                <span className="text-[10px] text-muted">
-                                  {getModuleLabel(incident.module)}
-                                </span>
+                              {getModuleLabel(incident.module) && incident.module !== 'general' && (
+                                <>
+                                  <span className="text-muted text-xs">•</span>
+                                  <span className="text-xs text-muted">
+                                    {getModuleLabel(incident.module)}
+                                  </span>
+                                </>
                               )}
                             </div>
-
-                            <span className="text-[10px] text-muted shrink-0">
+                            <span className="text-xs text-theme-faint shrink-0 whitespace-nowrap font-medium">
                               {formatFriendlyDate(incident.createdAt)}
                             </span>
                           </div>
 
-                          <h4 className="text-xs font-bold text-main line-clamp-1">
+                          <h4 className="text-sm font-bold text-main line-clamp-1">
                             {incident.title}
                           </h4>
 
-                          <p className="text-[11px] text-muted line-clamp-2">
+                          <p className="text-xs text-muted line-clamp-2 leading-relaxed">
                             {incident.description}
                           </p>
 
                           {/* Owner response indicator */}
                           {incident.ownerResponse && (
-                            <div className="mt-1 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-800 dark:text-emerald-300 flex items-start gap-1.5">
+                            <div className="mt-1 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-800 dark:text-emerald-300 flex items-start gap-1.5">
                               <MessageSquare size={13} className="shrink-0 mt-0.5" />
                               <span className="line-clamp-1 font-medium">
                                 Propietario: {incident.ownerResponse}
@@ -908,7 +920,7 @@ export function IncidentFloatingWidget() {
                             </div>
                           )}
 
-                          <div className="flex items-center justify-between text-[10px] text-muted pt-1 border-t border-default/50">
+                          <div className="flex items-center justify-between text-xs text-muted pt-1.5 border-t border-default/50">
                             <span>
                               {isOwner
                                 ? `Por ${incident.reporter?.fullName || incident.reporter?.username || 'Trabajador'}`
@@ -943,7 +955,7 @@ export function IncidentFloatingWidget() {
             </div>
 
             {/* Footer limpio */}
-            <div className="p-3 border-t border-default bg-theme-surface/70 flex items-center justify-end text-xs">
+            <div className="p-2.5 sm:p-3 border-t border-default bg-theme-surface/70 flex items-center justify-end text-xs shrink-0">
               <Link
                 href="/dashboard/incidents"
                 onClick={() => setIsOpen(false)}

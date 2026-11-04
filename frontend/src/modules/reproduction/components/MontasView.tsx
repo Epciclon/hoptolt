@@ -7,7 +7,7 @@ import { reproductionService } from '../services/reproduction.service';
 import type { Reproduction, MatingRabbit } from '../types/reproduction.types';
 import { useReproduction } from '../hooks/useReproduction';
 import { Pagination } from '@/shared/ui/Pagination';
-import { Heart, Clock, Trash2 } from 'lucide-react';
+import { Heart, Clock, X } from 'lucide-react';
 import { MatingModal } from './MatingModal';
 import { matchesSmartSearch } from '@/shared/utils/rabbitUtils';
 import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
@@ -158,11 +158,11 @@ export function MontasView({ searchTerm, onSearchChange }: Readonly<MontasViewPr
             cageType={group.cageType}
             headerBadge={
               group.machos[0]?.isOccupied ? (
-                <span className="flex items-center gap-1 px-2 py-1 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 text-[10px] font-medium rounded-full animate-pulse">
-                  <Heart size={10} /> En Monta
+                <span className="flex items-center gap-1 px-2.5 py-0.5 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 text-xs font-medium rounded-full animate-pulse whitespace-nowrap">
+                  <Heart size={11} /> En Monta
                 </span>
               ) : (
-                <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-medium rounded-full">
+                <span className="px-2.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-medium rounded-full whitespace-nowrap">
                   Disponible
                 </span>
               )
@@ -189,25 +189,35 @@ export function MontasView({ searchTerm, onSearchChange }: Readonly<MontasViewPr
               <div className="mt-3 pt-3 border-t border-strong">
                 <p className="text-muted text-xs font-medium mb-2">Pareja actual</p>
                 
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex items-center gap-3">
+                <div className="flex flex-col items-center gap-2 mb-2 min-w-0">
+                  <div className="shrink-0 mb-1">
                     <RabbitAvatar imageUrl={macho.activeMonta.imageUrl} alt={macho.activeMonta.femaleCode} size="md" />
-                    <div>
-                      {macho.activeMonta.femaleName ? (
-                        <>
-                          <h4 className="font-bold text-sm text-main leading-tight">{macho.activeMonta.femaleName}</h4>
-                          <p className="text-xs text-muted">{macho.activeMonta.femaleCode}</p>
-                        </>
-                      ) : (
-                        <h4 className="font-bold text-sm text-main leading-tight">{macho.activeMonta.femaleCode}</h4>
+                  </div>
+                  <div className="min-w-0 flex-1 w-full">
+                    <div className="flex items-start justify-between gap-1">
+                      <div className="min-w-0 flex-1">
+                        {macho.activeMonta.femaleName ? (
+                          <>
+                            <h4 className="font-bold text-sm text-main leading-tight truncate" title={macho.activeMonta.femaleName}>
+                              {macho.activeMonta.femaleName}
+                            </h4>
+                            <p className="text-xs text-muted leading-tight mt-0.5 truncate font-medium">
+                              {macho.activeMonta.femaleCode}
+                            </p>
+                          </>
+                        ) : (
+                          <h4 className="font-bold text-sm text-main leading-tight truncate" title={macho.activeMonta.femaleCode}>
+                            {macho.activeMonta.femaleCode}
+                          </h4>
+                        )}
+                      </div>
+                      {macho.activeMonta.femaleRace && (
+                        <span className="px-2 py-0.5 bg-theme-surface text-muted text-xs font-medium rounded-full capitalize border border-strong shrink-0 whitespace-nowrap" title={macho.activeMonta.femaleRace}>
+                          {macho.activeMonta.femaleRace}
+                        </span>
                       )}
                     </div>
                   </div>
-                  {macho.activeMonta.femaleRace && (
-                    <span className="px-2 py-0.5 bg-theme-surface text-muted text-[10px] font-medium rounded-full shrink-0 ml-1 capitalize border border-strong">
-                      {macho.activeMonta.femaleRace}
-                    </span>
-                  )}
                 </div>
                 
                 {(macho.activeMonta.femaleAge !== undefined || macho.activeMonta.femaleWeight !== undefined) && (
@@ -245,13 +255,13 @@ export function MontasView({ searchTerm, onSearchChange }: Readonly<MontasViewPr
                         <Button 
                           variant="danger" 
                           className="w-full justify-center gap-2"
-                          icon={<Trash2 size={16} />}
+                          icon={<X size={16} />}
                           onClick={(e) => {
                             e.stopPropagation();
                             setCancelingReproduction(macho.activeMonta!);
                           }}
                         >
-                          Eliminar
+                          Cancelar Monta
                         </Button>
                       )}
                     </div>
@@ -295,7 +305,7 @@ export function MontasView({ searchTerm, onSearchChange }: Readonly<MontasViewPr
         <p className="text-base font-medium text-main">En esta fase se encuentran los machos iguales o mayores de 4 meses.</p>
       </div>
       <FilterBar
-        searchPlaceholder="Buscar macho por código, nombre o jaula..."
+        searchPlaceholder="Buscar macho por código o jaula..."
         searchValue={searchTerm}
         onSearchChange={(val) => {
           onSearchChange(val);
@@ -363,8 +373,8 @@ export function MontasView({ searchTerm, onSearchChange }: Readonly<MontasViewPr
           onClose={() => setCancelingReproduction(null)}
           onConfirm={handleCancelMating}
           title="Cancelar Monta"
-          description={<>¿Estás seguro de que deseas eliminar esta monta? La coneja quedará libre nuevamente.</>}
-          confirmLabel="Sí, eliminar"
+          description={<>¿Estás seguro de que deseas cancelar esta monta? La coneja quedará libre nuevamente.</>}
+          confirmLabel="Sí, cancelar monta"
           variant="danger"
           loading={processing}
         />

@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ChevronDown, User, LogOut, Settings, ShieldAlert, Menu } from 'lucide-react';
+import { ChevronDown, User, LogOut, Settings, ShieldAlert, Menu, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { usePathname } from 'next/navigation';
 
 import Link from 'next/link';
 import Cookies from 'js-cookie';
@@ -13,6 +14,7 @@ import { NotificationIcon } from '@/modules/notification/components/Notification
 export function Header() {
 
   const { user, logout } = useAuth();
+  const pathname = usePathname();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   useEffect(() => {
@@ -28,7 +30,7 @@ export function Header() {
   };
 
   return (
-    <header className="h-14 bg-card border-b border-strong flex items-center justify-between px-3 sm:px-6 sticky top-0 z-40">
+    <header className="h-14 bg-card border-b border-strong flex items-center justify-between px-3 sm:px-6 sticky top-0 z-30">
       <button
         type="button"
         onClick={() => window.dispatchEvent(new CustomEvent('toggle-sidebar'))}
@@ -66,33 +68,39 @@ export function Header() {
           {dropdownOpen && (
             <>
               <button type="button" aria-label="Cerrar menú" className="fixed inset-0 z-40 w-full h-full cursor-default bg-transparent border-none p-0" onClick={() => setDropdownOpen(false)} />
-              <div className="absolute right-0 top-full mt-1 w-56 bg-card rounded-xl shadow-lg border border-strong overflow-hidden z-50">
+              <div className="absolute right-0 top-full mt-1 w-60 bg-card rounded-xl shadow-lg border border-strong overflow-hidden z-50">
                 <div className="px-4 py-3 bg-theme-surface border-b border-default">
                   <p className="text-sm font-semibold text-main">{user?.fullName || 'Usuario'}</p>
                   <p className="text-xs text-muted mt-0.5">{user?.email || 'usuario@ejemplo.com'}</p>
                 </div>
                 <div className="py-1">
-                  <Link
-                    href="/dashboard/profile"
-                    onClick={() => setDropdownOpen(false)}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-muted hover:bg-theme-surface hover:text-primary-600 transition-colors"
-                  >
-                    <User size={16} /> Mi Perfil
-                  </Link>
-                  <Link
-                    href="/dashboard/incidents"
-                    onClick={() => setDropdownOpen(false)}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-muted hover:bg-theme-surface hover:text-primary-600 transition-colors"
-                  >
-                    <ShieldAlert size={16} /> Novedades del Galpón
-                  </Link>
-                  <Link
-                    href="/dashboard/settings"
-                    onClick={() => setDropdownOpen(false)}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-muted hover:bg-theme-surface hover:text-primary-600 transition-colors"
-                  >
-                    <Settings size={16} /> Apariencia del Sistema
-                  </Link>
+                  {[
+                    { href: '/dashboard/profile', label: 'Mi Perfil', icon: User },
+                    { href: '/dashboard/notifications', label: 'Notificaciones', icon: Bell },
+                    { href: '/dashboard/incidents', label: 'Novedades del Galpón', icon: ShieldAlert },
+                    { href: '/dashboard/settings', label: 'Apariencia del Sistema', icon: Settings },
+                  ].map(({ href, label, icon: ItemIcon }) => {
+                    const isActive = pathname === href || pathname?.startsWith(href + '/');
+                    return (
+                      <Link
+                        key={href}
+                        href={href}
+                        onClick={() => setDropdownOpen(false)}
+                        className={cn(
+                          'w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors',
+                          isActive
+                            ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 font-semibold border-l-2 border-primary-500'
+                            : 'text-muted hover:bg-theme-surface hover:text-primary-600',
+                        )}
+                      >
+                        <ItemIcon
+                          size={16}
+                          className={cn('shrink-0', isActive ? 'text-primary-600 dark:text-primary-400' : 'text-theme-faint')}
+                        />
+                        <span>{label}</span>
+                      </Link>
+                    );
+                  })}
                   <div className="border-t border-default mt-1 pt-1">
                     <button type="button"
                       onClick={handleLogout}

@@ -148,7 +148,7 @@ export default function NotificationsPage() {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <Card className="border-0 shadow-sm ring-1 ring-slate-200/50 overflow-hidden" padding="none">
-        <div className="p-6 md:p-8 border-b border-default bg-card flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="p-4 sm:p-6 md:p-8 border-b border-default bg-card flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-main">Centro de Notificaciones</h1>
             <p className="text-muted mt-1">Revisa los últimos avisos, recordatorios y actividades de tu granja</p>
@@ -230,8 +230,8 @@ export default function NotificationsPage() {
                     tabIndex={0}
                     key={notification.id}
                     className={cn(
-                      "w-full text-left p-6 flex items-start gap-4 hover:bg-theme-surface transition-colors group cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500",
-                      !notification.read && "bg-primary-50/60 dark:bg-primary-900/20"
+                      "w-full text-left p-3.5 sm:p-5 transition-colors group cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 flex flex-col gap-2.5 sm:gap-3",
+                      !notification.read ? "bg-primary-50/60 dark:bg-primary-950/20 hover:bg-primary-50/90 dark:hover:bg-primary-950/30" : "hover:bg-theme-surface"
                     )}
                     onClick={() => handleNotificationClick(notification)}
                     onKeyDown={(e) => {
@@ -241,153 +241,164 @@ export default function NotificationsPage() {
                       }
                     }}
                   >
-                    <div className={cn('w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold shrink-0', getTypeColor(notification.type))}>
-                      {getIconByType(notification.type)}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <h4 className="text-base font-semibold text-main flex items-center gap-2">
-                            {notification.title}
-                            {!notification.read && (
-                              <span className="w-2 h-2 rounded-full bg-primary-500 inline-block" />
-                            )}
-                          </h4>
-                          <p className="text-muted mt-1 whitespace-pre-wrap">
-                            {notification.message.split(/(\*\*.*?\*\*)/g).map((part: string, i: number) => {
-                              if (part.startsWith('**') && part.endsWith('**')) {
-                                return <strong key={i} className="font-semibold text-main">{part.slice(2, -2)}</strong>;
-                              }
-                              return part;
-                            })}
-                          </p>
+                    {/* Fila superior: icono de tipo y categoría a la izquierda, tiempo y eliminar a la derecha */}
+                    <div className="flex items-center justify-between gap-3 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <div className={cn('w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-sm sm:text-base font-bold shrink-0', getTypeColor(notification.type))}>
+                          {getIconByType(notification.type)}
                         </div>
-                        <div className="text-sm text-theme-faint flex flex-col items-end gap-2 shrink-0">
-                          <span>{formatTime(notification.updatedAt || notification.createdAt)}</span>
-                          {!(notification.type === 'warning' || notification.type === 'invitation' || notification.data?.isContract) && (
-                            <button 
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDelete(notification.id);
-                              }}
-                              className="opacity-0 group-hover:opacity-100 text-theme-faint hover:text-red-500 transition-opacity p-2"
-                              title="Eliminar notificación"
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                        <span className="text-xs font-semibold text-muted">
+                          {notification.type === 'invitation' ? 'Invitación' : notification.type === 'warning' ? 'Alerta' : 'Aviso'}
+                        </span>
+                        {!notification.read && (
+                          <span className="w-2 h-2 rounded-full bg-primary-500 shrink-0" />
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs text-theme-faint whitespace-nowrap">
+                          {formatTime(notification.updatedAt || notification.createdAt)}
+                        </span>
+                        {!(notification.type === 'warning' || notification.type === 'invitation' || notification.data?.isContract) && (
+                          <button 
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(notification.id);
+                            }}
+                            className="text-theme-faint hover:text-red-500 transition-colors p-1 sm:opacity-0 sm:group-hover:opacity-100 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer"
+                            title="Eliminar notificación"
+                            aria-label="Eliminar notificación"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Fila de título completo a ancho total: idéntico a Novedades, visible sin puntos suspensivos */}
+                    <h4 className="text-sm sm:text-base font-semibold text-main leading-snug break-words">
+                      {notification.title}
+                    </h4>
+
+                    {/* Mensaje a ancho completo sin apretarse en pantalla móvil */}
+                    <p className="text-xs sm:text-sm text-muted leading-relaxed break-words whitespace-pre-wrap pl-0.5">
+                      {notification.message.split(/(\*\*.*?\*\*)/g).map((part: string, i: number) => {
+                        if (part.startsWith('**') && part.endsWith('**')) {
+                          return <strong key={i} className="font-semibold text-main">{part.slice(2, -2)}</strong>;
+                        }
+                        return part;
+                      })}
+                    </p>
+
+                    {notification.data?.type === 'growth_summary' && (
+                      <div className="mt-1 p-3.5 sm:p-4 rounded-xl bg-theme-surface border border-default">
+                        <div className="flex gap-6">
+                          {notification.data.updatesCount > 0 && (
+                            <div className="w-full">
+                              <p className="text-xs sm:text-sm font-semibold text-main mb-2">Conejos actualizados • {notification.data.updatesCount}</p>
+                              <ul className="text-xs text-muted list-disc list-inside space-y-1">
+                                {notification.data.details?.map((detail: string, i: number) => (
+                                  <li key={`${detail}-${i}`}>{detail}</li>
+                                ))}
+                              </ul>
+                            </div>
                           )}
                         </div>
                       </div>
+                    )}
 
-                      {notification.data?.type === 'growth_summary' && (
-                        <div className="mt-4 p-4 rounded-lg bg-theme-surface border border-default">
-                          <div className="flex gap-6">
-                            {notification.data.updatesCount > 0 && (
-                              <div className="w-full">
-                                <p className="text-sm font-semibold text-main mb-2">Conejos actualizados • {notification.data.updatesCount}</p>
-                                <ul className="text-xs text-muted list-disc list-inside space-y-1">
-                                  {notification.data.details?.map((detail: string, i: number) => (
-                                    <li key={`${detail}-${i}`}>{detail}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                          </div>
+                    {notification.type === 'invitation' && (
+                      <div className="mt-1 p-3.5 sm:p-4 rounded-xl bg-theme-surface border border-default flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-xs sm:text-sm font-semibold text-main">Invitación a unirse a un galpón</p>
+                          <p className="text-xs text-muted mt-0.5 truncate">Galpón: {notification.data?.galponName || 'Galpón'}</p>
                         </div>
-                      )}
-
-                      {notification.type === 'invitation' && (
-                        <div className="mt-4 p-4 rounded-lg bg-theme-surface border border-default flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-medium text-main">Invitación a unirse a un galpón</p>
-                            <p className="text-xs text-muted mt-1">Galpón: {notification.data?.galponName || 'Galpón'}</p>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="primary"
-                              onClick={(e) => { e.stopPropagation(); handleAcceptInvitation(notification); }}
-                              disabled={accepting === notification.id || rejecting === notification.id}
-                            >
-                              {accepting === notification.id ? 'Aceptando...' : 'Aceptar'}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="danger"
-                              onClick={(e) => { e.stopPropagation(); handleRejectInvitation(notification); }}
-                              disabled={accepting === notification.id || rejecting === notification.id}
-                            >
-                              {rejecting === notification.id ? 'Rechazando...' : 'Rechazar'}
-                            </Button>
-                          </div>
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            className="flex-1 sm:flex-none text-xs"
+                            onClick={(e) => { e.stopPropagation(); handleAcceptInvitation(notification); }}
+                            disabled={accepting === notification.id || rejecting === notification.id}
+                          >
+                            {accepting === notification.id ? 'Aceptando...' : 'Aceptar'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            className="flex-1 sm:flex-none text-xs"
+                            onClick={(e) => { e.stopPropagation(); handleRejectInvitation(notification); }}
+                            disabled={accepting === notification.id || rejecting === notification.id}
+                          >
+                            {rejecting === notification.id ? 'Rechazando...' : 'Rechazar'}
+                          </Button>
                         </div>
-                      )}
+                      </div>
+                    )}
 
-                      {notification.data?.type === 'cleaning_warning' && notification.data.pendingCages && notification.data.pendingCages.length > 0 && (
-                        <div className="mt-4 p-4 rounded-lg bg-theme-surface border border-default">
-                          <p className="text-sm font-semibold text-main mb-2.5">
-                            Jaulas con falta de limpieza • {notification.data.pendingCages.length}
-                          </p>
-                          <ul className="text-sm text-main max-h-48 overflow-y-auto bg-card border border-default rounded-md p-2 divide-y divide-default">
-                            {notification.data.pendingCages.map((cage: any) => (
-                              <li key={cage.cageId || cage.cageNumber} className="flex items-center justify-between py-1.5 px-2">
-                                <span className="font-medium text-main">Jaula {cage.cageNumber}</span>
+                    {notification.data?.type === 'cleaning_warning' && notification.data.pendingCages && notification.data.pendingCages.length > 0 && (
+                      <div className="mt-1 p-3.5 sm:p-4 rounded-xl bg-theme-surface border border-default">
+                        <p className="text-xs sm:text-sm font-semibold text-main mb-2.5">
+                          Jaulas con falta de limpieza • {notification.data.pendingCages.length}
+                        </p>
+                        <ul className="text-xs sm:text-sm text-main max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto bg-card border border-default rounded-md p-2 divide-y divide-default">
+                          {notification.data.pendingCages.map((cage: any) => (
+                            <li key={cage.cageId || cage.cageNumber} className="flex items-center justify-between py-1.5 px-2">
+                              <span className="font-medium text-main">Jaula {cage.cageNumber}</span>
+                              <span className="text-xs font-medium text-main bg-theme-surface px-2.5 py-1 rounded-md border border-default">
+                                {cage.daysWithoutCleaning} {cage.daysWithoutCleaning === 1 ? 'día' : 'días'} sin limpieza
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {notification.data?.type === 'worker_action' && notification.data?.workersList && notification.data.workersList.length > 1 && (
+                      <div className="mt-1 p-3.5 sm:p-4 rounded-xl bg-theme-surface border border-default">
+                        <p className="text-xs sm:text-sm font-semibold text-main mb-2.5">
+                          Detalle por trabajador • {(() => {
+                            const total = notification.data.totalCount || notification.data.totalItems || 0;
+                            const unit = notification.data.unitName || notification.data.unit || 'registro';
+                            const unitLabel = total === 1 ? unit : (unit === 'jaula' ? 'jaulas' : (unit === 'conejo' ? 'conejos' : `${unit}s`));
+                            return `${total} ${unitLabel} en total:`;
+                          })()}
+                        </p>
+                        <ul className="text-xs sm:text-sm text-main max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto bg-card border border-default rounded-md p-2 divide-y divide-default">
+                          {notification.data.workersList.map((worker: any) => {
+                            const unit = notification.data.unitName || notification.data.unit || 'registro';
+                            const workerUnit = worker.count === 1 ? unit : (unit === 'jaula' ? 'jaulas' : (unit === 'conejo' ? 'conejos' : `${unit}s`));
+                            return (
+                              <li key={worker.name} className="flex items-center justify-between py-1.5 px-2">
+                                <span className="font-medium text-main">{worker.name}</span>
                                 <span className="text-xs font-medium text-main bg-theme-surface px-2.5 py-1 rounded-md border border-default">
-                                  {cage.daysWithoutCleaning} {cage.daysWithoutCleaning === 1 ? 'día' : 'días'} sin limpieza
+                                  {worker.count} {workerUnit}
                                 </span>
                               </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    )}
 
-                      {notification.data?.type === 'worker_action' && notification.data?.workersList && notification.data.workersList.length > 1 && (
-                        <div className="mt-4 p-4 rounded-lg bg-theme-surface border border-default">
-                          <p className="text-sm font-semibold text-main mb-2.5">
-                            Detalle por trabajador • {(() => {
-                              const total = notification.data.totalCount || notification.data.totalItems || 0;
-                              const unit = notification.data.unitName || notification.data.unit || 'registro';
-                              const unitLabel = total === 1 ? unit : (unit === 'jaula' ? 'jaulas' : (unit === 'conejo' ? 'conejos' : `${unit}s`));
-                              return `${total} ${unitLabel} en total:`;
-                            })()}
-                          </p>
-                          <ul className="text-sm text-main max-h-48 overflow-y-auto bg-card border border-default rounded-md p-2 divide-y divide-default">
-                            {notification.data.workersList.map((worker: any) => {
-                              const unit = notification.data.unitName || notification.data.unit || 'registro';
-                              const workerUnit = worker.count === 1 ? unit : (unit === 'jaula' ? 'jaulas' : (unit === 'conejo' ? 'conejos' : `${unit}s`));
-                              return (
-                                <li key={worker.name} className="flex items-center justify-between py-1.5 px-2">
-                                  <span className="font-medium text-main">{worker.name}</span>
-                                  <span className="text-xs font-medium text-main bg-theme-surface px-2.5 py-1 rounded-md border border-default">
-                                    {worker.count} {workerUnit}
-                                  </span>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        </div>
-                      )}
-
-                      {notification.data?.type === 'worker_sensitive_action' && notification.data?.modulesBreakdown && notification.data.modulesBreakdown.length > 0 && (
-                        <div className="mt-4 p-4 rounded-lg bg-theme-surface border border-default">
-                          <p className="text-sm font-semibold text-main mb-2.5">
-                            Detalle por módulo sensible • {notification.data.changeCount || 0} {notification.data.changeCount === 1 ? 'cambio' : 'cambios'} en total:
-                          </p>
-                          <ul className="text-sm text-main max-h-48 overflow-y-auto bg-card border border-default rounded-md p-2 divide-y divide-default">
-                            {notification.data.modulesBreakdown.map((m: any) => (
-                              <li key={m.module} className="flex items-center justify-between py-1.5 px-2">
-                                <span className="font-medium text-main">{m.label}</span>
-                                <span className="text-xs font-medium text-main bg-theme-surface px-2.5 py-1 rounded-md border border-default">
-                                  {m.count} {m.count === 1 ? 'cambio' : 'cambios'}
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
+                    {notification.data?.type === 'worker_sensitive_action' && notification.data?.modulesBreakdown && notification.data.modulesBreakdown.length > 0 && (
+                      <div className="mt-1 p-3.5 sm:p-4 rounded-xl bg-theme-surface border border-default">
+                        <p className="text-xs sm:text-sm font-semibold text-main mb-2.5">
+                          Detalle por módulo sensible • {notification.data.changeCount || 0} {notification.data.changeCount === 1 ? 'cambio' : 'cambios'} en total:
+                        </p>
+                        <ul className="text-xs sm:text-sm text-main max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto bg-card border border-default rounded-md p-2 divide-y divide-default">
+                          {notification.data.modulesBreakdown.map((m: any) => (
+                            <li key={m.module} className="flex items-center justify-between py-1.5 px-2">
+                              <span className="font-medium text-main">{m.label}</span>
+                              <span className="text-xs font-medium text-main bg-theme-surface px-2.5 py-1 rounded-md border border-default">
+                                {m.count} {m.count === 1 ? 'cambio' : 'cambios'}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

@@ -1,7 +1,7 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
-import { Table, Dialog, LoadingMessage } from '@/shared/ui';
+import { Table, LoadingMessage, EventDetailsModal } from '@/shared/ui';
 import type { Column } from '@/shared/ui/Table';
 import type { Mortality } from '../types/mortality.types';
 import { useMortality } from '../hooks/useMortality';
@@ -27,7 +27,7 @@ export function MortalityTable({ profileId, date }: MortalityTableProps) {
         return (
           <div className="flex flex-col leading-tight">
             <span className="font-semibold text-main text-sm">{hasName ? row.rabbitName : row.rabbitCode}</span>
-            {hasName && <span className="text-[11px] text-muted font-medium">{row.rabbitCode}</span>}
+            {hasName && <span className="text-xs text-muted font-medium mt-0.5">{row.rabbitCode}</span>}
           </div>
         );
       },
@@ -36,10 +36,9 @@ export function MortalityTable({ profileId, date }: MortalityTableProps) {
       key: 'cause',
       header: 'Causa',
       render: (row) => (
-        <span className="text-muted capitalize">{row.cause}</span>
+        <span className="text-muted capitalize text-sm">{row.cause}</span>
       ),
     },
-
     {
       key: 'date',
       header: 'Fecha de Baja',
@@ -47,7 +46,7 @@ export function MortalityTable({ profileId, date }: MortalityTableProps) {
         const dateObj = new Date(row.deathDate);
         // Correct for timezone to display correct date
         const localDate = new Date(dateObj.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
-        return localDate.toLocaleDateString();
+        return <span className="text-sm text-main">{localDate.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>;
       },
     },
   ];
@@ -62,68 +61,47 @@ export function MortalityTable({ profileId, date }: MortalityTableProps) {
         onRowClick={(row) => setSelectedMortality(row)}
       />
 
-      {/* Modal de Detalles */}
-      <Dialog
+      <EventDetailsModal
         open={!!selectedMortality}
         onClose={() => setSelectedMortality(null)}
         title="Detalles de la Baja"
         description="Información detallada sobre el deceso del conejo"
-        size="md"
-      >
-        {selectedMortality && (
-          <div className="space-y-4 pt-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-theme-surface border border-strong rounded-lg p-3">
-                <p className="text-xs text-muted font-medium mb-1">Conejo</p>
-                <div className="flex flex-col leading-tight">
-                  <span className="font-semibold text-main text-sm">
-                    {selectedMortality.rabbitName && selectedMortality.rabbitName !== 'N/A'
-                      ? selectedMortality.rabbitName
-                      : selectedMortality.rabbitCode}
-                  </span>
-                  {selectedMortality.rabbitName && selectedMortality.rabbitName !== 'N/A' && (
-                    <span className="text-[11px] text-muted font-medium mt-0.5">
-                      {selectedMortality.rabbitCode}
-                    </span>
-                  )}
-                  {selectedMortality.rabbitRace && selectedMortality.rabbitRace !== 'N/A' && (
-                    <span className="text-[10px] text-theme-faint mt-0.5">
-                      {selectedMortality.rabbitRace}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="bg-theme-surface border border-strong rounded-lg p-3">
+        primaryDateString={selectedMortality?.deathDate}
+        primaryDateLabel="Fecha de Baja"
+        profile={selectedMortality?.profile || (selectedMortality?.responsible ? { username: selectedMortality.responsible } : null)}
+        rabbits={selectedMortality ? [
+          {
+            id: selectedMortality.rabbitId,
+            name: selectedMortality.rabbitName && selectedMortality.rabbitName !== 'N/A' ? selectedMortality.rabbitName : undefined,
+            code: selectedMortality.rabbitCode,
+            race: selectedMortality.rabbitRace && selectedMortality.rabbitRace !== 'N/A' ? selectedMortality.rabbitRace : undefined,
+            imageUrl: selectedMortality.rabbitImageUrl
+          }
+        ] : null}
+        rabbitsLabel="Conejo"
+        customDetails={
+          selectedMortality && (
+            <>
+              <div className="bg-theme-surface border border-strong rounded-lg p-3 col-span-1">
                 <p className="text-xs text-muted font-medium mb-1">Causa</p>
-                <p className="text-sm font-semibold text-main capitalize">
-                  {selectedMortality.cause}
-                </p>
-              </div>
-
-              <div className="bg-theme-surface border border-strong rounded-lg p-3">
-                <p className="text-xs text-muted font-medium mb-1">Fecha</p>
                 <div className="flex flex-col leading-tight mt-1">
-                  {(() => {
-                    const date = new Date(selectedMortality.deathDate);
-                    const ecuadorDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
-                    const formattedDate = ecuadorDate.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                    return (
-                      <span className="text-sm font-semibold text-main">{formattedDate}</span>
-                    );
-                  })()}
+                  <span className="text-sm font-semibold text-main capitalize">
+                    {selectedMortality.cause}
+                  </span>
                 </div>
               </div>
-            </div>
-
-            <div className="bg-theme-surface border border-strong rounded-lg p-4 mt-4">
-              <p className="text-xs text-muted font-medium mb-2 uppercase tracking-wide">Observaciones</p>
-              <p className="text-sm text-main whitespace-pre-wrap leading-relaxed">
-                {selectedMortality.observations || 'Sin observaciones registradas.'}
-              </p>
-            </div>
-          </div>
-        )}
-      </Dialog>
+              <div className="bg-theme-surface border border-strong rounded-lg p-3 col-span-1 sm:col-span-2">
+                <p className="text-xs text-muted font-medium mb-1">Observaciones</p>
+                <div className="flex flex-col leading-tight mt-1">
+                  <span className="text-sm text-main whitespace-pre-wrap leading-relaxed">
+                    {selectedMortality.observations || 'Sin observaciones registradas.'}
+                  </span>
+                </div>
+              </div>
+            </>
+          )
+        }
+      />
     </>
   );
 }

@@ -11,6 +11,7 @@ import { createClient } from '@/utils/supabase/client';
 
 import { PermissionGuard } from '@/shared/guards/PermissionGuard';
 import { IncidentFloatingWidget } from '@/modules/incident/components/IncidentFloatingWidget';
+import { cn } from '@/lib/utils';
 
 export default function DashboardLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const { user, loading } = useAuthContext();
@@ -161,15 +162,17 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
         
         <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ml-0 ${sidebarCollapsed ? 'xl:ml-0' : 'xl:ml-60'}`}>
           <Header />
-          <main className="flex-1 p-2.5 sm:p-4 md:p-6 max-w-full min-w-0 overflow-x-hidden">
+          <main className="flex-1 p-2.5 sm:p-4 md:p-6 pb-28 sm:pb-24 max-w-full min-w-0 overflow-x-hidden">
             <PermissionGuard>
               {children}
             </PermissionGuard>
           </main>
         </div>
 
-        {/* Global floating incident report widget */}
-        <IncidentFloatingWidget />
+        {/* Global floating incident report widget: oculto en móvil cuando el menú lateral está abierto para evitar solapamientos */}
+        <div className={!sidebarCollapsed ? 'hidden xl:block' : ''}>
+          <IncidentFloatingWidget />
+        </div>
       </div>
   );
 }

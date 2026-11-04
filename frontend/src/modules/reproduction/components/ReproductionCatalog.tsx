@@ -6,7 +6,7 @@ import { Pagination } from '@/shared/ui/Pagination';
 import type { Reproduction } from '../types/reproduction.types';
 import { Dialog, Select, RabbitSelectableCard, CageGroupCard, Button, RabbitAvatar } from '@/shared/ui';
 import { useState, useMemo, useEffect } from 'react';
-import { Trash2, Calendar } from 'lucide-react';
+import { Calendar, Info, Heart } from 'lucide-react';
 import { ReproductionForm } from './ReproductionForm';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { Input } from '@/shared/ui/Input';
@@ -42,6 +42,7 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
 
   const [editingReproduction, setEditingReproduction] = useState<Reproduction | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedDetails, setSelectedDetails] = useState<Reproduction | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   
   const [filterRace, setFilterRace] = useState('');
@@ -129,7 +130,7 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
     today.setHours(0, 0, 0, 0);
     birthDate.setHours(0, 0, 0, 0);
     const daysLeft = Math.ceil((birthDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    const days = 31 - daysLeft; // 31 = avg gestation days
+    const days = 30 - daysLeft; // 30 = periodo estandar de gestacion
     return { days: Math.max(0, days), daysLeft: Math.max(0, daysLeft) };
   };
 
@@ -166,7 +167,7 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-1 items-start">
-        <p className="text-base font-medium text-main">En esta fase se encuentran las conejas con fechas estimadas que aún no han realizado su parto, calculado a 1 mes desde la fecha de monta. El sistema estima la fecha, pero tienes la opción de registrar el parto antes si este ocurre de forma anticipada, lo cual moverá automáticamente a la coneja a la fase 3 de lactancia.</p>
+        <p className="text-sm sm:text-base font-medium text-main">Conejas gestantes con fecha estimada de parto. Al registrar el parto, la coneja avanzará automáticamente a la fase de lactancia.</p>
       </div>
       <FilterBar
         searchValue={searchTerm}
@@ -201,7 +202,7 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
               cageNumber={group.cageNumber} 
               cageType={group.cageType}
               headerBadge={
-                <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-medium rounded-full">
+                <span className="px-2.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-medium rounded-full whitespace-nowrap">
                   Gestación
                 </span>
               }
@@ -230,81 +231,65 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
               >
 
                 <div className="space-y-2 mt-2 text-xs">
-                  {reproduction.maleCode && (
-                    <div className="bg-theme-surface border border-default p-2 rounded">
-                      <p className="text-muted mb-2">Última pareja</p>
-                      <div className="flex items-center gap-2">
-                        <RabbitAvatar imageUrl={reproduction.maleImageUrl} alt={reproduction.maleCode ?? ''} size="sm" />
-                        <div>
-                          {reproduction.maleName ? (
-                            <>
-                              <h4 className="font-bold text-sm text-main leading-tight">{reproduction.maleName}</h4>
-                              <p className="text-xs text-muted">{reproduction.maleCode}</p>
-                            </>
-                          ) : (
-                            <h4 className="font-bold text-sm text-main leading-tight">{reproduction.maleCode}</h4>
+                  {(() => {
+                    const progressPercent = Math.min(100, Math.max(0, Math.round(((30 - Math.max(0, daysLeft)) / 30) * 100)));
+                    return (
+                      <div className="p-2.5 rounded-lg border bg-theme-surface border-default transition-colors">
+                        <div className="flex justify-between items-center mb-1.5">
+                          <span className="font-semibold text-main">
+                            Gestación
+                          </span>
+                          <span className="font-bold text-main">
+                            Día {30 - Math.max(0, daysLeft)} de 30
+                          </span>
+                        </div>
+
+                        <div className="w-full bg-slate-200 dark:bg-slate-700/60 rounded-full h-1.5 overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full transition-all duration-300 ${
+                              nearBirth ? 'bg-orange-500' : 'bg-emerald-500'
+                            }`}
+                            style={{ width: `${progressPercent}%` }}
+                          />
+                        </div>
+
+                        <div className="mt-2.5 pt-2 border-t border-default/40 flex flex-col gap-0.5">
+                          <span className="text-xs text-muted flex items-center gap-1.5 font-medium">
+                            <Calendar size={13} className="opacity-70 shrink-0" />
+                            Parto estimado
+                          </span>
+                          <span className="text-sm sm:text-base font-bold text-main">
+                            {formatDateTime(reproduction.estimatedBirthDate)}
+                          </span>
+                          {daysLeft === 0 && (
+                            <div className="mt-1.5 pt-1.5 border-t border-default/30 text-center">
+                              <span className="text-xs font-semibold text-orange-600 dark:text-orange-400">
+                                ¡Parto estimado hoy!
+                              </span>
+                            </div>
+                          )}
+                          {nearBirth && daysLeft > 0 && (
+                            <div className="mt-1.5 pt-1.5 border-t border-default/30 text-center">
+                              <span className="text-xs font-semibold text-orange-600 dark:text-orange-400">
+                                Parto estimado en {daysLeft} día{daysLeft !== 1 ? 's' : ''}
+                              </span>
+                            </div>
                           )}
                         </div>
                       </div>
-                    </div>
-                  )}
-                  <div className="bg-theme-surface border border-default p-2 rounded flex justify-between items-center">
-                    <p className="text-muted">Fecha de monta</p>
-                    <p className="font-medium text-main">{formatDateTime(reproduction.mountDate)}</p>
-                  </div>
-                  {isExpanded && canUpdate ? (
-                    <button 
-                      type="button"
-                      className="bg-theme-surface border border-default p-2 rounded flex justify-between items-center w-full text-left cursor-pointer hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:border-primary-200 dark:hover:border-primary-500/30 transition-colors group"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingReproduction(reproduction);
-                        setShowEditModal(true);
-                      }}
-                      title="Editar fecha estimada"
-                    >
-                      <p className="text-muted flex items-center gap-1">
-                        <Calendar size={12} className="opacity-70" />
-                        Fecha estimada
-                      </p>
-                      <p className={`font-medium ${canGiveBirth ? 'text-amber-600' : 'text-main'}`}>{formatDateTime(reproduction.estimatedBirthDate)}</p>
-                    </button>
-                  ) : (
-                    <div className="bg-theme-surface border border-default p-2 rounded flex justify-between items-center">
-                      <p className="text-muted flex items-center gap-1">
-                        <Calendar size={12} className="opacity-70" />
-                        Fecha estimada
-                      </p>
-                      <p className={`font-medium ${canGiveBirth ? 'text-amber-600' : 'text-main'}`}>{formatDateTime(reproduction.estimatedBirthDate)}</p>
-                    </div>
-                  )}
-                  <div className={`p-2 rounded flex justify-between items-center border ${
-                    nearBirth
-                      ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-500/30'
-                      : 'bg-theme-surface border-default'
-                  }`}>
-                    <p className={`${nearBirth ? 'text-orange-600' : 'text-muted'}`}>Días de gestación</p>
-                    <div className="text-right">
-                      <p className={`font-bold ${nearBirth ? 'text-orange-600' : 'text-main'}`}>
-                        {31 - Math.max(0, daysLeft)} / 31
-                      </p>
-                      {nearBirth && daysLeft > 0 && (
-                        <p className="text-[10px] text-orange-500 font-medium">Parto en {daysLeft} día{daysLeft !== 1 ? 's' : ''}</p>
-                      )}
-                      {daysLeft === 0 && <p className="text-[10px] text-orange-600 font-semibold">Hoy es el día estimado</p>}
-                    </div>
-                  </div>
+                    );
+                  })()}
                 </div>
 
                 {isExpanded && (
                   <div 
-                    className="mt-4 flex flex-col gap-2 animate-in fade-in slide-in-from-top-1 duration-150"
+                    className="mt-3 flex flex-col gap-2 animate-in fade-in slide-in-from-top-1 duration-150"
                   >
                     {canCreate && (
                       <Button
                         type="button"
                         variant="primary"
-                        className="w-full"
+                        className="w-full justify-center"
                         onClick={(e) => {
                           e.stopPropagation();
                           setToRegisterBirth(reproduction);
@@ -318,18 +303,19 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
                         Registrar Parto
                       </Button>
                     )}
-                    {canDelete && (
-                      <Button
-                        type="button"
-                        variant="danger"
-                        icon={<Trash2 size={16} />}
-                        className="w-full justify-center gap-2"
-                        onClick={(e) => { e.stopPropagation(); setToCancel(reproduction); }}
-                      >
-                        Eliminar
-                      </Button>
-                    )}
-                    {!canCreate && !canDelete && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      icon={<Info size={16} />}
+                      className="w-full justify-center gap-1.5"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedDetails(reproduction);
+                      }}
+                    >
+                      Ver Detalles
+                    </Button>
+                    {!canCreate && (
                       <span className="text-xs text-muted font-medium py-1 px-2 text-center w-full">
                         Solo consulta
                       </span>
@@ -361,14 +347,14 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
           setCancelReasonOther('');
         }}
         title={(() => {
-          const name = toCancel?.femaleName ? ` - ${toCancel.femaleName}` : '';
-          return `Cancelar Gestación: ${toCancel?.femaleCode ?? ''}${name}`;
+          const label = toCancel?.femaleName ? `${toCancel.femaleName} - ${toCancel.femaleCode}` : (toCancel?.femaleCode ?? '');
+          return `Cancelar Parto: ${label}`;
         })()}
       >
         <div className="p-4">
           <div className="bg-theme-surface border border-strong rounded-xl p-4 mb-4">
             <p className="text-sm text-main">
-              Selecciona la razón por la cual estás cancelando esta gestación.
+              Selecciona la razón por la cual estás cancelando este parto.
             </p>
           </div>
           
@@ -427,13 +413,13 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
           setActualBirthDate('');
         }}
         title={(() => {
-          const name = toRegisterBirth?.femaleName ? ` - ${toRegisterBirth.femaleName}` : '';
-          return `Registrar Parto: ${toRegisterBirth?.femaleCode ?? ''}${name}`;
+          const label = toRegisterBirth?.femaleName ? `${toRegisterBirth.femaleName} - ${toRegisterBirth.femaleCode}` : (toRegisterBirth?.femaleCode ?? '');
+          return `Registrar Parto: ${label}`;
         })()}
       >
         <form onSubmit={handleRegisterBirth} className="p-4">
           <p className="text-sm text-muted mb-4">
-            Ingresa la fecha real del parto. La coneja pasará a la fase de lactancia (1 mes).
+            Ingresa la fecha real del parto. La coneja pasará a la fase de lactancia por un mes aproximado.
           </p>
           
           <div className="mb-6">
@@ -463,6 +449,131 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
         </form>
       </Dialog>
 
+      {/* Modal de Detalles de Gestación */}
+      <Dialog
+        open={!!selectedDetails}
+        onClose={() => setSelectedDetails(null)}
+        title={(() => {
+          const label = selectedDetails?.femaleName ? `${selectedDetails.femaleName} - ${selectedDetails.femaleCode}` : (selectedDetails?.femaleCode ?? '');
+          return `Detalles de Gestación: ${label}`;
+        })()}
+        size="md"
+      >
+        {selectedDetails && (() => {
+          const { daysLeft } = getDaysInGestation(selectedDetails.estimatedBirthDate);
+          const canGiveBirth = isBirthDateReached(selectedDetails.estimatedBirthDate);
+          const nearBirth = daysLeft >= 0 && daysLeft <= 3;
+
+          return (
+            <div className="space-y-4">
+              {/* Pareja Reproductiva */}
+              <div className="p-4 rounded-xl border border-default bg-theme-surface/50">
+                <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-3 text-center sm:text-left">
+                  Pareja Reproductiva
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-around gap-3 sm:gap-4">
+                  {/* Madre */}
+                  <div className="flex flex-col items-center text-center w-full sm:w-auto sm:flex-1 sm:max-w-[140px]">
+                    <RabbitAvatar imageUrl={selectedDetails.imageUrl} alt={selectedDetails.femaleCode} size="lg" ring />
+                    <span className="mt-2 px-2.5 py-0.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 text-xs font-semibold rounded-full">
+                      Madre
+                    </span>
+                    <h5 className="font-bold text-main text-sm sm:text-base mt-1.5 truncate max-w-full">
+                      {selectedDetails.femaleName || selectedDetails.femaleCode}
+                    </h5>
+                    {selectedDetails.femaleName && (
+                      <p className="text-xs sm:text-sm font-semibold text-muted truncate max-w-full">{selectedDetails.femaleCode}</p>
+                    )}
+                  </div>
+
+                  {/* Corazon conector */}
+                  <div className="flex flex-col items-center justify-center shrink-0 py-0.5 sm:py-0">
+                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-500/30 shadow-sm">
+                      <Heart size={15} fill="currentColor" />
+                    </div>
+                  </div>
+
+                  {/* Padre */}
+                  <div className="flex flex-col items-center text-center w-full sm:w-auto sm:flex-1 sm:max-w-[140px]">
+                    <RabbitAvatar imageUrl={selectedDetails.maleImageUrl} alt={selectedDetails.maleCode ?? ''} size="lg" ring />
+                    <span className="mt-2 px-2.5 py-0.5 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 text-xs font-semibold rounded-full">
+                      Padre
+                    </span>
+                    <h5 className="font-bold text-main text-sm sm:text-base mt-1.5 truncate max-w-full">
+                      {selectedDetails.maleName || selectedDetails.maleCode || 'Sin macho'}
+                    </h5>
+                    {selectedDetails.maleName && (
+                      <p className="text-xs sm:text-sm font-semibold text-muted truncate max-w-full">{selectedDetails.maleCode}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Cronograma de Fechas */}
+              <div className="p-3.5 rounded-xl border border-default bg-theme-surface/50 space-y-2.5 text-xs">
+                <div className="flex items-center justify-between pb-2 border-b border-default/50">
+                  <span className="text-muted flex items-center gap-1.5 font-medium">
+                    <Calendar size={14} className="text-primary-500" />
+                    Fecha de Monta
+                  </span>
+                  <span className="font-bold text-main">{formatDateTime(selectedDetails.mountDate)}</span>
+                </div>
+
+                <div className="flex items-center justify-between pb-2 border-b border-default/50">
+                  <span className="text-muted flex items-center gap-1.5 font-medium">
+                    <Calendar size={14} className="text-amber-500" />
+                    Parto Estimado
+                  </span>
+                  <span className={`font-bold ${canGiveBirth ? 'text-amber-600 dark:text-amber-400' : 'text-main'}`}>
+                    {formatDateTime(selectedDetails.estimatedBirthDate)}
+                  </span>
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 pt-1">
+                  <span className="text-muted font-medium text-xs">Estado del Parto</span>
+                  <span className={`font-bold text-xs sm:text-sm ${nearBirth ? 'text-orange-600 dark:text-orange-400' : 'text-main'}`}>
+                    {daysLeft === 0 && 'Día estimado cumplido hoy'}
+                    {daysLeft > 0 && `Faltan ${daysLeft} día${daysLeft !== 1 ? 's' : ''} para el parto`}
+                    {daysLeft < 0 && `Superó fecha estimada por ${Math.abs(daysLeft)} día${Math.abs(daysLeft) !== 1 ? 's' : ''}`}
+                  </span>
+                </div>
+              </div>
+
+              {/* Botones de Acción */}
+              <div className="flex flex-row gap-3 pt-3 border-t border-default/50">
+                {canDelete && (
+                  <Button
+                    type="button"
+                    variant="danger"
+                    className="flex-1 justify-center py-2.5 text-sm font-semibold"
+                    onClick={() => {
+                      const rep = selectedDetails;
+                      setSelectedDetails(null);
+                      setToCancel(rep);
+                    }}
+                  >
+                    Cancelar Parto
+                  </Button>
+                )}
+                {canUpdate && (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    className="flex-1 justify-center py-2.5 text-sm font-semibold"
+                    onClick={() => {
+                      setEditingReproduction(selectedDetails);
+                      setShowEditModal(true);
+                    }}
+                  >
+                    Editar Monta
+                  </Button>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+      </Dialog>
+
       <Dialog
         open={showEditModal}
         onClose={() => {
@@ -470,10 +581,10 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
           setEditingReproduction(null);
         }}
         title={(() => {
-          const name = editingReproduction?.femaleName ? ` - ${editingReproduction.femaleName}` : '';
-          return `Editar monta de ${editingReproduction?.femaleCode ?? ''}${name}`;
+          const label = editingReproduction?.femaleName ? `${editingReproduction.femaleName} - ${editingReproduction.femaleCode}` : (editingReproduction?.femaleCode ?? '');
+          return `Editar monta de ${label}`;
         })()}
-        size="xl"
+        size="md"
       >
         {editingReproduction && (
           <ReproductionForm
@@ -481,6 +592,7 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
             onSuccess={() => {
               setShowEditModal(false);
               setEditingReproduction(null);
+              setSelectedDetails(null);
               onSuccess?.();
             }}
             onCancel={() => {

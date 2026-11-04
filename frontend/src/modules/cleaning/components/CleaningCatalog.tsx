@@ -157,8 +157,8 @@ export function CleaningCatalog({ onSuccess }: Readonly<CleaningCatalogProps>) {
             <div className="mt-5 pt-4 border-t border-default flex flex-col gap-2">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-main flex items-center gap-2">
-                  <span>Jaulas pendientes de limpieza (3 o más días):</span>
-                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full border bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60">
+                  <span>Jaulas pendientes de limpieza - 3 o más días:</span>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full border bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60">
                     {pendingOverdueCages.length} pendiente{pendingOverdueCages.length > 1 ? 's' : ''}
                   </span>
                 </span>
@@ -231,7 +231,7 @@ export function CleaningCatalog({ onSuccess }: Readonly<CleaningCatalogProps>) {
                         {formatDateTime(cageLastCleaning.cleaningDate)}
                       </p>
                       {days !== null && (
-                        <p className={`text-[11px] font-medium mt-1 ${days === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-theme-faint'}`}>
+                        <p className={`text-xs font-medium mt-1 ${days === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-theme-faint'}`}>
                           {days === 0 ? 'Limpiada hoy' : `Hace ${days} día${days > 1 ? 's' : ''}`}
                         </p>
                       )}

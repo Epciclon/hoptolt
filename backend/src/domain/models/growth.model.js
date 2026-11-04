@@ -20,7 +20,7 @@ const Growth = sequelize.define('Growth', {
         allowNull: false,
         validate: {
             min: 0.01,
-            max: 4.5
+            max: 5.5
         }
     },
     isManual: {

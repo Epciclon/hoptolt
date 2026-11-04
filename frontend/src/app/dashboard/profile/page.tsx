@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useAuth } from '@/modules/auth/hooks/useAuth';
 import { authService } from '@/modules/auth/services/auth.service';
 import { useToast } from '@/shared/contexts/ToastContext';
-import { Card, Button, Input } from '@/shared/ui';
+import { Card, Button, Input, Dialog } from '@/shared/ui';
 import { User, Lock, Trash2, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -66,6 +66,11 @@ export default function ProfilePage() {
       return;
     }
 
+    if (!/\d/.test(newPassword)) {
+      showToast('La nueva contraseña debe contener al menos un número', 'error');
+      return;
+    }
+
     if (!/[!@#$%^&*(),.?":{}|<>_]/.test(newPassword)) {
       showToast('La nueva contraseña debe contener al menos un carácter especial como @#$%', 'error');
       return;
@@ -117,7 +122,7 @@ export default function ProfilePage() {
   return (
     <div className="max-w-5xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
       <Card className="border-0 shadow-sm ring-1 ring-slate-200/50 dark:ring-slate-800/50 overflow-hidden" padding="none">
-        <div className="p-6 md:p-8 border-b border-default bg-card">
+        <div className="p-4 sm:p-6 md:p-8 border-b border-default bg-card">
           <h1 className="text-2xl font-bold text-main">Tu Cuenta</h1>
           <p className="text-muted mt-1">Cambia tu contraseña, asegura tu perfil y ajusta tus preferencias personales</p>
         </div>
@@ -166,7 +171,7 @@ export default function ProfilePage() {
         </div>
 
           {/* Tab Content Area */}
-          <div className="flex-1 p-6 md:p-8 bg-card">
+          <div className="flex-1 p-4 sm:p-6 md:p-8 pb-24 sm:pb-8 bg-card">
             {activeTab === 'personal' && (
               <div className="max-w-2xl">
               <h3 className="text-lg font-bold text-main mb-6 flex items-center gap-2">
@@ -200,8 +205,8 @@ export default function ProfilePage() {
                   hint="El correo electrónico no puede ser modificado"
                 />
 
-                <div className="pt-4 border-t border-default flex justify-end">
-                  <Button type="submit" disabled={updatingProfile}>
+                <div className="pt-4 border-t border-default flex flex-col sm:flex-row sm:justify-end">
+                  <Button type="submit" disabled={updatingProfile} className="w-full sm:w-auto">
                     {updatingProfile ? 'Guardando...' : 'Guardar Cambios'}
                   </Button>
                 </div>
@@ -217,65 +222,65 @@ export default function ProfilePage() {
               </h3>
 
               <form onSubmit={handleUpdatePassword} className="space-y-5">
-                <div className="relative">
-                  <Input
-                    type={showCurrentPassword ? 'text' : 'password'}
-                    label="Contraseña Actual"
-                    required
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="Ingrese su contraseña actual"
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                    className="absolute right-3 top-[34px] text-theme-faint hover:text-muted focus:outline-none"
-                  >
-                    {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
+                <Input
+                  type={showCurrentPassword ? 'text' : 'password'}
+                  label="Contraseña Actual"
+                  required
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Ingrese su contraseña actual"
+                  endAdornment={
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      className="text-theme-faint hover:text-muted focus:outline-none p-1 transition-colors flex items-center justify-center cursor-pointer"
+                      aria-label={showCurrentPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                    >
+                      {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  }
+                />
 
-                <div className="relative">
-                  <Input
-                    type={showNewPassword ? 'text' : 'password'}
-                    label="Nueva Contraseña"
-                    required
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Mínimo 6 caracteres"
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute right-3 top-[34px] text-theme-faint hover:text-muted focus:outline-none"
-                  >
-                    {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
+                <Input
+                  type={showNewPassword ? 'text' : 'password'}
+                  label="Nueva Contraseña"
+                  required
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Mínimo 6 caracteres, 1 número y 1 símbolo"
+                  endAdornment={
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="text-theme-faint hover:text-muted focus:outline-none p-1 transition-colors flex items-center justify-center cursor-pointer"
+                      aria-label={showNewPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                    >
+                      {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  }
+                />
 
-                <div className="relative">
-                  <Input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    label="Confirmar Nueva Contraseña"
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Repita la nueva contraseña"
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-[34px] text-theme-faint hover:text-muted focus:outline-none"
-                  >
-                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
+                <Input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  label="Confirmar Nueva Contraseña"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Repita la nueva contraseña"
+                  endAdornment={
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="text-theme-faint hover:text-muted focus:outline-none p-1 transition-colors flex items-center justify-center cursor-pointer"
+                      aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                    >
+                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  }
+                />
 
-                <div className="pt-4 border-t border-default flex justify-end">
-                  <Button type="submit" disabled={updatingPassword}>
+                <div className="pt-4 border-t border-default flex flex-col sm:flex-row sm:justify-end">
+                  <Button type="submit" disabled={updatingPassword} className="w-full sm:w-auto">
                     {updatingPassword ? 'Cambiando...' : 'Cambiar Contraseña'}
                   </Button>
                 </div>
@@ -299,9 +304,10 @@ export default function ProfilePage() {
                 <li>Serás removido de cualquier galpón donde estés registrado como trabajador.</li>
               </ul>
 
-              <div className="border-t border-default pt-6 flex justify-center">
+              <div className="border-t border-default pt-6 flex justify-center sm:justify-start">
                 <Button
                   variant="danger"
+                  className="w-full sm:w-auto"
                   onClick={() => {
                     setDeletePassword('');
                     setShowDeletePassword(false);
@@ -318,60 +324,71 @@ export default function ProfilePage() {
     </Card>
 
     {/* Confirmation Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in duration-200">
-          <div className="bg-card rounded-xl shadow-xl border border-strong w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-6">
-              <h3 className="text-lg font-bold text-main flex items-center gap-2">
-                <AlertTriangle className="text-red-500 shrink-0" size={22} />
-                Confirmar eliminación
-              </h3>
-              <p className="text-sm text-muted mt-3">
-                Para confirmar la eliminación física de tu cuenta y de toda tu información, introduce tu contraseña actual a continuación:
-              </p>
-
-              <div className="relative mt-4">
-                <Input
-                  type={showDeletePassword ? 'text' : 'password'}
-                  required
-                  label="Contraseña Actual"
-                  placeholder="Introduce tu contraseña actual"
-                  value={deletePassword}
-                  onChange={(e) => setDeletePassword(e.target.value)}
-                  className="pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowDeletePassword(!showDeletePassword)}
-                  className="absolute right-3 top-[34px] text-theme-faint hover:text-muted focus:outline-none"
-                >
-                  {showDeletePassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
-
-            <div className="p-4 bg-theme-surface border-t border-default flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowDeleteModal(false);
-                  setDeletePassword('');
-                }}
-                disabled={deleting}
-              >
-                Cancelar
-              </Button>
-              <Button
-                variant="danger"
-                onClick={handleDeleteAccount}
-                disabled={deleting || !deletePassword}
-              >
-                {deleting ? 'Eliminando Cuenta...' : 'Sí, eliminar definitivamente'}
-              </Button>
-            </div>
-          </div>
+    <Dialog
+      open={showDeleteModal}
+      onClose={() => {
+        if (!deleting) {
+          setShowDeleteModal(false);
+          setDeletePassword('');
+        }
+      }}
+      title="Confirmar eliminación"
+      size="md"
+    >
+      <div className="space-y-4">
+        <div className="flex items-start gap-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 dark:text-red-400">
+          <AlertTriangle className="shrink-0 mt-0.5 text-red-500" size={20} />
+          <p className="text-xs sm:text-sm font-medium">
+            Esta acción es irreversible y eliminará todos tus datos permanentemente.
+          </p>
         </div>
-      )}
+
+        <p className="text-xs sm:text-sm text-muted">
+          Para confirmar la eliminación física de tu cuenta y de toda tu información, introduce tu contraseña actual a continuación:
+        </p>
+
+        <Input
+          type={showDeletePassword ? 'text' : 'password'}
+          required
+          label="Contraseña Actual"
+          placeholder="Introduce tu contraseña actual"
+          value={deletePassword}
+          onChange={(e) => setDeletePassword(e.target.value)}
+          endAdornment={
+            <button
+              type="button"
+              onClick={() => setShowDeletePassword(!showDeletePassword)}
+              className="text-theme-faint hover:text-muted focus:outline-none p-1 transition-colors flex items-center justify-center cursor-pointer"
+              aria-label={showDeletePassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+            >
+              {showDeletePassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          }
+        />
+
+        <div className="pt-3 flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setShowDeleteModal(false);
+              setDeletePassword('');
+            }}
+            disabled={deleting}
+            className="w-full sm:w-auto"
+          >
+            Cancelar
+          </Button>
+          <Button
+            variant="danger"
+            onClick={handleDeleteAccount}
+            disabled={deleting || !deletePassword}
+            className="w-full sm:w-auto"
+          >
+            {deleting ? 'Eliminando Cuenta...' : 'Sí, eliminar definitivamente'}
+          </Button>
+        </div>
+      </div>
+    </Dialog>
     </div>
   );
 }

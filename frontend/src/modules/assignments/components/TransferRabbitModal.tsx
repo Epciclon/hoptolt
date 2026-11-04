@@ -25,27 +25,45 @@ export function TransferRabbitModal({ open, onClose, rabbits, currentCageId, sou
   const hasEngordeRabbit = rabbits.some(r => r.purpose === 'Engorde');
 
   const availableCages = useMemo(() => {
-    return operativeCages.filter(c => {
-      if (c.id === currentCageId) return false;
-      
-      const matchesSearch = c.number.toString().includes(search) || c.type.toLowerCase().includes(search.toLowerCase());
-      if (!matchesSearch) return false;
+    return operativeCages
+      .filter(c => {
+        if (c.id === currentCageId) return false;
+        
+        const matchesSearch = c.number.toString().includes(search) || c.type.toLowerCase().includes(search.toLowerCase());
+        if (!matchesSearch) return false;
 
-      // Reglas de negocio basadas en las propiedades de los conejos
-      
-      // 1. A jaulas de reproducción: no pueden ir de propósito 'Engorde', y máximo 1 a la vez.
-      if (c.type === 'reproducción') {
-        if (hasEngordeRabbit) return false;
-        if (rabbits.length > 1) return false;
-      }
+        // Solo permitir jaulas con espacio disponible suficiente para todos los conejos seleccionados
+        const assigned = c.assignedCount || 0;
+        const availableSpace = c.capacity - assigned;
+        if (availableSpace < rabbits.length) return false;
 
-      // 2. A jaulas de engorde: no pueden ir mayores de 3 meses.
-      if (c.type === 'engorde') {
-        if (hasRabbitOver3Months) return false;
-      }
+        // Reglas de negocio basadas en las propiedades de los conejos
+        
+        // 1. A jaulas de reproducción: no pueden ir de propósito 'Engorde', y máximo 1 a la vez.
+        if (c.type === 'reproducción') {
+          if (hasEngordeRabbit) return false;
+          if (rabbits.length > 1) return false;
+        }
 
-      return true;
-    });
+        // 2. A jaulas de engorde: no pueden ir mayores de 3 meses.
+        if (c.type === 'engorde') {
+          if (hasRabbitOver3Months) return false;
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        const assignedA = a.assignedCount || 0;
+        const assignedB = b.assignedCount || 0;
+        const isDispointA = assignedA === 0 ? 0 : 1;
+        const isDispointB = assignedB === 0 ? 0 : 1;
+
+        // Primero las jaulas totalmente disponibles (vacías), luego las de uso parcial
+        if (isDispointA !== isDispointB) {
+          return isDispointA - isDispointB;
+        }
+        return (a.number || 0) - (b.number || 0);
+      });
   }, [operativeCages, currentCageId, search, sourceCageType, hasRabbitOver3Months, hasEngordeRabbit, rabbits.length]);
 
   const handleSubmit = async () => {
@@ -118,38 +136,34 @@ export function TransferRabbitModal({ open, onClose, rabbits, currentCageId, sou
           />
         </div>
 
-        <div className="border border-strong rounded-md max-h-64 overflow-y-auto bg-card shadow-inner">
+        <div className="border border-strong rounded-md max-h-48 sm:max-h-60 xl:max-h-72 overflow-y-auto bg-card shadow-inner">
           {availableCages.length === 0 ? (
-            <p className="text-muted text-sm p-4 text-center">No hay otras jaulas operativas compatibles disponibles.</p>
+            <p className="text-muted text-sm p-4 text-center">No hay otras jaulas operativas compatibles con espacio disponible.</p>
           ) : (
             availableCages.map(cage => {
               const currentCapacity = cage.assignedCount || 0;
               const isSelected = targetCageId === cage.id;
               
-              let labelState = 'Disponible';
-              let badgeColor = 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-              
-              if (currentCapacity >= cage.capacity) {
-                labelState = 'Llena';
-                badgeColor = 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
-              } else if (currentCapacity > 0) {
-                labelState = 'Uso parcial';
-                badgeColor = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
-              }
+              const isFullEmpty = currentCapacity === 0;
+              const labelState = isFullEmpty ? 'Disponible' : 'Parcial';
+              const badgeColor = isFullEmpty
+                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400';
 
               return (
                 <button
                   key={cage.id}
                   type="button"
                   onClick={() => setTargetCageId(cage.id)}
-                  className={`w-full text-left px-3 py-3 border-b border-strong last:border-b-0 text-sm transition-colors flex items-center justify-between ${
+                  className={`w-full text-left px-3.5 py-2.5 border-b border-strong last:border-b-0 text-sm transition-colors flex items-center justify-between gap-3 ${
                     isSelected ? 'bg-green-50 dark:bg-green-900/20 ring-1 ring-inset ring-green-500' : 'hover:bg-theme-hover'
                   }`}
                 >
-                  <div>
-                    <div className="font-semibold text-main">Jaula {cage.number} - {cage.type.charAt(0).toUpperCase() + cage.type.slice(1)}</div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-semibold text-main leading-snug">Jaula {cage.number}</span>
+                    <span className="text-xs text-muted font-medium capitalize mt-0.5">{cage.type}</span>
                   </div>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${badgeColor}`}>
+                  <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium shrink-0 whitespace-nowrap ${badgeColor}`}>
                     {labelState}
                   </span>
                 </button>

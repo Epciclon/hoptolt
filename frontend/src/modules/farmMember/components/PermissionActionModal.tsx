@@ -137,11 +137,11 @@ export function PermissionActionModal({ open, onClose, onConfirm, moduleName, is
           </div>
         )}
         
-        <div className="flex justify-between items-center mb-3">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1.5 mb-3">
           <span className="text-sm text-muted">Acciones permitidas:</span>
           <button type="button"
             onClick={handleToggleAll}
-            className="text-xs text-primary-600 hover:text-primary-700"
+            className="text-xs font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 self-start sm:self-auto transition-colors"
           >
             {getAvailableActions().every(action => permissions[action]) ? 'Deseleccionar todo' : 'Seleccionar todo'}
           </button>

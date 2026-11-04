@@ -28,6 +28,7 @@ const schema = z.object({
   password: z
     .string()
     .min(6, 'Mínimo 6 caracteres')
+    .regex(/\d/, 'Debe contener al menos un número')
     .regex(/[!@#$%^&*(),.?":{}|<>_]/, 'Debe contener al menos un carácter especial como @#$%'),
   confirmPassword: z.string().min(6, 'Debes confirmar tu contraseña'),
   terms: z.boolean().refine(val => val === true, {
@@ -216,9 +217,9 @@ export default function RegisterPage() {
       </form>
 
       <div className="mt-6 text-center animate-fade-in-right" style={{ animationDelay: '0.8s' }}>
-        <p className="text-muted text-sm mb-4">
-          ¿Ya tienes una cuenta?{' '}
-          <Link href="/login" className="text-teal-600 font-semibold hover:underline">
+        <p className="text-muted text-sm mb-4 flex flex-wrap items-center justify-center gap-1">
+          <span>¿Ya tienes una cuenta?</span>
+          <Link href="/login" className="text-teal-600 font-semibold hover:underline whitespace-nowrap">
             Inicia Sesión
           </Link>
         </p>

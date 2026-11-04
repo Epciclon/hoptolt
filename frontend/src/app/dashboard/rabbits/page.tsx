@@ -27,9 +27,9 @@ export default function RabbitsPage() {
               ) : undefined
             }
           />
-          <div className="p-4 border-t border-default">
-            <RabbitCatalog />
-          </div>
+
+          <RabbitCatalog />
+
 
           <Dialog
             open={isCreateOpen}

@@ -52,14 +52,14 @@ const historyColumns: Column<HistoryRecord>[] = [
         return (
           <div className="flex flex-col leading-tight">
             <span className="font-semibold text-main text-sm">{row.femaleName || row.femaleCode}</span>
-            {row.femaleName && <span className="text-[11px] text-muted font-medium">{row.femaleCode}</span>}
+            {row.femaleName && <span className="text-xs text-muted font-medium">{row.femaleCode}</span>}
           </div>
         );
       } else {
         return (
           <div className="flex flex-col leading-tight">
             <span className="font-semibold text-main text-sm">{row.rabbitName || row.rabbitCode || ''}</span>
-            {row.rabbitName && <span className="text-[11px] text-muted font-medium">{row.rabbitCode || ''}</span>}
+            {row.rabbitName && <span className="text-xs text-muted font-medium">{row.rabbitCode || ''}</span>}
           </div>
         );
       }
@@ -75,7 +75,7 @@ const historyColumns: Column<HistoryRecord>[] = [
         return (
           <div className="flex flex-col leading-tight">
             <span className="font-semibold text-main text-sm">{row.maleName || row.maleCode || '-'}</span>
-            {row.maleName && <span className="text-[11px] text-muted font-medium">{row.maleCode || ''}</span>}
+            {row.maleName && <span className="text-xs text-muted font-medium">{row.maleCode || ''}</span>}
           </div>
         );
       }
@@ -83,7 +83,7 @@ const historyColumns: Column<HistoryRecord>[] = [
         return (
           <div className="flex flex-col leading-tight">
             <span className="font-semibold text-main text-sm">{row.maleName || row.maleCode || '-'}</span>
-            {row.maleName && <span className="text-[11px] text-muted font-medium">{row.maleCode || ''}</span>}
+            {row.maleName && <span className="text-xs text-muted font-medium">{row.maleCode || ''}</span>}
           </div>
         );
       }
@@ -229,12 +229,12 @@ function ReporterProfileCard({
           {profile?.fullName || profile?.username || 'Sistema'}
         </span>
         {profile?.username && (
-          <span className="text-[11px] text-muted font-medium mt-0.5">
+          <span className="text-xs text-muted font-medium mt-0.5">
             @{profile.username}
           </span>
         )}
         {profile?.email && (
-          <span className="text-[10px] text-theme-faint mt-0.5 break-all">
+          <span className="text-xs text-theme-faint mt-0.5 break-all">
             {profile.email}
           </span>
         )}

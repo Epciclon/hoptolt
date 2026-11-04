@@ -17,9 +17,9 @@ export function RabbitReproductionStats({ rabbitId }: { rabbitId: number }) {
   if (completedCount === 0 && failedCount === 0) return null;
 
   return (
-    <div className="flex justify-between border-b border-slate-50 pb-2">
+    <div className="flex items-center justify-between gap-2 sm:gap-3 border-t border-default/50 pt-2">
       <span className="text-muted">Partos:</span>
-      <span className="font-medium text-main flex items-center gap-1.5 text-[13px]">
+      <span className="font-semibold text-main flex items-center gap-1.5 text-xs sm:text-sm">
         <span>{completedCount} Exitoso{completedCount !== 1 ? 's' : ''}</span>
         {failedCount > 0 && (
           <>

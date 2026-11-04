@@ -123,7 +123,7 @@ export function MortalityForm({ selectedRabbits, onSuccess, onCancel }: Readonly
     { value: 'depredador', label: 'Depredador' },
     { value: 'edad', label: 'Edad' },
     { value: 'sacrificio', label: 'Sacrificio' },
-    { value: 'otra', label: 'Otra (especificar causa)' }
+    { value: 'otra', label: 'Otra - especificar causa' }
   ];
 
   const causeOptions = [...baseCauseOptions];
@@ -145,19 +145,19 @@ export function MortalityForm({ selectedRabbits, onSuccess, onCancel }: Readonly
         <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">
           Conejos a dar de baja:
         </p>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           {selectedRabbits.map(r => (
             <div
               key={r.id}
-              className="flex items-center gap-2 bg-card border border-strong rounded-full pr-3 pl-1 py-1 shadow-sm"
+              className="flex items-center gap-3 bg-card border border-strong rounded-xl p-2.5 shadow-sm w-full min-w-0"
             >
-              <RabbitAvatar imageUrl={r.imageUrl} alt={r.code} size="xs" />
-              <div className="flex flex-col leading-tight justify-center">
-                <span className="text-sm font-semibold text-main">
+              <RabbitAvatar imageUrl={r.imageUrl} alt={r.code} size="sm" />
+              <div className="flex flex-col leading-tight justify-center min-w-0 flex-1">
+                <span className="text-sm font-semibold text-main truncate">
                   {r.name || r.code}
                 </span>
                 {r.name && (
-                  <span className="text-[10px] text-muted font-medium -mt-0.5">
+                  <span className="text-xs text-muted font-medium mt-0.5 truncate">
                     {r.code}
                   </span>
                 )}
@@ -179,11 +179,11 @@ export function MortalityForm({ selectedRabbits, onSuccess, onCancel }: Readonly
         {/* Selector de Causa Search & Select */}
         <div className="relative flex flex-col gap-1.5" ref={causeDropdownRef}>
           <label htmlFor="causeInput" className="text-sm font-medium text-main">
-            Causa <span className="text-red-500">*</span>
+            Causa <span className="text-muted ml-0.5">*</span>
           </label>
           <Input
             id="causeInput"
-            placeholder="Escribe para buscar o selecciona..."
+            placeholder="Buscar o elegir causa..."
             value={causeSearch}
             onChange={(e) => {
               setCauseSearch(e.target.value);
@@ -193,7 +193,7 @@ export function MortalityForm({ selectedRabbits, onSuccess, onCancel }: Readonly
             required
           />
           {showCauseDropdown && (
-            <div className="absolute top-full left-0 right-0 z-20 bg-card border border-strong rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
+            <div className="absolute top-full left-0 right-0 z-20 bg-card border border-strong rounded-lg shadow-lg mt-1 max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto">
               {filteredCauseOptions.length === 0 ? (
                 <p className="text-muted text-sm p-3">No hay opciones disponibles</p>
               ) : (
@@ -226,11 +226,11 @@ export function MortalityForm({ selectedRabbits, onSuccess, onCancel }: Readonly
       {/* Observaciones obligatorias */}
       <div className="flex flex-col gap-1.5">
         <label htmlFor="observationsInput" className="text-sm font-medium text-main">
-          Observaciones - ¿Qué pasó? <span className="text-red-500">*</span>
+          Observaciones - ¿Qué pasó? <span className="text-muted ml-0.5">*</span>
         </label>
         <textarea
           id="observationsInput"
-          className="w-full px-3 py-2 text-sm rounded-lg border border-strong bg-card text-main focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500"
+          className="w-full px-3 py-2 text-sm rounded-lg border bg-theme-surface dark:bg-slate-900 border-default text-main dark:text-slate-100 placeholder:text-theme-faint focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
           rows={3}
           value={observations}
           onChange={(e) => setObservations(e.target.value)}
@@ -253,7 +253,7 @@ export function MortalityForm({ selectedRabbits, onSuccess, onCancel }: Readonly
           variant="danger"
           disabled={submitting}
         >
-          {submitting ? 'Procesando...' : `Confirmar Baja (${selectedRabbits.length})`}
+          {submitting ? 'Procesando...' : selectedRabbits.length === 1 ? 'Confirmar Baja' : `Confirmar Bajas: ${selectedRabbits.length}`}
         </Button>
       </div>
 

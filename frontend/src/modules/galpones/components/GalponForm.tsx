@@ -3,8 +3,8 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useState } from 'react';
-import { Input, Button } from '@/shared/ui';
+import { useState, useRef, useEffect } from 'react';
+import { Input, Button, Dialog } from '@/shared/ui';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { galponService } from '../services/galpon.service';
 import type { Galpon } from '../types/galpon.types';
@@ -59,15 +59,39 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
   const [foodSearch, setFoodSearch] = useState('');
   const [vaccineSearch, setVaccineSearch] = useState('');
   const queryClient = useQueryClient();
-  const [provinceSearch, setProvinceSearch] = useState('');
+  const [provinceSearch, setProvinceSearch] = useState(defaultValues?.province || '');
   const [showFoodDropdown, setShowFoodDropdown] = useState(false);
   const [showVaccineDropdown, setShowVaccineDropdown] = useState(false);
   const [showProvinceDropdown, setShowProvinceDropdown] = useState(false);
+  
   const [customFood, setCustomFood] = useState('');
+  const [showCustomFoodModal, setShowCustomFoodModal] = useState(false);
+  
   const [customVaccine, setCustomVaccine] = useState('');
   const [customVaccinePeriod, setCustomVaccinePeriod] = useState('');
-  const [showCustomFoodInput, setShowCustomFoodInput] = useState(false);
-  const [showCustomVaccineInput, setShowCustomVaccineInput] = useState(false);
+  const [showCustomVaccineModal, setShowCustomVaccineModal] = useState(false);
+
+  const provinceDropdownRef = useRef<HTMLDivElement>(null);
+  const foodDropdownRef = useRef<HTMLDivElement>(null);
+  const vaccineDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as HTMLElement;
+      if (provinceDropdownRef.current && !provinceDropdownRef.current.contains(target)) {
+        setShowProvinceDropdown(false);
+      }
+      if (foodDropdownRef.current && !foodDropdownRef.current.contains(target)) {
+        setShowFoodDropdown(false);
+      }
+      if (vaccineDropdownRef.current && !vaccineDropdownRef.current.contains(target)) {
+        setShowVaccineDropdown(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', handleClickOutside as EventListener);
+    return () => document.removeEventListener('pointerdown', handleClickOutside as EventListener);
+  }, []);
 
   const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -84,7 +108,7 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
 
   const handleFoodSelect = (food: string) => {
     if (food === 'Otro') {
-      setShowCustomFoodInput(true);
+      setShowCustomFoodModal(true);
       setFoodSearch('');
       setShowFoodDropdown(false);
       return;
@@ -99,12 +123,13 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
   };
 
   const addCustomFood = () => {
-    if (customFood.trim() && !selectedFoods.includes(customFood.trim())) {
-      const newFoods = [...selectedFoods, customFood.trim()];
+    const trimmed = customFood.trim();
+    if (trimmed && !selectedFoods.includes(trimmed)) {
+      const newFoods = [...selectedFoods, trimmed];
       setSelectedFoods(newFoods);
       setValue('foodTypes', newFoods);
       setCustomFood('');
-      setShowCustomFoodInput(false);
+      setShowCustomFoodModal(false);
     }
   };
 
@@ -116,7 +141,7 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
 
   const handleVaccineSelect = (vaccine: { name: string; period: number }) => {
     if (vaccine.name === 'Otra') {
-      setShowCustomVaccineInput(true);
+      setShowCustomVaccineModal(true);
       setVaccineSearch('');
       setShowVaccineDropdown(false);
       return;
@@ -131,13 +156,15 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
   };
 
   const addCustomVaccine = () => {
-    if (customVaccine.trim() && customVaccinePeriod && !selectedVaccines.some(v => v.name === customVaccine.trim())) {
-      const newVaccines = [...selectedVaccines, { name: customVaccine.trim(), period: Number.parseInt(customVaccinePeriod) }];
+    const trimmed = customVaccine.trim();
+    const periodNum = Number.parseInt(customVaccinePeriod, 10);
+    if (trimmed && periodNum > 0 && !selectedVaccines.some(v => v.name === trimmed)) {
+      const newVaccines = [...selectedVaccines, { name: trimmed, period: periodNum }];
       setSelectedVaccines(newVaccines);
       setValue('vaccines', newVaccines);
       setCustomVaccine('');
       setCustomVaccinePeriod('');
-      setShowCustomVaccineInput(false);
+      setShowCustomVaccineModal(false);
     }
   };
 
@@ -166,7 +193,6 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
   );
 
   const onSubmit = async (values: FormValues) => {
-
     try {
       if (mode === 'create') {
         await galponService.create(values);
@@ -195,8 +221,10 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
       />
 
       <div>
-        <span className="block text-sm font-medium text-muted mb-2">Provincia *</span>
-        <div className="relative">
+        <label className="block text-sm font-medium text-main mb-1.5">
+          Provincia <span className="text-muted ml-0.5">*</span>
+        </label>
+        <div className="relative" ref={provinceDropdownRef}>
           <Input
             placeholder="Buscar provincia..."
             value={provinceSearch}
@@ -204,13 +232,13 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
             onFocus={() => setShowProvinceDropdown(true)}
           />
           {showProvinceDropdown && filteredProvinces.length > 0 && (
-            <div className="absolute top-full left-0 right-0 bg-card border border-strong rounded-md mt-1 max-h-48 overflow-y-auto z-10">
+            <div className="absolute top-full left-0 right-0 bg-card border border-strong rounded-md mt-1 max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto z-20 shadow-lg">
               {filteredProvinces.map(p => (
                 <button
                   key={p}
                   type="button"
                   onClick={() => handleProvinceSelect(p)}
-                  className="w-full text-left px-3 py-2 hover:bg-theme-surface border border-default text-sm"
+                  className="w-full text-left px-3 py-2 hover:bg-theme-surface border-b border-default text-sm last:border-b-0 cursor-pointer"
                 >
                   {p}
                 </button>
@@ -218,7 +246,7 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
             </div>
           )}
         </div>
-        {errors.province && <p className="text-sm text-red-600 mt-1">{errors.province.message}</p>}
+        {errors.province && <p className="text-sm text-red-600">{errors.province.message}</p>}
       </div>
 
       <Input
@@ -232,15 +260,24 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
       <Input
         label="Capacidad Total"
         type="number"
+        min={1}
+        step={1}
         required
         placeholder="Ej: 100"
         error={errors.totalCapacity?.message}
+        onKeyDown={(e) => {
+          if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '.') {
+            e.preventDefault();
+          }
+        }}
         {...register('totalCapacity')}
       />
 
       <div>
-        <span className="block text-sm font-medium text-muted mb-2">Tipos de Alimento *</span>
-        <div className="relative mb-2">
+        <label className="block text-sm font-medium text-main mb-1.5">
+          Tipos de Alimento <span className="text-muted ml-0.5">*</span>
+        </label>
+        <div className="relative mb-2" ref={foodDropdownRef}>
           <Input
             placeholder="Buscar tipo de alimento..."
             value={foodSearch}
@@ -248,13 +285,13 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
             onFocus={() => setShowFoodDropdown(true)}
           />
           {showFoodDropdown && filteredFoods.length > 0 && (
-            <div className="absolute top-full left-0 right-0 bg-card border border-strong rounded-md mt-1 max-h-48 overflow-y-auto z-10">
+            <div className="absolute top-full left-0 right-0 bg-card border border-strong rounded-md mt-1 max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto z-20 shadow-lg">
               {filteredFoods.map(f => (
                 <button
                   key={f}
                   type="button"
                   onClick={() => handleFoodSelect(f)}
-                  className="w-full text-left px-3 py-2 hover:bg-theme-surface border border-default text-sm"
+                  className="w-full text-left px-3 py-2 hover:bg-theme-surface border-b border-default text-sm last:border-b-0 cursor-pointer"
                 >
                   {f}
                 </button>
@@ -262,39 +299,17 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
             </div>
           )}
         </div>
-        {showCustomFoodInput && (
-          <div className="flex gap-2 mb-2">
-            <Input
-              placeholder="Especifica el tipo de alimento"
-              value={customFood}
-              onChange={(e) => setCustomFood(e.target.value)}
-              autoFocus
-            />
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={addCustomFood}
-            >
-              Agregar
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => { setShowCustomFoodInput(false); setCustomFood(''); }}
-            >
-              Cancelar
-            </Button>
-          </div>
-        )}
+
         {selectedFoods.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-2">
             {selectedFoods.map(food => (
-              <div key={food} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
-                {food}
+              <div key={food} className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 px-2.5 py-1 rounded-md text-xs sm:text-sm font-semibold shadow-sm flex items-center gap-2">
+                <span>{food}</span>
                 <button
                   type="button"
                   onClick={() => removeFood(food)}
-                  className="text-blue-600 hover:text-blue-900"
+                  className="text-emerald-600 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-200 cursor-pointer"
+                  title={`Quitar ${food}`}
                 >
                   <X size={14} />
                 </button>
@@ -306,8 +321,10 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
       </div>
 
       <div>
-        <span className="block text-sm font-medium text-muted mb-2">Vacunas *</span>
-        <div className="relative mb-2">
+        <label className="block text-sm font-medium text-main mb-1.5">
+          Vacunas <span className="text-muted ml-0.5">*</span>
+        </label>
+        <div className="relative mb-2" ref={vaccineDropdownRef}>
           <Input
             placeholder="Buscar vacuna..."
             value={vaccineSearch}
@@ -315,60 +332,31 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
             onFocus={() => setShowVaccineDropdown(true)}
           />
           {showVaccineDropdown && filteredVaccines.length > 0 && (
-            <div className="absolute top-full left-0 right-0 bg-card border border-strong rounded-md mt-1 max-h-48 overflow-y-auto z-10">
+            <div className="absolute top-full left-0 right-0 bg-card border border-strong rounded-md mt-1 max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto z-20 shadow-lg">
               {filteredVaccines.map(v => (
                 <button
                   key={v.name}
                   type="button"
                   onClick={() => handleVaccineSelect(v)}
-                  className="w-full text-left px-3 py-2 hover:bg-theme-surface border border-default text-sm"
+                  className="w-full text-left px-3 py-2 hover:bg-theme-surface border-b border-default text-sm last:border-b-0 cursor-pointer"
                 >
-                  {v.name} - {v.period} días
+                  {v.name} - cada {v.period} días
                 </button>
               ))}
             </div>
           )}
         </div>
-        {showCustomVaccineInput && (
-          <div className="flex gap-2 mb-2">
-            <Input
-              placeholder="Nombre de la vacuna"
-              value={customVaccine}
-              onChange={(e) => setCustomVaccine(e.target.value)}
-              autoFocus
-            />
-            <Input
-              type="number"
-              placeholder="Período (días)"
-              value={customVaccinePeriod}
-              onChange={(e) => setCustomVaccinePeriod(e.target.value)}
-              className="w-32"
-            />
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={addCustomVaccine}
-            >
-              Agregar
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => { setShowCustomVaccineInput(false); setCustomVaccine(''); setCustomVaccinePeriod(''); }}
-            >
-              Cancelar
-            </Button>
-          </div>
-        )}
+
         {selectedVaccines.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-2">
             {selectedVaccines.map(vaccine => (
-              <div key={vaccine.name} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
-                {vaccine.name} ({vaccine.period})
+              <div key={vaccine.name} className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 px-2.5 py-1 rounded-md text-xs sm:text-sm font-semibold shadow-sm flex items-center gap-2">
+                <span>{vaccine.name} - cada {vaccine.period} días</span>
                 <button
                   type="button"
                   onClick={() => removeVaccine(vaccine.name)}
-                  className="text-blue-600 hover:text-blue-900"
+                  className="text-emerald-600 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-200 cursor-pointer"
+                  title={`Quitar ${vaccine.name}`}
                 >
                   <X size={14} />
                 </button>
@@ -380,11 +368,18 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
       </div>
 
       <Input
-        label="Período de Desparasitación (días)"
+        label="Período de Desparasitación en días"
         type="number"
+        min={1}
+        step={1}
         required
         placeholder="30"
         error={errors.dewormingPeriod?.message}
+        onKeyDown={(e) => {
+          if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '.') {
+            e.preventDefault();
+          }
+        }}
         {...register('dewormingPeriod')}
       />
 
@@ -396,6 +391,96 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
           {mode === 'create' ? 'Registrar Galpón' : 'Guardar Cambios'}
         </Button>
       </div>
+
+      {/* Modal para Agregar Tipo de Alimento Personalizado */}
+      <Dialog
+        open={showCustomFoodModal}
+        onClose={() => { setShowCustomFoodModal(false); setCustomFood(''); }}
+        title="Agregar tipo de alimento"
+        description="Ingresa un nuevo alimento para tus conejos"
+        size="sm"
+      >
+        <div className="space-y-4 pt-2">
+          <Input
+            label="Nombre del alimento"
+            placeholder="Ej: Alfalfa fresca, Zanahoria"
+            value={customFood}
+            onChange={(e) => setCustomFood(e.target.value)}
+            required
+            autoFocus
+          />
+          <div className="flex gap-2 justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => { setShowCustomFoodModal(false); setCustomFood(''); }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={addCustomFood}
+              disabled={!customFood.trim()}
+            >
+              Agregar
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
+      {/* Modal para Agregar Vacuna Personalizada */}
+      <Dialog
+        open={showCustomVaccineModal}
+        onClose={() => { setShowCustomVaccineModal(false); setCustomVaccine(''); setCustomVaccinePeriod(''); }}
+        title="Agregar vacuna"
+        description="Ingresa el nombre y período de aplicación"
+        size="sm"
+      >
+        <div className="space-y-4 pt-2">
+          <Input
+            label="Nombre de la vacuna"
+            placeholder="Ej: Rabia"
+            value={customVaccine}
+            onChange={(e) => setCustomVaccine(e.target.value)}
+            required
+            autoFocus
+          />
+          <Input
+            label="Período de aplicación en días"
+            type="number"
+            min={1}
+            step={1}
+            placeholder="Ej: 180"
+            value={customVaccinePeriod}
+            onChange={(e) => setCustomVaccinePeriod(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '.') {
+                e.preventDefault();
+              }
+            }}
+            required
+          />
+          <div className="flex gap-2 justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => { setShowCustomVaccineModal(false); setCustomVaccine(''); setCustomVaccinePeriod(''); }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={addCustomVaccine}
+              disabled={!customVaccine.trim() || !customVaccinePeriod || Number(customVaccinePeriod) <= 0}
+            >
+              Agregar
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
     </form>
   );
 }

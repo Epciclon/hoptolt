@@ -16,7 +16,10 @@ export function ToastProvider({ children }: Readonly<{ children: React.ReactNode
 
   const showToast = useCallback((message: string, type: ToastType = 'info', duration?: number) => {
     const id = crypto.randomUUID();
-    setToasts(prev => [...prev, { id, type, message, duration }]);
+    setToasts(prev => {
+      const filtered = prev.filter(t => t.message !== message);
+      return [...filtered.slice(-2), { id, type, message, duration }];
+    });
   }, []);
 
   useEffect(() => {

@@ -8,14 +8,14 @@ class GrowthService {
     calculateEstimatedWeight(purpose, ageMonths) {
         if (purpose === 'Engorde') {
             const table = {
-                0: 0.05, 1: 0.5, 2: 1.0, 3: 1.5, 4: 2.0, 5: 2.2, 6: 2.4, 7: 2.6
+                0: 0.05, 1: 0.6, 2: 1.7, 3: 2.6, 4: 3.5, 5: 3.9, 6: 4.1, 7: 4.2
             };
-            return ageMonths >= 8 ? 2.8 : (table[ageMonths] || 2.8);
+            return ageMonths >= 8 ? 4.2 : (table[ageMonths] || 4.2);
         } else if (purpose === 'Reproducción') {
             const table = {
-                0: 0.05, 1: 0.4, 2: 0.8, 3: 1.2, 4: 1.6, 5: 2.0, 6: 2.15, 7: 2.3, 8: 2.45, 9: 2.6, 10: 2.75, 11: 2.9
+                0: 0.05, 1: 0.6, 2: 1.7, 3: 2.4, 4: 3.2, 5: 3.7, 6: 4.0, 7: 4.1
             };
-            return ageMonths >= 12 ? 3.0 : (table[ageMonths] || 3.0);
+            return ageMonths >= 8 ? 4.2 : (table[ageMonths] || 4.2);
         }
         return 0;
     }
@@ -50,7 +50,7 @@ class GrowthService {
                 for (const rabbit of rabbits) {
                     this._processRabbitGrowthSync(rabbit, today, updatesResult);
                 }
-
+
                 await this._applyGrowthUpdates(updatesResult, rabbits, profileId, today, todayStr, AuditLog, Growth, Notification);
 
             } catch (error) {
@@ -86,7 +86,7 @@ class GrowthService {
         let currentMonths = Math.floor(diffDays / 30);
         if (currentMonths < 0) currentMonths = 0;
 
-        const maxAge = rabbit.purpose === 'Engorde' ? 8 : 12;
+        const maxAge = 8;
         const rabbitAge = Number(rabbit.age || 0);
 
         if (rabbitAge >= currentMonths || rabbitAge >= maxAge) return;
@@ -101,21 +101,18 @@ class GrowthService {
             // Fecha exacta cada 30 días
             const exactDate = new Date(birthDate.getTime() + m * 30 * 24 * 60 * 60 * 1000);
             
-            // "una ves cumpla se queda con el peso que dejamos y pasa a historico"
-            // Solo para el último mes cumplido, pasamos el peso actual que el usuario dejó al historial.
-            // Para meses intermedios saltados, usamos el estimado.
-            const weightToLog = (m === endMonth) ? finalWeight : this.calculateEstimatedWeight(rabbit.purpose, m);
+            const estimatedWeightForMonth = this.calculateEstimatedWeight(rabbit.purpose, m);
             
             updatesResult.catchUpGrowths.push({
                 rabbitId: rabbit.id,
-                weight: weightToLog,
+                weight: estimatedWeightForMonth,
                 oldWeight: finalWeight,
                 recordDate: `${exactDate.toLocaleDateString('sv', { timeZone: 'America/Guayaquil' })}T12:00:00Z`
             });
         }
 
-        // Actualizamos solo la edad del conejo, manteniendo su peso actual (el que dejó el usuario)
-        const updates = { rabbitId: rabbit.id, age: endMonth };
+        const newEstimatedWeight = this.calculateEstimatedWeight(rabbit.purpose, endMonth);
+        const updates = { rabbitId: rabbit.id, age: endMonth, weight: newEstimatedWeight };
         
         const rabbitLabel = rabbit.name ? `${rabbit.name} - ${rabbit.code}` : rabbit.code;
         let msg = `${rabbitLabel} ha alcanzado los ${endMonth} meses de edad. `;
@@ -158,15 +155,22 @@ class GrowthService {
                 await rabbit.save();
                 
                 const rabbitLabel = rabbit.name ? `${rabbit.name} - ${rabbit.code}` : rabbit.code;
+                const beforeData = { age: oldAge };
+                const afterData = { age: update.age };
+                if (update.weight !== undefined && update.weight !== null && update.weight !== oldWeight) {
+                    beforeData.weight = oldWeight;
+                    afterData.weight = update.weight;
+                }
+
                 await recordSystemChange({
                     galponId: rabbit.galponId,
                     action: 'Cálculo de crecimiento',
                     entity: 'growth',
                     entityId: rabbit.id,
                     itemName: rabbitLabel,
-                    summary: `HopTolt actualizó la edad a ${update.age} meses` + (update.weight ? ` y peso a ${update.weight} kg` : '') + ` para el conejo ${rabbitLabel}`,
-                    before: { age: oldAge, weight: oldWeight },
-                    after: { age: update.age, weight: update.weight }
+                    summary: `HopTolt actualizó la edad a ${update.age} meses` + (update.weight && update.weight !== oldWeight ? ` y peso estimado a ${update.weight} kg` : '') + ` para el conejo ${rabbitLabel}`,
+                    before: beforeData,
+                    after: afterData
                 });
             }));
         }
@@ -251,7 +255,7 @@ class GrowthService {
         let currentMonths = Math.floor(diffDays / 30);
         if (currentMonths < 0) currentMonths = 0;
 
-        const maxAge = rabbit.purpose === 'Engorde' ? 8 : 12;
+        const maxAge = 8;
         const endMonth = Math.min(currentMonths, maxAge);
 
         const growthsToCreate = [];

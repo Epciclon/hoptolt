@@ -100,7 +100,7 @@ export function WeaningWizard({ open, onClose, onFinish, reproduction, finishing
   const handleSaveBornKits = async () => {
     const num = Number.parseInt(inputBornKits);
     if (Number.isNaN(num) || num < 0) {
-      showToast('Ingresa una cantidad válida de gazapos nacidos (0 o más).', 'error');
+      showToast('Ingresa una cantidad válida de gazapos nacidos -- 0 o más.', 'error');
       return;
     }
     setSavingKits(true);
@@ -270,7 +270,7 @@ export function WeaningWizard({ open, onClose, onFinish, reproduction, finishing
             {currentBornKits === 0 ? (
               <>
                 <p className="text-muted text-sm leading-relaxed">
-                  Esta camada no cuenta con crías vivas registradas (0 gazapos). Al finalizar, la coneja volverá a estar receptiva para una nueva monta.
+                  Esta camada no cuenta con crías vivas registradas -- 0 gazapos. Al finalizar, la coneja volverá a estar receptiva para una nueva monta.
                 </p>
                 <div className="flex gap-3 justify-end mt-2">
                   <Button type="button" variant="outline" onClick={handleCloseAttempt} disabled={finishing}>

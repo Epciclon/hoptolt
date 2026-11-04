@@ -16,7 +16,7 @@ interface NextDewormingData {
 
 function DewormingCustomDetails({ nextDeworm }: Readonly<{ nextDeworm: NextDewormingData | null }>) {
   return (
-    <div className="bg-theme-surface border border-strong rounded-lg p-3 col-span-2">
+    <div className="bg-theme-surface border border-strong rounded-lg p-3 col-span-1 sm:col-span-2">
       <p className="text-xs text-muted font-medium mb-3">Seguimiento de Desparasitación</p>
       <div className={`flex flex-col leading-tight border rounded p-3 justify-center ${
         (() => {
@@ -49,7 +49,7 @@ function DewormingCustomDetails({ nextDeworm }: Readonly<{ nextDeworm: NextDewor
                 </span>
               );
             })()}
-            <span className="text-[12px] text-muted font-medium">
+            <span className="text-xs text-muted font-medium mt-1">
               Próxima desparasitación: {nextDeworm.nextDate.toLocaleDateString('es-EC')}
             </span>
           </>
@@ -58,7 +58,7 @@ function DewormingCustomDetails({ nextDeworm }: Readonly<{ nextDeworm: NextDewor
             <span className="text-sm font-semibold text-theme-faint border-b border-default pb-2 mb-2">
               Sin fecha
             </span>
-            <span className="text-[12px] text-muted font-medium">
+            <span className="text-xs text-muted font-medium mt-1">
               Sin período configurado
             </span>
           </>

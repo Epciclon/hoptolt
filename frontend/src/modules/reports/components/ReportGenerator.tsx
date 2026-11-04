@@ -550,13 +550,15 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
     };
 
     return (
-        <Card className="min-h-[calc(100vh-7rem)] flex flex-col">
-            <CardHeader title="Tus Estadísticas y Reportes" subtitle="Genera documentos y mira cómo va el rendimiento de tu granja" />
+        <Card padding="none" className="min-h-[calc(100vh-7rem)] flex flex-col">
+            <div className="p-3.5 sm:p-5 md:p-6 pb-2 sm:pb-3 border-b border-default">
+                <CardHeader title="Tus Estadísticas y Reportes" subtitle="Genera documentos y mira cómo va el rendimiento de tu granja" className="mb-0" />
+            </div>
 
-            <div className="flex flex-col md:flex-row gap-4 sm:gap-6 p-2 sm:p-4 md:p-6 pt-0 flex-1">
+            <div className="flex flex-col xl:flex-row gap-4 sm:gap-6 p-3.5 sm:p-5 md:p-6 flex-1">
                 {/* Panel de Filtros */}
                 {!isExpanded && (
-                    <div className="w-full md:w-1/3 flex flex-col gap-4 border-r pr-0 md:pr-6 border-strong border-b md:border-b-0 pb-6 md:pb-0">
+                    <div className="w-full xl:w-1/3 flex flex-col gap-4 border-b xl:border-b-0 xl:border-r border-default pr-0 xl:pr-6 pb-20 xl:pb-0">
                         <div className="flex items-center gap-2 mb-2">
                             <Settings className="w-5 h-5 text-muted" />
                             <h3 className="text-lg font-semibold text-main">Filtros del Reporte</h3>
@@ -573,7 +575,7 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
                                 options={REPORT_MODULES.map(m => ({ label: m.label, value: m.id }))}
                             />
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-4">
                                 <div>
                                     <Input
                                         label="Fecha Inicio"
@@ -620,8 +622,8 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
                                                     className="cursor-pointer bg-transparent border-0 p-0"
                                                 >
                                                     <Badge
-                                                        variant="neutral"
-                                                        className="flex items-center gap-1 hover:bg-slate-200 transition-colors"
+                                                        variant="success"
+                                                        className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 shadow-xs hover:bg-emerald-200/80 dark:hover:bg-emerald-900/60 transition-colors"
                                                     >
                                                         {race} <X size={12} />
                                                     </Badge>
@@ -661,8 +663,8 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
                                                     className="cursor-pointer bg-transparent border-0 p-0"
                                                 >
                                                     <Badge
-                                                        variant="neutral"
-                                                        className="flex items-center gap-1 hover:bg-slate-200 transition-colors"
+                                                        variant="success"
+                                                        className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 shadow-xs hover:bg-emerald-200/80 dark:hover:bg-emerald-900/60 transition-colors"
                                                     >
                                                         {capitalizeString(type)} <X size={12} />
                                                     </Badge>
@@ -707,8 +709,8 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
                                                     className="cursor-pointer bg-transparent border-0 p-0"
                                                 >
                                                     <Badge
-                                                        variant="neutral"
-                                                        className="flex items-center gap-1 hover:bg-slate-200 transition-colors"
+                                                        variant="success"
+                                                        className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 shadow-xs hover:bg-emerald-200/80 dark:hover:bg-emerald-900/60 transition-colors"
                                                     >
                                                         {name} <X size={12} />
                                                     </Badge>
@@ -762,8 +764,8 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
                                                         className="cursor-pointer bg-transparent border-0 p-0"
                                                     >
                                                         <Badge
-                                                            variant="neutral"
-                                                            className="flex items-center gap-1 hover:bg-slate-200 transition-colors"
+                                                            variant="success"
+                                                            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 shadow-xs hover:bg-emerald-200/80 dark:hover:bg-emerald-900/60 transition-colors"
                                                         >
                                                             {label} <X size={12} />
                                                         </Badge>
@@ -781,8 +783,8 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
                                 value={sortBy}
                                 onChange={(e) => setSortBy(e.target.value)}
                                 options={[
-                                    { label: 'La fecha del registro más nuevo', value: 'date' },
-                                    { label: ['feeding', 'cleaning'].includes(selectedModule) ? 'Orden numérico de la jaula' : 'Orden alfabético del conejo', value: 'entity' }
+                                    { label: 'Más nuevo', value: 'date' },
+                                    { label: ['feeding', 'cleaning'].includes(selectedModule) ? 'Por jaula' : 'Por conejo', value: 'entity' }
                                 ]}
                             />
 
@@ -799,18 +801,19 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
                 )}
 
                 {/* Área de Vista Previa */}
-                <div className={`flex flex-col transition-all duration-300 ${isExpanded ? 'w-full' : 'w-full md:w-2/3'}`}>
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold text-main flex items-center gap-2">
-                            <FileText className="w-5 h-5 text-primary-500" />
+                <div className={`flex flex-col min-w-0 max-w-full transition-all duration-300 ${isExpanded ? 'w-full' : 'w-full xl:w-2/3'}`}>
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                        <h3 className="text-lg font-semibold text-main flex items-center gap-2 whitespace-nowrap">
+                            <FileText className="w-5 h-5 text-primary-500 shrink-0" />
                             Vista Previa
                         </h3>
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0 max-w-full">
                             <Button
                                 variant="outline"
                                 onClick={handleExpandPDF}
                                 disabled={!pdfPreviewUrl}
                                 icon={isExpanded ? <Minimize size={18} /> : <Maximize size={18} />}
+                                className="flex-1 sm:flex-initial justify-center text-xs sm:text-sm px-2.5 sm:px-4 shrink-0 whitespace-nowrap"
                             >
                                 {isExpanded ? 'Contraer' : 'Expandir'}
                             </Button>
@@ -820,6 +823,7 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
                                 disabled={!pdfPreviewUrl}
                                 loading={isDownloading}
                                 icon={!isDownloading ? <Download size={18} /> : undefined}
+                                className="flex-1 sm:flex-initial justify-center text-xs sm:text-sm px-2.5 sm:px-4 shrink-0 whitespace-nowrap"
                             >
                                 Descargar
                             </Button>

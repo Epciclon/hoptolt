@@ -7,7 +7,7 @@ class ReproductionService {
     calculateEstimatedBirthDate(mountDate) {
         // mountDate es un string "YYYY-MM-DD"
         const date = new Date(mountDate + 'T00:00:00-05:00');
-        date.setDate(date.getDate() + 31);
+        date.setDate(date.getDate() + 30);
         const y = date.getFullYear();
         const m = String(date.getMonth() + 1).padStart(2, '0');
         const d = String(date.getDate()).padStart(2, '0');
@@ -504,9 +504,7 @@ class ReproductionService {
         const { bornKits, actualBirthDate } = data;
         if (bornKits !== undefined && bornKits !== null && bornKits < 0) throw new AppError('Cantidad de gazapos inválida.', 400);
 
-        if (bornKits !== undefined && bornKits !== null && rep.bornKits !== null && rep.bornKits !== undefined && bornKits !== rep.bornKits) {
-            throw new AppError('La cantidad de gazapos nacidos no puede ser modificada una vez registrada en el sistema.', 400);
-        }
+        const wasInLactancia = rep.status === 'lactancia';
 
         const ecuadorDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
         const y = ecuadorDate.getFullYear();
@@ -527,8 +525,10 @@ class ReproductionService {
 
         const result = await reproductionRepository.update(rep, updateData);
 
-        const { notifyOwnerOnManualPhaseChange } = require('../../common/helpers/reproductionNotification.helper');
-        await notifyOwnerOnManualPhaseChange(profileId, galponId, reproductionId, 3, 'Lactancia');
+        if (!wasInLactancia) {
+            const { notifyOwnerOnManualPhaseChange } = require('../../common/helpers/reproductionNotification.helper');
+            await notifyOwnerOnManualPhaseChange(profileId, galponId, reproductionId, 3, 'Lactancia');
+        }
 
         return result;
     }

@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { Card, CardHeader } from '@/shared/ui';
-import { Box, Rabbit, Activity, Heart, Baby } from 'lucide-react';
+import { Rabbit, Activity, Heart, Baby } from 'lucide-react';
 import { useActiveGalpon } from '@/modules/galpones/hooks/useActiveGalpon';
 import { DashboardCalendar } from '@/modules/reproduction/components/DashboardCalendar';
 import { InvitationBanner } from '@/modules/invitation/components/InvitationBanner';
@@ -58,11 +58,11 @@ function DashboardHomeContent() {
   return (
     <div>
       <InvitationBanner />
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-main">
+      <div className="mb-5 sm:mb-6 px-1.5 sm:px-0">
+        <h2 className="text-xl sm:text-2xl font-bold text-main">
           ¡Hola {user?.fullName?.split(' ')[0] || 'Criador'}, bienvenido a Hoptolt!
         </h2>
-        <p className="text-base text-muted mt-1">
+        <p className="text-sm sm:text-base text-muted mt-1">
           {activeGalpon
             ? `Panel de control y estado de tu galpón activo: ${activeGalpon.name}`
             : 'Selecciona un galpón para empezar'}
@@ -92,27 +92,28 @@ function DashboardHomeContent() {
         <h3 className="text-xl font-bold text-main">Estado de Población</h3>
         <p className="text-sm text-muted">Resumen actual de los animales registrados en tu galpón.</p>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
-        {statsMeta.map((stat) => {
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4 mb-6">
+        {statsMeta.map((stat, idx) => {
           const Icon = stat.icon;
           const value = stats ? stats[stat.key] : null;
+          const isLastOdd = idx === statsMeta.length - 1;
           return (
-            <Card key={stat.label} padding="md">
-              <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-xl ${stat.bg}`}>
-                  <Icon size={26} className={stat.color} />
+            <Card key={stat.label} padding="sm" className={isLastOdd ? 'col-span-2 sm:col-span-1' : ''}>
+              <div className="flex items-center justify-between gap-2">
+                <div className={`p-2 sm:p-2.5 rounded-xl ${stat.bg} shrink-0`}>
+                  <Icon size={20} className={stat.color} />
                 </div>
-                <div>
-                  {isLoading ? (
-                    <div className="h-8 w-12 bg-slate-200 rounded animate-pulse" />
-                  ) : (
-                    <p className="text-2xl font-bold text-main">
-                      {value ?? '-'}
-                    </p>
-                  )}
-                  <p className="text-sm text-muted mt-0.5">{stat.label}</p>
-                </div>
+                {isLoading ? (
+                  <div className="h-7 w-10 bg-slate-200 dark:bg-slate-700 rounded animate-pulse shrink-0" />
+                ) : (
+                  <p className="text-xl sm:text-2xl font-bold text-main shrink-0 leading-none">
+                    {value ?? '-'}
+                  </p>
+                )}
               </div>
+              <p className="text-xs sm:text-sm text-muted mt-2 font-medium leading-tight">
+                {stat.label}
+              </p>
             </Card>
           );
         })}

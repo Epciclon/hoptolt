@@ -1,4 +1,4 @@
-﻿import type { Column } from '@/shared/ui/Table';
+import type { Column } from '@/shared/ui/Table';
 import { DateTimeBadge } from '@/shared/ui';
 
 export function getRabbitEventBaseColumns<T extends { rabbit?: { name?: string | null; code: string; race?: string | null; } | null; rabbitCode?: string; profile?: { fullName?: string | null; username?: string | null; } | null; }>(dateKey: keyof T): Column<T>[] {
@@ -10,7 +10,7 @@ export function getRabbitEventBaseColumns<T extends { rabbit?: { name?: string |
       render: (row) => row.rabbit ? (
         <div className="flex flex-col">
           <span className="text-main font-medium">{row.rabbit.name || 'Sin nombre'}</span>
-          <span className="text-[11px] text-muted">{row.rabbit.code}</span>
+          <span className="text-xs text-muted">{row.rabbit.code}</span>
         </div>
       ) : row.rabbitCode
     },

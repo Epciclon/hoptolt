@@ -31,7 +31,7 @@ export function usePermissions() {
   const { user, loading } = useAuthContext();
 
   const role = user?.role || null;
-  
+
   // Extraer los nombres de los módulos que tienen permiso de lectura activo
   const permissions = useMemo(() => {
     return user?.permissions

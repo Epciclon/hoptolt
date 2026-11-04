@@ -80,6 +80,49 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     // y el login ya sincroniza el perfil, por lo que no es necesario.
   }, [fetchUser, router]);
 
+  // Renovación proactiva y periódica de sesión mientras el usuario está autenticado
+  useEffect(() => {
+    // Este temporizador SOLO se activa si la sesión está iniciada
+    if (!user) return;
+
+    // Cada 10 minutos renueva el access token y rota el refresh token
+    const REFRESH_INTERVAL_MS = 10 * 60 * 1000;
+    const intervalId = setInterval(async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.refresh_token) {
+          await supabase.auth.refreshSession();
+        }
+      } catch (err) {
+        console.warn('Error en renovación periódica de sesión:', err);
+      }
+    }, REFRESH_INTERVAL_MS);
+
+    // Si el usuario regresa a la pestaña activa después de suspensión o inactividad, asegurar token válido
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible') {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.expires_at) {
+            const now = Math.floor(Date.now() / 1000);
+            if (session.expires_at - now < 300) {
+              await supabase.auth.refreshSession();
+            }
+          }
+        } catch (err) {
+          console.warn('Error al verificar sesión tras reactivar pestaña:', err);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user, supabase]);
+
   const contextValue = useMemo(() => ({ user, loading, refetchUser: fetchUser, logout, supabase }), [user, loading, fetchUser, logout, supabase]);
 
   return (

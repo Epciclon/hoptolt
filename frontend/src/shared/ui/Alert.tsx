@@ -16,19 +16,19 @@ interface AlertProps {
 const config: Record<AlertVariant, { icon: ReactNode; styles: string }> = {
   success: {
     icon: <CheckCircle size={16} />,
-    styles: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+    styles: 'bg-emerald-500/10 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60',
   },
   error: {
     icon: <XCircle size={16} />,
-    styles: 'bg-red-50 text-red-800 border-red-200',
+    styles: 'bg-red-500/10 dark:bg-red-950/40 text-red-800 dark:text-red-300 border-red-200 dark:border-red-800/60',
   },
   warning: {
     icon: <AlertTriangle size={16} />,
-    styles: 'bg-amber-50 text-amber-800 border-amber-200',
+    styles: 'bg-amber-500/10 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/60',
   },
   info: {
     icon: <Info size={16} />,
-    styles: 'bg-blue-50 text-blue-800 border-blue-200',
+    styles: 'bg-blue-500/10 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800/60',
   },
   neutral: {
     icon: <Info size={16} />,

@@ -105,17 +105,17 @@ export function WorkerDetailsModal({
       ) : (
         <div className="space-y-5">
           {/* Header - Avatar + Name */}
-          <div className="flex items-center gap-4 pb-4 border-b border-default">
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-md">
+          <div className="flex items-start sm:items-center gap-3.5 pb-4 border-b border-default">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-bold text-base sm:text-lg shrink-0 shadow-md">
               {initials}
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-bold text-main truncate">{profile?.fullName || '-'}</h3>
-              <div className="flex flex-wrap items-center gap-3 mt-1 text-sm text-muted">
-                <span className="inline-flex items-center gap-1">
+              <h3 className="text-base sm:text-lg font-bold text-main break-words">{profile?.fullName || '-'}</h3>
+              <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-1 sm:gap-3 mt-1 text-xs sm:text-sm text-muted">
+                <span className="inline-flex items-center gap-1 break-all">
                   <Mail size={14} /> {profile?.email || '-'}
                 </span>
-                <span className="inline-flex items-center gap-1">
+                <span className="inline-flex items-center gap-1 break-all">
                   <AtSign size={14} /> {profile?.username || '-'}
                 </span>
               </div>
@@ -126,7 +126,7 @@ export function WorkerDetailsModal({
           <div>
             <h4 className="flex items-center gap-2 font-semibold text-main mb-3 text-sm uppercase tracking-wide">
               <Box size={15} className="text-muted" />
-              Jaulas Asignadas ({assignedCages.length})
+              Jaulas Asignadas: {assignedCages.length}
             </h4>
             {assignedCages.length === 0 ? (
               <p className="text-sm text-theme-faint bg-theme-surface rounded-lg py-4 text-center border border-default">
@@ -140,9 +140,9 @@ export function WorkerDetailsModal({
                     className="inline-flex items-center gap-1.5 bg-theme-surface border border-default text-main text-sm font-medium px-3 py-1.5 rounded-lg border border-strong"
                   >
                     <Box size={13} className="text-muted" />
-                    Jaula {wc.cage?.number ?? wc.cageId}
+                    <span>{wc.cage?.number ?? wc.cageId}</span>
                     {wc.cage?.type && (
-                      <span className="text-xs text-theme-faint ml-0.5">({wc.cage.type})</span>
+                      <span className="text-xs font-medium text-muted capitalize ml-1">{wc.cage.type}</span>
                     )}
                   </span>
                 ))}
@@ -154,7 +154,7 @@ export function WorkerDetailsModal({
           <div>
             <h4 className="flex items-center gap-2 font-semibold text-main mb-3 text-sm uppercase tracking-wide">
               <Shield size={15} className="text-muted" />
-              Permisos ({activePermissions.length})
+              Permisos: {activePermissions.length}
             </h4>
             {activePermissions.length === 0 ? (
               <p className="text-sm text-theme-faint bg-theme-surface rounded-lg py-4 text-center border border-default">

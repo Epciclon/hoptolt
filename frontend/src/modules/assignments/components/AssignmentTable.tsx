@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { LogOut } from 'lucide-react';
+
 import { Button, Alert, ConfirmDialog, CageGroupCard, RabbitSelectableCard, LoadingMessage } from '@/shared/ui';
 import { FilterBar } from '@/shared/ui/FilterBar';
 import { Pagination } from '@/shared/ui/Pagination';
@@ -105,7 +105,7 @@ export function AssignmentTable() {
   const paginatedGroups = filteredGroups.slice((page - 1) * limit, page * limit);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 w-full">
       {error && <Alert variant="error" message={error} className="mb-4" />}
       
       {!loading && Object.keys(groupedByCage).length > 0 && (
@@ -139,7 +139,7 @@ export function AssignmentTable() {
       )}
       {!loading && Object.keys(groupedByCage).length > 0 && filteredGroups.length > 0 && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start w-full">
             {paginatedGroups.map(group => {
               const selectedIds = selectedRabbitsByCage[group.cageId] || [];
               return (
@@ -178,7 +178,7 @@ export function AssignmentTable() {
                             <Button
                               variant="danger"
                               size="sm"
-                              icon={<LogOut size={12} />}
+
                               onClick={() => handleUnassignCage(group.cageId)}
                               className="w-full"
                             >

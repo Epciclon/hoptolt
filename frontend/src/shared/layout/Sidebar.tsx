@@ -152,26 +152,26 @@ export function Sidebar({ collapsed, onToggle }: Readonly<SidebarProps>) {
 
   return (
     <aside className={cn(
-      "fixed left-0 top-0 h-full w-60 bg-sidebar flex flex-col z-50 overflow-hidden transition-all duration-300",
+      "fixed left-0 top-0 h-full w-56 sm:w-60 max-w-[80vw] bg-sidebar flex flex-col z-50 overflow-hidden transition-all duration-300 shadow-2xl",
       collapsed ? "-translate-x-full" : "translate-x-0"
     )}>
-      <div className="px-5 py-5 border-b border-white/10 flex items-center justify-between">
+      <div className="px-4 py-3.5 sm:px-5 sm:py-4 border-b border-white/10 flex items-center justify-between">
         <div>
-          <h1 className="text-primary-400 font-bold text-base tracking-widest uppercase">
+          <h1 className="text-primary-400 font-bold text-sm sm:text-base tracking-widest uppercase">
             Hoptolt
           </h1>
-          <p className="text-theme-faint text-xs mt-0.5">Sistema de gestión de crianza</p>
+          <p className="text-theme-faint text-[11px] sm:text-xs mt-0.5">Sistema de gestión de crianza</p>
         </div>
         <button type="button"
           onClick={onToggle}
           className="p-1.5 rounded-lg hover:bg-card/10 text-theme-faint hover:text-white transition-colors flex items-center justify-center"
           title="Ocultar menú"
         >
-          <Menu size={20} />
+          <Menu size={18} />
         </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto py-4 px-3">
+      <nav className="flex-1 overflow-y-auto py-3 px-2 sm:px-3">
         {filteredNavigation.map((item) => {
           const Icon = item.icon;
 
@@ -181,13 +181,13 @@ export function Sidebar({ collapsed, onToggle }: Readonly<SidebarProps>) {
                 key={item.name}
                 href={item.href!}
                 className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium mb-1 transition-all',
+                  'flex items-center gap-2.5 sm:gap-3 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium mb-1 transition-all',
                   isActive(item.href!)
-                    ? 'bg-primary-500 text-white'
+                    ? 'bg-primary-500 text-white shadow-sm hover:bg-primary-600'
                     : 'text-slate-300 hover:bg-card/10 hover:text-white',
                 )}
               >
-                <Icon size={18} className="shrink-0" />
+                <Icon size={16} className="shrink-0 sm:w-[18px] sm:h-[18px]" />
                 {item.name}
               </Link>
             );
@@ -201,33 +201,36 @@ export function Sidebar({ collapsed, onToggle }: Readonly<SidebarProps>) {
               <button type="button"
                 onClick={() => toggleGroup(item.name)}
                 className={cn(
-                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all',
-                  hasActiveChild
-                    ? 'text-primary-400 bg-card/5'
-                    : 'text-slate-300 hover:bg-card/10 hover:text-white',
+                  'w-full flex items-center gap-2.5 sm:gap-3 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all',
+                  hasActiveChild && !isOpen
+                    ? 'bg-primary-500 text-white shadow-sm hover:bg-primary-600'
+                    : hasActiveChild && isOpen
+                      ? 'bg-primary-500/20 text-primary-300 font-semibold border border-primary-500/30'
+                      : 'text-slate-300 hover:bg-card/10 hover:text-white',
                 )}
               >
-                <Icon size={18} className="shrink-0" />
+                <Icon size={16} className="shrink-0 sm:w-[18px] sm:h-[18px]" />
                 <span className="flex-1 text-left">{item.name}</span>
                 <ChevronDown
-                  size={15}
+                  size={14}
                   className={cn('transition-transform duration-200', isOpen && 'rotate-180')}
                 />
               </button>
 
               {isOpen && (
-                <div className="ml-6 mt-1 flex flex-col gap-0.5">
+                <div className="ml-3 sm:ml-4 pl-2 border-l border-white/10 mt-1 flex flex-col gap-1">
                   {item.children.map((child) => {
                     const ChildIcon = childIcons[child.name];
+                    const active = isActive(child.href);
                     return (
                       <Link
                         key={child.name}
                         href={child.href}
                         className={cn(
-                          'flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-all',
-                          isActive(child.href)
-                            ? 'bg-primary-500/20 text-primary-300 border-l-2 border-primary-400'
-                            : 'text-theme-faint hover:bg-card/5 hover:text-slate-200',
+                          'flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all',
+                          active
+                            ? 'bg-primary-500 text-white shadow-sm font-semibold hover:bg-primary-600'
+                            : 'text-slate-300 hover:bg-card/10 hover:text-white',
                         )}
                       >
                         {ChildIcon && <ChildIcon size={15} className="shrink-0" />}

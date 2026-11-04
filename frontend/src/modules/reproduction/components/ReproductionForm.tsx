@@ -94,32 +94,40 @@ export function ReproductionForm({ onSuccess, onCancel, editingReproduction }: R
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
       {/* Visualización de la Pareja */}
-      <div className="flex items-center justify-center gap-6 p-5 border border-strong/80 rounded-xl">
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 p-4 border border-strong/80 rounded-xl bg-theme-surface/40 w-full">
         {/* Hembra */}
-        <div className="flex flex-col items-center gap-2 text-center w-28">
-          <RabbitAvatar imageUrl={femaleRabbit?.imageUrl} alt={femaleRabbit?.code} size="xl" ring />
-          <div>
-            <span className="px-2 py-0.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 text-[10px] font-semibold rounded-full">Hembra</span>
-            <h5 className="font-bold text-main text-sm mt-1">{editingReproduction.femaleCode}</h5>
-            {editingReproduction.femaleName && <p className="text-xs text-muted truncate max-w-[110px]">{editingReproduction.femaleName}</p>}
+        <div className="flex flex-col items-center gap-1.5 text-center w-full sm:w-auto sm:flex-1 sm:max-w-[140px]">
+          <RabbitAvatar imageUrl={femaleRabbit?.imageUrl} alt={femaleRabbit?.code} size="lg" ring />
+          <div className="min-w-0 w-full">
+            <span className="px-2.5 py-0.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 text-xs font-semibold rounded-full">Hembra</span>
+            <h5 className="font-bold text-main text-sm sm:text-base mt-1.5 truncate w-full">
+              {editingReproduction.femaleName || editingReproduction.femaleCode}
+            </h5>
+            {editingReproduction.femaleName && (
+              <p className="text-xs sm:text-sm font-semibold text-muted truncate w-full">{editingReproduction.femaleCode}</p>
+            )}
           </div>
         </div>
 
         {/* Conector */}
-        <div className="flex flex-col items-center justify-center shrink-0">
-          <div className="w-10 h-10 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-sm border border-violet-200 dark:border-violet-500/30">
-            <Heart size={20} className="animate-pulse text-violet-500 dark:text-violet-400" fill="currentColor" />
+        <div className="flex flex-col items-center justify-center shrink-0 my-0.5 sm:my-0">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-violet-600 dark:text-violet-400 shadow-sm border border-violet-200 dark:border-violet-500/30">
+            <Heart size={15} className="animate-pulse text-violet-500 dark:text-violet-400" fill="currentColor" />
           </div>
-          <span className="text-[10px] text-theme-faint mt-1 uppercase font-semibold tracking-wider">Pareja</span>
+          <span className="hidden sm:block text-[10px] sm:text-xs text-theme-faint mt-1 uppercase font-semibold tracking-wider">Pareja</span>
         </div>
 
         {/* Macho */}
-        <div className="flex flex-col items-center gap-2 text-center w-28">
-          <RabbitAvatar imageUrl={maleRabbit?.imageUrl} alt={maleRabbit?.code} size="xl" ring />
-          <div>
-            <span className="px-2 py-0.5 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 text-[10px] font-semibold rounded-full">Macho</span>
-            <h5 className="font-bold text-main text-sm mt-1">{editingReproduction.maleCode || 'N/A'}</h5>
-            {editingReproduction.maleName && <p className="text-xs text-muted truncate max-w-[110px]">{editingReproduction.maleName}</p>}
+        <div className="flex flex-col items-center gap-1.5 text-center w-full sm:w-auto sm:flex-1 sm:max-w-[140px]">
+          <RabbitAvatar imageUrl={maleRabbit?.imageUrl} alt={maleRabbit?.code} size="lg" ring />
+          <div className="min-w-0 w-full">
+            <span className="px-2.5 py-0.5 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 text-xs font-semibold rounded-full">Macho</span>
+            <h5 className="font-bold text-main text-sm sm:text-base mt-1.5 truncate w-full">
+              {editingReproduction.maleName || editingReproduction.maleCode || 'N/A'}
+            </h5>
+            {editingReproduction.maleName && (
+              <p className="text-xs sm:text-sm font-semibold text-muted truncate w-full">{editingReproduction.maleCode}</p>
+            )}
           </div>
         </div>
       </div>
@@ -128,16 +136,17 @@ export function ReproductionForm({ onSuccess, onCancel, editingReproduction }: R
         label="Fecha de Monta"
         type="date"
         required
+        max={new Date().toISOString().split('T')[0]}
         error={errors.mountDate?.message}
         {...register('mountDate')}
       />
 
-      <div className="flex gap-3 pt-2">
-        <Button type="submit" loading={isSubmitting} className="flex-1">
-          Actualizar Monta
-        </Button>
-        <Button type="button" variant="secondary" onClick={onCancel} className="flex-1" disabled={isSubmitting}>
+      <div className="flex flex-col-reverse sm:flex-row gap-2.5 sm:gap-3 pt-2">
+        <Button type="button" variant="secondary" onClick={onCancel} className="w-full sm:flex-1" disabled={isSubmitting}>
           Cancelar
+        </Button>
+        <Button type="submit" loading={isSubmitting} className="w-full sm:flex-1">
+          Actualizar Monta
         </Button>
       </div>
     </form>

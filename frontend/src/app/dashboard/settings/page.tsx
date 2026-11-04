@@ -189,25 +189,25 @@ export default function SettingsPage() {
   return (
     <div className="max-w-5xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
       <Card className="border-0 shadow-sm ring-1 ring-slate-200/50 dark:ring-slate-800/50 overflow-hidden" padding="none">
-        <div className="p-6 md:p-8 border-b border-default bg-card">
+        <div className="p-4 sm:p-6 md:p-8 border-b border-default bg-card">
           <h1 className="text-2xl font-bold text-main">Apariencia</h1>
           <p className="text-muted mt-1">Ajusta los colores y el tamaño de letra a tu gusto para no cansarte la vista</p>
         </div>
 
-        <div className="flex flex-col md:flex-row bg-card min-h-[calc(100vh-12rem)]">
+        <div className="flex flex-col md:flex-row bg-card min-h-[calc(100vh-12rem)] w-full min-w-0 max-w-full">
           {/* Navigation Tabs */}
-          <div className="w-full md:w-64 shrink-0 p-4 md:p-6 md:border-r border-default bg-card">
-            <nav className="flex flex-row md:flex-col gap-2 overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
+          <div className="w-full md:w-64 shrink-0 p-3 sm:p-4 md:p-6 md:border-r border-default bg-card min-w-0 max-w-full overflow-hidden">
+            <nav className="flex flex-row md:flex-col gap-1.5 sm:gap-2 overflow-x-auto pb-2 md:pb-0 hide-scrollbar w-full min-w-0">
               {NAV_ITEMS.map(({ id, label, icon: Icon, ready }) => (
                 <button type="button"
                   key={id}
                   onClick={() => ready && setActiveSection(id)}
                   disabled={!ready}
                   className={cn(
-                    "flex items-center justify-center md:justify-between gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors whitespace-nowrap shrink-0 w-auto md:w-full",
+                    "flex items-center justify-center md:justify-between gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors whitespace-nowrap shrink-0 w-auto md:w-full cursor-pointer",
                     !ready && "opacity-50 cursor-not-allowed",
                     !ready && "text-theme-faint",
-                    ready && activeSection === id && "bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400",
+                    ready && activeSection === id && "bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-semibold",
                     ready && activeSection !== id && "text-muted hover:bg-theme-surface dark:hover:bg-slate-800/50 hover:text-main"
                   )}
                 >
@@ -226,7 +226,7 @@ export default function SettingsPage() {
           </div>
 
           {/* Content Area */}
-          <div className="flex-1 p-6 md:p-8 bg-card flex flex-col gap-4">
+          <div className="flex-1 p-3.5 sm:p-6 md:p-8 bg-card flex flex-col gap-4 min-w-0 max-w-full overflow-hidden">
           {/* ── Tamaño de Letra ── */}
           {activeSection === 'size' && (
             <Card>
@@ -419,11 +419,29 @@ export default function SettingsPage() {
                 <p className="text-sm text-muted mb-6">
                   Cambia la interfaz a colores oscuros para reducir la fatiga visual.
                 </p>
-                <div className="flex gap-4">
-                  <button type="button" onClick={() => { if (theme === 'dark') selectTheme('light'); }} className={cn("p-4 border-2 rounded-xl flex-1 text-center font-medium transition-colors hover:bg-theme-surface dark:hover:bg-slate-800/50", theme !== 'dark' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 shadow-sm' : 'border-default text-muted')}>
+                <div className="grid grid-cols-2 gap-2.5 sm:gap-4 w-full">
+                  <button
+                    type="button"
+                    onClick={() => { if (theme === 'dark') selectTheme('light'); }}
+                    className={cn(
+                      "p-3 sm:p-4 border-2 rounded-xl text-center font-medium transition-colors cursor-pointer text-xs sm:text-sm",
+                      theme !== 'dark'
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 shadow-sm'
+                        : 'border-default text-muted hover:bg-theme-surface dark:hover:bg-slate-800/50'
+                    )}
+                  >
                     Desactivado
                   </button>
-                  <button type="button" onClick={() => selectTheme('dark')} className={cn("p-4 border-2 rounded-xl flex-1 text-center font-medium transition-colors hover:bg-theme-surface dark:hover:bg-slate-800/50", theme === 'dark' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 shadow-sm' : 'border-default text-muted')}>
+                  <button
+                    type="button"
+                    onClick={() => selectTheme('dark')}
+                    className={cn(
+                      "p-3 sm:p-4 border-2 rounded-xl text-center font-medium transition-colors cursor-pointer text-xs sm:text-sm",
+                      theme === 'dark'
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 shadow-sm'
+                        : 'border-default text-muted hover:bg-theme-surface dark:hover:bg-slate-800/50'
+                    )}
+                  >
                     Activado
                   </button>
                 </div>
@@ -441,11 +459,29 @@ export default function SettingsPage() {
                 <p className="text-sm text-muted mb-6">
                   Usa colores intensos - blanco, negro, amarillo - para máxima legibilidad.
                 </p>
-                <div className="flex gap-4">
-                  <button type="button" onClick={() => { if (theme === 'contrast') selectTheme('light'); }} className={cn("p-4 border-2 rounded-xl flex-1 text-center font-medium transition-colors hover:bg-theme-surface dark:hover:bg-slate-800/50", theme !== 'contrast' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 shadow-sm' : 'border-default text-muted')}>
+                <div className="grid grid-cols-2 gap-2.5 sm:gap-4 w-full">
+                  <button
+                    type="button"
+                    onClick={() => { if (theme === 'contrast') selectTheme('light'); }}
+                    className={cn(
+                      "p-3 sm:p-4 border-2 rounded-xl text-center font-medium transition-colors cursor-pointer text-xs sm:text-sm",
+                      theme !== 'contrast'
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 shadow-sm'
+                        : 'border-default text-muted hover:bg-theme-surface dark:hover:bg-slate-800/50'
+                    )}
+                  >
                     Desactivado
                   </button>
-                  <button type="button" onClick={() => selectTheme('contrast')} className={cn("p-4 border-2 rounded-xl flex-1 text-center font-medium transition-colors hover:bg-theme-surface dark:hover:bg-slate-800/50", theme === 'contrast' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 shadow-sm' : 'border-default text-muted')}>
+                  <button
+                    type="button"
+                    onClick={() => selectTheme('contrast')}
+                    className={cn(
+                      "p-3 sm:p-4 border-2 rounded-xl text-center font-medium transition-colors cursor-pointer text-xs sm:text-sm",
+                      theme === 'contrast'
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 shadow-sm'
+                        : 'border-default text-muted hover:bg-theme-surface dark:hover:bg-slate-800/50'
+                    )}
+                  >
                     Activado
                   </button>
                 </div>
@@ -478,7 +514,7 @@ export default function SettingsPage() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex gap-2 self-end sm:self-center shrink-0">
+                    <div className="grid grid-cols-2 gap-2 w-full sm:w-auto shrink-0">
                       <button
                         type="button"
                         onClick={() => togglePreviewNotification(false)}
@@ -519,7 +555,7 @@ export default function SettingsPage() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex gap-2 self-end sm:self-center shrink-0">
+                    <div className="grid grid-cols-2 gap-2 w-full sm:w-auto shrink-0">
                       <button
                         type="button"
                         onClick={() => togglePreviewAlerts(false)}
@@ -560,7 +596,7 @@ export default function SettingsPage() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex gap-2 self-end sm:self-center shrink-0">
+                    <div className="grid grid-cols-2 gap-2 w-full sm:w-auto shrink-0">
                       <button
                         type="button"
                         onClick={() => togglePreviewIncidents(false)}
@@ -603,8 +639,14 @@ export default function SettingsPage() {
 
 function SaveBar({ onReset }: Readonly<{ onReset: () => void }>) {
   return (
-    <div className="flex flex-wrap justify-end pt-5 mt-5 border-t border-default">
-      <Button variant="secondary" onClick={onReset}>Restablecer valores por defecto</Button>
+    <div className="flex flex-wrap justify-end pt-5 mt-5 border-t border-default w-full">
+      <Button
+        variant="secondary"
+        onClick={onReset}
+        className="w-full sm:w-auto min-h-[42px] h-auto py-2.5 px-4 text-center leading-normal whitespace-normal"
+      >
+        Restablecer valores por defecto
+      </Button>
     </div>
   );
 }

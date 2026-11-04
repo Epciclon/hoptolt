@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, CheckCircle2, Clock, MessageSquare, User, Calendar, ShieldCheck, AlertCircle, Trash2 } from 'lucide-react';
-import { Button, Badge, ConfirmDialog } from '@/shared/ui';
+import { CheckCircle2, Clock, MessageSquare, User, Calendar, Trash2 } from 'lucide-react';
+import { Button, Badge, ConfirmDialog, Dialog } from '@/shared/ui';
 import { useToast } from '@/shared/contexts/ToastContext';
 import type { Incident, IncidentStatus } from '../types/incident.types';
 import { useIncidents } from '../hooks/useIncidents';
@@ -14,6 +14,8 @@ interface IncidentDetailModalProps {
   onClose: () => void;
   userRole: 'owner' | 'worker';
 }
+
+type FormStatus = 'pending' | 'draft' | 'reviewed';
 
 const getModuleLabel = (mod?: string | null) => {
   if (!mod) return null;
@@ -38,17 +40,19 @@ export function IncidentDetailModal({
   const { showToast } = useToast();
   const { respondToIncident, isResponding, deleteIncident, isDeleting } = useIncidents();
   const [ownerResponse, setOwnerResponse] = useState(incident?.ownerResponse || '');
-  const [selectedStatus, setSelectedStatus] = useState<IncidentStatus>(
-    incident?.status === 'pending' ? 'pending' : 'reviewed'
+  const [selectedStatus, setSelectedStatus] = useState<FormStatus>(
+    incident?.status === 'pending' ? 'pending' : 'draft'
   );
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isEditingResponse, setIsEditingResponse] = useState(false);
 
   useEffect(() => {
     if (incident) {
       setOwnerResponse(incident.ownerResponse || '');
-      setSelectedStatus(incident.status === 'pending' ? 'pending' : 'reviewed');
+      setSelectedStatus(incident.status === 'pending' ? 'pending' : 'draft');
       setError(null);
+      setIsEditingResponse(false);
     }
   }, [incident, isOpen]);
 
@@ -121,37 +125,31 @@ export function IncidentDetailModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-card border border-strong rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-default bg-theme-surface/50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary-500/10 text-primary-600 flex items-center justify-center border border-primary-500/20">
-              <ShieldCheck size={20} />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-primary-600 uppercase tracking-wider">
-                  {incident.category}
-                </span>
-                {getStatusBadge(incident.status)}
-              </div>
-              <h3 className="text-base font-bold text-main line-clamp-1">{incident.title}</h3>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-muted hover:text-main p-1.5 rounded-lg hover:bg-theme-surface transition-colors"
-          >
-            <X size={18} />
-          </button>
-        </div>
+  if (!isOpen || !incident) return null;
 
-        {/* Modal Content */}
-        <div className="p-6 space-y-5 overflow-y-auto flex-1">
-          {/* Metadata badges */}
+  return (
+    <>
+      <Dialog
+        open={isOpen && Boolean(incident)}
+        onClose={onClose}
+        title={incident?.title || 'Detalle de la Novedad'}
+        size="lg"
+      >
+        <div className="space-y-4">
+          {/* Header info badge row */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="px-2.5 py-1 rounded-lg bg-primary-500/10 border border-primary-500/20 text-xs font-semibold text-primary-600 dark:text-primary-400">
+              {incident.category}
+            </span>
+            {!(userRole === 'owner' && (incident.status === 'pending' || isEditingResponse)) && getStatusBadge(incident.status)}
+            {getModuleLabel(incident.module) && (
+              <span className="px-2.5 py-1 rounded-lg bg-theme-surface border border-default text-xs font-medium text-main">
+                Labor: {getModuleLabel(incident.module)}
+              </span>
+            )}
+          </div>
+
+          {/* Metadata badges: reporter & date */}
           <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted p-3 rounded-xl bg-theme-surface border border-default">
             {userRole === 'owner' ? (
               <div className="flex items-center gap-1.5">
@@ -171,90 +169,88 @@ export function IncidentDetailModal({
             </div>
           </div>
 
-          {/* Module and cage indicators if provided */}
-          {(incident.module || (incident.cages && incident.cages.length > 0) || incident.cage) && (
-            <div className="p-3.5 rounded-xl bg-theme-surface border border-default flex flex-col gap-2.5 text-xs">
-              {getModuleLabel(incident.module) && (
-                <div className="flex items-center gap-2">
-                  <span className="text-muted font-medium min-w-12">Labor:</span>
-                  <span className="px-2.5 py-1 rounded-lg bg-primary-500/10 border border-primary-500/20 text-primary-600 dark:text-primary-400 font-semibold">
-                    {getModuleLabel(incident.module)}
-                  </span>
-                </div>
-              )}
-
-              {((incident.cages && incident.cages.length > 0) || incident.cage) && (() => {
-                const cagesToShow = (incident.cages && incident.cages.length > 0)
-                  ? incident.cages
-                  : (Array.isArray(incident.cage) ? incident.cage : [incident.cage]);
-                return (
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted font-medium min-w-12">
-                      {cagesToShow.length > 1 ? 'Jaulas:' : 'Jaula:'}
+          {/* Cages indicator if provided */}
+          {((incident.cages && incident.cages.length > 0) || incident.cage) && (() => {
+            const cagesToShow = (incident.cages && incident.cages.length > 0)
+              ? incident.cages
+              : (Array.isArray(incident.cage) ? incident.cage : [incident.cage]);
+            return (
+              <div className="p-3 rounded-xl bg-theme-surface border border-default flex items-center gap-2 text-xs">
+                <span className="text-muted font-medium min-w-12">
+                  {cagesToShow.length > 1 ? 'Jaulas afectadas:' : 'Jaula afectada:'}
+                </span>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {cagesToShow.map((c: any) => (
+                    <span
+                      key={c.id || c.number}
+                      className="min-w-[2rem] h-6 px-2 rounded-md bg-card border border-strong text-main font-bold text-xs flex items-center justify-center shadow-xs"
+                    >
+                      {c.number}
                     </span>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {cagesToShow.map((c: any) => (
-                        <span
-                          key={c.id || c.number}
-                          className="min-w-[2rem] h-7 px-2.5 rounded-md bg-card border border-strong text-main font-bold text-xs flex items-center justify-center shadow-xs"
-                        >
-                          {c.number}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          )}
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Description */}
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted mb-1.5">
+            <h4 className="text-xs font-semibold text-muted mb-1.5">
               Explicación de lo Sucedido
             </h4>
-            <div className="p-4 rounded-xl bg-theme-surface border border-strong text-sm text-main whitespace-pre-wrap leading-relaxed">
+            <div className="p-3.5 rounded-xl bg-theme-surface border border-strong text-xs sm:text-sm text-main whitespace-pre-wrap leading-relaxed">
               {incident.description}
             </div>
           </div>
 
-          {/* Owner Response Section */}
+          {/* Owner Response Section (if exists) */}
           {incident.ownerResponse ? (
-            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-2">
-              <div className="flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-400 font-semibold">
+            <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-1.5">
+              <div className="flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-400 font-semibold gap-2">
                 <span className="flex items-center gap-1.5">
-                  <CheckCircle2 size={16} />
+                  <CheckCircle2 size={15} />
                   Respuesta del Propietario
                 </span>
                 {incident.reviewedAt && (
-                  <span className="font-normal opacity-80">
+                  <span className="font-normal opacity-80 shrink-0 whitespace-nowrap">
                     {formatFriendlyDate(incident.reviewedAt)}
                   </span>
                 )}
               </div>
-              <p className="text-sm text-main whitespace-pre-wrap leading-relaxed">
+              <p className="text-xs sm:text-sm text-main whitespace-pre-wrap leading-relaxed">
                 {incident.ownerResponse}
               </p>
               {incident.reviewer && (
-                <p className="text-xs text-muted mt-1">
+                <p className="text-xs text-muted pt-1 border-t border-emerald-500/20">
                   Atendido por {incident.reviewer.fullName || incident.reviewer.username}
                 </p>
               )}
             </div>
           ) : userRole === 'worker' ? (
-            <div className="p-4 rounded-xl bg-theme-surface border border-default text-xs text-muted flex items-center gap-2">
+            <div className="p-3.5 rounded-xl bg-theme-surface border border-default text-xs text-muted flex items-center gap-2">
               <Clock size={16} className="shrink-0 text-muted" />
               <span>Esta novedad aún se encuentra pendiente de revisión por el propietario del galpón.</span>
             </div>
           ) : null}
 
-          {/* Owner response form (if Owner) */}
-          {userRole === 'owner' && (
+          {/* Owner response form: solo se muestra si está pendiente o si el propietario elige editar */}
+          {userRole === 'owner' && (incident.status === 'pending' || isEditingResponse) && (
             <form onSubmit={handleRespond} className="space-y-3 pt-3 border-t border-default">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-main flex items-center gap-1.5">
-                <MessageSquare size={14} className="text-primary-500" />
-                <span>Respuesta al Trabajador</span>
-              </h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-semibold text-main flex items-center gap-1.5">
+                  <MessageSquare size={14} className="text-primary-500" />
+                  <span>Respuesta al Trabajador</span>
+                </h4>
+                {isEditingResponse && (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingResponse(false)}
+                    className="text-xs text-muted hover:text-main cursor-pointer"
+                  >
+                    Cancelar edición
+                  </button>
+                )}
+              </div>
 
               {error && (
                 <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs">
@@ -269,33 +265,34 @@ export function IncidentDetailModal({
                   const val = e.target.value;
                   setOwnerResponse(val);
                   if (val.trim()) {
-                    setSelectedStatus('reviewed');
+                    setSelectedStatus('draft');
                   } else {
                     setSelectedStatus('pending');
                   }
                 }}
                 placeholder="Escribe las instrucciones, confirmación o resolución para el trabajador..."
-                className="w-full px-3 py-2 text-sm bg-theme-surface border border-strong rounded-xl text-main placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all resize-none"
+                className="w-full px-3 py-2 text-xs sm:text-sm bg-theme-surface border border-strong rounded-xl text-main placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all resize-none"
               />
 
               {selectedStatus === 'pending' && (
-                <div className="p-3 rounded-xl bg-theme-surface border border-default text-xs text-muted">
+                <div className="p-2.5 rounded-xl bg-theme-surface border border-default text-xs text-muted">
                   Al guardar en estado pendiente se descartará la respuesta previa y la novedad volverá a requerir atención.
                 </div>
               )}
 
-              <div className="flex items-center justify-between gap-3">
+              {/* Controles de estado y botón de envío responsivos sin desbordar */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
                 <div className="flex items-center gap-2">
                   <label className="text-xs text-muted font-medium">Estado:</label>
                   <select
                     value={selectedStatus}
                     onChange={(e) => {
-                      const nextStatus = e.target.value as IncidentStatus;
+                      const nextStatus = e.target.value as FormStatus;
                       setSelectedStatus(nextStatus);
                     }}
-                    className="px-2.5 py-1 text-xs bg-theme-surface border border-strong rounded-lg text-main focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="px-2.5 py-1.5 text-xs bg-theme-surface border border-strong rounded-lg text-main focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
-                    <option value="reviewed">Atendida</option>
+                    <option value="draft">Borrador</option>
                     <option value="pending">Pendiente</option>
                   </select>
                 </div>
@@ -305,6 +302,7 @@ export function IncidentDetailModal({
                   variant="primary"
                   size="sm"
                   disabled={isResponding}
+                  className="w-full sm:w-auto"
                 >
                   {isResponding
                     ? 'Guardando...'
@@ -315,30 +313,50 @@ export function IncidentDetailModal({
               </div>
             </form>
           )}
-        </div>
 
-        {/* Footer */}
-        <div className="px-6 py-3 border-t border-default bg-theme-surface/50 flex items-center justify-between">
-          {userRole !== 'owner' && incident.status === 'pending' ? (
+          {/* Acciones inferiores del modal */}
+          <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2.5 pt-3 border-t border-default mt-4">
+            {userRole !== 'owner' && incident.status === 'pending' ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={isDeleting}
+                className="w-full sm:w-auto text-red-600 dark:text-red-400 hover:bg-red-500/10 border-red-500/30 flex items-center justify-center gap-1.5"
+              >
+                <Trash2 size={14} />
+                <span>{isDeleting ? 'Eliminando...' : 'Eliminar Novedad'}</span>
+              </Button>
+            ) : userRole === 'owner' && incident.ownerResponse && !isEditingResponse ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setIsEditingResponse(true);
+                  setSelectedStatus('draft');
+                }}
+                className="w-full sm:w-auto flex items-center justify-center gap-1.5"
+              >
+                <MessageSquare size={14} className="text-primary-500" />
+                <span>Editar Respuesta</span>
+              </Button>
+            ) : (
+              <div />
+            )}
             <Button
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setShowDeleteConfirm(true)}
-              disabled={isDeleting}
-              className="text-red-600 dark:text-red-400 hover:bg-red-500/10 border-red-500/30 flex items-center gap-1.5"
+              onClick={onClose}
+              className="w-full sm:w-auto"
             >
-              <Trash2 size={14} />
-              <span>{isDeleting ? 'Eliminando...' : 'Eliminar Novedad'}</span>
+              Cerrar
             </Button>
-          ) : (
-            <div />
-          )}
-          <Button type="button" variant="outline" size="sm" onClick={onClose}>
-            Cerrar
-          </Button>
+          </div>
         </div>
-      </div>
+      </Dialog>
 
       {/* Confirm Delete Dialog */}
       <ConfirmDialog
@@ -357,6 +375,6 @@ export function IncidentDetailModal({
         loading={isDeleting}
         variant="danger"
       />
-    </div>
+    </>
   );
 }

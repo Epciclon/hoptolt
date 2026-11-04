@@ -99,7 +99,7 @@ export function Table<T>({
 
   return (
     <div className={cn('w-full overflow-x-auto rounded-xl border border-strong bg-card shadow-card', className)}>
-      <table className="w-full min-w-[600px] border-collapse text-sm">
+      <table className="w-full min-w-[500px] sm:min-w-[600px] border-collapse text-sm">
         <thead>
           <tr className="bg-slate-100 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 border-b border-strong">
             {columns.map((col) => (

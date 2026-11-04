@@ -72,23 +72,23 @@ export default function LoginPage() {
 
   return (
     <AuthLayout>
-      <div className="text-center mb-8 animate-fade-in-right" style={{ animationDelay: '0.2s' }}>
-        <h2 className="text-3xl font-bold text-main mb-2">Iniciar Sesión</h2>
+      <div className="text-center mb-5 lg:mb-6 animate-fade-in-right" style={{ animationDelay: '0.2s' }}>
+        <h2 className="text-2xl lg:text-3xl font-bold text-main mb-1.5">Iniciar Sesión</h2>
         <p className="text-muted">Acceda a su cuenta para continuar</p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 animate-fade-in-right" style={{ animationDelay: '0.4s' }}>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 lg:space-y-5 animate-fade-in-right" style={{ animationDelay: '0.4s' }}>
 
         {/* Usuario o Email */}
         <div>
-          <label htmlFor="identifier" className="block text-sm font-semibold text-main mb-2">
+          <label htmlFor="identifier" className="block text-sm font-semibold text-main mb-1.5">
             Usuario o Correo Electrónico
           </label>
           <input
             {...register('identifier')}
             type="text"
             id="identifier"
-            className={`w-full px-4 py-4 border-2 rounded-xl outline-none transition-all bg-theme-surface dark:bg-slate-900 text-main dark:text-slate-100 ${errors.identifier
+            className={`w-full px-4 py-3 lg:py-3.5 border-2 rounded-xl outline-none transition-all bg-theme-surface dark:bg-slate-900 text-main dark:text-slate-100 ${errors.identifier
                 ? 'border-red-500 bg-red-50 dark:bg-red-500/10'
                 : 'border-slate-300 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
               }`}
@@ -102,11 +102,11 @@ export default function LoginPage() {
 
         {/* Contraseña */}
         <div>
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
             <label htmlFor="password" className="block text-sm font-semibold text-main">Contraseña</label>
             <Link
               href="/forgot-password"
-              className="text-xs text-teal-600 dark:text-teal-400 font-semibold hover:text-teal-700 dark:hover:text-teal-300 hover:underline transition-colors"
+              className="text-xs text-teal-600 dark:text-teal-400 font-semibold hover:text-teal-700 dark:hover:text-teal-300 hover:underline transition-colors whitespace-nowrap ml-auto"
             >
               ¿Olvidaste tu contraseña?
             </Link>
@@ -116,7 +116,7 @@ export default function LoginPage() {
               {...register('password')}
               type={showPassword ? 'text' : 'password'}
               id="password"
-              className={`w-full px-4 py-4 pr-12 border-2 rounded-xl outline-none transition-all bg-theme-surface dark:bg-slate-900 text-main dark:text-slate-100 ${errors.password
+              className={`w-full px-4 py-3 lg:py-3.5 pr-12 border-2 rounded-xl outline-none transition-all bg-theme-surface dark:bg-slate-900 text-main dark:text-slate-100 ${errors.password
                   ? 'border-red-500 bg-red-50 dark:bg-red-500/10'
                   : 'border-slate-300 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
                 }`}
@@ -149,7 +149,7 @@ export default function LoginPage() {
           type="submit"
           id="btn-login"
           disabled={isSubmitting}
-          className="w-full py-4 bg-gradient-to-r from-teal-500 to-teal-600 text-white font-semibold rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none mt-4 relative overflow-hidden"
+          className="w-full py-3 lg:py-3.5 bg-gradient-to-r from-teal-500 to-teal-600 text-white font-semibold rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none mt-2 relative overflow-hidden"
         >
           {isSubmitting ? (
             <span className="flex items-center justify-center gap-2">
@@ -162,12 +162,12 @@ export default function LoginPage() {
         </button>
       </form>
 
-      <div className="mt-8 text-center animate-fade-in-right" style={{ animationDelay: '0.8s' }}>
-        <p className="text-muted text-sm mb-4">
-          ¿No tienes una cuenta?{' '}
+      <div className="mt-5 lg:mt-6 text-center animate-fade-in-right" style={{ animationDelay: '0.8s' }}>
+        <p className="text-muted text-sm mb-2.5 flex flex-wrap items-center justify-center gap-1">
+          <span>¿No tienes una cuenta?</span>
           <Link
             href="/register"
-            className="text-teal-600 dark:text-teal-400 font-semibold hover:text-teal-700 dark:hover:text-teal-300 hover:underline transition-colors"
+            className="text-teal-600 dark:text-teal-400 font-semibold hover:text-teal-700 dark:hover:text-teal-300 hover:underline transition-colors whitespace-nowrap"
           >
             Regístrate aquí
           </Link>

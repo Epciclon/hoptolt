@@ -44,24 +44,31 @@ export function RabbitSelectableCard({
         />
       )}
 
-      <div className="flex items-start gap-2.5 mb-2 relative z-0 min-w-0 pointer-events-none">
-        <div className="shrink-0">
+      {/* Disposición centrada vertical estándar de móvil aplicada a todas las pantallas */}
+      <div className="flex flex-col items-center gap-2.5 mb-2 relative z-0 min-w-0 pointer-events-none">
+        <div className="shrink-0 mb-1">
           <RabbitAvatar imageUrl={rabbit.imageUrl} alt={rabbit.code} size="md" />
         </div>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 w-full">
           <div className="flex items-start justify-between gap-1">
             <div className="min-w-0 flex-1">
               {rabbit.name ? (
                 <>
-                  <h4 className="font-bold text-sm text-main leading-tight truncate">{rabbit.name}</h4>
-                  <p className="text-xs text-muted leading-tight mt-0.5">{rabbit.code}</p>
+                  <h4 className="font-bold text-sm text-main leading-tight truncate" title={rabbit.name}>
+                    {rabbit.name}
+                  </h4>
+                  <p className="text-xs text-muted leading-tight mt-0.5 truncate font-medium">
+                    {rabbit.code}
+                  </p>
                 </>
               ) : (
-                <h4 className="font-bold text-sm text-main leading-tight truncate">{rabbit.code}</h4>
+                <h4 className="font-bold text-sm text-main leading-tight truncate" title={rabbit.code}>
+                  {rabbit.code}
+                </h4>
               )}
             </div>
             {rabbit.race && (
-              <span className="px-1.5 py-0.5 bg-theme-surface text-muted text-[10px] font-medium rounded-full capitalize border border-strong shrink-0 max-w-[85px] truncate" title={rabbit.race}>
+              <span className="px-2 py-0.5 bg-theme-surface text-muted text-xs font-medium rounded-full capitalize border border-strong shrink-0 whitespace-nowrap" title={rabbit.race}>
                 {rabbit.race}
               </span>
             )}

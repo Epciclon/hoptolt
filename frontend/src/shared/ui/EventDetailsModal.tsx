@@ -53,10 +53,10 @@ export function EventDetailsModal({
       size="md"
     >
       <div className="space-y-4 pt-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           
           {cageNumber !== undefined && cageNumber !== null && (
-            <div className="bg-theme-surface border border-strong rounded-lg p-3">
+            <div className="bg-theme-surface border border-strong rounded-lg p-3 col-span-1">
               <p className="text-xs text-muted font-medium mb-1">Jaula</p>
               <div className="flex flex-col leading-tight mt-1">
                 <span className="text-sm font-semibold text-main">
@@ -67,7 +67,9 @@ export function EventDetailsModal({
           )}
 
           {primaryDateString && (
-            <div className="bg-theme-surface border border-strong rounded-lg p-3">
+            <div className={`bg-theme-surface border border-strong rounded-lg p-3 ${
+              cageNumber !== undefined && cageNumber !== null ? 'col-span-1' : 'col-span-1 sm:col-span-2'
+            }`}>
               <p className="text-xs text-muted font-medium mb-1">{primaryDateLabel}</p>
               <div className="flex flex-col leading-tight mt-1">
                 {(() => {
@@ -77,10 +79,10 @@ export function EventDetailsModal({
                   }
                   const { formattedDate, formattedTime } = result;
                   return (
-                    <>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
                       <span className="text-sm font-semibold text-main">{formattedDate}</span>
-                      <span className="text-[11px] text-muted font-medium mt-0.5">{formattedTime}</span>
-                    </>
+                      <span className="text-xs text-muted font-medium mt-0.5 sm:mt-0">{formattedTime}</span>
+                    </div>
                   );
                 })()}
               </div>
@@ -88,19 +90,19 @@ export function EventDetailsModal({
           )}
 
           {profile && (
-            <div className="bg-theme-surface border border-strong rounded-lg p-3">
+            <div className="bg-theme-surface border border-strong rounded-lg p-3 col-span-1 sm:col-span-2">
               <p className="text-xs text-muted font-medium mb-1">Reportado por</p>
               <div className="flex flex-col leading-tight">
                 <span className="text-sm font-semibold text-main">
                   {profile.fullName || profile.username || 'Sistema'}
                 </span>
                 {profile.username && (
-                  <span className="text-[11px] text-muted font-medium mt-0.5">
+                  <span className="text-xs text-muted font-medium mt-0.5">
                     @{profile.username}
                   </span>
                 )}
                 {profile.email && (
-                  <span className="text-[10px] text-theme-faint mt-0.5 break-all">
+                  <span className="text-xs text-theme-faint mt-0.5 break-all">
                     {profile.email}
                   </span>
                 )}
@@ -117,18 +119,22 @@ export function EventDetailsModal({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {rabbits.length > 0 ? (
                 rabbits.map((rabbit) => (
-                  <div key={rabbit.code || rabbit.id} className="flex items-center gap-3 bg-card border border-default rounded-lg p-2">
+                  <div key={rabbit.code || rabbit.id} className="flex items-center gap-3 bg-card border border-default rounded-lg p-2.5">
                     <RabbitAvatar imageUrl={rabbit.imageUrl} alt="Conejo" size="md" />
-                    <div className="flex flex-col leading-tight">
-                      <span className="font-semibold text-main text-sm">
+                    <div className="flex flex-col leading-tight min-w-0 flex-1 gap-0.5">
+                      <span className="font-semibold text-main text-sm sm:text-base truncate">
                         {rabbit.name || 'Sin nombre'}
                       </span>
-                      <span className="text-[11px] text-muted font-medium mt-0.5">
-                        {rabbit.code}
-                      </span>
-                      <span className="text-[10px] text-theme-faint mt-0.5">
-                        {rabbit.race || 'Raza N/A'}
-                      </span>
+                      {rabbit.code && (
+                        <span className="text-xs sm:text-sm text-muted font-medium">
+                          {rabbit.code}
+                        </span>
+                      )}
+                      {rabbit.race && (
+                        <span className="text-xs sm:text-sm text-muted font-medium">
+                          {rabbit.race}
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))

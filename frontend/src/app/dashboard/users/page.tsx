@@ -50,42 +50,53 @@ function UsersPageContent() {
   useEffect(() => {
     if (activeGalpon && isOwner) {
       // React Query handles fetching automatically via useQuery when activeGalpon changes.
-      // We don't need to manually pass the ID to a refetch function anymore.
-      // If we wanted to force refetch, we would call fetchWorkers() without arguments.
     }
   }, [activeGalpon, isOwner]);
 
   const onInvite = async (data: { email: string }) => {
     setSubmitting(true);
-    const success = await createInvitation(activeGalpon!.id, data.email);
-    setSubmitting(false);
-    if (success) {
-      setIsModalOpen(false);
-      reset();
-      showToast('Invitación enviada exitosamente.', 'success');
-    } else {
-      showToast(invitationError || 'Error al enviar la invitación.', 'error');
+    try {
+      const success = await createInvitation(activeGalpon!.id, data.email);
+      if (success) {
+        setIsModalOpen(false);
+        reset();
+        showToast('Invitación enviada exitosamente.', 'success');
+      }
+    } catch (err: any) {
+      showToast(err?.message || invitationError || 'Error al enviar la invitación.', 'error');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleDeleteWorker = async () => {
     if (!workerToDelete) return;
     setDeleting(true);
-    const success = await removeWorker(workerToDelete.id);
-    setDeleting(false);
-    setWorkerToDelete(null);
-    if (success) {
-      showToast(`${workerToDelete.profile?.fullName} eliminado del galpón correctamente.`, 'success');
+    try {
+      const success = await removeWorker(workerToDelete.id);
+      if (success) {
+        showToast(`${workerToDelete.profile?.fullName} eliminado del galpón correctamente.`, 'success');
+      }
+    } catch (err: any) {
+      showToast(err?.message || 'Error al eliminar trabajador.', 'error');
+    } finally {
+      setDeleting(false);
+      setWorkerToDelete(null);
     }
   };
 
   const handleDeleteInvitation = async () => {
     if (!invitationToDelete) return;
     setDeleting(true);
-    await revokeInvitation(invitationToDelete.token);
-    setDeleting(false);
-    setInvitationToDelete(null);
-    showToast('Invitación eliminada correctamente.', 'success');
+    try {
+      await revokeInvitation(invitationToDelete.token);
+      showToast('Invitación eliminada correctamente.', 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Error al eliminar invitación.', 'error');
+    } finally {
+      setDeleting(false);
+      setInvitationToDelete(null);
+    }
   };
 
   const handleSaveWorker = async (data: any) => {
@@ -127,14 +138,22 @@ function UsersPageContent() {
           <button 
           key={worker.id} 
           type="button"
-          className="w-full text-left bg-transparent border-none outline-none p-4 flex justify-between items-center hover:bg-primary-50 dark:hover:bg-primary-900/20 border-b border-default cursor-pointer transition-colors group block"
+          className="w-full text-left bg-transparent border-none outline-none p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-4 hover:bg-primary-50 dark:hover:bg-primary-900/20 border-b border-default cursor-pointer transition-colors group block"
           onClick={() => setWorkerToView(worker)}
         >
-          <div>
-            <div className="font-medium text-main">{worker.profile?.fullName}</div>
-            <div className="text-xs text-muted">{worker.profile?.email} - @{worker.profile?.username}</div>
+          <div className="min-w-0 flex-1">
+            <div className="font-semibold text-main text-sm sm:text-base leading-snug">{worker.profile?.fullName}</div>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted mt-0.5 break-all">
+              <span>{worker.profile?.email}</span>
+              {worker.profile?.username && (
+                <>
+                  <span className="text-theme-faint">•</span>
+                  <span>@{worker.profile?.username}</span>
+                </>
+              )}
+            </div>
           </div>
-          <span className="text-xs text-theme-faint group-hover:text-muted transition-colors">
+          <span className="text-xs font-medium text-primary-600 dark:text-primary-400 sm:text-theme-faint sm:group-hover:text-primary-600 dark:sm:group-hover:text-primary-400 shrink-0 self-end sm:self-auto transition-colors whitespace-nowrap">
             Ver detalles →
           </span>
         </button>
@@ -177,14 +196,15 @@ function UsersPageContent() {
         content = <div className="p-8 text-center text-muted">No se encontraron invitaciones que coincidan con la búsqueda.</div>;
       } else {
         content = filteredInvitations.map(inv => (
-          <div key={inv.token} className="p-4 flex justify-between items-center hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors">
-          <div>
-            <div className="font-medium text-main">{inv.email}</div>
+          <div key={inv.token} className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 hover:bg-primary-50 dark:hover:bg-primary-900/20 border-b border-default transition-colors">
+          <div className="min-w-0 flex-1">
+            <div className="font-semibold text-main text-sm sm:text-base break-all">{inv.email}</div>
             <div className="text-xs text-muted">Invitado por: {inv.inviter?.fullName?.trim() || inv.inviter?.username || 'Usuario'} - Enviada: {new Date(inv.createdAt).toLocaleDateString()}</div>
           </div>
           <Button 
             variant="danger" 
             size="sm"
+            className="self-end sm:self-auto shrink-0"
             onClick={() => setInvitationToDelete(inv)}
           >
             Eliminar
@@ -253,7 +273,7 @@ function UsersPageContent() {
 
         <DashboardTabs tabs={tabs} activeTab={activeTab} onTabChange={(tab) => { setActiveTab(tab); setSearchTerm(''); }} />
 
-        <div className="p-2 sm:p-4 md:p-6 pt-0">
+        <div className="w-full">
           {activeTab === 'workers' && renderWorkersTab()}
           {activeTab === 'invitations' && renderInvitationsTab()}
           {activeTab === 'audit-logs' && activeGalpon && (

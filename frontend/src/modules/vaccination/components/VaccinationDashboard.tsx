@@ -31,7 +31,7 @@ export function VaccinationDashboard() {
         onTabChange={handleTabChange}
       />
       
-      <div className="p-2 sm:p-4 md:p-6 pt-0">
+      <div className="w-full">
         {activeTab === 'registro' || !isOwner ? (
           <>
             <SectionMessage message="En esta fase se puede registrar las vacunas aplicadas a los conejos." />

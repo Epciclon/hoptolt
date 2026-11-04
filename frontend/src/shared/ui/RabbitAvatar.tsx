@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 
@@ -26,6 +26,12 @@ export const RabbitAvatar: React.FC<RabbitAvatarProps> = ({
   className = '',
   ring = false
 }) => {
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [imageUrl]);
+
   const remSize = baseSizes[size];
   
   // Usamos var(--avatar-scale, 1) que será controlado por Apariencia.
@@ -43,13 +49,14 @@ export const RabbitAvatar: React.FC<RabbitAvatarProps> = ({
 
   const baseClasses = `rounded-full flex-shrink-0 transition-transform duration-200 hover:scale-105 ${ringClasses} ${className}`;
 
-  if (imageUrl) {
+  if (imageUrl && !hasError) {
     return (
       <img 
         src={imageUrl} 
         alt={alt} 
         style={dimensionStyle} 
         className={`object-cover ${baseClasses}`} 
+        onError={() => setHasError(true)}
       />
     );
   }

@@ -69,7 +69,7 @@ export function RabbitCatalog({ onSuccess }: Readonly<RabbitCatalogProps>) {
   ];
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 w-full">
       <FilterBar
         searchValue={filters.search || ''}
         onSearchChange={(val) => { setSearch(val); setPage(1); }}
@@ -88,7 +88,7 @@ export function RabbitCatalog({ onSuccess }: Readonly<RabbitCatalogProps>) {
         <p className="text-sm text-muted text-center py-8 bg-theme-surface rounded-lg border border-strong">No hay conejos registrados con esos filtros.</p>
       )}
       {!loading && rabbits.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 w-full">
           {rabbits.map((rabbit) => {
             const isSelected = selectedRabbitId === rabbit.id;
             return (
@@ -126,17 +126,24 @@ export function RabbitCatalog({ onSuccess }: Readonly<RabbitCatalogProps>) {
                   </>
                 }
                 details={
-                  <>
-                    <div className="flex items-center gap-1">
-                      <span className="font-semibold text-main">Edad:</span> {formatRabbitAge(rabbit.age)}
+                  <div className="grid grid-cols-2 divide-x divide-default/80 bg-theme-surface border border-default/70 rounded-lg py-2 px-1 w-full shadow-inner text-center">
+                    <div className="flex flex-col items-center justify-center px-1 min-w-0">
+                      <span className="text-[11px] text-muted font-medium uppercase tracking-wider leading-none">
+                        Edad
+                      </span>
+                      <span className="text-xs sm:text-sm font-bold text-main mt-1 truncate max-w-full">
+                        {formatRabbitAge(rabbit.age)}
+                      </span>
                     </div>
-                    {rabbit.weight !== undefined && rabbit.weight !== null && (
-                      <>
-                        <div className="w-px h-3 bg-slate-300"></div>
-                        <div className="flex items-center gap-1"><span className="font-semibold text-main">Peso:</span> {rabbit.weight} kg</div>
-                      </>
-                    )}
-                  </>
+                    <div className="flex flex-col items-center justify-center px-1 min-w-0">
+                      <span className="text-[11px] text-muted font-medium uppercase tracking-wider leading-none">
+                        Peso
+                      </span>
+                      <span className="text-xs sm:text-sm font-bold text-main mt-1 truncate max-w-full">
+                        {rabbit.weight !== undefined && rabbit.weight !== null ? `${rabbit.weight} kg` : '-'}
+                      </span>
+                    </div>
+                  </div>
                 }
                 actions={
                   (canUpdate || canDelete) ? (

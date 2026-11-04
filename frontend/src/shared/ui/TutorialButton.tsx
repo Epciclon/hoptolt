@@ -20,7 +20,7 @@ export function TutorialButton({ videoUrl }: Readonly<TutorialButtonProps>) {
       const urlParams = new URLSearchParams(url.split('?')[1]);
       videoId = urlParams.get('v') || '';
     }
-    
+
     if (videoId) {
       return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
     }
@@ -31,15 +31,16 @@ export function TutorialButton({ videoUrl }: Readonly<TutorialButtonProps>) {
 
   return (
     <>
-      <Button 
-        variant="outline" 
-        className="text-main border-strong hover:bg-theme-hover"
-        icon={<PlayCircle size={16} />} 
+      <Button
+        variant="outline"
+        size="sm"
+        className="text-main border-strong hover:bg-theme-hover h-auto py-1 px-2.5 text-xs sm:text-sm shrink-0"
+        icon={<PlayCircle size={15} />}
         onClick={() => setOpen(true)}
       >
         Ver Tutorial
       </Button>
-      
+
       <Dialog
         open={open}
         onClose={() => setOpen(false)}

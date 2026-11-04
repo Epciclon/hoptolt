@@ -16,7 +16,8 @@ const schema = z
     password: z
       .string()
       .min(6, 'La contraseña debe tener al menos 6 caracteres.')
-      .regex(/[!@#$%^&*(),.?":{}|<>_]/, 'Debe contener al menos un carácter especial como @#$%'),
+      .regex(/\d/, 'Debe contener al menos un número.')
+      .regex(/[!@#$%^&*(),.?":{}|<>_]/, 'Debe contener al menos un carácter especial como @#$%.'),
     confirmPassword: z.string().min(6, 'La confirmación debe tener al menos 6 caracteres.'),
   })
   .refine(data => data.password === data.confirmPassword, {
@@ -205,8 +206,8 @@ export default function ResetPasswordPage() {
 
   return (
     <AuthLayout>
-      <div className="text-center mb-8 animate-fade-in-right" style={{ animationDelay: '0.2s' }}>
-        <h2 className="text-3xl font-bold text-main mb-2">Nueva Contraseña</h2>
+      <div className="text-center mb-5 lg:mb-6 animate-fade-in-right" style={{ animationDelay: '0.2s' }}>
+        <h2 className="text-2xl lg:text-3xl font-bold text-main mb-1.5">Nueva Contraseña</h2>
         <p className="text-muted">Crea una nueva contraseña segura para tu cuenta</p>
       </div>
 
@@ -216,7 +217,7 @@ export default function ResetPasswordPage() {
           <p className="text-sm text-muted">Verificando enlace de recuperación...</p>
         </div>
       ) : isReady ? (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 animate-fade-in-right" style={{ animationDelay: '0.4s' }}>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 lg:space-y-5 animate-fade-in-right" style={{ animationDelay: '0.4s' }}>
           {/* Nueva Contraseña */}
           <div>
             <label htmlFor="password" className="block text-sm font-semibold text-main mb-2">
@@ -227,12 +228,12 @@ export default function ResetPasswordPage() {
                 {...register('password')}
                 type={showPassword ? 'text' : 'password'}
                 id="password"
-                className={`w-full px-4 py-4 pr-12 border-2 rounded-xl outline-none transition-all bg-theme-surface dark:bg-slate-900 text-main dark:text-slate-100 ${
+                className={`w-full px-4 py-3 lg:py-3.5 pr-12 border-2 rounded-xl outline-none transition-all bg-theme-surface dark:bg-slate-900 text-main dark:text-slate-100 ${
                   errors.password
                     ? 'border-red-500 bg-red-50 dark:bg-red-500/10'
                     : 'border-slate-300 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
                 }`}
-                placeholder="Mínimo 6 caracteres"
+                placeholder="Mínimo 6 caracteres, 1 número y 1 símbolo"
                 autoComplete="new-password"
                 autoFocus
               />
@@ -268,7 +269,7 @@ export default function ResetPasswordPage() {
                 {...register('confirmPassword')}
                 type={showConfirmPassword ? 'text' : 'password'}
                 id="confirmPassword"
-                className={`w-full px-4 py-4 pr-12 border-2 rounded-xl outline-none transition-all bg-theme-surface dark:bg-slate-900 text-main dark:text-slate-100 ${
+                className={`w-full px-4 py-3 lg:py-3.5 pr-12 border-2 rounded-xl outline-none transition-all bg-theme-surface dark:bg-slate-900 text-main dark:text-slate-100 ${
                   errors.confirmPassword
                     ? 'border-red-500 bg-red-50 dark:bg-red-500/10'
                     : 'border-slate-300 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
@@ -302,7 +303,7 @@ export default function ResetPasswordPage() {
             type="submit"
             id="btn-update-password"
             disabled={isSubmitting}
-            className="w-full py-4 bg-gradient-to-r from-teal-500 to-teal-600 text-white font-semibold rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none relative overflow-hidden"
+            className="w-full py-3 lg:py-3.5 bg-gradient-to-r from-teal-500 to-teal-600 text-white font-semibold rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none relative overflow-hidden"
           >
             {isSubmitting ? (
               <span className="flex items-center justify-center gap-2">
@@ -358,7 +359,7 @@ export default function ResetPasswordPage() {
         </div>
       )}
 
-      <div className="mt-8 text-center animate-fade-in-right" style={{ animationDelay: '0.8s' }}>
+      <div className="mt-5 lg:mt-6 text-center animate-fade-in-right" style={{ animationDelay: '0.8s' }}>
         <div className="flex items-center justify-center gap-3 text-theme-faint text-xs">
           <span>v3.0.0</span>
           <span>•</span>

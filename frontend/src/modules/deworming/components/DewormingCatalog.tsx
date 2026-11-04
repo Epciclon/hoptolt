@@ -103,7 +103,7 @@ export function DewormingCatalog({ onSuccess }: Readonly<DewormingCatalogProps>)
             const lastDeworming = getRabbitLastDeworming(rabbit.id);
             return (
               <>
-                <p className="text-[10px] text-muted mb-0.5">Última desparasitación:</p>
+                <p className="text-xs text-muted mb-0.5">Última desparasitación:</p>
                 <p className="text-xs font-medium text-main truncate" title={lastDeworming ? formatDateTime(lastDeworming.dewormingDate) : 'Nunca'}>
                   {lastDeworming ? formatDateTime(lastDeworming.dewormingDate) : 'Nunca'}
                 </p>

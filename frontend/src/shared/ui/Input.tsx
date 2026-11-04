@@ -1,16 +1,17 @@
 'use client';
 
-import { InputHTMLAttributes, forwardRef } from 'react';
+import { InputHTMLAttributes, forwardRef, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   hint?: string;
+  endAdornment?: ReactNode;
 }
 
 export const Input = forwardRef<HTMLInputElement, Readonly<InputProps>>(
-  ({ label, error, hint, className, id, required, ...props }, ref) => {
+  ({ label, error, hint, className, id, required, endAdornment, ...props }, ref) => {
     const inputId = id ?? label?.toLowerCase().replace(/\s+/g, '-');
 
     return (
@@ -18,25 +19,33 @@ export const Input = forwardRef<HTMLInputElement, Readonly<InputProps>>(
         {label && (
           <label htmlFor={inputId} className="text-sm font-medium text-main">
             {label}
-            {required && <span className="text-red-500 ml-0.5">*</span>}
+            {required && <span className="text-muted ml-0.5">*</span>}
           </label>
         )}
-        <input
-          ref={ref}
-          id={inputId}
-          required={required}
-          className={cn(
-            'w-full px-3 py-2 text-sm rounded-lg border bg-theme-surface dark:bg-slate-900 border-default text-main dark:text-slate-100',
-            'placeholder:text-theme-faint transition-all duration-200',
-            'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500',
-            'disabled:bg-theme-surface dark:disabled:bg-slate-800 disabled:text-theme-faint disabled:cursor-not-allowed',
-            error
-              ? 'border-red-400 dark:border-red-500 focus:ring-red-400/30 focus:border-red-400'
-              : 'border-default',
-            className,
+        <div className="relative w-full">
+          <input
+            ref={ref}
+            id={inputId}
+            required={required}
+            className={cn(
+              'w-full px-3 py-2 text-sm rounded-lg border bg-theme-surface dark:bg-slate-900 border-default text-main dark:text-slate-100',
+              'placeholder:text-theme-faint placeholder:truncate transition-all duration-200',
+              'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500',
+              'disabled:bg-theme-surface dark:disabled:bg-slate-800 disabled:text-theme-faint disabled:cursor-not-allowed',
+              error
+                ? 'border-red-400 dark:border-red-500 focus:ring-red-400/30 focus:border-red-400'
+                : 'border-default',
+              endAdornment && 'pr-10',
+              className,
+            )}
+            {...props}
+          />
+          {endAdornment && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-auto">
+              {endAdornment}
+            </div>
           )}
-          {...props}
-        />
+        </div>
         {error && <p className="text-xs text-red-500">{error}</p>}
         {hint && !error && <p className="text-xs text-muted">{hint}</p>}
       </div>

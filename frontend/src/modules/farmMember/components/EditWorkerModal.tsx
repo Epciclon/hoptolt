@@ -530,7 +530,7 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
               disabled={loadingCages}
             />
             {showCageDropdown && (
-              <div className="absolute z-20 w-full border border-default rounded-lg max-h-48 overflow-y-auto bg-card shadow-lg mt-1 divide-y divide-default">
+              <div className="absolute z-20 w-full border border-default rounded-lg max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto bg-card shadow-lg mt-1 divide-y divide-default">
                 {(() => {
                   if (loadingCages) return <p className="text-muted text-sm p-3">Cargando jaulas...</p>;
                   if (filteredCages.length === 0) return <p className="text-muted text-sm p-3">No hay jaulas disponibles</p>;
@@ -541,7 +541,7 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
                       onClick={() => handleCageSelect(cage)}
                       className="w-full text-left px-3.5 py-2.5 text-main hover:bg-theme-surface dark:hover:bg-slate-800/80 focus:bg-theme-surface dark:focus:bg-slate-800/80 outline-none text-sm transition-colors cursor-pointer block bg-transparent"
                     >
-                      Jaula {cage.number} - {cage.type.charAt(0).toUpperCase() + cage.type.slice(1)}
+                      {cage.number} - {cage.type.charAt(0).toUpperCase() + cage.type.slice(1)}
                     </button>
                   ));
                 })()}
@@ -555,7 +555,7 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
                 if (!cage) return null;
                 return (
                   <div key={`cage-${id}`} className="flex items-center gap-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 px-2.5 py-1 rounded text-sm font-medium">
-                    <span>Jaula {cage.number}</span>
+                    <span>{cage.number}</span>
                     <button
                       type="button"
                       onClick={() => handleCageRemove(id)}
@@ -623,7 +623,7 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
 
                         <span
                           className={cn(
-                            'text-[11px] font-semibold px-2 py-0.5 rounded-full transition-colors',
+                            'text-xs font-semibold px-2 py-0.5 rounded-full transition-colors',
                             isSelected
                               ? 'bg-emerald-200/80 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300'
                               : 'bg-theme-surface text-muted dark:bg-slate-800 dark:text-slate-400'
@@ -654,7 +654,7 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
                       </p>
                     </div>
 
-                    <div className="mt-3 pt-2 border-t border-dashed border-default/70 flex items-center justify-between text-[11px]">
+                    <div className="mt-3 pt-2 border-t border-dashed border-default/70 flex items-center justify-between text-xs">
                       <span
                         className={cn(
                           'font-medium transition-colors',
@@ -687,7 +687,7 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
               onFocus={() => setShowSensitiveDropdown(true)}
             />
             {showSensitiveDropdown && (
-              <div className="absolute z-20 w-full border border-default rounded-lg max-h-48 overflow-y-auto bg-card shadow-lg mt-1 divide-y divide-default">
+              <div className="absolute z-20 w-full border border-default rounded-lg max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto bg-card shadow-lg mt-1 divide-y divide-default">
                 {filteredPermissions.length === 0 ? (
                   <p className="text-muted text-sm p-3">No hay permisos disponibles</p>
                 ) : (

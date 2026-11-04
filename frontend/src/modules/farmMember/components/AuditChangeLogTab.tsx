@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { farmMemberService } from '../services/farmMember.service';
 import type { AuditLogItem, AuditLogFilters, FarmMember } from '../types/farmMember.types';
-import { SectionMessage, Button } from '@/shared/ui';
-import { Filter, RotateCcw, ChevronLeft, ChevronRight, User, ShieldCheck } from 'lucide-react';
+import { SectionMessage, Button, Dialog } from '@/shared/ui';
+import { Pagination } from '@/shared/ui/Pagination';
+import { Filter, RotateCcw, User, ShieldCheck } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { formatFriendlyDate, formatDateTime } from '@/shared/utils/dateUtils';
 
@@ -253,12 +254,12 @@ function renderDetailsView(log: AuditLogItem) {
                     )}
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="line-through text-xs font-medium text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2.5 py-1 rounded-md border border-rose-200 dark:border-rose-900/30">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
+                    <span className="line-through text-xs font-medium text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2.5 py-1 rounded-md border border-rose-200 dark:border-rose-900/30 break-words [word-break:break-word]">
                       {item.beforeVal}
                     </span>
-                    <span className="text-muted font-bold text-sm">➔</span>
-                    <span className="font-semibold text-xs text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-md border border-emerald-200 dark:border-emerald-900/30">
+                    <span className="text-muted font-bold text-sm self-start sm:self-center">➔</span>
+                    <span className="font-semibold text-xs text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-md border border-emerald-200 dark:border-emerald-900/30 break-words [word-break:break-word]">
                       {item.afterVal}
                     </span>
                   </div>
@@ -360,7 +361,7 @@ function renderDetailsView(log: AuditLogItem) {
 export function AuditChangeLogTab({ galponId, workers }: Readonly<AuditChangeLogTabProps>) {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
-  const [expandedLogId, setExpandedLogId] = useState<number | null>(null);
+  const [selectedLogForDetails, setSelectedLogForDetails] = useState<AuditLogItem | null>(null);
 
   // Filtros
   const [selectedWorkerId, setSelectedWorkerId] = useState<string>('');
@@ -369,7 +370,7 @@ export function AuditChangeLogTab({ galponId, workers }: Readonly<AuditChangeLog
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
 
-  const { data, isLoading: loading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['auditLogs', galponId, page, selectedWorkerId, selectedEntity, selectedAction, startDate, endDate],
     queryFn: () => {
       const filters: AuditLogFilters = { page, limit: 15 };
@@ -380,14 +381,16 @@ export function AuditChangeLogTab({ galponId, workers }: Readonly<AuditChangeLog
       if (endDate) filters.endDate = endDate;
       return farmMemberService.getAuditLogs(galponId, filters);
     },
-    staleTime: 10 * 1000,
-    refetchInterval: 15 * 1000,
-    refetchOnWindowFocus: true
+    placeholderData: (previousData) => previousData,
+    staleTime: 30 * 1000,
+    refetchInterval: 30 * 1000,
+    refetchOnWindowFocus: false
   });
 
   const logs = data?.logs || [];
   const totalPages = data?.totalPages || 1;
   const totalCount = data?.total || 0;
+  const loading = isLoading && !data;
 
   // Suscripción Realtime para invalidar la caché inmediatamente ante nuevos registros
   useEffect(() => {
@@ -560,78 +563,66 @@ export function AuditChangeLogTab({ galponId, workers }: Readonly<AuditChangeLog
 
           return (
             <div className="divide-y divide-default">
-              {logs.map((log) => {
+              {logs.map((log: AuditLogItem) => {
                 const actionConf = ACTION_CONFIG[log.action] || {
                   label: log.action,
                   className: 'bg-gray-100 text-gray-800 dark:bg-slate-800 dark:text-slate-200 border-gray-200 dark:border-slate-700'
                 };
                 const entityLabel = ENTITY_LABELS[log.entity] || log.entity;
-                const isExpanded = expandedLogId === log.id;
                 const hasDetailedDiff = Boolean(log.details?.before || log.details?.after);
 
                 return (
                   <div
                     key={log.id}
-                    className="p-4 hover:bg-theme-surface/50 transition-colors"
+                    className="p-3.5 sm:p-4 hover:bg-theme-surface/50 transition-colors flex flex-col gap-2.5 sm:gap-3"
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      {/* Avatar y Usuario */}
-                      <div className="flex items-start gap-3 min-w-0">
-                        <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-950/50 text-primary-700 dark:text-primary-300 flex items-center justify-center font-bold text-sm shrink-0 border border-primary-200 dark:border-primary-800/40">
-                          {log.profile?.fullName ? log.profile.fullName.charAt(0).toUpperCase() : <User size={18} />}
+                    {/* Fila Superior: Usuario y Fecha */}
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-primary-100 dark:bg-primary-950/50 text-primary-700 dark:text-primary-300 flex items-center justify-center font-bold text-xs sm:text-sm shrink-0 border border-primary-200 dark:border-primary-800/40">
+                          {log.profile?.fullName ? log.profile.fullName.charAt(0).toUpperCase() : <User size={16} />}
                         </div>
-
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-semibold text-main text-sm">
-                              {log.profile?.fullName || 'Trabajador'}
-                            </span>
-                            <span className="text-xs text-muted">
-                              @{log.profile?.username || 'usuario'}
-                            </span>
-
-                            {/* Badge Proceso */}
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-theme-surface border border-default text-main">
-                              {entityLabel}
-                            </span>
-
-                            {/* Badge Acción */}
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${actionConf.className}`}>
-                              {actionConf.label}
-                            </span>
-                          </div>
-
-                          {/* Resumen del cambio */}
-                          <p className="text-sm text-main mt-1.5 leading-relaxed">
-                            {log.details?.summary || `Realizó una acción en ${entityLabel}`}
-                          </p>
+                        <div className="min-w-0 truncate">
+                          <span className="font-semibold text-main text-xs sm:text-sm block truncate">
+                            {log.profile?.fullName || 'Trabajador'}
+                          </span>
+                          <span className="text-[11px] sm:text-xs text-muted block truncate">
+                            @{log.profile?.username || 'usuario'}
+                          </span>
                         </div>
                       </div>
 
-                      {/* Fecha y botón de detalles */}
-                      <div className="flex flex-col items-end gap-1 shrink-0">
-                        <span className="text-xs text-theme-faint" title={formatDateTime(log.createdAt)}>
-                          {formatFriendlyDate(log.createdAt)}
-                        </span>
-
-                        {hasDetailedDiff && (
-                          <button
-                            type="button"
-                            onClick={() => setExpandedLogId(isExpanded ? null : log.id)}
-                            className="text-xs text-primary-600 hover:text-primary-700 font-medium cursor-pointer mt-1"
-                          >
-                            {isExpanded ? 'Ocultar detalles' : 'Ver detalle'}
-                          </button>
-                        )}
-                      </div>
+                      <span className="text-xs text-theme-faint shrink-0 whitespace-nowrap" title={formatDateTime(log.createdAt)}>
+                        {formatFriendlyDate(log.createdAt)}
+                      </span>
                     </div>
 
-                    {/* Detalle expandible con comparación visual clara sin JSON */}
-                    {isExpanded && hasDetailedDiff && (
-                      <div className="mt-3.5 pt-3 border-t border-default bg-theme-surface/70 p-3.5 rounded-xl">
-                        {renderDetailsView(log)}
+                    {/* Resumen del cambio a ancho completo */}
+                    <p className="text-xs sm:text-sm text-main leading-relaxed break-words">
+                      {log.details?.summary || `Realizó una acción en ${entityLabel}`}
+                    </p>
+
+                    {/* Fila Inferior: Badges y Botón de Detalles */}
+                    <div className="flex items-center justify-between gap-2 pt-1 border-t border-default/50">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-theme-surface border border-default text-main">
+                          {entityLabel}
+                        </span>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${actionConf.className}`}>
+                          {actionConf.label}
+                        </span>
                       </div>
-                    )}
+
+                      {hasDetailedDiff && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedLogForDetails(log)}
+                          className="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium cursor-pointer shrink-0 py-1 px-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-950/30 transition-colors"
+                        >
+                          Ver detalle →
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -642,38 +633,71 @@ export function AuditChangeLogTab({ galponId, workers }: Readonly<AuditChangeLog
 
       {/* Paginación */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-2 pt-2 text-sm text-muted">
-          <span>
-            Total: {totalCount} registros
-          </span>
-
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1 || loading}
-            >
-              <ChevronLeft size={16} />
-              <span>Anterior</span>
-            </Button>
-
-            <span className="text-xs font-medium px-2">
-              Página {page} de {totalPages}
-            </span>
-
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages || loading}
-            >
-              <span>Siguiente</span>
-              <ChevronRight size={16} />
-            </Button>
-          </div>
-        </div>
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
       )}
+
+      {/* Modal de Detalle */}
+      <Dialog
+        open={Boolean(selectedLogForDetails)}
+        onClose={() => setSelectedLogForDetails(null)}
+        title="Detalle del registro de cambio"
+        size="2xl"
+      >
+        {selectedLogForDetails && (
+          <div className="space-y-3 pt-1">
+            <div className="bg-theme-surface border border-default rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-full bg-primary-100 dark:bg-primary-950/50 text-primary-700 dark:text-primary-300 flex items-center justify-center font-bold text-sm shrink-0 border border-primary-200 dark:border-primary-800/40">
+                  {selectedLogForDetails.profile?.fullName ? selectedLogForDetails.profile.fullName.charAt(0).toUpperCase() : <User size={18} />}
+                </div>
+                <div>
+                  <div className="font-semibold text-main text-sm">
+                    {selectedLogForDetails.profile?.fullName || 'Trabajador'}
+                  </div>
+                  <div className="text-xs text-muted">
+                    @{selectedLogForDetails.profile?.username || 'usuario'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-theme-surface border border-default text-main">
+                  {ENTITY_LABELS[selectedLogForDetails.entity] || selectedLogForDetails.entity}
+                </span>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${(ACTION_CONFIG[selectedLogForDetails.action] || { className: 'bg-gray-100 text-gray-800 dark:bg-slate-800 dark:text-slate-200 border-gray-200 dark:border-slate-700' }).className}`}>
+                  {(ACTION_CONFIG[selectedLogForDetails.action] || { label: selectedLogForDetails.action }).label}
+                </span>
+              </div>
+            </div>
+
+            <div className="text-xs sm:text-sm text-main font-medium leading-relaxed bg-primary-50/50 dark:bg-primary-950/20 border border-primary-100 dark:border-primary-900/30 rounded-xl p-2.5 sm:p-3">
+              {selectedLogForDetails.details?.summary || `Acción realizada en ${ENTITY_LABELS[selectedLogForDetails.entity] || selectedLogForDetails.entity}`}
+            </div>
+
+            <div className="text-xs text-muted flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 px-1">
+              <span className="shrink-0">Fecha y hora del registro:</span>
+              <span className="font-medium text-main">{formatDateTime(selectedLogForDetails.createdAt)}</span>
+            </div>
+
+            <div className="pt-2 border-t border-default">
+              {renderDetailsView(selectedLogForDetails)}
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-default">
+              <Button
+                variant="outline"
+                onClick={() => setSelectedLogForDetails(null)}
+              >
+                Cerrar
+              </Button>
+            </div>
+          </div>
+        )}
+      </Dialog>
     </div>
   );
 }
