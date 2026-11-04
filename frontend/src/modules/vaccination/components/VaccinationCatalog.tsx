@@ -79,7 +79,7 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
       return;
     }
 
-    submitVaccination();
+    void submitVaccination();
   };
 
   const submitVaccination = async () => {

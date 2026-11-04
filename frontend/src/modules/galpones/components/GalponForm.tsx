@@ -221,11 +221,12 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
       />
 
       <div>
-        <label className="block text-sm font-medium text-main mb-1.5">
+        <label htmlFor="province-search" className="block text-sm font-medium text-main mb-1.5">
           Provincia <span className="text-muted ml-0.5">*</span>
         </label>
         <div className="relative" ref={provinceDropdownRef}>
           <Input
+            id="province-search"
             placeholder="Buscar provincia..."
             value={provinceSearch}
             onChange={(e) => { setProvinceSearch(e.target.value); setShowProvinceDropdown(true); }}
@@ -274,11 +275,12 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
       />
 
       <div>
-        <label className="block text-sm font-medium text-main mb-1.5">
+        <label htmlFor="food-search" className="block text-sm font-medium text-main mb-1.5">
           Tipos de Alimento <span className="text-muted ml-0.5">*</span>
         </label>
         <div className="relative mb-2" ref={foodDropdownRef}>
           <Input
+            id="food-search"
             placeholder="Buscar tipo de alimento..."
             value={foodSearch}
             onChange={(e) => { setFoodSearch(e.target.value); setShowFoodDropdown(true); }}
@@ -321,11 +323,12 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-main mb-1.5">
+        <label htmlFor="vaccine-search" className="block text-sm font-medium text-main mb-1.5">
           Vacunas <span className="text-muted ml-0.5">*</span>
         </label>
         <div className="relative mb-2" ref={vaccineDropdownRef}>
           <Input
+            id="vaccine-search"
             placeholder="Buscar vacuna..."
             value={vaccineSearch}
             onChange={(e) => { setVaccineSearch(e.target.value); setShowVaccineDropdown(true); }}

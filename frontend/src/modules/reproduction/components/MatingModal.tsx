@@ -37,7 +37,7 @@ export function MatingModal({ male, onClose, onSuccess }: Readonly<MatingModalPr
         setLoading(false);
       }
     };
-    fetchFemales();
+    void fetchFemales();
   }, [male.id, showToast]);
 
   const handlePreConfirm = async () => {

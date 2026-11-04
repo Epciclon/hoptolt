@@ -45,7 +45,7 @@ export function DewormingCatalog({ onSuccess }: Readonly<DewormingCatalogProps>)
       return;
     }
 
-    submitDeworming();
+    void submitDeworming();
   };
 
   const submitDeworming = async () => {

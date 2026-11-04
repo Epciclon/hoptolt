@@ -774,10 +774,11 @@ export function IncidentFloatingWidget() {
                   )}
 
                   <div>
-                    <label className="block text-xs font-semibold text-main mb-1">
+                    <label htmlFor="quick-incident-category" className="block text-xs font-semibold text-main mb-1">
                       Tipo de Novedad
                     </label>
                     <select
+                      id="quick-incident-category"
                       value={quickCategory}
                       onChange={(e) => setQuickCategory(e.target.value)}
                       className="w-full px-2.5 py-1.5 text-xs bg-theme-surface border border-strong rounded-xl text-main focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -792,10 +793,11 @@ export function IncidentFloatingWidget() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-main mb-1">
+                    <label htmlFor="quick-incident-title" className="block text-xs font-semibold text-main mb-1">
                       Motivo de la Novedad
                     </label>
                     <input
+                      id="quick-incident-title"
                       type="text"
                       value={quickTitle}
                       onChange={(e) => setQuickTitle(e.target.value)}
@@ -805,10 +807,11 @@ export function IncidentFloatingWidget() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-main mb-1">
+                    <label htmlFor="quick-incident-description" className="block text-xs font-semibold text-main mb-1">
                       Explicación Detallada
                     </label>
                     <textarea
+                      id="quick-incident-description"
                       rows={3}
                       value={quickDescription}
                       onChange={(e) => setQuickDescription(e.target.value)}
@@ -866,7 +869,15 @@ export function IncidentFloatingWidget() {
                       return (
                         <div
                           key={incident.id}
+                          role="button"
+                          tabIndex={0}
                           onClick={() => handleOpenDetail(incident)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              handleOpenDetail(incident);
+                            }
+                          }}
                           className={`p-3 rounded-xl border transition-all cursor-pointer flex flex-col gap-1.5 ${
                             isUnread
                               ? 'bg-primary-500/5 border-primary-500/30 shadow-sm'

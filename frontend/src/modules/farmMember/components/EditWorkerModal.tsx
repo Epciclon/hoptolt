@@ -361,14 +361,14 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
           }
           
           // Cargar jaulas ocupadas (con conejos asignados)
-          loadOccupiedCages();
+          await loadOccupiedCages();
         } catch (error) {
           console.error('Error al cargar datos del trabajador:', error);
         }
       }
     };
     
-    loadWorkerData();
+    void loadWorkerData();
   }, [open, worker]);
 
   const loadOccupiedCages = async () => {

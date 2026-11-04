@@ -158,7 +158,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
       setCagesWithIssue(cagesWithIssueList);
       setShowJustificationModal(true);
     } else {
-      submitFeeding('Alimentación normal');
+      void submitFeeding('Alimentación normal');
     }
   };
 

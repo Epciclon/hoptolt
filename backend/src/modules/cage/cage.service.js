@@ -8,7 +8,7 @@ const { recordWorkerChange } = require('../../common/helpers/audit.helper');
 
 class CageService {
     async registerCage(data, profileId) {
-        const quantity = parseInt(data.quantity) || 1;
+        const quantity = Number.parseInt(data.quantity, 10) || 1;
 
         const [, galpon, currentCages] = await Promise.all([
             this._assertGalponAccess(data.galponId, profileId),

@@ -68,7 +68,7 @@ export default function ResetPasswordPage() {
       );
       setIsVerifying(false);
       setIsReady(false);
-      clearPhantomSession();
+      void clearPhantomSession();
       return;
     }
 
@@ -83,7 +83,7 @@ export default function ResetPasswordPage() {
       );
       setIsVerifying(false);
       setIsReady(false);
-      clearPhantomSession();
+      void clearPhantomSession();
       return;
     }
 
@@ -96,11 +96,11 @@ export default function ResetPasswordPage() {
 
     // 2. Si viene con token_hash (flujo universal independiente de navegador o dominio)
     if (tokenHash) {
-      supabase.auth.verifyOtp({ token_hash: tokenHash, type }).then((result: { error: { message?: string } | null }) => {
+      void supabase.auth.verifyOtp({ token_hash: tokenHash, type }).then((result: { error: { message?: string } | null }) => {
         if (result.error) {
           setErrorMessage(translateAuthError(result.error));
           setIsReady(false);
-          clearPhantomSession();
+          void clearPhantomSession();
         } else {
           setIsReady(true);
         }
@@ -111,11 +111,11 @@ export default function ResetPasswordPage() {
 
     // 3. Si viene con código PKCE (?code=...)
     if (code) {
-      supabase.auth.exchangeCodeForSession(code).then((result: { error: { message?: string } | null }) => {
+      void supabase.auth.exchangeCodeForSession(code).then((result: { error: { message?: string } | null }) => {
         if (result.error) {
           setErrorMessage(translateAuthError(result.error));
           setIsReady(false);
-          clearPhantomSession();
+          void clearPhantomSession();
         } else {
           setIsReady(true);
         }
@@ -133,7 +133,7 @@ export default function ResetPasswordPage() {
     });
 
     // 5. Verificar si Supabase ya estableció la sesión a partir del hash
-    supabase.auth.getSession().then((res: { data: { session: unknown } }) => {
+    void supabase.auth.getSession().then((res: { data: { session: unknown } }) => {
       const session = res.data.session;
       if (session) {
         setIsReady(true);
@@ -147,7 +147,7 @@ export default function ResetPasswordPage() {
                 'No se encontró un enlace de recuperación válido. Para restablecer tu contraseña, solicita un enlace desde la página de recuperación.'
               );
               setIsVerifying(false);
-              clearPhantomSession();
+              void clearPhantomSession();
             }
             return currentReady;
           });
@@ -235,7 +235,6 @@ export default function ResetPasswordPage() {
                 }`}
                 placeholder="Mínimo 6 caracteres, 1 número y 1 símbolo"
                 autoComplete="new-password"
-                autoFocus
               />
               <button
                 type="button"

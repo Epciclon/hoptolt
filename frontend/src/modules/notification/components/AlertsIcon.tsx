@@ -384,14 +384,14 @@ export function AlertsIcon() {
               onClick={() => {
                 const item = activeWarningPreview;
                 handleCloseWarningPreview();
-                handleNotificationClick(item);
+                void handleNotificationClick(item);
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
                   const item = activeWarningPreview;
                   handleCloseWarningPreview();
-                  handleNotificationClick(item);
+                  void handleNotificationClick(item);
                 }
               }}
             >
@@ -421,7 +421,7 @@ export function AlertsIcon() {
                         e.stopPropagation();
                         const item = activeWarningPreview;
                         handleCloseWarningPreview();
-                        handleNotificationClick(item);
+                        void handleNotificationClick(item);
                       }}
                       className="text-xs py-1 px-3 shadow-sm h-auto bg-amber-600 hover:bg-amber-700 text-white"
                     >
@@ -478,11 +478,11 @@ export function AlertsIcon() {
                       'w-full text-left p-3.5 hover:bg-theme-surface transition-colors cursor-pointer block focus:outline-none focus:ring-2 focus:ring-primary-500',
                       !notification.read && 'bg-primary-50/40 dark:bg-primary-900/15'
                     )}
-                    onClick={() => handleNotificationClick(notification)}
+                    onClick={() => { void handleNotificationClick(notification); }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        handleNotificationClick(notification);
+                        void handleNotificationClick(notification);
                       }
                     }}
                   >

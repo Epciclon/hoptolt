@@ -297,9 +297,9 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
         </p>
 
         <div>
-          <label className="block text-sm font-medium text-main mb-1.5">
+          <span className="block text-sm font-medium text-main mb-1.5">
             Conejo <span className="text-muted ml-0.5">*</span>
-          </label>
+          </span>
           {selectedRabbit ? (
             <RabbitSelectableCard 
               rabbit={selectedRabbit} 

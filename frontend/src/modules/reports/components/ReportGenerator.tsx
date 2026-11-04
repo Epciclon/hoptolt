@@ -404,7 +404,7 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
         const startISO = startDate ? new Date(`${startDate}T00:00:00-05:00`).toISOString() : undefined;
         const endISO = endDate ? new Date(`${endDate}T23:59:59-05:00`).toISOString() : undefined;
 
-        fetchPreview({
+        void fetchPreview({
             galponId,
             module: selectedModule,
             startDate: startISO,
@@ -416,7 +416,7 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
         });
 
         const moduleConfig = REPORT_MODULES.find(m => m.id === selectedModule);
-        farmMemberService.logReportAudit(Number(galponId), {
+        void farmMemberService.logReportAudit(Number(galponId), {
             moduleName: selectedModule,
             moduleLabel: moduleConfig?.label || selectedModule,
             startDate,
@@ -482,7 +482,7 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
             }
         };
 
-        buildPdf();
+        void buildPdf();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [sortedPreviewData, selectedModule, appliedStartDate, appliedEndDate]);
 
@@ -523,7 +523,7 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
 
             setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
 
-            farmMemberService.logReportAudit(Number(galponId), {
+            void farmMemberService.logReportAudit(Number(galponId), {
                 moduleName: selectedModule,
                 moduleLabel: moduleConfig?.label || selectedModule,
                 startDate: appliedStartDate,

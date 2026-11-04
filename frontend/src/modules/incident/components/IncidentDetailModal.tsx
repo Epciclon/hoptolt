@@ -283,8 +283,9 @@ export function IncidentDetailModal({
               {/* Controles de estado y botón de envío responsivos sin desbordar */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
                 <div className="flex items-center gap-2">
-                  <label className="text-xs text-muted font-medium">Estado:</label>
+                  <label htmlFor="incident-status-select" className="text-xs text-muted font-medium">Estado:</label>
                   <select
+                    id="incident-status-select"
                     value={selectedStatus}
                     onChange={(e) => {
                       const nextStatus = e.target.value as FormStatus;

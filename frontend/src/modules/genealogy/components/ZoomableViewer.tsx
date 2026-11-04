@@ -118,7 +118,6 @@ export function ZoomableViewer({ children }: Readonly<ZoomableViewerProps>) {
           if (e.key === '+') { e.preventDefault(); handleZoomIn(); }
           if (e.key === '-') { e.preventDefault(); handleZoomOut(); }
         }}
-        tabIndex={0}
       >
         <div 
           className="origin-top transition-transform duration-75 ease-out flex justify-center pt-14 sm:pt-16 pb-20"

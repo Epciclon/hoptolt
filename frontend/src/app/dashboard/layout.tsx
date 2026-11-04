@@ -80,7 +80,7 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
       }
     };
 
-    checkAuth();
+    void checkAuth();
   }, [loading, router, mounted]);
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);

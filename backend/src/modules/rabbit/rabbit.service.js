@@ -365,7 +365,7 @@ class RabbitService {
         }
         
         if (!isUnique) {
-            const num = Math.floor(Math.random() * 900) + 100;
+            const num = crypto.randomInt(100, 1000);
             suggestedName = `${suggestedName} ${num}`;
         }
         

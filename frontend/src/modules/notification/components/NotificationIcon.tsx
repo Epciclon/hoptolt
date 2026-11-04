@@ -450,7 +450,7 @@ export function NotificationIcon() {
                 if (activeInfoPreview.type !== 'invitation') {
                   const item = activeInfoPreview;
                   handleCloseInfoPreview();
-                  handleNotificationClick(item);
+                  void handleNotificationClick(item);
                 }
               }}
               onKeyDown={(e) => {
@@ -458,7 +458,7 @@ export function NotificationIcon() {
                   e.preventDefault();
                   const item = activeInfoPreview;
                   handleCloseInfoPreview();
-                  handleNotificationClick(item);
+                  void handleNotificationClick(item);
                 }
               }}
             >
@@ -516,7 +516,7 @@ export function NotificationIcon() {
                           variant="danger"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleRejectInvitation(activeInfoPreview);
+                            void handleRejectInvitation(activeInfoPreview);
                           }}
                           disabled={accepting === activeInfoPreview.id || rejecting === activeInfoPreview.id}
                           className="text-xs py-1 px-2.5 h-auto shadow-sm"
@@ -528,7 +528,7 @@ export function NotificationIcon() {
                           variant="primary"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleAcceptInvitation(activeInfoPreview);
+                            void handleAcceptInvitation(activeInfoPreview);
                           }}
                           disabled={accepting === activeInfoPreview.id || rejecting === activeInfoPreview.id}
                           className="text-xs py-1 px-2.5 h-auto shadow-sm"
@@ -544,7 +544,7 @@ export function NotificationIcon() {
                           e.stopPropagation();
                           const item = activeInfoPreview;
                           handleCloseInfoPreview();
-                          handleNotificationClick(item);
+                          void handleNotificationClick(item);
                         }}
                         className="text-xs py-1 px-3 shadow-sm h-auto"
                       >
@@ -578,7 +578,7 @@ export function NotificationIcon() {
                 {unreadInfosCount > 0 && (
                   <button
                     type="button"
-                    onClick={() => markAllAsRead()}
+                    onClick={() => { void markAllAsRead(); }}
                     className="text-xs text-primary-600 hover:text-primary-700 flex items-center gap-1 font-medium bg-transparent border-none p-0 cursor-pointer"
                   >
                     <CheckCheck size={14} />
@@ -612,11 +612,11 @@ export function NotificationIcon() {
                       'w-full text-left p-3.5 hover:bg-theme-surface transition-colors cursor-pointer block focus:outline-none focus:ring-2 focus:ring-primary-500',
                       !notification.read && 'bg-primary-50/40 dark:bg-primary-900/15'
                     )}
-                    onClick={() => handleNotificationClick(notification)}
+                    onClick={() => { void handleNotificationClick(notification); }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        handleNotificationClick(notification);
+                        void handleNotificationClick(notification);
                       }
                     }}
                   >
@@ -669,7 +669,7 @@ export function NotificationIcon() {
                               variant="primary"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleAcceptInvitation(notification);
+                                void handleAcceptInvitation(notification);
                               }}
                               disabled={accepting === notification.id || rejecting === notification.id}
                               className="text-xs py-1 px-3"
@@ -681,7 +681,7 @@ export function NotificationIcon() {
                               variant="danger"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleRejectInvitation(notification);
+                                void handleRejectInvitation(notification);
                               }}
                               disabled={accepting === notification.id || rejecting === notification.id}
                               className="text-xs py-1 px-3"

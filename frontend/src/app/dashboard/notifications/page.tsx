@@ -233,11 +233,11 @@ export default function NotificationsPage() {
                       "w-full text-left p-3.5 sm:p-5 transition-colors group cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 flex flex-col gap-2.5 sm:gap-3",
                       !notification.read ? "bg-primary-50/60 dark:bg-primary-950/20 hover:bg-primary-50/90 dark:hover:bg-primary-950/30" : "hover:bg-theme-surface"
                     )}
-                    onClick={() => handleNotificationClick(notification)}
+                    onClick={() => { void handleNotificationClick(notification); }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        handleNotificationClick(notification);
+                        void handleNotificationClick(notification);
                       }
                     }}
                   >
@@ -264,7 +264,7 @@ export default function NotificationsPage() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDelete(notification.id);
+                              void handleDelete(notification.id);
                             }}
                             className="text-theme-faint hover:text-red-500 transition-colors p-1 sm:opacity-0 sm:group-hover:opacity-100 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer"
                             title="Eliminar notificación"
@@ -319,7 +319,7 @@ export default function NotificationsPage() {
                             size="sm"
                             variant="primary"
                             className="flex-1 sm:flex-none text-xs"
-                            onClick={(e) => { e.stopPropagation(); handleAcceptInvitation(notification); }}
+                            onClick={(e) => { e.stopPropagation(); void handleAcceptInvitation(notification); }}
                             disabled={accepting === notification.id || rejecting === notification.id}
                           >
                             {accepting === notification.id ? 'Aceptando...' : 'Aceptar'}
@@ -328,7 +328,7 @@ export default function NotificationsPage() {
                             size="sm"
                             variant="danger"
                             className="flex-1 sm:flex-none text-xs"
-                            onClick={(e) => { e.stopPropagation(); handleRejectInvitation(notification); }}
+                            onClick={(e) => { e.stopPropagation(); void handleRejectInvitation(notification); }}
                             disabled={accepting === notification.id || rejecting === notification.id}
                           >
                             {rejecting === notification.id ? 'Rechazando...' : 'Rechazar'}

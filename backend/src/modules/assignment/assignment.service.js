@@ -451,7 +451,7 @@ class AssignmentService {
         await assignmentRepository.update(assignment, { status: 'liberado' });
         
         // Procesar notificaciones y bitácora sin bloquear innecesariamente
-        (async () => {
+        void (async () => {
             let rabbit = null;
             try {
                 rabbit = await rabbitRepository.findById(assignment.rabbitId);

@@ -123,7 +123,6 @@ export default function ForgotPasswordPage() {
               }`}
               placeholder="Ingrese su usuario o correo"
               autoComplete="email"
-              autoFocus
             />
             {errors.identifier && (
               <p className="text-red-500 text-sm mt-1">{errors.identifier.message}</p>

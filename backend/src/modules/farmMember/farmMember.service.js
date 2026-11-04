@@ -376,8 +376,8 @@ class FarmMemberService {
             where.createdAt[Op.lte] = end;
         }
 
-        const parsedPage = Math.max(1, parseInt(page, 10) || 1);
-        const parsedLimit = Math.max(1, parseInt(limit, 10) || 20);
+        const parsedPage = Math.max(1, Number.parseInt(page, 10) || 1);
+        const parsedLimit = Math.max(1, Number.parseInt(limit, 10) || 20);
         const offset = (parsedPage - 1) * parsedLimit;
 
         const { count, rows } = await AuditLog.findAndCountAll({

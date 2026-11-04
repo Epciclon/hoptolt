@@ -47,7 +47,7 @@ class IncidentService {
 
         let finalCageIds = [];
         if (Array.isArray(cageIds)) {
-            finalCageIds = cageIds.map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+            finalCageIds = cageIds.map(id => Number(id)).filter(id => !Number.isNaN(id) && id > 0);
         } else if (cageId) {
             finalCageIds = [Number(cageId)];
         }

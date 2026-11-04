@@ -386,7 +386,15 @@ export default function IncidentsPage() {
                 return (
                   <div
                     key={incident.id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => handleOpenDetail(incident)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleOpenDetail(incident);
+                      }
+                    }}
                     className={cn(
                       'p-3.5 sm:p-5 hover:bg-theme-surface/50 transition-colors flex flex-col gap-2.5 sm:gap-3 cursor-pointer group focus:outline-none',
                       isUnread && 'bg-primary-50/50 dark:bg-primary-900/15'

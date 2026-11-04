@@ -254,11 +254,12 @@ export function IncidentFormModal({ isOpen, onClose, onSuccess }: Readonly<Incid
 
           {/* Categoría con Select Buscador */}
           <div className={cn('relative', showCategoryDropdown ? 'z-50' : 'z-30')} ref={categoryDropdownRef}>
-            <label className="block text-xs font-semibold text-main mb-1.5">
+            <label htmlFor="incident-category-input" className="block text-xs font-semibold text-main mb-1.5">
               Tipo de Novedad
             </label>
             <div className="relative">
               <input
+                id="incident-category-input"
                 type="text"
                 value={categorySearch}
                 onChange={(e) => {
@@ -334,11 +335,12 @@ export function IncidentFormModal({ isOpen, onClose, onSuccess }: Readonly<Incid
           <div className={cn('grid grid-cols-1 sm:grid-cols-2 gap-3 relative', (showModuleDropdown || showCageDropdown) ? 'z-40' : 'z-20')}>
             {/* Labor */}
             <div className={cn('relative', showModuleDropdown ? 'z-50' : 'z-20')} ref={moduleDropdownRef}>
-              <label className="block text-xs font-semibold text-main mb-1.5">
+              <label htmlFor="incident-module-input" className="block text-xs font-semibold text-main mb-1.5">
                 Labor
               </label>
               <div className="relative">
                 <input
+                  id="incident-module-input"
                   type="text"
                   value={moduleSearch}
                   onChange={(e) => {
@@ -413,7 +415,7 @@ export function IncidentFormModal({ isOpen, onClose, onSuccess }: Readonly<Incid
             {/* Jaulas Específicas Multi-select con buscador */}
             <div className={cn('relative', showCageDropdown ? 'z-50' : 'z-20')} ref={cageDropdownRef}>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-semibold text-main">
+                <label htmlFor="incident-cage-input" className="block text-xs font-semibold text-main">
                   Jaulas Específicas
                 </label>
                 {selectedCageIds.length > 0 && (
@@ -429,6 +431,7 @@ export function IncidentFormModal({ isOpen, onClose, onSuccess }: Readonly<Incid
 
               <div className="relative">
                 <input
+                  id="incident-cage-input"
                   type="text"
                   value={cageSearch}
                   onChange={(e) => {
@@ -544,10 +547,11 @@ export function IncidentFormModal({ isOpen, onClose, onSuccess }: Readonly<Incid
 
           {/* Motivo de la Novedad */}
           <div>
-            <label className="block text-xs font-semibold text-main mb-1.5">
+            <label htmlFor="incident-title-input" className="block text-xs font-semibold text-main mb-1.5">
               Motivo de la Novedad
             </label>
             <input
+              id="incident-title-input"
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -559,10 +563,11 @@ export function IncidentFormModal({ isOpen, onClose, onSuccess }: Readonly<Incid
 
           {/* Descripción / Explicación */}
           <div>
-            <label className="block text-xs font-semibold text-main mb-1.5">
+            <label htmlFor="incident-description-input" className="block text-xs font-semibold text-main mb-1.5">
               Explicación Detallada de lo Sucedido
             </label>
             <textarea
+              id="incident-description-input"
               rows={4}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
