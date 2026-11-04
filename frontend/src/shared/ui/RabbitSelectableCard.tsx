@@ -1,3 +1,5 @@
+'use client';
+
 import { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import type { AssignedRabbit } from '@/modules/assignments/types/assignment.types';

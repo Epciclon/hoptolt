@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { Button, Dialog, ConfirmDialog, RabbitAvatar, Alert } from '@/shared/ui';
 import { useToast } from '@/shared/contexts/ToastContext';
