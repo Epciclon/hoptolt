@@ -5,8 +5,7 @@ import { Card, Button } from '@/shared/ui';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { Type, Bold, Moon, Contrast, ALargeSmall, Image as ImageIcon, Bell, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-// ── Datos de opciones ────────────────────────────────────────────────────────
+import { applyThemeToDOM as applyToDOM } from '@/hooks/useThemeSync';
 
 const FONT_SIZES = [
   { key: '14px', label: 'Pequeña'      },
@@ -35,10 +34,6 @@ const FONT_FAMILIES = [
   { key: "'Courier New', monospace",      label: 'Courier New',               description: 'Monoespaciada - para quienes prefieren claridad total' },
 ];
 
-import { applyThemeToDOM as applyToDOM } from '@/hooks/useThemeSync';
-
-// ── Tipos de sección ──────────────────────────────────────────────────────────
-
 type Section = 'size' | 'family' | 'bold' | 'dark' | 'contrast' | 'avatar' | 'previews';
 
 interface NavItem {
@@ -58,8 +53,6 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'previews', label: 'Avisos Flotantes',       icon: Bell,        ready: true },
 ];
 
-// ── Componente check ─────────────────────────────────────────────────────────
-
 function CheckIcon() {
   return (
     <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 12 12" aria-hidden="true">
@@ -68,7 +61,122 @@ function CheckIcon() {
   );
 }
 
-// ── Página principal ──────────────────────────────────────────────────────────
+interface ThemeToggleSectionProps {
+  title: string;
+  description: string;
+  icon: React.ElementType;
+  isActive: boolean;
+  onEnable: () => void;
+  onDisable: () => void;
+  onReset: () => void;
+}
+
+function ThemeToggleSection({
+  title,
+  description,
+  icon: Icon,
+  isActive,
+  onEnable,
+  onDisable,
+  onReset,
+}: Readonly<ThemeToggleSectionProps>) {
+  return (
+    <div className="max-w-3xl mx-auto w-full">
+      <h3 className="text-lg font-bold text-main mb-1 flex items-center gap-2">
+        <Icon className="text-primary-500" size={20} />
+        {title}
+      </h3>
+      <p className="text-sm text-muted mb-6">
+        {description}
+      </p>
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-4 w-full">
+        <button
+          type="button"
+          onClick={onDisable}
+          className={cn(
+            'p-3 sm:p-4 border-2 rounded-xl text-center font-medium transition-colors cursor-pointer text-xs sm:text-sm',
+            !isActive
+              ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 shadow-sm'
+              : 'border-default text-muted hover:bg-theme-surface dark:hover:bg-slate-800/50'
+          )}
+        >
+          Desactivado
+        </button>
+        <button
+          type="button"
+          onClick={onEnable}
+          className={cn(
+            'p-3 sm:p-4 border-2 rounded-xl text-center font-medium transition-colors cursor-pointer text-xs sm:text-sm',
+            isActive
+              ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 shadow-sm'
+              : 'border-default text-muted hover:bg-theme-surface dark:hover:bg-slate-800/50'
+          )}
+        >
+          Activado
+        </button>
+      </div>
+      <SaveBar onReset={onReset} />
+    </div>
+  );
+}
+
+interface PreviewToggleRowProps {
+  title: string;
+  description: string;
+  icon: React.ElementType;
+  iconBoxClassName: string;
+  enabled: boolean;
+  onToggle: (val: boolean) => void;
+}
+
+function PreviewToggleRow({
+  title,
+  description,
+  icon: Icon,
+  iconBoxClassName,
+  enabled,
+  onToggle,
+}: Readonly<PreviewToggleRowProps>) {
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-default bg-theme-surface gap-4">
+      <div className="flex items-start gap-3">
+        <div className={cn('p-2.5 rounded-lg shrink-0', iconBoxClassName)}>
+          <Icon size={20} />
+        </div>
+        <div>
+          <h4 className="font-semibold text-main text-sm">{title}</h4>
+          <p className="text-xs text-muted mt-0.5">{description}</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2 w-full sm:w-auto shrink-0">
+        <button
+          type="button"
+          onClick={() => onToggle(false)}
+          className={cn(
+            'px-4 py-2 text-xs font-semibold rounded-lg border transition-colors',
+            !enabled
+              ? 'border-primary-500 bg-primary-500 text-white shadow-sm'
+              : 'border-default bg-card text-muted hover:bg-theme-surface hover:text-main'
+          )}
+        >
+          Desactivado
+        </button>
+        <button
+          type="button"
+          onClick={() => onToggle(true)}
+          className={cn(
+            'px-4 py-2 text-xs font-semibold rounded-lg border transition-colors',
+            enabled
+              ? 'border-primary-500 bg-primary-500 text-white shadow-sm'
+              : 'border-default bg-card text-muted hover:bg-theme-surface hover:text-main'
+          )}
+        >
+          Activado
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   const { showToast } = useToast();
@@ -143,25 +251,17 @@ export default function SettingsPage() {
     showToast(msg, 'success');
   }, [fontSize, fontFamily, bold, avatarScale, showToast]);
 
-  const togglePreviewNotification = useCallback((val: boolean) => {
-    setPreviewNotifications(val);
-    localStorage.setItem('hoptolt_preview_notifications', String(val));
+  const updatePreviewSetting = useCallback((
+    setter: React.Dispatch<React.SetStateAction<boolean>>,
+    storageKey: string,
+    val: boolean,
+    enabledLabel: string,
+    disabledLabel: string
+  ) => {
+    setter(val);
+    localStorage.setItem(storageKey, String(val));
     window.dispatchEvent(new CustomEvent('hoptolt_previews_changed'));
-    showToast(val ? 'Notificaciones previas activadas' : 'Notificaciones previas desactivadas', 'success');
-  }, [showToast]);
-
-  const togglePreviewAlerts = useCallback((val: boolean) => {
-    setPreviewAlerts(val);
-    localStorage.setItem('hoptolt_preview_alerts', String(val));
-    window.dispatchEvent(new CustomEvent('hoptolt_previews_changed'));
-    showToast(val ? 'Alertas previas activadas' : 'Alertas previas desactivadas', 'success');
-  }, [showToast]);
-
-  const togglePreviewIncidents = useCallback((val: boolean) => {
-    setPreviewIncidents(val);
-    localStorage.setItem('hoptolt_preview_incidents', String(val));
-    window.dispatchEvent(new CustomEvent('hoptolt_previews_changed'));
-    showToast(val ? 'Novedades previas activadas' : 'Novedades previas desactivadas', 'success');
+    showToast(val ? enabledLabel : disabledLabel, 'success');
   }, [showToast]);
 
   const resetDefaults = () => {
@@ -195,7 +295,6 @@ export default function SettingsPage() {
         </div>
 
         <div className="flex flex-col md:flex-row bg-card min-h-[calc(100vh-12rem)] w-full min-w-0 max-w-full">
-          {/* Navigation Tabs */}
           <div className="w-full md:w-64 shrink-0 p-3 sm:p-4 md:p-6 md:border-r border-default bg-card min-w-0 max-w-full overflow-hidden">
             <nav className="flex flex-row md:flex-col gap-1.5 sm:gap-2 overflow-x-auto pb-2 md:pb-0 hide-scrollbar w-full min-w-0">
               {NAV_ITEMS.map(({ id, label, icon: Icon, ready }) => (
@@ -204,11 +303,10 @@ export default function SettingsPage() {
                   onClick={() => ready && setActiveSection(id)}
                   disabled={!ready}
                   className={cn(
-                    "flex items-center justify-center md:justify-between gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors whitespace-nowrap shrink-0 w-auto md:w-full cursor-pointer",
-                    !ready && "opacity-50 cursor-not-allowed",
-                    !ready && "text-theme-faint",
-                    ready && activeSection === id && "bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-semibold",
-                    ready && activeSection !== id && "text-muted hover:bg-theme-surface dark:hover:bg-slate-800/50 hover:text-main"
+                    'flex items-center justify-center md:justify-between gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors whitespace-nowrap shrink-0 w-auto md:w-full cursor-pointer',
+                    !ready && 'opacity-50 cursor-not-allowed text-theme-faint',
+                    ready && activeSection === id && 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-semibold',
+                    ready && activeSection !== id && 'text-muted hover:bg-theme-surface dark:hover:bg-slate-800/50 hover:text-main'
                   )}
                 >
                   <span className="flex items-center gap-3">
@@ -225,271 +323,209 @@ export default function SettingsPage() {
             </nav>
           </div>
 
-          {/* Content Area */}
           <div className="flex-1 p-3.5 sm:p-6 md:p-8 bg-card flex flex-col gap-4 min-w-0 max-w-full overflow-hidden">
-          {/* ── Tamaño de Letra ── */}
-          {activeSection === 'size' && (
-            <Card>
-              <h3 className="text-lg font-bold text-main mb-1 flex items-center gap-2">
-                <ALargeSmall className="text-primary-500" size={20} />
-                Tamaño de Letra
-              </h3>
-              <p className="text-sm text-muted mb-6">El cambio se aplica de inmediato en toda la aplicación.</p>
+            {activeSection === 'size' && (
+              <Card>
+                <h3 className="text-lg font-bold text-main mb-1 flex items-center gap-2">
+                  <ALargeSmall className="text-primary-500" size={20} />
+                  Tamaño de Letra
+                </h3>
+                <p className="text-sm text-muted mb-6">El cambio se aplica de inmediato en toda la aplicación.</p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                {FONT_SIZES.map((f) => (
-                  <button type="button"
-                    key={f.key}
-                    onClick={() => selectSize(f.key)}
-                    className={cn(
-                      'relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all text-center',
-                      fontSize === f.key
-                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 shadow-sm'
-                        : 'border-strong bg-card hover:border-primary-300 dark:hover:border-primary-700/50 hover:bg-theme-surface dark:hover:bg-slate-800/50',
-                    )}
-                  >
-                    {fontSize === f.key && (
-                      <span className="absolute top-2 right-2 w-4 h-4 bg-primary-500 rounded-full flex items-center justify-center">
-                        <CheckIcon />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                  {FONT_SIZES.map((f) => (
+                    <button type="button"
+                      key={f.key}
+                      onClick={() => selectSize(f.key)}
+                      className={cn(
+                        'relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all text-center',
+                        fontSize === f.key
+                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 shadow-sm'
+                          : 'border-strong bg-card hover:border-primary-300 dark:hover:border-primary-700/50 hover:bg-theme-surface dark:hover:bg-slate-800/50',
+                      )}
+                    >
+                      {fontSize === f.key && (
+                        <span className="absolute top-2 right-2 w-4 h-4 bg-primary-500 rounded-full flex items-center justify-center">
+                          <CheckIcon />
+                        </span>
+                      )}
+                      <span style={{ fontSize: f.key }} className="font-semibold text-main leading-none">
+                        Aa
                       </span>
-                    )}
-                    <span style={{ fontSize: f.key }} className="font-semibold text-main leading-none">
-                      Aa
-                    </span>
-                    <span className="text-xs text-muted leading-tight">{f.label}</span>
-                    <span className="text-[11px] text-theme-faint">{f.key}</span>
-                  </button>
-                ))}
-              </div>
+                      <span className="text-xs text-muted leading-tight">{f.label}</span>
+                      <span className="text-[11px] text-theme-faint">{f.key}</span>
+                    </button>
+                  ))}
+                </div>
 
-              <div className="mt-6 p-4 bg-theme-surface rounded-xl border border-default">
-                <p className="text-muted text-xs mb-1">Vista previa con el tamaño actual:</p>
-                <p style={{ fontSize }} className="text-main font-medium">
-                  Hoptolt - Sistema de gestión de crianza de conejos
-                </p>
-              </div>
+                <div className="mt-6 p-4 bg-theme-surface rounded-xl border border-default">
+                  <p className="text-muted text-xs mb-1">Vista previa con el tamaño actual:</p>
+                  <p style={{ fontSize }} className="text-main font-medium">
+                    Hoptolt - Sistema de gestión de crianza de conejos
+                  </p>
+                </div>
 
-              <SaveBar onReset={resetDefaults} />
-            </Card>
-          )}
+                <SaveBar onReset={resetDefaults} />
+              </Card>
+            )}
 
-          {/* ── Tamaño de Avatares ── */}
-          {activeSection === 'avatar' && (
-            <Card>
-              <h3 className="text-lg font-bold text-main mb-1 flex items-center gap-2">
-                <ImageIcon className="text-primary-500" size={20} />
-                Tamaño de Avatares - Mini fotos
-              </h3>
-              <p className="text-sm text-muted mb-6">Ajusta el tamaño global de las fotos de los conejos en todo el sistema.</p>
+            {activeSection === 'avatar' && (
+              <Card>
+                <h3 className="text-lg font-bold text-main mb-1 flex items-center gap-2">
+                  <ImageIcon className="text-primary-500" size={20} />
+                  Tamaño de Avatares - Mini fotos
+                </h3>
+                <p className="text-sm text-muted mb-6">Ajusta el tamaño global de las fotos de los conejos en todo el sistema.</p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                {AVATAR_SIZES.map((f) => (
-                  <button type="button"
-                    key={f.key}
-                    onClick={() => selectAvatarScale(f.key)}
-                    className={cn(
-                      'relative flex flex-col items-center gap-2 p-6 rounded-xl border-2 transition-all text-center',
-                      avatarScale === f.key
-                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 shadow-sm'
-                        : 'border-strong bg-card hover:border-primary-300 dark:hover:border-primary-700/50 hover:bg-theme-surface dark:hover:bg-slate-800/50',
-                    )}
-                  >
-                    {avatarScale === f.key && (
-                      <span className="absolute top-2 right-2 w-4 h-4 bg-primary-500 rounded-full flex items-center justify-center">
-                        <CheckIcon />
-                      </span>
-                    )}
-                    <div style={{ transform: `scale(${f.key})` }} className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 border border-strong flex items-center justify-center text-[10px] text-theme-faint mb-2 transition-transform">
-                      Sin foto
-                    </div>
-                    <span className="font-semibold text-main leading-none mt-2">
-                      {f.label}
-                    </span>
-                  </button>
-                ))}
-              </div>
-
-              <SaveBar onReset={resetDefaults} />
-            </Card>
-          )}
-
-          {/* ── Tipo de Letra ── */}
-          {activeSection === 'family' && (
-            <Card>
-              <h3 className="text-lg font-bold text-main mb-1 flex items-center gap-2">
-                <Type className="text-primary-500" size={20} />
-                Tipo de Letra
-              </h3>
-              <p className="text-sm text-muted mb-6">Elige la fuente que te resulte más cómoda de leer.</p>
-
-              <div className="flex flex-col gap-3">
-                {FONT_FAMILIES.map((f) => (
-                  <button type="button"
-                    key={f.key}
-                    onClick={() => selectFamily(f.key)}
-                    className={cn(
-                      'flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left',
-                      fontFamily === f.key
-                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 shadow-sm'
-                        : 'border-strong bg-card hover:border-primary-300 dark:hover:border-primary-700/50 hover:bg-theme-surface dark:hover:bg-slate-800/50',
-                    )}
-                  >
-                    <span className={cn(
-                      'shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors',
-                      fontFamily === f.key ? 'border-primary-500 bg-primary-500' : 'border-slate-300',
-                    )}>
-                      {fontFamily === f.key && <CheckIcon />}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-main" style={{ fontFamily: f.key || undefined }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                  {AVATAR_SIZES.map((f) => (
+                    <button type="button"
+                      key={f.key}
+                      onClick={() => selectAvatarScale(f.key)}
+                      className={cn(
+                        'relative flex flex-col items-center gap-2 p-6 rounded-xl border-2 transition-all text-center',
+                        avatarScale === f.key
+                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 shadow-sm'
+                          : 'border-strong bg-card hover:border-primary-300 dark:hover:border-primary-700/50 hover:bg-theme-surface dark:hover:bg-slate-800/50',
+                      )}
+                    >
+                      {avatarScale === f.key && (
+                        <span className="absolute top-2 right-2 w-4 h-4 bg-primary-500 rounded-full flex items-center justify-center">
+                          <CheckIcon />
+                        </span>
+                      )}
+                      <div style={{ transform: `scale(${f.key})` }} className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 border border-strong flex items-center justify-center text-[10px] text-theme-faint mb-2 transition-transform">
+                        Sin foto
+                      </div>
+                      <span className="font-semibold text-main leading-none mt-2">
                         {f.label}
-                      </p>
-                      <p className="text-xs text-theme-faint mt-0.5">{f.description}</p>
-                      <p
-                        className="text-sm text-muted mt-2 pt-2 border-t border-default"
-                        style={{ fontFamily: f.key || undefined, fontSize }}
-                      >
-                        Hoptolt - Sistema de gestión de crianza
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              </div>
+                      </span>
+                    </button>
+                  ))}
+                </div>
 
-              <SaveBar onReset={resetDefaults} />
-            </Card>
-          )}
+                <SaveBar onReset={resetDefaults} />
+              </Card>
+            )}
 
-          {/* ── Texto en Negrilla ── */}
-          {activeSection === 'bold' && (
-            <Card>
-              <h3 className="text-lg font-bold text-main mb-1 flex items-center gap-2">
-                <Bold className="text-primary-500" size={20} />
-                Texto en Negrilla
-              </h3>
-              <p className="text-sm text-muted mb-6">
-                Aumenta el peso del texto para mejorar la legibilidad, especialmente útil en tamaños de letra grandes.
-              </p>
+            {activeSection === 'family' && (
+              <Card>
+                <h3 className="text-lg font-bold text-main mb-1 flex items-center gap-2">
+                  <Type className="text-primary-500" size={20} />
+                  Tipo de Letra
+                </h3>
+                <p className="text-sm text-muted mb-6">Elige la fuente que te resulte más cómoda de leer.</p>
 
-              <div className="flex flex-col gap-3">
-                {[
-                  { value: false, label: 'Normal', description: 'Peso estándar del texto - predeterminado' },
-                  { value: true,  label: 'Negrilla', description: 'Texto más grueso - mayor legibilidad' },
-                ].map((opt) => (
-                  <button type="button"
-                    key={String(opt.value)}
-                    onClick={() => toggleBold(opt.value)}
-                    className={cn(
-                      'flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left',
-                      bold === opt.value
-                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 shadow-sm'
-                        : 'border-strong bg-card hover:border-primary-300 dark:hover:border-primary-700/50 hover:bg-theme-surface dark:hover:bg-slate-800/50',
-                    )}
-                  >
-                    <span className={cn(
-                      'shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors',
-                      bold === opt.value ? 'border-primary-500 bg-primary-500' : 'border-slate-300',
-                    )}>
-                      {bold === opt.value && <CheckIcon />}
-                    </span>
-                    <div>
-                      <p
-                        className="text-main"
-                        style={{ fontWeight: opt.value ? 700 : 400, fontSize }}
-                      >
-                        {opt.label} - Hoptolt Sistema de Crianza
-                      </p>
-                      <p className="text-xs text-theme-faint mt-0.5">{opt.description}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
+                <div className="flex flex-col gap-3">
+                  {FONT_FAMILIES.map((f) => (
+                    <button type="button"
+                      key={f.key}
+                      onClick={() => selectFamily(f.key)}
+                      className={cn(
+                        'flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left',
+                        fontFamily === f.key
+                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 shadow-sm'
+                          : 'border-strong bg-card hover:border-primary-300 dark:hover:border-primary-700/50 hover:bg-theme-surface dark:hover:bg-slate-800/50',
+                      )}
+                    >
+                      <span className={cn(
+                        'shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors',
+                        fontFamily === f.key ? 'border-primary-500 bg-primary-500' : 'border-slate-300',
+                      )}>
+                        {fontFamily === f.key && <CheckIcon />}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-main" style={{ fontFamily: f.key || undefined }}>
+                          {f.label}
+                        </p>
+                        <p className="text-xs text-theme-faint mt-0.5">{f.description}</p>
+                        <p
+                          className="text-sm text-muted mt-2 pt-2 border-t border-default"
+                          style={{ fontFamily: f.key || undefined, fontSize }}
+                        >
+                          Hoptolt - Sistema de gestión de crianza
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
 
-              <SaveBar onReset={resetDefaults} />
-            </Card>
-          )}
+                <SaveBar onReset={resetDefaults} />
+              </Card>
+            )}
 
-            {/* ── Modo Oscuro ── */}
+            {activeSection === 'bold' && (
+              <Card>
+                <h3 className="text-lg font-bold text-main mb-1 flex items-center gap-2">
+                  <Bold className="text-primary-500" size={20} />
+                  Texto en Negrilla
+                </h3>
+                <p className="text-sm text-muted mb-6">
+                  Aumenta el peso del texto para mejorar la legibilidad, especialmente útil en tamaños de letra grandes.
+                </p>
+
+                <div className="flex flex-col gap-3">
+                  {[
+                    { value: false, label: 'Normal', description: 'Peso estándar del texto - predeterminado' },
+                    { value: true,  label: 'Negrilla', description: 'Texto más grueso - mayor legibilidad' },
+                  ].map((opt) => (
+                    <button type="button"
+                      key={String(opt.value)}
+                      onClick={() => toggleBold(opt.value)}
+                      className={cn(
+                        'flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left',
+                        bold === opt.value
+                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 shadow-sm'
+                          : 'border-strong bg-card hover:border-primary-300 dark:hover:border-primary-700/50 hover:bg-theme-surface dark:hover:bg-slate-800/50',
+                      )}
+                    >
+                      <span className={cn(
+                        'shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors',
+                        bold === opt.value ? 'border-primary-500 bg-primary-500' : 'border-slate-300',
+                      )}>
+                        {bold === opt.value && <CheckIcon />}
+                      </span>
+                      <div>
+                        <p
+                          className="text-main"
+                          style={{ fontWeight: opt.value ? 700 : 400, fontSize }}
+                        >
+                          {opt.label} - Hoptolt Sistema de Crianza
+                        </p>
+                        <p className="text-xs text-theme-faint mt-0.5">{opt.description}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                <SaveBar onReset={resetDefaults} />
+              </Card>
+            )}
+
             {activeSection === 'dark' && (
-              <div className="max-w-3xl mx-auto w-full">
-                <h3 className="text-lg font-bold text-main mb-1 flex items-center gap-2">
-                  <Moon className="text-primary-500" size={20} />
-                  Modo Oscuro
-                </h3>
-                <p className="text-sm text-muted mb-6">
-                  Cambia la interfaz a colores oscuros para reducir la fatiga visual.
-                </p>
-                <div className="grid grid-cols-2 gap-2.5 sm:gap-4 w-full">
-                  <button
-                    type="button"
-                    onClick={() => { if (theme === 'dark') selectTheme('light'); }}
-                    className={cn(
-                      "p-3 sm:p-4 border-2 rounded-xl text-center font-medium transition-colors cursor-pointer text-xs sm:text-sm",
-                      theme !== 'dark'
-                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 shadow-sm'
-                        : 'border-default text-muted hover:bg-theme-surface dark:hover:bg-slate-800/50'
-                    )}
-                  >
-                    Desactivado
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => selectTheme('dark')}
-                    className={cn(
-                      "p-3 sm:p-4 border-2 rounded-xl text-center font-medium transition-colors cursor-pointer text-xs sm:text-sm",
-                      theme === 'dark'
-                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 shadow-sm'
-                        : 'border-default text-muted hover:bg-theme-surface dark:hover:bg-slate-800/50'
-                    )}
-                  >
-                    Activado
-                  </button>
-                </div>
-                <SaveBar onReset={resetDefaults} />
-              </div>
+              <ThemeToggleSection
+                title="Modo Oscuro"
+                description="Cambia la interfaz a colores oscuros para reducir la fatiga visual."
+                icon={Moon}
+                isActive={theme === 'dark'}
+                onEnable={() => selectTheme('dark')}
+                onDisable={() => { if (theme === 'dark') selectTheme('light'); }}
+                onReset={resetDefaults}
+              />
             )}
 
-            {/* ── Alto Contraste ── */}
             {activeSection === 'contrast' && (
-              <div className="max-w-3xl mx-auto w-full">
-                <h3 className="text-lg font-bold text-main mb-1 flex items-center gap-2">
-                  <Contrast className="text-primary-500" size={20} />
-                  Alto Contraste
-                </h3>
-                <p className="text-sm text-muted mb-6">
-                  Usa colores intensos - blanco, negro, amarillo - para máxima legibilidad.
-                </p>
-                <div className="grid grid-cols-2 gap-2.5 sm:gap-4 w-full">
-                  <button
-                    type="button"
-                    onClick={() => { if (theme === 'contrast') selectTheme('light'); }}
-                    className={cn(
-                      "p-3 sm:p-4 border-2 rounded-xl text-center font-medium transition-colors cursor-pointer text-xs sm:text-sm",
-                      theme !== 'contrast'
-                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 shadow-sm'
-                        : 'border-default text-muted hover:bg-theme-surface dark:hover:bg-slate-800/50'
-                    )}
-                  >
-                    Desactivado
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => selectTheme('contrast')}
-                    className={cn(
-                      "p-3 sm:p-4 border-2 rounded-xl text-center font-medium transition-colors cursor-pointer text-xs sm:text-sm",
-                      theme === 'contrast'
-                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 shadow-sm'
-                        : 'border-default text-muted hover:bg-theme-surface dark:hover:bg-slate-800/50'
-                    )}
-                  >
-                    Activado
-                  </button>
-                </div>
-                <SaveBar onReset={resetDefaults} />
-              </div>
+              <ThemeToggleSection
+                title="Alto Contraste"
+                description="Usa colores intensos - blanco, negro, amarillo - para máxima legibilidad."
+                icon={Contrast}
+                isActive={theme === 'contrast'}
+                onEnable={() => selectTheme('contrast')}
+                onDisable={() => { if (theme === 'contrast') selectTheme('light'); }}
+                onReset={resetDefaults}
+              />
             )}
 
-            {/* ── Avisos Flotantes ── */}
             {activeSection === 'previews' && (
               <div className="max-w-3xl mx-auto w-full">
                 <h3 className="text-lg font-bold text-main mb-1 flex items-center gap-2">
@@ -501,128 +537,56 @@ export default function SettingsPage() {
                 </p>
 
                 <div className="flex flex-col gap-4">
-                  {/* Notificaciones Previas */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-default bg-theme-surface gap-4">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2.5 rounded-lg bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 shrink-0">
-                        <Bell size={20} />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-main text-sm">Notificaciones Previas</h4>
-                        <p className="text-xs text-muted mt-0.5">
-                          Muestra una ventana flotante momentánea cuando llegan avisos generales o actividades del sistema
-                        </p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 w-full sm:w-auto shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => togglePreviewNotification(false)}
-                        className={cn(
-                          "px-4 py-2 text-xs font-semibold rounded-lg border transition-colors",
-                          !previewNotifications
-                            ? "border-primary-500 bg-primary-500 text-white shadow-sm"
-                            : "border-default bg-card text-muted hover:bg-theme-surface hover:text-main"
-                        )}
-                      >
-                        Desactivado
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => togglePreviewNotification(true)}
-                        className={cn(
-                          "px-4 py-2 text-xs font-semibold rounded-lg border transition-colors",
-                          previewNotifications
-                            ? "border-primary-500 bg-primary-500 text-white shadow-sm"
-                            : "border-default bg-card text-muted hover:bg-theme-surface hover:text-main"
-                        )}
-                      >
-                        Activado
-                      </button>
-                    </div>
-                  </div>
+                  <PreviewToggleRow
+                    title="Notificaciones Previas"
+                    description="Muestra una ventana flotante momentánea cuando llegan avisos generales o actividades del sistema"
+                    icon={Bell}
+                    iconBoxClassName="bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400"
+                    enabled={previewNotifications}
+                    onToggle={(val) =>
+                      updatePreviewSetting(
+                        setPreviewNotifications,
+                        'hoptolt_preview_notifications',
+                        val,
+                        'Notificaciones previas activadas',
+                        'Notificaciones previas desactivadas'
+                      )
+                    }
+                  />
 
-                  {/* Alertas Previas */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-default bg-theme-surface gap-4">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 shrink-0">
-                        <AlertTriangle size={20} />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-main text-sm">Alertas Previas</h4>
-                        <p className="text-xs text-muted mt-0.5">
-                          Muestra una ventana flotante momentánea para recordatorios urgentes de alimentación, partos o destetes
-                        </p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 w-full sm:w-auto shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => togglePreviewAlerts(false)}
-                        className={cn(
-                          "px-4 py-2 text-xs font-semibold rounded-lg border transition-colors",
-                          !previewAlerts
-                            ? "border-primary-500 bg-primary-500 text-white shadow-sm"
-                            : "border-default bg-card text-muted hover:bg-theme-surface hover:text-main"
-                        )}
-                      >
-                        Desactivado
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => togglePreviewAlerts(true)}
-                        className={cn(
-                          "px-4 py-2 text-xs font-semibold rounded-lg border transition-colors",
-                          previewAlerts
-                            ? "border-primary-500 bg-primary-500 text-white shadow-sm"
-                            : "border-default bg-card text-muted hover:bg-theme-surface hover:text-main"
-                        )}
-                      >
-                        Activado
-                      </button>
-                    </div>
-                  </div>
+                  <PreviewToggleRow
+                    title="Alertas Previas"
+                    description="Muestra una ventana flotante momentánea para recordatorios urgentes de alimentación, partos o destetes"
+                    icon={AlertTriangle}
+                    iconBoxClassName="bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400"
+                    enabled={previewAlerts}
+                    onToggle={(val) =>
+                      updatePreviewSetting(
+                        setPreviewAlerts,
+                        'hoptolt_preview_alerts',
+                        val,
+                        'Alertas previas activadas',
+                        'Alertas previas desactivadas'
+                      )
+                    }
+                  />
 
-                  {/* Novedades Previas */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-default bg-theme-surface gap-4">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 shrink-0">
-                        <ShieldAlert size={20} />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-main text-sm">Novedades Previas</h4>
-                        <p className="text-xs text-muted mt-0.5">
-                          Muestra una ventana flotante momentánea cuando se reportan o responden incidencias y novedades del galpón
-                        </p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 w-full sm:w-auto shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => togglePreviewIncidents(false)}
-                        className={cn(
-                          "px-4 py-2 text-xs font-semibold rounded-lg border transition-colors",
-                          !previewIncidents
-                            ? "border-primary-500 bg-primary-500 text-white shadow-sm"
-                            : "border-default bg-card text-muted hover:bg-theme-surface hover:text-main"
-                        )}
-                      >
-                        Desactivado
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => togglePreviewIncidents(true)}
-                        className={cn(
-                          "px-4 py-2 text-xs font-semibold rounded-lg border transition-colors",
-                          previewIncidents
-                            ? "border-primary-500 bg-primary-500 text-white shadow-sm"
-                            : "border-default bg-card text-muted hover:bg-theme-surface hover:text-main"
-                        )}
-                      >
-                        Activado
-                      </button>
-                    </div>
-                  </div>
+                  <PreviewToggleRow
+                    title="Novedades Previas"
+                    description="Muestra una ventana flotante momentánea cuando se reportan o responden incidencias y novedades del galpón"
+                    icon={ShieldAlert}
+                    iconBoxClassName="bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400"
+                    enabled={previewIncidents}
+                    onToggle={(val) =>
+                      updatePreviewSetting(
+                        setPreviewIncidents,
+                        'hoptolt_preview_incidents',
+                        val,
+                        'Novedades previas activadas',
+                        'Novedades previas desactivadas'
+                      )
+                    }
+                  />
                 </div>
 
                 <SaveBar onReset={resetDefaults} />
@@ -634,8 +598,6 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-// ── Botón de restablecer compartido ──────────────────────────────────────────────
 
 function SaveBar({ onReset }: Readonly<{ onReset: () => void }>) {
   return (

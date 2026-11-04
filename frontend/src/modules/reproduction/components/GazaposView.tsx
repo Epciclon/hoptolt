@@ -6,10 +6,11 @@ import { Button, Dialog, Input, Select, RabbitSelectableCard, CageGroupCard, Rab
 import { FilterBar } from '@/shared/ui/FilterBar';
 import { Pagination } from '@/shared/ui/Pagination';
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { Calendar, Heart, Info } from 'lucide-react';
+import { Calendar, Info } from 'lucide-react';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { useMortality } from '@/modules/mortality/hooks/useMortality';
 import { WeaningWizard } from './WeaningWizard';
+import { ReproductionPairSection, ReproductionPhaseProgressCard } from './ReproductionSharedCards';
 import { formatDateString } from '@/shared/utils/dateUtils';
 import { matchesSmartSearch } from '@/shared/utils/rabbitUtils';
 import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
@@ -383,49 +384,15 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
                 isSelected={isExpanded}
                 onClick={() => setExpandedId(isExpanded ? null : reproduction.id)}
               >
-                <div className="space-y-2 mt-2 text-xs">
-                  {(() => {
-                    const progressPercent = Math.min(100, Math.max(0, Math.round((Math.min(30, daysInLactation) / 30) * 100)));
-                    return (
-                      <div className="p-2.5 rounded-lg border bg-theme-surface border-default transition-colors">
-                        <div className="flex justify-between items-center mb-1.5">
-                          <span className="font-semibold text-main">
-                            Lactancia
-                          </span>
-                          <span className="font-bold text-main">
-                            Día {daysInLactation} de 30
-                          </span>
-                        </div>
-
-                        <div className="w-full bg-slate-200 dark:bg-slate-700/60 rounded-full h-1.5 overflow-hidden">
-                          <div 
-                            className={`h-full rounded-full transition-all duration-300 ${
-                              daysInLactation >= 27 ? 'bg-orange-500' : 'bg-emerald-500'
-                            }`}
-                            style={{ width: `${progressPercent}%` }}
-                          />
-                        </div>
-
-                        <div className="mt-2.5 pt-2 border-t border-default/40 flex flex-col gap-0.5">
-                          <span className="text-xs text-muted flex items-center gap-1.5 font-medium">
-                            <Calendar size={13} className="opacity-70 shrink-0" />
-                            Destete estimado
-                          </span>
-                          <span className="text-sm sm:text-base font-bold text-main">
-                            {estimatedWeaningDate || 'Por calcular'}
-                          </span>
-                          {daysInLactation >= 30 && (
-                            <div className="mt-1.5 pt-1.5 border-t border-default/30 text-center">
-                              <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                                ¡Listo para destetar!
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
+                <ReproductionPhaseProgressCard
+                  phaseTitle="Lactancia"
+                  currentDay={daysInLactation}
+                  isNearThreshold={daysInLactation >= 27}
+                  dateLabel="Destete estimado"
+                  formattedDate={estimatedWeaningDate || 'Por calcular'}
+                  bannerText={daysInLactation >= 30 ? '¡Listo para destetar!' : null}
+                  bannerTone="emerald"
+                />
 
                 {isExpanded && (
                   <div
@@ -782,48 +749,7 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
 
           return (
             <div className="space-y-4">
-              {/* Pareja Reproductiva */}
-              <div className="p-4 rounded-xl border border-default bg-theme-surface/50">
-                <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-3 text-center sm:text-left">
-                  Pareja Reproductiva
-                </p>
-                <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-around gap-3 sm:gap-4">
-                  {/* Madre */}
-                  <div className="flex flex-col items-center text-center w-full sm:w-auto sm:flex-1 sm:max-w-[140px]">
-                    <RabbitAvatar imageUrl={selectedDetails.imageUrl} alt={selectedDetails.femaleCode} size="lg" ring />
-                    <span className="mt-2 px-2.5 py-0.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 text-xs font-semibold rounded-full">
-                      Madre
-                    </span>
-                    <h5 className="font-bold text-main text-sm sm:text-base mt-1.5 truncate max-w-full">
-                      {selectedDetails.femaleName || selectedDetails.femaleCode}
-                    </h5>
-                    {selectedDetails.femaleName && (
-                      <p className="text-xs sm:text-sm font-semibold text-muted truncate max-w-full">{selectedDetails.femaleCode}</p>
-                    )}
-                  </div>
-
-                  {/* Corazon conector */}
-                  <div className="flex flex-col items-center justify-center shrink-0 py-0.5 sm:py-0">
-                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-500/30 shadow-sm">
-                      <Heart size={15} fill="currentColor" />
-                    </div>
-                  </div>
-
-                  {/* Padre */}
-                  <div className="flex flex-col items-center text-center w-full sm:w-auto sm:flex-1 sm:max-w-[140px]">
-                    <RabbitAvatar imageUrl={selectedDetails.maleImageUrl} alt={selectedDetails.maleCode ?? ''} size="lg" ring />
-                    <span className="mt-2 px-2.5 py-0.5 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 text-xs font-semibold rounded-full">
-                      Padre
-                    </span>
-                    <h5 className="font-bold text-main text-sm sm:text-base mt-1.5 truncate max-w-full">
-                      {selectedDetails.maleName || selectedDetails.maleCode || 'Sin macho'}
-                    </h5>
-                    {selectedDetails.maleName && (
-                      <p className="text-xs sm:text-sm font-semibold text-muted truncate max-w-full">{selectedDetails.maleCode}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <ReproductionPairSection reproduction={selectedDetails} />
 
               {/* Cronograma de Fechas y Estado */}
               <div className="p-3.5 rounded-xl border border-default bg-theme-surface/50 space-y-2.5 text-xs">

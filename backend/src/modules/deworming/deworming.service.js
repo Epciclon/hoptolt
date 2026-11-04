@@ -1,7 +1,7 @@
 const dewormingRepository = require('./deworming.repository');
-const { Rabbit, Assignment, Galpon, FarmMember } = require('../../domain/models');
+const { Galpon, FarmMember } = require('../../domain/models');
 const AppError = require('../../errors/AppError');
-const { getPaginationParams, createPaginatedResponse } = require('../../common/helpers/pagination.helper');
+const { validateWorkerAssignedCages, fetchPaginatedGalponRecords } = require('../../common/helpers/repository.helper');
 
 class DewormingService {
     _validateSingleDeworming(rabbitId, params, dewormingErrors) {
@@ -58,7 +58,7 @@ class DewormingService {
     async registerDeworming(data, galponId, profileId) {
         const { rabbitIds } = data;
         const { Op } = require('sequelize');
-        const { Rabbit, Assignment, Reproduction, Deworming, WorkerCage } = require('../../domain/models');
+        const { Rabbit, Assignment, Reproduction, Deworming } = require('../../domain/models');
 
         // Precarga masiva concurrente en un solo bloque paralelo
         const [membership, galpon, rabbits, assignments, lactatingReps, previousDewormings] = await Promise.all([
@@ -85,16 +85,11 @@ class DewormingService {
 
         const assignmentSet = new Set(assignments.map(a => a.rabbitId));
 
-        // Si es trabajador, validar que todas las jaulas de los conejos estén asignadas a él
-        if (membership.role === 'worker') {
-            const workerCages = await WorkerCage.findAll({ where: { farmMemberId: membership.id } });
-            const assignedCageIds = new Set(workerCages.map(wc => Number(wc.cageId)));
-            for (const assignment of assignments) {
-                if (!assignedCageIds.has(Number(assignment.cageId))) {
-                    throw new AppError('No tienes permiso para desparasitar conejos en jaulas que no tienes asignadas.', 403);
-                }
-            }
-        }
+        await validateWorkerAssignedCages(
+            membership,
+            assignments,
+            'No tienes permiso para desparasitar conejos en jaulas que no tienes asignadas.'
+        );
 
         const lactatingSet = new Set(lactatingReps.map(r => r.femaleId));
 
@@ -125,31 +120,7 @@ class DewormingService {
     }
 
     async getDewormings(galponId, profileId, page = 1, limit = 10, filters = {}) {
-        if (!galponId) return createPaginatedResponse([], page, limit, 0);
-
-        // Verificar que el usuario tiene acceso al galpón
-        const membership = await FarmMember.findOne({
-            where: { profileId, galponId, status: 'active' }
-        });
-        if (!membership) throw new AppError('No tienes acceso a este galpón.', 403);
-
-        if (membership.role === 'worker') {
-            const { WorkerCage } = require('../../domain/models');
-            const workerCages = await WorkerCage.findAll({ where: { farmMemberId: membership.id } });
-            const assignedCageIds = workerCages.map(wc => Number(wc.cageId));
-            filters.cageIds = assignedCageIds;
-        }
-
-        const { limit: limitValue, offset } = getPaginationParams(page, limit);
-        
-        const queryOptions = filters.all ? {} : { limit: limitValue, offset };
-        
-        const [dewormings, count] = await Promise.all([
-            dewormingRepository.findByGalponId(galponId, queryOptions, filters),
-            filters.all ? Promise.resolve(0) : dewormingRepository.countByGalponId(galponId, filters)
-        ]);
-
-        return createPaginatedResponse(dewormings, page, limit, filters.all ? dewormings.length : count);
+        return fetchPaginatedGalponRecords(dewormingRepository, galponId, profileId, page, limit, filters);
     }
 
     async getGalponDewormingPeriod(galponId) {

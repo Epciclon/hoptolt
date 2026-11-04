@@ -1,36 +1,13 @@
 const { Deworming } = require('../../domain/models');
-const { buildCommonFilters, buildRabbitProfileIncludes } = require('../../common/helpers/repository.helper');
+const { findRecordsByGalponId, countRecordsByGalponId } = require('../../common/helpers/repository.helper');
 
 class DewormingRepository {
     async findByGalponId(galponId, options = {}, filters = {}) {
-        const { whereClause: filtersWhere, rabbitWhere, cageWhere } = buildCommonFilters(filters, 'dewormingDate');
-        const whereClause = { galponId, ...filtersWhere };
-
-        return Deworming.findAll({
-            where: whereClause,
-            include: buildRabbitProfileIncludes(rabbitWhere, cageWhere),
-            order: [['dewormingDate', 'DESC']],
-            ...options,
-            subQuery: false
-        });
+        return findRecordsByGalponId(Deworming, 'dewormingDate', galponId, options, filters);
     }
 
     async countByGalponId(galponId, filters = {}) {
-        const { whereClause: filtersWhere, rabbitWhere, cageWhere } = buildCommonFilters(filters, 'dewormingDate');
-        const whereClause = { galponId, ...filtersWhere };
-
-        const hasCageFilter = cageWhere && Object.keys(cageWhere).length > 0;
-        const hasRabbitFilter = rabbitWhere && Object.keys(rabbitWhere).length > 0;
-
-        if (hasCageFilter || hasRabbitFilter) {
-            return Deworming.count({
-                where: whereClause,
-                include: buildRabbitProfileIncludes(rabbitWhere, cageWhere),
-                distinct: true
-            });
-        }
-
-        return Deworming.count({ where: whereClause });
+        return countRecordsByGalponId(Deworming, 'dewormingDate', galponId, filters);
     }
 
     async findByRabbitId(rabbitId) {

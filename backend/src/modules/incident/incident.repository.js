@@ -1,7 +1,35 @@
 const { Incident, Profile, Cage, Rabbit } = require('../../domain/models');
-const { Op } = require('sequelize');
 
 class IncidentRepository {
+    _getBaseIncludes() {
+        return [
+            {
+                model: Profile,
+                as: 'reporter',
+                attributes: ['id', 'fullName', 'username', 'email'],
+                required: false
+            },
+            {
+                model: Profile,
+                as: 'reviewer',
+                attributes: ['id', 'fullName', 'username', 'email'],
+                required: false
+            },
+            {
+                model: Cage,
+                as: 'cage',
+                attributes: ['id', 'number', 'type'],
+                required: false
+            },
+            {
+                model: Rabbit,
+                as: 'rabbit',
+                attributes: ['id', 'code', 'sex'],
+                required: false
+            }
+        ];
+    }
+
     async create(data) {
         return await Incident.create(data);
     }
@@ -14,64 +42,14 @@ class IncidentRepository {
             order,
             distinct: true,
             subQuery: false,
-            include: [
-                {
-                    model: Profile,
-                    as: 'reporter',
-                    attributes: ['id', 'fullName', 'username', 'email'],
-                    required: false
-                },
-                {
-                    model: Profile,
-                    as: 'reviewer',
-                    attributes: ['id', 'fullName', 'username', 'email'],
-                    required: false
-                },
-                {
-                    model: Cage,
-                    as: 'cage',
-                    attributes: ['id', 'number', 'type'],
-                    required: false
-                },
-                {
-                    model: Rabbit,
-                    as: 'rabbit',
-                    attributes: ['id', 'code', 'sex'],
-                    required: false
-                }
-            ]
+            include: this._getBaseIncludes()
         });
     }
 
     async findById(id, galponId) {
         return await Incident.findOne({
             where: { id, galponId },
-            include: [
-                {
-                    model: Profile,
-                    as: 'reporter',
-                    attributes: ['id', 'fullName', 'username', 'email'],
-                    required: false
-                },
-                {
-                    model: Profile,
-                    as: 'reviewer',
-                    attributes: ['id', 'fullName', 'username', 'email'],
-                    required: false
-                },
-                {
-                    model: Cage,
-                    as: 'cage',
-                    attributes: ['id', 'number', 'type'],
-                    required: false
-                },
-                {
-                    model: Rabbit,
-                    as: 'rabbit',
-                    attributes: ['id', 'code', 'sex'],
-                    required: false
-                }
-            ]
+            include: this._getBaseIncludes()
         });
     }
 

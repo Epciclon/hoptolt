@@ -1,14 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { farmMemberService } from '../services/farmMember.service';
 import type { AuditLogItem, AuditLogFilters } from '../types/farmMember.types';
-import { SectionMessage, Button, Dialog } from '@/shared/ui';
+import { SectionMessage } from '@/shared/ui';
 import { Pagination } from '@/shared/ui/Pagination';
-import { Filter, RotateCcw, ShieldCheck, Sparkles } from 'lucide-react';
-import { createClient } from '@/utils/supabase/client';
-import { formatFriendlyDate, formatDateTime } from '@/shared/utils/dateUtils';
+import { Filter, Sparkles } from 'lucide-react';
+import {
+  type AuditDiffItem,
+  AUDIT_IGNORED_DIFF_KEYS,
+  useAuditLogsRealtime,
+  AuditDateFilters,
+  AuditClearFiltersButton,
+  AuditFallbackBeforeAfter,
+  AuditStandardDiffValue,
+  AuditLogListCard,
+  AuditLogDetailDialog,
+} from './AuditLogShared';
 
 interface SystemAuditLogTabProps {
   galponId: number;
@@ -77,15 +86,6 @@ function formatValue(key: string, val: any): string {
   return String(val).trim();
 }
 
-interface DiffItem {
-  key: string;
-  label: string;
-  beforeVal: string;
-  afterVal: string;
-}
-
-const SYSTEM_IGNORED_DIFF_KEYS = new Set(['id', 'galponId', 'createdAt', 'updatedAt', 'profileId']);
-
 function shouldSkipGrowthWeight(action: string | undefined, key: string, aVal: any, aStr?: string): boolean {
   if (action !== 'Cálculo de crecimiento' || key !== 'weight') {
     return false;
@@ -96,15 +96,15 @@ function shouldSkipGrowthWeight(action: string | undefined, key: string, aVal: a
   return aStr === 'Ninguno';
 }
 
-function computeDiff(before: any, after: any, action?: string): DiffItem[] {
+function computeDiff(before: any, after: any, action?: string): AuditDiffItem[] {
   const b = before && typeof before === 'object' ? before : {};
   const a = after && typeof after === 'object' ? after : {};
   const allKeys = Array.from(new Set([...Object.keys(b), ...Object.keys(a)]));
 
-  const changed: DiffItem[] = [];
+  const changed: AuditDiffItem[] = [];
 
   for (const k of allKeys) {
-    if (SYSTEM_IGNORED_DIFF_KEYS.has(k)) continue;
+    if (AUDIT_IGNORED_DIFF_KEYS.has(k)) continue;
 
     const bVal = b[k];
     const aVal = a[k];
@@ -152,15 +152,7 @@ function renderDetailsView(log: AuditLogItem) {
             {changed.map((item) => (
               <div key={item.key} className="bg-theme-surface border border-default rounded-xl p-3 shadow-2xs flex flex-col justify-between gap-2">
                 <span className="font-semibold text-muted text-xs block">{item.label}</span>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
-                  <span className="line-through text-xs font-medium text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2.5 py-1 rounded-md border border-rose-200 dark:border-rose-900/30 break-words [word-break:break-word]">
-                    {item.beforeVal}
-                  </span>
-                  <span className="text-muted font-bold text-sm self-start sm:self-center">➔</span>
-                  <span className="font-semibold text-xs text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-md border border-emerald-200 dark:border-emerald-900/30 break-words [word-break:break-word]">
-                    {item.afterVal}
-                  </span>
-                </div>
+                <AuditStandardDiffValue beforeVal={item.beforeVal} afterVal={item.afterVal} />
               </div>
             ))}
           </div>
@@ -195,30 +187,13 @@ function renderDetailsView(log: AuditLogItem) {
     }
   }
 
-  return (
-    <div className="space-y-2">
-      {before && (
-        <div>
-          <span className="text-xs font-semibold text-muted block mb-1">Estado anterior</span>
-          <span className="text-xs text-main">{String(before)}</span>
-        </div>
-      )}
-      {after && (
-        <div>
-          <span className="text-xs font-semibold text-muted block mb-1">Nuevo estado</span>
-          <span className="text-xs text-main">{String(after)}</span>
-        </div>
-      )}
-    </div>
-  );
+  return <AuditFallbackBeforeAfter before={before} after={after} />;
 }
 
 export function SystemAuditLogTab({ galponId }: Readonly<SystemAuditLogTabProps>) {
-  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [selectedLogForDetails, setSelectedLogForDetails] = useState<AuditLogItem | null>(null);
 
-  // Filtros
   const [selectedEntity, setSelectedEntity] = useState<string>('');
   const [selectedAction, setSelectedAction] = useState<string>('');
   const [startDate, setStartDate] = useState<string>('');
@@ -248,28 +223,7 @@ export function SystemAuditLogTab({ galponId }: Readonly<SystemAuditLogTabProps>
   const totalPages = data?.totalPages || 1;
   const loading = isLoading && !data;
 
-  // Suscripción Realtime para invalidar la caché ante nuevos registros automáticos
-  useEffect(() => {
-    const supabase = createClient();
-    const channelId = `realtime_system_audit_logs_${galponId}_${crypto.randomUUID()}`;
-    const channel = supabase.channel(channelId)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'audit_logs'
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['systemAuditLogs'] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [galponId, queryClient]);
+  useAuditLogsRealtime(galponId, 'realtime_system_audit_logs', 'systemAuditLogs');
 
   const handleResetFilters = () => {
     setSelectedEntity('');
@@ -285,7 +239,6 @@ export function SystemAuditLogTab({ galponId }: Readonly<SystemAuditLogTabProps>
     <div className="space-y-4">
       <SectionMessage message="Registro automático de acciones ejecutadas por el sistema HopTolt en este galpón." />
 
-      {/* Barra de Filtros */}
       <div className="bg-card rounded-xl p-4 border border-strong shadow-sm space-y-3">
         <div className="flex items-center gap-2 text-sm font-semibold text-main mb-1">
           <Filter size={16} className="text-primary-500" />
@@ -293,7 +246,6 @@ export function SystemAuditLogTab({ galponId }: Readonly<SystemAuditLogTabProps>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {/* Filtro por Proceso */}
           <div>
             <label htmlFor="filter-process-select" className="block text-xs font-medium text-muted mb-1">Proceso</label>
             <select
@@ -309,7 +261,6 @@ export function SystemAuditLogTab({ galponId }: Readonly<SystemAuditLogTabProps>
             </select>
           </div>
 
-          {/* Filtro por Acción */}
           <div>
             <label htmlFor="filter-action-select" className="block text-xs font-medium text-muted mb-1">Acción</label>
             <select
@@ -326,146 +277,32 @@ export function SystemAuditLogTab({ galponId }: Readonly<SystemAuditLogTabProps>
             </select>
           </div>
 
-          {/* Fecha Desde */}
-          <div>
-            <label htmlFor="filter-start-date" className="block text-xs font-medium text-muted mb-1">Desde</label>
-            <input
-              id="filter-start-date"
-              type="date"
-              value={startDate}
-              onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
-              className="w-full text-sm bg-theme-surface border border-default rounded-lg px-3 py-2 text-main focus:ring-2 focus:ring-primary-500 outline-none"
-            />
-          </div>
-
-          {/* Fecha Hasta */}
-          <div>
-            <label htmlFor="filter-end-date" className="block text-xs font-medium text-muted mb-1">Hasta</label>
-            <input
-              id="filter-end-date"
-              type="date"
-              value={endDate}
-              onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
-              className="w-full text-sm bg-theme-surface border border-default rounded-lg px-3 py-2 text-main focus:ring-2 focus:ring-primary-500 outline-none"
-            />
-          </div>
+          <AuditDateFilters
+            startDate={startDate}
+            endDate={endDate}
+            onStartDateChange={(val) => { setStartDate(val); setPage(1); }}
+            onEndDateChange={(val) => { setEndDate(val); setPage(1); }}
+          />
         </div>
 
-        {hasActiveFilters && (
-          <div className="flex justify-end pt-1">
-            <button
-              type="button"
-              onClick={handleResetFilters}
-              className="inline-flex items-center gap-1.5 text-xs text-primary-600 hover:text-primary-700 font-medium cursor-pointer"
-            >
-              <RotateCcw size={13} />
-              <span>Limpiar filtros</span>
-            </button>
-          </div>
-        )}
+        <AuditClearFiltersButton hasActiveFilters={hasActiveFilters} onResetFilters={handleResetFilters} />
       </div>
 
-      {/* Lista de Registros */}
-      <div className="bg-card rounded-xl shadow-sm border border-strong overflow-hidden">
-        {(() => {
-          if (loading) {
-            return (
-              <div className="p-12 text-center text-muted flex flex-col items-center justify-center gap-2">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500" />
-                <span className="text-sm">Cargando registros...</span>
-              </div>
-            );
-          }
+      <AuditLogListCard
+        loading={loading}
+        logs={logs}
+        hasActiveFilters={hasActiveFilters}
+        emptyDefaultMessage="Aún no hay movimientos registrados automáticamente por HopTolt en este galpón"
+        entityLabels={ENTITY_LABELS}
+        actionConfig={ACTION_CONFIG}
+        renderActorIcon={(_log, size) => <Sparkles size={size} />}
+        getActorName={() => 'HopTolt'}
+        getActorUsername={() => 'hoptolt'}
+        getFallbackSummary={(entityLabel) => `Realizó una acción automática en ${entityLabel}`}
+        hasDetailedDiff={(log) => Boolean(log.details?.before || log.details?.after || log.details?.unfedCount)}
+        onSelectLog={setSelectedLogForDetails}
+      />
 
-          if (logs.length === 0) {
-            return (
-              <div className="p-12 text-center flex flex-col items-center justify-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-theme-surface flex items-center justify-center text-muted">
-                  <ShieldCheck size={26} />
-                </div>
-                <div>
-                  <h4 className="text-base font-semibold text-main">Sin registros para mostrar</h4>
-                  <p className="text-sm text-muted mt-1">
-                    {hasActiveFilters
-                      ? 'No hay registros que coincidan con los filtros aplicados'
-                      : 'Aún no hay movimientos registrados automáticamente por HopTolt en este galpón'}
-                  </p>
-                </div>
-              </div>
-            );
-          }
-
-          return (
-            <div className="divide-y divide-default">
-              {logs.map((log: AuditLogItem) => {
-                const actionConf = ACTION_CONFIG[log.action] || {
-                  label: log.action,
-                  className: 'bg-gray-100 text-gray-800 dark:bg-slate-800 dark:text-slate-200 border-gray-200 dark:border-slate-700'
-                };
-                const entityLabel = ENTITY_LABELS[log.entity] || log.entity;
-                const hasDetailedDiff = Boolean(log.details?.before || log.details?.after || log.details?.unfedCount);
-
-                return (
-                  <div
-                    key={log.id}
-                    className="p-3.5 sm:p-4 hover:bg-theme-surface/50 transition-colors flex flex-col gap-2.5 sm:gap-3"
-                  >
-                    {/* Fila Superior: Actor del Sistema y Fecha */}
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-primary-100 dark:bg-primary-950/50 text-primary-700 dark:text-primary-300 flex items-center justify-center font-bold text-xs sm:text-sm shrink-0 border border-primary-200 dark:border-primary-800/40">
-                          <Sparkles size={16} />
-                        </div>
-                        <div className="min-w-0 truncate">
-                          <span className="font-semibold text-main text-xs sm:text-sm block truncate">
-                            HopTolt
-                          </span>
-                          <span className="text-[11px] sm:text-xs text-muted block truncate">
-                            @hoptolt
-                          </span>
-                        </div>
-                      </div>
-
-                      <span className="text-xs text-theme-faint shrink-0 whitespace-nowrap" title={formatDateTime(log.createdAt)}>
-                        {formatFriendlyDate(log.createdAt)}
-                      </span>
-                    </div>
-
-                    {/* Resumen del cambio a ancho completo */}
-                    <p className="text-xs sm:text-sm text-main leading-relaxed break-words">
-                      {log.details?.summary || `Realizó una acción automática en ${entityLabel}`}
-                    </p>
-
-                    {/* Fila Inferior: Badges y Botón de Detalles */}
-                    <div className="flex items-center justify-between gap-2 pt-1 border-t border-default/50">
-                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-theme-surface border border-default text-main">
-                          {entityLabel}
-                        </span>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${actionConf.className}`}>
-                          {actionConf.label}
-                        </span>
-                      </div>
-
-                      {hasDetailedDiff && (
-                        <button
-                          type="button"
-                          onClick={() => setSelectedLogForDetails(log)}
-                          className="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium cursor-pointer shrink-0 py-1 px-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-950/30 transition-colors"
-                        >
-                          Ver detalle →
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })()}
-      </div>
-
-      {/* Paginación */}
       {totalPages > 1 && (
         <Pagination
           currentPage={page}
@@ -474,64 +311,18 @@ export function SystemAuditLogTab({ galponId }: Readonly<SystemAuditLogTabProps>
         />
       )}
 
-      {/* Modal de Detalle */}
-      <Dialog
-        open={Boolean(selectedLogForDetails)}
+      <AuditLogDetailDialog
+        selectedLog={selectedLogForDetails}
         onClose={() => setSelectedLogForDetails(null)}
         title="Detalle del movimiento de HopTolt"
-        size="2xl"
-      >
-        {selectedLogForDetails && (
-          <div className="space-y-3 pt-1">
-            <div className="bg-theme-surface border border-default rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-full bg-primary-100 dark:bg-primary-950/50 text-primary-700 dark:text-primary-300 flex items-center justify-center font-bold text-sm shrink-0 border border-primary-200 dark:border-primary-800/40">
-                  <Sparkles size={18} />
-                </div>
-                <div>
-                  <div className="font-semibold text-main text-sm">
-                    HopTolt
-                  </div>
-                  <div className="text-xs text-muted">
-                    @hoptolt
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-theme-surface border border-default text-main">
-                  {ENTITY_LABELS[selectedLogForDetails.entity] || selectedLogForDetails.entity}
-                </span>
-                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${(ACTION_CONFIG[selectedLogForDetails.action] || { className: 'bg-gray-100 text-gray-800 dark:bg-slate-800 dark:text-slate-200 border-gray-200 dark:border-slate-700' }).className}`}>
-                  {(ACTION_CONFIG[selectedLogForDetails.action] || { label: selectedLogForDetails.action }).label}
-                </span>
-              </div>
-            </div>
-
-            <div className="text-xs sm:text-sm text-main font-medium leading-relaxed bg-primary-50/50 dark:bg-primary-950/20 border border-primary-100 dark:border-primary-900/30 rounded-xl p-2.5 sm:p-3">
-              {selectedLogForDetails.details?.summary || `Movimiento registrado en ${ENTITY_LABELS[selectedLogForDetails.entity] || selectedLogForDetails.entity}`}
-            </div>
-
-            <div className="text-xs text-muted flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 px-1">
-              <span className="shrink-0">Fecha y hora del registro:</span>
-              <span className="font-medium text-main">{formatDateTime(selectedLogForDetails.createdAt)}</span>
-            </div>
-
-            <div className="pt-2 border-t border-default">
-              {renderDetailsView(selectedLogForDetails)}
-            </div>
-
-            <div className="flex justify-end pt-2 border-t border-default">
-              <Button
-                variant="outline"
-                onClick={() => setSelectedLogForDetails(null)}
-              >
-                Cerrar
-              </Button>
-            </div>
-          </div>
-        )}
-      </Dialog>
+        entityLabels={ENTITY_LABELS}
+        actionConfig={ACTION_CONFIG}
+        renderActorIcon={(_log, size) => <Sparkles size={size} />}
+        getActorName={() => 'HopTolt'}
+        getActorUsername={() => 'hoptolt'}
+        getModalFallbackSummary={(entityLabel) => `Movimiento registrado en ${entityLabel}`}
+        renderDetailsView={renderDetailsView}
+      />
     </div>
   );
 }

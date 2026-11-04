@@ -1,4 +1,6 @@
 const { Op } = require('sequelize');
+const AppError = require('../../errors/AppError');
+const { getPaginationParams, createPaginatedResponse } = require('./pagination.helper');
 
 const parseArrayFilter = (filterValue) => {
     if (!filterValue) return null;
@@ -93,4 +95,80 @@ const buildRabbitCountInclude = (rabbitWhere) => {
     }];
 };
 
-module.exports = { buildCommonFilters, buildRabbitProfileIncludes, buildRabbitCountInclude };
+const findRecordsByGalponId = (Model, dateFieldName, galponId, options = {}, filters = {}) => {
+    const { whereClause: filtersWhere, rabbitWhere, cageWhere } = buildCommonFilters(filters, dateFieldName);
+    const whereClause = { galponId, ...filtersWhere };
+
+    return Model.findAll({
+        where: whereClause,
+        include: buildRabbitProfileIncludes(rabbitWhere, cageWhere),
+        order: [[dateFieldName, 'DESC']],
+        ...options,
+        subQuery: false
+    });
+};
+
+const countRecordsByGalponId = (Model, dateFieldName, galponId, filters = {}) => {
+    const { whereClause: filtersWhere, rabbitWhere, cageWhere } = buildCommonFilters(filters, dateFieldName);
+    const whereClause = { galponId, ...filtersWhere };
+
+    const hasCageFilter = cageWhere && Object.keys(cageWhere).length > 0;
+    const hasRabbitFilter = rabbitWhere && Object.keys(rabbitWhere).length > 0;
+
+    if (hasCageFilter || hasRabbitFilter) {
+        return Model.count({
+            where: whereClause,
+            include: buildRabbitProfileIncludes(rabbitWhere, cageWhere),
+            distinct: true
+        });
+    }
+
+    return Model.count({ where: whereClause });
+};
+
+const validateWorkerAssignedCages = async (membership, assignments, errorMessage) => {
+    if (membership.role !== 'worker') return;
+    const { WorkerCage } = require('../../domain/models');
+    const workerCages = await WorkerCage.findAll({ where: { farmMemberId: membership.id } });
+    const assignedCageIds = new Set(workerCages.map(wc => Number(wc.cageId)));
+    for (const assignment of assignments) {
+        if (!assignedCageIds.has(Number(assignment.cageId))) {
+            throw new AppError(errorMessage, 403);
+        }
+    }
+};
+
+const fetchPaginatedGalponRecords = async (repository, galponId, profileId, page = 1, limit = 10, filters = {}) => {
+    if (!galponId) return createPaginatedResponse([], page, limit, 0);
+
+    const { FarmMember, WorkerCage } = require('../../domain/models');
+    const membership = await FarmMember.findOne({
+        where: { profileId, galponId, status: 'active' }
+    });
+    if (!membership) throw new AppError('No tienes acceso a este galpón.', 403);
+
+    if (membership.role === 'worker') {
+        const workerCages = await WorkerCage.findAll({ where: { farmMemberId: membership.id } });
+        filters.cageIds = workerCages.map(wc => Number(wc.cageId));
+    }
+
+    const { limit: limitValue, offset } = getPaginationParams(page, limit);
+    const queryOptions = filters.all ? {} : { limit: limitValue, offset };
+
+    const [records, count] = await Promise.all([
+        repository.findByGalponId(galponId, queryOptions, filters),
+        filters.all ? Promise.resolve(0) : repository.countByGalponId(galponId, filters)
+    ]);
+
+    return createPaginatedResponse(records, page, limit, filters.all ? records.length : count);
+};
+
+module.exports = {
+    buildCommonFilters,
+    buildRabbitProfileIncludes,
+    buildRabbitCountInclude,
+    findRecordsByGalponId,
+    countRecordsByGalponId,
+    validateWorkerAssignedCages,
+    fetchPaginatedGalponRecords
+};
