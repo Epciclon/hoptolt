@@ -47,16 +47,20 @@ function detectRecoveryUrlError(hash: string, search: string): string | null {
   return null;
 }
 
-export default function ResetPasswordPage() {
-  const router = useRouter();
-  const { showToast } = useToast();
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+function isPasswordConstraintError(msg: string): boolean {
+  return (
+    msg.includes('diferente a la contraseña actual') ||
+    msg.includes('caracteres') ||
+    msg.includes('débil') ||
+    msg.includes('válida')
+  );
+}
+
+function usePasswordRecoverySession() {
   const [isVerifying, setIsVerifying] = useState(true);
   const [isReady, setIsReady] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Limpia cualquier sesión fantasma o temporal que haya quedado al fallar o cancelar la recuperación
   const clearPhantomSession = async () => {
     try {
       const supabase = createClient();
@@ -76,7 +80,6 @@ export default function ResetPasswordPage() {
     const hash = window.location.hash || '';
     const search = window.location.search || '';
 
-    // 1. Detectar errores de enlace expirado en el hash o en search reportados por Supabase
     const urlError = detectRecoveryUrlError(hash, search);
     if (urlError) {
       setErrorMessage(urlError);
@@ -87,7 +90,6 @@ export default function ResetPasswordPage() {
     }
 
     const supabase = createClient();
-
     const params = new URLSearchParams(search);
     const tokenHash = params.get('token_hash');
     const type = (params.get('type') || 'recovery') as 'recovery';
@@ -104,19 +106,16 @@ export default function ResetPasswordPage() {
       setIsVerifying(false);
     };
 
-    // 2. Si viene con token_hash (flujo universal independiente de navegador o dominio)
     if (tokenHash) {
       void supabase.auth.verifyOtp({ token_hash: tokenHash, type }).then(handleVerificationResult);
       return;
     }
 
-    // 3. Si viene con código PKCE (?code=...)
     if (code) {
       void supabase.auth.exchangeCodeForSession(code).then(handleVerificationResult);
       return;
     }
 
-    // 4. Escuchar evento oficial PASSWORD_RECOVERY o sesión iniciada por el token
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, session: unknown) => {
       if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && Boolean(session))) {
         setIsReady(true);
@@ -124,14 +123,12 @@ export default function ResetPasswordPage() {
       }
     });
 
-    // 5. Verificar si Supabase ya estableció la sesión a partir del hash
     void supabase.auth.getSession().then((res: { data: { session: unknown } }) => {
       const session = res.data.session;
       if (session) {
         setIsReady(true);
         setIsVerifying(false);
       } else {
-        // Si tras breve espera no hay sesión ni token, marcar como enlace inválido y limpiar
         setTimeout(() => {
           setIsReady((currentReady) => {
             if (!currentReady) {
@@ -152,6 +149,31 @@ export default function ResetPasswordPage() {
     };
   }, []);
 
+  return {
+    isVerifying,
+    isReady,
+    setIsReady,
+    errorMessage,
+    setErrorMessage,
+    clearPhantomSession,
+  };
+}
+
+export default function ResetPasswordPage() {
+  const router = useRouter();
+  const { showToast } = useToast();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const {
+    isVerifying,
+    isReady,
+    setIsReady,
+    errorMessage,
+    setErrorMessage,
+    clearPhantomSession,
+  } = usePasswordRecoverySession();
+
   const {
     register,
     handleSubmit,
@@ -170,15 +192,7 @@ export default function ResetPasswordPage() {
       const msg = translateAuthError(err);
       showToast(msg, 'error');
 
-      // Si es un error de validación o restricción de contraseña (ej: contraseña igual a la actual o muy débil),
-      // NO destruimos la sesión ni bloqueamos al usuario con la pantalla de error; le permitimos ingresar otra
-      const isPasswordConstraintError =
-        msg.includes('diferente a la contraseña actual') ||
-        msg.includes('caracteres') ||
-        msg.includes('débil') ||
-        msg.includes('válida');
-
-      if (!isPasswordConstraintError) {
+      if (!isPasswordConstraintError(msg)) {
         setErrorMessage(msg);
         setIsReady(false);
         await clearPhantomSession();

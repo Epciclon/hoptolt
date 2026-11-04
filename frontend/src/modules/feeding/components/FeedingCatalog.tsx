@@ -36,6 +36,117 @@ const getEcuadorDateString = (date: Date) => {
   return `${y}-${m}-${d}`;
 };
 
+const formatDateTime = (dateString: string) => {
+  const date = new Date(dateString);
+  const ecuadorDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
+  const formattedDate = ecuadorDate.toLocaleDateString('es-EC', { 
+    day: '2-digit', 
+    month: '2-digit', 
+    year: 'numeric' 
+  });
+  const formattedTime = ecuadorDate.toLocaleTimeString('es-EC', { 
+    hour: '2-digit', 
+    minute: '2-digit', 
+    hour12: true 
+  });
+  return `${formattedDate} ${formattedTime}`;
+};
+
+interface FeedingProgressStatsProps {
+  uniqueCagesMorning: number;
+  uniqueCagesAfternoon: number;
+  totalCages: number;
+  morningPercentage: number;
+  afternoonPercentage: number;
+  pendingCagesThisShift: any[];
+  currentEcuadorShift: string;
+  selectedCageNumbers: number[];
+  toggleCage: (cageNumber: number) => void;
+}
+
+function FeedingProgressStats({
+  uniqueCagesMorning,
+  uniqueCagesAfternoon,
+  totalCages,
+  morningPercentage,
+  afternoonPercentage,
+  pendingCagesThisShift,
+  currentEcuadorShift,
+  selectedCageNumbers,
+  toggleCage,
+}: FeedingProgressStatsProps) {
+  return (
+    <div className="bg-card border border-strong rounded-lg p-4 sm:p-5 w-full">
+      <h3 className="text-sm font-semibold text-main mb-4 flex items-center gap-2">
+        <span>📊 Progreso de Alimentación Hoy</span>
+      </h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <div className="flex justify-between text-xs mb-1">
+            <span className="text-muted font-medium">Turno Mañana</span>
+            <span className="text-emerald-600 font-semibold">{uniqueCagesMorning} / {totalCages} Jaulas</span>
+          </div>
+          <div className="w-full bg-theme-surface border border-default rounded-full h-2">
+            <div 
+              className="bg-emerald-500 h-2 rounded-full transition-all duration-500" 
+              style={{ width: `${Math.min(morningPercentage, 100)}%` }} 
+            />
+          </div>
+        </div>
+        <div>
+          <div className="flex justify-between text-xs mb-1">
+            <span className="text-muted font-medium">Turno Tarde</span>
+            <span className="text-orange-600 font-semibold">{uniqueCagesAfternoon} / {totalCages} Jaulas</span>
+          </div>
+          <div className="w-full bg-theme-surface border border-default rounded-full h-2">
+            <div 
+              className="bg-orange-500 h-2 rounded-full transition-all duration-500" 
+              style={{ width: `${Math.min(afternoonPercentage, 100)}%` }} 
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Jaulas pendientes de alimentar en el turno actual */}
+      {pendingCagesThisShift.length > 0 && (
+        <div className="mt-5 pt-4 border-t border-default flex flex-col gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
+            <span className="text-xs font-semibold text-main">Jaulas sin alimentar:</span>
+            <span className={`text-xs font-bold px-2 py-0.5 rounded-full border self-start sm:self-auto ${
+                currentEcuadorShift === 'mañana'
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
+                  : 'bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800/60'
+              }`}>
+              {pendingCagesThisShift.length === 0 ? '0 pendientes - Completo' : `${pendingCagesThisShift.length} pendiente${pendingCagesThisShift.length > 1 ? 's' : ''}`}
+            </span>
+          </div>
+
+          <div className="flex flex-wrap gap-2 mt-1">
+            {pendingCagesThisShift.map(cage => {
+              const isSelected = selectedCageNumbers.includes(cage.cageNumber);
+              return (
+                <button
+                  key={cage.cageId}
+                  type="button"
+                  onClick={() => toggleCage(cage.cageNumber)}
+                  className={`min-w-[2.25rem] h-8 px-2.5 rounded-md text-xs font-semibold border transition-all cursor-pointer shadow-sm flex items-center justify-center ${
+                    isSelected
+                      ? 'bg-primary-600 text-white border-primary-700 ring-2 ring-primary-500/25'
+                      : 'bg-theme-surface dark:bg-card text-main border-default hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400'
+                  }`}
+                  title={`Jaula ${cage.cageNumber} - ${cage.rabbits.length} ${cage.rabbits.length === 1 ? 'conejo' : 'conejos'} - Clic para ${isSelected ? 'deseleccionar' : 'seleccionar'}`}
+                >
+                  <span>{cage.cageNumber}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
   const { assignedRabbits, foodTypes, loading, createFeeding, feedings } = useFeeding();
   const { can } = usePermissions();
@@ -71,22 +182,6 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
   const [cagesWithIssue, setCagesWithIssue] = useState<Array<{ cageNumber: number; cageType: string; feedingsToday: number }>>([]);
   
   const foodDropdownRef = useRef<HTMLDivElement>(null);
-
-  const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const ecuadorDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
-    const formattedDate = ecuadorDate.toLocaleDateString('es-EC', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: 'numeric' 
-    });
-    const formattedTime = ecuadorDate.toLocaleTimeString('es-EC', { 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      hour12: true 
-    });
-    return `${formattedDate} ${formattedTime}`;
-  };
 
   const currentEcuadorShift = (() => {
     const hour = Number.parseInt(ecuadorHourFormatter.format(new Date()), 10);
@@ -255,76 +350,17 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
     <div className="flex flex-col gap-6 animate-in fade-in duration-300 w-full">
       
       {/* Sección de Estadísticas */}
-      <div className="bg-card border border-strong rounded-lg p-4 sm:p-5 w-full">
-        <h3 className="text-sm font-semibold text-main mb-4 flex items-center gap-2">
-          <span>📊 Progreso de Alimentación Hoy</span>
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <div className="flex justify-between text-xs mb-1">
-              <span className="text-muted font-medium">Turno Mañana</span>
-              <span className="text-emerald-600 font-semibold">{uniqueCagesMorning} / {totalCages} Jaulas</span>
-            </div>
-            <div className="w-full bg-theme-surface border border-default rounded-full h-2">
-              <div 
-                className="bg-emerald-500 h-2 rounded-full transition-all duration-500" 
-                style={{ width: `${Math.min(morningPercentage, 100)}%` }} 
-              />
-            </div>
-          </div>
-          <div>
-            <div className="flex justify-between text-xs mb-1">
-              <span className="text-muted font-medium">Turno Tarde</span>
-              <span className="text-orange-600 font-semibold">{uniqueCagesAfternoon} / {totalCages} Jaulas</span>
-            </div>
-            <div className="w-full bg-theme-surface border border-default rounded-full h-2">
-              <div 
-                className="bg-orange-500 h-2 rounded-full transition-all duration-500" 
-                style={{ width: `${Math.min(afternoonPercentage, 100)}%` }} 
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Jaulas pendientes de alimentar en el turno actual */}
-        {pendingCagesThisShift.length > 0 && (
-          <div className="mt-5 pt-4 border-t border-default flex flex-col gap-2">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
-              <span className="text-xs font-semibold text-main">Jaulas sin alimentar:</span>
-              <span className={`text-xs font-bold px-2 py-0.5 rounded-full border self-start sm:self-auto ${
-                  pendingCagesThisShift.length === 0
-                    ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
-                    : currentEcuadorShift === 'mañana'
-                      ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
-                      : 'bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800/60'
-                }`}>
-                  {pendingCagesThisShift.length === 0 ? '0 pendientes - Completo' : `${pendingCagesThisShift.length} pendiente${pendingCagesThisShift.length > 1 ? 's' : ''}`}
-              </span>
-            </div>
-
-            <div className="flex flex-wrap gap-2 mt-1">
-              {pendingCagesThisShift.map(cage => {
-                const isSelected = selectedCageNumbers.includes(cage.cageNumber);
-                return (
-                  <button
-                    key={cage.cageId}
-                    type="button"
-                    onClick={() => toggleCage(cage.cageNumber)}
-                    className={`min-w-[2.25rem] h-8 px-2.5 rounded-md text-xs font-semibold border transition-all cursor-pointer shadow-sm flex items-center justify-center ${
-                      isSelected
-                        ? 'bg-primary-600 text-white border-primary-700 ring-2 ring-primary-500/25'
-                        : 'bg-theme-surface dark:bg-card text-main border-default hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400'
-                    }`}
-                    title={`Jaula ${cage.cageNumber} - ${cage.rabbits.length} ${cage.rabbits.length === 1 ? 'conejo' : 'conejos'} - Clic para ${isSelected ? 'deseleccionar' : 'seleccionar'}`}
-                  >
-                    <span>{cage.cageNumber}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
+      <FeedingProgressStats
+        uniqueCagesMorning={uniqueCagesMorning}
+        uniqueCagesAfternoon={uniqueCagesAfternoon}
+        totalCages={totalCages}
+        morningPercentage={morningPercentage}
+        afternoonPercentage={afternoonPercentage}
+        pendingCagesThisShift={pendingCagesThisShift}
+        currentEcuadorShift={currentEcuadorShift}
+        selectedCageNumbers={selectedCageNumbers}
+        toggleCage={toggleCage}
+      />
 
       <div className="bg-card border border-strong rounded-lg p-4 shadow-sm flex flex-col gap-4 relative z-30 w-full">
         <div className="flex items-center justify-between border-b border-default pb-3">

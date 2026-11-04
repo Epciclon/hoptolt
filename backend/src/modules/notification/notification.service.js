@@ -800,17 +800,25 @@ class NotificationService {
         const article = isFemale ? 'La' : 'El';
 
         if (isAssigned) {
-            const title = count === 1 ? (isFemale ? 'Nueva Asignación de Coneja' : 'Nueva Asignación de Conejo') : 'Nuevas Asignaciones de Conejos';
-            const message = count === 1
-                ? `${article} ${noun} **${first.label}** ha sido ${isFemale ? 'asignada' : 'asignado'} a tu jaula ${cageNumber}.`
-                : `Se asignaron **${count} conejos** a tu jaula ${cageNumber}: ${normalizedList.map(r => r.label).join(', ')}.`;
+            let title = 'Nuevas Asignaciones de Conejos';
+            if (count === 1) {
+                title = isFemale ? 'Nueva Asignación de Coneja' : 'Nueva Asignación de Conejo';
+            }
+            let message = `Se asignaron **${count} conejos** a tu jaula ${cageNumber}: ${normalizedList.map(r => r.label).join(', ')}.`;
+            if (count === 1) {
+                message = `${article} ${noun} **${first.label}** ha sido ${isFemale ? 'asignada' : 'asignado'} a tu jaula ${cageNumber}.`;
+            }
             return { title, message };
         }
 
-        const title = count === 1 ? (isFemale ? 'Coneja Removida' : 'Conejo Removido') : 'Conejos Removidos';
-        const message = count === 1
-            ? `${article} ${noun} **${first.label}** ha sido ${isFemale ? 'removida' : 'removido'} de tu jaula ${cageNumber}.`
-            : `Se removieron **${count} conejos** de tu jaula ${cageNumber}.`;
+        let title = 'Conejos Removidos';
+        if (count === 1) {
+            title = isFemale ? 'Coneja Removida' : 'Conejo Removido';
+        }
+        let message = `Se removieron **${count} conejos** de tu jaula ${cageNumber}.`;
+        if (count === 1) {
+            message = `${article} ${noun} **${first.label}** ha sido ${isFemale ? 'removida' : 'removido'} de tu jaula ${cageNumber}.`;
+        }
         return { title, message };
     }
 
@@ -921,7 +929,7 @@ class NotificationService {
                         { title: { [Op.iLike]: '%novedad%' } }
                     ]
                 }
-            }) : null).catch(() => {}),
+            }) : null).catch(() => { }),
             notificationRepository.findByProfileId(profileId, queryOptions),
             notificationRepository.countByProfileId(profileId, queryOptions)
         ]);

@@ -1,13 +1,13 @@
-const VALID_CATEGORIES = [
+const VALID_CATEGORIES = new Set([
     'Dificultad en la Tarea',
     'Problema en Jaula',
     'Salud del Conejo',
     'Falta de Insumos',
     'Limpieza e Higiene',
     'Aviso General'
-];
+]);
 
-const VALID_MODULES = [
+const VALID_MODULES = new Set([
     'general',
     'alimentacion',
     'limpieza',
@@ -15,7 +15,9 @@ const VALID_MODULES = [
     'desparasitacion',
     'reproduccion',
     'mortalidad'
-];
+]);
+
+const VALID_STATUSES = new Set(['pending', 'reviewed', 'resolved']);
 
 const validatePositiveId = (errors, val, label) => {
     if (val === undefined || val === null || val === '') return;
@@ -41,12 +43,12 @@ const validateCageIds = (errors, cageIds) => {
 };
 
 const validateCategoryAndModule = (errors, category, module) => {
-    if (category && !VALID_CATEGORIES.includes(category.trim())) {
+    if (category && !VALID_CATEGORIES.has(category.trim())) {
         errors.push('El tipo de novedad seleccionado no es válido.');
     }
     if (module && typeof module === 'string' && module.trim()) {
         const normalized = module.trim().toLowerCase();
-        if (!VALID_MODULES.includes(normalized)) {
+        if (!VALID_MODULES.has(normalized)) {
             errors.push('La labor seleccionada no es válida.');
         }
     }
@@ -81,7 +83,7 @@ const validateRespondIncident = (req, res, next) => {
     const errors = [];
     const { status, ownerResponse } = req.body;
 
-    if (status && !['pending', 'reviewed', 'resolved'].includes(status)) {
+    if (status && !VALID_STATUSES.has(status)) {
         errors.push('El estado de la novedad debe ser atendida o pendiente.');
     }
 

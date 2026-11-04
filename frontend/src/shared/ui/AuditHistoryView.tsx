@@ -218,120 +218,139 @@ export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: 
     );
   }
 
+interface AuditWorkerCardProps {
+  member: any;
+  isExpanded: boolean;
+  onSelect: (member: any) => void;
+  onToggleExpand: (memberId: string | number) => void;
+}
+
+function getWorkerRoleBadgeClass(isOwner: boolean, status: string): string {
+  if (isOwner) {
+    return 'bg-theme-surface border border-default text-main';
+  }
+  if (status === 'inactive') {
+    return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-700';
+  }
+  return 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400';
+}
+
+function getWorkerRoleLabel(isOwner: boolean, status: string): string {
+  if (isOwner) return 'Propietario';
+  if (status === 'inactive') return 'Ex-trabajador';
+  return 'Trabajador';
+}
+
+function AuditWorkerCard({ member, isExpanded, onSelect, onToggleExpand }: AuditWorkerCardProps) {
+  const profile = member.profile;
+  if (!profile) return null;
+
+  const isOwner = member.role === 'owner';
+  const initials = (profile.fullName || profile.username || 'U')
+    .split(' ')
+    .map((s: string) => s.charAt(0).toUpperCase())
+    .slice(0, 2)
+    .join('');
+
+  const assignedCages = member.assignedCages || [];
+  const visibleCages = isExpanded ? assignedCages : assignedCages.slice(0, 8);
+
+  return (
+    <div className="flex flex-col text-left bg-card border border-strong rounded-xl p-4 hover:border-primary-300 hover:shadow-md transition-all group">
+      <button
+        type="button"
+        onClick={() => onSelect(member)}
+        className="w-full text-left focus:outline-none"
+      >
+        <div className="flex items-center gap-3 w-full border-b border-default pb-3 mb-3">
+          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+            {initials}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-bold text-main truncate">
+              {profile.fullName || profile.username}
+            </h3>
+            <div className="flex items-center gap-1.5 text-xs text-muted mt-0.5">
+              <span className={`px-1.5 py-0.5 rounded font-medium ${getWorkerRoleBadgeClass(isOwner, member.status)}`}>
+                {getWorkerRoleLabel(isOwner, member.status)}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1.5 w-full">
+          {profile.email && (
+            <div className="flex items-center gap-2 text-sm text-muted">
+              <Mail size={14} className="text-theme-faint" />
+              <span className="truncate">{profile.email}</span>
+            </div>
+          )}
+          {profile.username && (
+            <div className="flex items-center gap-2 text-sm text-muted">
+              <AtSign size={14} className="text-theme-faint" />
+              <span className="truncate">{profile.username}</span>
+            </div>
+          )}
+        </div>
+      </button>
+
+      {/* Jaulas Asignadas [Solo para trabajadores] */}
+      {!isOwner && (
+        <div className="mt-2 pt-2 border-t border-default w-full">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-muted uppercase mb-1.5">
+            <Box size={13} />
+            {member.status === 'inactive' ? 'Estado' : `Jaulas Asignadas: ${assignedCages.length}`}
+          </div>
+          {member.status === 'inactive' ? (
+            <span className="text-xs text-amber-600 dark:text-amber-400 italic">Desvinculado del galpón</span>
+          ) : assignedCages.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5 items-center">
+              {visibleCages.map((wc: any) => (
+                <span key={wc.id} className="text-xs font-semibold bg-theme-surface border border-default text-main px-2 py-0.5 rounded-md min-w-[1.75rem] text-center" title={`Jaula ${wc.cage?.number ?? wc.cageId}`}>
+                  {wc.cage?.number ?? wc.cageId}
+                </span>
+              ))}
+              {assignedCages.length > 8 && (
+                <button
+                  type="button"
+                  onClick={() => onToggleExpand(member.id)}
+                  className="cursor-pointer text-xs font-semibold bg-theme-surface border border-default hover:border-primary-500 text-primary-600 dark:text-primary-400 px-2 py-0.5 rounded-md transition-colors"
+                  title={isExpanded ? 'Ver menos' : 'Ver todas'}
+                >
+                  {isExpanded ? 'Menos' : `+${assignedCages.length - 8}`}
+                </button>
+              )}
+            </div>
+          ) : (
+            <span className="text-xs text-theme-faint italic">Ninguna</span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
   // Vista Principal (Grid de Tarjetas)
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {members.map((member) => {
-          const profile = member.profile;
-          if (!profile) return null;
-
-          const isOwner = member.role === 'owner';
-          const initials = (profile.fullName || profile.username || 'U')
-            .split(' ')
-            .map((s: string) => s.charAt(0).toUpperCase())
-            .slice(0, 2)
-            .join('');
-
-          const assignedCages = member.assignedCages || [];
-
-          return (
-            <button type="button"
-              key={member.id}
-              onClick={() => {
-                setSelectedWorker(member);
-                setSelectedDate(getEcuadorDateString()); // Resetear fecha al hoy al entrar
-              }}
-              className="flex flex-col text-left bg-card border border-strong rounded-xl p-4 hover:border-primary-300 hover:shadow-md transition-all group"
-            >
-              <div className="flex items-center gap-3 w-full border-b border-default pb-3 mb-3">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-sm group-hover:scale-105 transition-transform">
-                  {initials}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-base font-bold text-main truncate">
-                    {profile.fullName || profile.username}
-                  </h3>
-                  <div className="flex items-center gap-1.5 text-xs text-muted mt-0.5">
-                    <span className={`px-1.5 py-0.5 rounded font-medium ${
-                      isOwner 
-                        ? 'bg-theme-surface border border-default text-main' 
-                        : member.status === 'inactive'
-                          ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-700'
-                          : 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400'
-                    }`}>
-                      {isOwner ? 'Propietario' : member.status === 'inactive' ? 'Ex-trabajador' : 'Trabajador'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5 w-full">
-                {profile.email && (
-                  <div className="flex items-center gap-2 text-sm text-muted">
-                    <Mail size={14} className="text-theme-faint" />
-                    <span className="truncate">{profile.email}</span>
-                  </div>
-                )}
-                {profile.username && (
-                  <div className="flex items-center gap-2 text-sm text-muted">
-                    <AtSign size={14} className="text-theme-faint" />
-                    <span className="truncate">{profile.username}</span>
-                  </div>
-                )}
-                
-                {/* Jaulas Asignadas (Solo para trabajadores) */}
-                {!isOwner && (
-                  <div className="mt-2 pt-2 border-t border-default">
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-muted uppercase mb-1.5">
-                      <Box size={13} />
-                      {member.status === 'inactive' ? 'Estado' : `Jaulas Asignadas: ${assignedCages.length}`}
-                    </div>
-                    {member.status === 'inactive' ? (
-                      <span className="text-xs text-amber-600 dark:text-amber-400 italic">Desvinculado del galpón</span>
-                    ) : assignedCages.length > 0 ? (
-                      <div className="flex flex-wrap gap-1.5 items-center">
-                        {(expandedWorkers[member.id] ? assignedCages : assignedCages.slice(0, 8)).map(wc => (
-                          <span key={wc.id} className="text-xs font-semibold bg-theme-surface border border-default text-main px-2 py-0.5 rounded-md min-w-[1.75rem] text-center" title={`Jaula ${wc.cage?.number ?? wc.cageId}`}>
-                            {wc.cage?.number ?? wc.cageId}
-                          </span>
-                        ))}
-                        {assignedCages.length > 8 && (
-                          <span
-                            role="button"
-                            tabIndex={0}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setExpandedWorkers(prev => ({
-                                ...prev,
-                                [member.id]: !prev[member.id]
-                              }));
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                e.stopPropagation();
-                                setExpandedWorkers(prev => ({
-                                  ...prev,
-                                  [member.id]: !prev[member.id]
-                                }));
-                              }
-                            }}
-                            className="cursor-pointer text-xs font-semibold bg-theme-surface border border-default hover:border-primary-500 text-primary-600 dark:text-primary-400 px-2 py-0.5 rounded-md transition-colors"
-                            title={expandedWorkers[member.id] ? 'Ver menos' : 'Ver todas'}
-                          >
-                            {expandedWorkers[member.id] ? 'Menos' : `+${assignedCages.length - 8}`}
-                          </span>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-xs text-theme-faint italic">Ninguna</span>
-                    )}
-                  </div>
-                )}
-              </div>
-            </button>
-          );
-        })}
+        {members.map((member) => (
+          <AuditWorkerCard
+            key={member.id}
+            member={member}
+            isExpanded={Boolean(expandedWorkers[member.id])}
+            onSelect={(m) => {
+              setSelectedWorker(m);
+              setSelectedDate(getEcuadorDateString());
+            }}
+            onToggleExpand={(id) => {
+              setExpandedWorkers(prev => ({
+                ...prev,
+                [id]: !prev[id]
+              }));
+            }}
+          />
+        ))}
       </div>
     </div>
   );

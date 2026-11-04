@@ -31,6 +31,168 @@ const getModuleLabel = (mod?: string | null) => {
   }
 };
 
+function IncidentAffectedCages({ incident }: { incident: Incident }) {
+  if (!((incident.cages && incident.cages.length > 0) || incident.cage)) return null;
+
+  const cagesToShow = (incident.cages && incident.cages.length > 0)
+    ? incident.cages
+    : (Array.isArray(incident.cage) ? incident.cage : [incident.cage]);
+
+  return (
+    <div className="p-3 rounded-xl bg-theme-surface border border-default flex items-center gap-2 text-xs">
+      <span className="text-muted font-medium min-w-12">
+        {cagesToShow.length > 1 ? 'Jaulas afectadas:' : 'Jaula afectada:'}
+      </span>
+      <div className="flex flex-wrap items-center gap-1.5">
+        {cagesToShow.map((c: any) => (
+          <span
+            key={c.id || c.number}
+            className="min-w-[2rem] h-6 px-2 rounded-md bg-card border border-strong text-main font-bold text-xs flex items-center justify-center shadow-xs"
+          >
+            {c.number}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function IncidentResponseStatusView({ incident, userRole }: { incident: Incident; userRole: string }) {
+  if (incident.ownerResponse) {
+    return (
+      <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-1.5">
+        <div className="flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-400 font-semibold gap-2">
+          <span className="flex items-center gap-1.5">
+            <CheckCircle2 size={15} />
+            Respuesta del Propietario
+          </span>
+          {incident.reviewedAt && (
+            <span className="font-normal opacity-80 shrink-0 whitespace-nowrap">
+              {formatFriendlyDate(incident.reviewedAt)}
+            </span>
+          )}
+        </div>
+        <p className="text-xs sm:text-sm text-main whitespace-pre-wrap leading-relaxed">
+          {incident.ownerResponse}
+        </p>
+        {incident.reviewer && (
+          <p className="text-xs text-muted pt-1 border-t border-emerald-500/20">
+            Atendido por {incident.reviewer.fullName || incident.reviewer.username}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  if (userRole === 'worker') {
+    return (
+      <div className="p-3.5 rounded-xl bg-theme-surface border border-default text-xs text-muted flex items-center gap-2">
+        <Clock size={16} className="shrink-0 text-muted" />
+        <span>Esta novedad aún se encuentra pendiente de revisión por el propietario del galpón.</span>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+interface IncidentOwnerResponseFormProps {
+  ownerResponse: string;
+  setOwnerResponse: (val: string) => void;
+  selectedStatus: FormStatus;
+  setSelectedStatus: (val: FormStatus) => void;
+  isEditingResponse: boolean;
+  setIsEditingResponse: (val: boolean) => void;
+  error: string | null;
+  isResponding: boolean;
+  onSubmit: (e: React.FormEvent) => void;
+}
+
+function IncidentOwnerResponseForm({
+  ownerResponse,
+  setOwnerResponse,
+  selectedStatus,
+  setSelectedStatus,
+  isEditingResponse,
+  setIsEditingResponse,
+  error,
+  isResponding,
+  onSubmit,
+}: IncidentOwnerResponseFormProps) {
+  return (
+    <form onSubmit={onSubmit} className="space-y-3 pt-3 border-t border-default">
+      <div className="flex items-center justify-between">
+        <h4 className="text-xs font-semibold text-main flex items-center gap-1.5">
+          <MessageSquare size={14} className="text-primary-500" />
+          <span>Respuesta al Trabajador</span>
+        </h4>
+        {isEditingResponse && (
+          <button
+            type="button"
+            onClick={() => setIsEditingResponse(false)}
+            className="text-xs text-muted hover:text-main cursor-pointer"
+          >
+            Cancelar edición
+          </button>
+        )}
+      </div>
+
+      {error && (
+        <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs">
+          {error}
+        </div>
+      )}
+
+      <textarea
+        rows={3}
+        value={ownerResponse}
+        onChange={(e) => {
+          const val = e.target.value;
+          setOwnerResponse(val);
+          setSelectedStatus(val.trim() ? 'draft' : 'pending');
+        }}
+        placeholder="Escribe las instrucciones, confirmación o resolución para el trabajador..."
+        className="w-full px-3 py-2 text-xs sm:text-sm bg-theme-surface border border-strong rounded-xl text-main placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all resize-none"
+      />
+
+      {selectedStatus === 'pending' && (
+        <div className="p-2.5 rounded-xl bg-theme-surface border border-default text-xs text-muted">
+          Al guardar en estado pendiente se descartará la respuesta previa y la novedad volverá a requerir atención.
+        </div>
+      )}
+
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
+        <div className="flex items-center gap-2">
+          <label htmlFor="incident-status-select" className="text-xs text-muted font-medium">Estado:</label>
+          <select
+            id="incident-status-select"
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value as FormStatus)}
+            className="px-2.5 py-1.5 text-xs bg-theme-surface border border-strong rounded-lg text-main focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="draft">Borrador</option>
+            <option value="pending">Pendiente</option>
+          </select>
+        </div>
+
+        <Button
+          type="submit"
+          variant="primary"
+          size="sm"
+          disabled={isResponding}
+          className="w-full sm:w-auto"
+        >
+          {isResponding
+            ? 'Guardando...'
+            : selectedStatus === 'pending'
+              ? 'Guardar como Pendiente'
+              : 'Guardar Respuesta'}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
 export function IncidentDetailModal({
   incident,
   isOpen,
@@ -170,28 +332,7 @@ export function IncidentDetailModal({
           </div>
 
           {/* Cages indicator if provided */}
-          {((incident.cages && incident.cages.length > 0) || incident.cage) && (() => {
-            const cagesToShow = (incident.cages && incident.cages.length > 0)
-              ? incident.cages
-              : (Array.isArray(incident.cage) ? incident.cage : [incident.cage]);
-            return (
-              <div className="p-3 rounded-xl bg-theme-surface border border-default flex items-center gap-2 text-xs">
-                <span className="text-muted font-medium min-w-12">
-                  {cagesToShow.length > 1 ? 'Jaulas afectadas:' : 'Jaula afectada:'}
-                </span>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {cagesToShow.map((c: any) => (
-                    <span
-                      key={c.id || c.number}
-                      className="min-w-[2rem] h-6 px-2 rounded-md bg-card border border-strong text-main font-bold text-xs flex items-center justify-center shadow-xs"
-                    >
-                      {c.number}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
+          <IncidentAffectedCages incident={incident} />
 
           {/* Description */}
           <div>
@@ -204,115 +345,21 @@ export function IncidentDetailModal({
           </div>
 
           {/* Owner Response Section (if exists) */}
-          {incident.ownerResponse ? (
-            <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-1.5">
-              <div className="flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-400 font-semibold gap-2">
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 size={15} />
-                  Respuesta del Propietario
-                </span>
-                {incident.reviewedAt && (
-                  <span className="font-normal opacity-80 shrink-0 whitespace-nowrap">
-                    {formatFriendlyDate(incident.reviewedAt)}
-                  </span>
-                )}
-              </div>
-              <p className="text-xs sm:text-sm text-main whitespace-pre-wrap leading-relaxed">
-                {incident.ownerResponse}
-              </p>
-              {incident.reviewer && (
-                <p className="text-xs text-muted pt-1 border-t border-emerald-500/20">
-                  Atendido por {incident.reviewer.fullName || incident.reviewer.username}
-                </p>
-              )}
-            </div>
-          ) : userRole === 'worker' ? (
-            <div className="p-3.5 rounded-xl bg-theme-surface border border-default text-xs text-muted flex items-center gap-2">
-              <Clock size={16} className="shrink-0 text-muted" />
-              <span>Esta novedad aún se encuentra pendiente de revisión por el propietario del galpón.</span>
-            </div>
-          ) : null}
+          <IncidentResponseStatusView incident={incident} userRole={userRole} />
 
           {/* Owner response form: solo se muestra si está pendiente o si el propietario elige editar */}
           {userRole === 'owner' && (incident.status === 'pending' || isEditingResponse) && (
-            <form onSubmit={handleRespond} className="space-y-3 pt-3 border-t border-default">
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-semibold text-main flex items-center gap-1.5">
-                  <MessageSquare size={14} className="text-primary-500" />
-                  <span>Respuesta al Trabajador</span>
-                </h4>
-                {isEditingResponse && (
-                  <button
-                    type="button"
-                    onClick={() => setIsEditingResponse(false)}
-                    className="text-xs text-muted hover:text-main cursor-pointer"
-                  >
-                    Cancelar edición
-                  </button>
-                )}
-              </div>
-
-              {error && (
-                <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs">
-                  {error}
-                </div>
-              )}
-
-              <textarea
-                rows={3}
-                value={ownerResponse}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setOwnerResponse(val);
-                  if (val.trim()) {
-                    setSelectedStatus('draft');
-                  } else {
-                    setSelectedStatus('pending');
-                  }
-                }}
-                placeholder="Escribe las instrucciones, confirmación o resolución para el trabajador..."
-                className="w-full px-3 py-2 text-xs sm:text-sm bg-theme-surface border border-strong rounded-xl text-main placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all resize-none"
-              />
-
-              {selectedStatus === 'pending' && (
-                <div className="p-2.5 rounded-xl bg-theme-surface border border-default text-xs text-muted">
-                  Al guardar en estado pendiente se descartará la respuesta previa y la novedad volverá a requerir atención.
-                </div>
-              )}
-
-              {/* Controles de estado y botón de envío responsivos sin desbordar */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
-                <div className="flex items-center gap-2">
-                  <label htmlFor="incident-status-select" className="text-xs text-muted font-medium">Estado:</label>
-                  <select
-                    id="incident-status-select"
-                    value={selectedStatus}
-                    onChange={(e) => {
-                      const nextStatus = e.target.value as FormStatus;
-                      setSelectedStatus(nextStatus);
-                    }}
-                    className="px-2.5 py-1.5 text-xs bg-theme-surface border border-strong rounded-lg text-main focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  >
-                    <option value="draft">Borrador</option>
-                    <option value="pending">Pendiente</option>
-                  </select>
-                </div>
-
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="sm"
-                  disabled={isResponding}
-                  className="w-full sm:w-auto"
-                >
-                  {isResponding
-                    ? 'Guardando...'
-                    : selectedStatus === 'pending'
-                      ? 'Guardar como Pendiente'
-                      : 'Guardar Respuesta'}
-                </Button>
-              </div>
-            </form>
+            <IncidentOwnerResponseForm
+              ownerResponse={ownerResponse}
+              setOwnerResponse={setOwnerResponse}
+              selectedStatus={selectedStatus}
+              setSelectedStatus={setSelectedStatus}
+              isEditingResponse={isEditingResponse}
+              setIsEditingResponse={setIsEditingResponse}
+              error={error}
+              isResponding={isResponding}
+              onSubmit={handleRespond}
+            />
           )}
 
           {/* Acciones inferiores del modal */}

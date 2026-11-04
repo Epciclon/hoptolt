@@ -84,6 +84,18 @@ interface DiffItem {
   afterVal: string;
 }
 
+const SYSTEM_IGNORED_DIFF_KEYS = new Set(['id', 'galponId', 'createdAt', 'updatedAt', 'profileId']);
+
+function shouldSkipGrowthWeight(action: string | undefined, key: string, aVal: any, aStr?: string): boolean {
+  if (action !== 'Cálculo de crecimiento' || key !== 'weight') {
+    return false;
+  }
+  if (aVal === undefined || aVal === null || aVal === '') {
+    return true;
+  }
+  return aStr === 'Ninguno';
+}
+
 function computeDiff(before: any, after: any, action?: string): DiffItem[] {
   const b = before && typeof before === 'object' ? before : {};
   const a = after && typeof after === 'object' ? after : {};
@@ -92,13 +104,12 @@ function computeDiff(before: any, after: any, action?: string): DiffItem[] {
   const changed: DiffItem[] = [];
 
   for (const k of allKeys) {
-    if (['id', 'galponId', 'createdAt', 'updatedAt', 'profileId'].includes(k)) continue;
+    if (SYSTEM_IGNORED_DIFF_KEYS.has(k)) continue;
 
     const bVal = b[k];
     const aVal = a[k];
 
-    // Si es cálculo de crecimiento y el peso no se modificó o viene como Ninguno
-    if (action === 'Cálculo de crecimiento' && k === 'weight' && (aVal === undefined || aVal === null || aVal === '')) {
+    if (shouldSkipGrowthWeight(action, k, aVal)) {
       continue;
     }
 
@@ -106,7 +117,7 @@ function computeDiff(before: any, after: any, action?: string): DiffItem[] {
       const bStr = formatValue(k, bVal);
       const aStr = formatValue(k, aVal);
 
-      if (action === 'Cálculo de crecimiento' && k === 'weight' && aStr === 'Ninguno') {
+      if (shouldSkipGrowthWeight(action, k, aVal, aStr)) {
         continue;
       }
 

@@ -14,6 +14,91 @@ import { useAuth } from '@/modules/auth/hooks/useAuth';
 import { playNotificationSound } from '@/shared/utils/soundUtils';
 import { formatTime } from '@/shared/utils/dateUtils';
 
+const isWarningNotification = (n: any) => {
+  const t = n.data?.type;
+  if (t === 'incident' || t === 'incident_response') return false;
+  const title = (n.title || '').toLowerCase();
+  const msg = (n.message || '').toLowerCase();
+  if (title.includes('novedad') || msg.includes('novedad')) return false;
+
+  return n.type === 'warning' ||
+    t === 'feeding_reminder' ||
+    t === 'cleaning_warning' ||
+    t === 'birth_warning' ||
+    t === 'weaning_alert';
+};
+
+const getInfoWeight = (n: any) => {
+  if (n.type === 'invitation') return 100;
+  const t = n.data?.type;
+  const isAssignment = t === 'task_assignment' || (n.title && n.title.toLowerCase().includes('asignaci'));
+  if (isAssignment) return 95;
+  if (t === 'worker_action' || t === 'worker_sensitive_action') return 90;
+  if (t === 'reproduction') return 70;
+  if (t === 'maturity') return 60;
+  if (t === 'growth_summary' || t === 'growth') return 50;
+  return 30;
+};
+
+const getNotificationVersion = (n: any) => {
+  const logId = n.data?.lastLogId || n.data?.logId || 0;
+  const count = n.data?.changeCount || n.data?.totalCount || 1;
+  const time = new Date(n.updatedAt || n.createdAt).getTime();
+  return `${n.id}_${logId}_${count}_${time}`;
+};
+
+const isPreviewSeenOrDismissed = (n: any, userId: string) => {
+  if (typeof window === 'undefined') return false;
+  const version = getNotificationVersion(n);
+  const id = n.id;
+  return (
+    sessionStorage.getItem(`hoptolt_prev_seen_${userId}_${id}_${version}`) === 'true' ||
+    localStorage.getItem(`hoptolt_prev_seen_${userId}_${id}_${version}`) === 'true' ||
+    sessionStorage.getItem(`hoptolt_prev_dismissed_${userId}_${id}_${version}`) === 'true' ||
+    localStorage.getItem(`hoptolt_prev_dismissed_${userId}_${id}_${version}`) === 'true'
+  );
+};
+
+const markPreviewSeen = (n: any, userId: string) => {
+  if (typeof window !== 'undefined') {
+    const version = getNotificationVersion(n);
+    const id = n.id;
+    sessionStorage.setItem(`hoptolt_prev_seen_${userId}_${id}_${version}`, 'true');
+    localStorage.setItem(`hoptolt_prev_seen_${userId}_${id}_${version}`, 'true');
+  }
+};
+
+const markPreviewDismissed = (n: any, userId: string) => {
+  if (typeof window !== 'undefined') {
+    const version = getNotificationVersion(n);
+    const id = n.id;
+    sessionStorage.setItem(`hoptolt_prev_dismissed_${userId}_${id}_${version}`, 'true');
+    localStorage.setItem(`hoptolt_prev_dismissed_${userId}_${id}_${version}`, 'true');
+  }
+};
+
+function selectCandidateInfoNotification(unreadInfos: any[], userId: string, now: number): any {
+  const sortedCandidates = [...unreadInfos].sort((a, b) => {
+    const wA = getInfoWeight(a);
+    const wB = getInfoWeight(b);
+    if (wA !== wB) return wB - wA;
+    const timeA = new Date(a.updatedAt || a.createdAt).getTime();
+    const timeB = new Date(b.updatedAt || b.createdAt).getTime();
+    return timeB - timeA;
+  });
+
+  return sortedCandidates.find(n => {
+    if (isPreviewSeenOrDismissed(n, userId)) return false;
+
+    const isAssignment = n.data?.type === 'task_assignment' || (n.title && n.title.toLowerCase().includes('asignaci'));
+    if (n.type === 'invitation' || isAssignment) return true;
+
+    const notifTime = new Date(n.updatedAt || n.createdAt).getTime();
+    const diffMs = Math.abs(now - notifTime);
+    return diffMs < (10 * 60 * 1000);
+  }) || null;
+}
+
 export function NotificationIcon() {
   const NOTIFICATION_LIMIT = 15;
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications({ limit: NOTIFICATION_LIMIT, filter: 'notices' });
@@ -78,32 +163,6 @@ export function NotificationIcon() {
     };
   }, []);
 
-  const isWarningNotification = (n: any) => {
-    const t = n.data?.type;
-    if (t === 'incident' || t === 'incident_response') return false;
-    const title = (n.title || '').toLowerCase();
-    const msg = (n.message || '').toLowerCase();
-    if (title.includes('novedad') || msg.includes('novedad')) return false;
-
-    return n.type === 'warning' ||
-      t === 'feeding_reminder' ||
-      t === 'cleaning_warning' ||
-      t === 'birth_warning' ||
-      t === 'weaning_alert';
-  };
-
-  const getInfoWeight = (n: any) => {
-    if (n.type === 'invitation') return 100;
-    const t = n.data?.type;
-    const isAssignment = t === 'task_assignment' || (n.title && n.title.toLowerCase().includes('asignaci'));
-    if (isAssignment) return 95;
-    if (t === 'worker_action' || t === 'worker_sensitive_action') return 90;
-    if (t === 'reproduction') return 70;
-    if (t === 'maturity') return 60;
-    if (t === 'growth_summary' || t === 'growth') return 50;
-    return 30;
-  };
-
   const getActionConfig = (notification: any) => {
     const type = notification.data?.type;
     const isAssignment = type === 'task_assignment' || (notification.title && notification.title.toLowerCase().includes('asignaci'));
@@ -123,41 +182,6 @@ export function NotificationIcon() {
       return { label: 'Ver Conejos', variant: 'outline' as const };
     }
     return { label: 'Ver Detalle', variant: 'outline' as const };
-  };
-
-  const getNotificationVersion = (n: any) => {
-    const logId = n.data?.lastLogId || n.data?.logId || 0;
-    const count = n.data?.changeCount || n.data?.totalCount || 1;
-    const time = new Date(n.updatedAt || n.createdAt).getTime();
-    return `${n.id}_${logId}_${count}_${time}`;
-  };
-
-  const isPreviewSeenOrDismissed = (n: any, userId: string) => {
-    if (typeof window === 'undefined') return false;
-    const version = getNotificationVersion(n);
-    const id = n.id;
-    return (
-      sessionStorage.getItem(`hoptolt_prev_seen_${userId}_${id}_${version}`) === 'true' ||
-      localStorage.getItem(`hoptolt_prev_seen_${userId}_${id}_${version}`) === 'true' ||
-      sessionStorage.getItem(`hoptolt_prev_dismissed_${userId}_${id}_${version}`) === 'true' ||
-      localStorage.getItem(`hoptolt_prev_dismissed_${userId}_${id}_${version}`) === 'true'
-    );
-  };
-
-  const markPreviewSeen = (n: any, userId: string) => {
-    if (typeof window !== 'undefined') {
-      const version = getNotificationVersion(n);
-      sessionStorage.setItem(`hoptolt_prev_seen_${userId}_${n.id}_${version}`, 'true');
-      localStorage.setItem(`hoptolt_prev_seen_${userId}_${n.id}_${version}`, 'true');
-    }
-  };
-
-  const markPreviewDismissed = (n: any, userId: string) => {
-    if (typeof window !== 'undefined') {
-      const version = getNotificationVersion(n);
-      sessionStorage.setItem(`hoptolt_prev_dismissed_${userId}_${n.id}_${version}`, 'true');
-      localStorage.setItem(`hoptolt_prev_dismissed_${userId}_${n.id}_${version}`, 'true');
-    }
   };
 
   // Filtrado exclusivo de avisos generales y actividades
@@ -241,25 +265,7 @@ export function NotificationIcon() {
     }
 
     if (!activeInfoRef.current) {
-      const sortedCandidates = [...unreadInfos].sort((a, b) => {
-        const wA = getInfoWeight(a);
-        const wB = getInfoWeight(b);
-        if (wA !== wB) return wB - wA;
-        const timeA = new Date(a.updatedAt || a.createdAt).getTime();
-        const timeB = new Date(b.updatedAt || b.createdAt).getTime();
-        return timeB - timeA;
-      });
-
-      const candidateInfo = sortedCandidates.find(n => {
-        if (isPreviewSeenOrDismissed(n, userId)) return false;
-
-        const isAssignment = n.data?.type === 'task_assignment' || (n.title && n.title.toLowerCase().includes('asignaci'));
-        if (n.type === 'invitation' || isAssignment) return true;
-
-        const notifTime = new Date(n.updatedAt || n.createdAt).getTime();
-        const diffMs = Math.abs(now - notifTime);
-        return diffMs < (10 * 60 * 1000);
-      }) || null;
+      const candidateInfo = selectCandidateInfoNotification(unreadInfos, userId, now);
 
       if (candidateInfo) {
         activeInfoRef.current = candidateInfo;

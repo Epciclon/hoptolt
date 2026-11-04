@@ -39,6 +39,70 @@ const getModuleLabel = (mod?: string | null) => {
   }
 };
 
+function isRecentIncident(dateInput: string | Date | null | undefined): boolean {
+  if (!dateInput) return false;
+  const t = new Date(dateInput).getTime();
+  if (Number.isNaN(t)) return false;
+  return (Date.now() - t) < (15 * 60 * 1000);
+}
+
+function detectNewlyArrivedIncident(
+  incidents: Incident[],
+  prevStateMap: Map<number, { hasResponse: boolean; workerRead: boolean; status: string }>,
+  userId: string,
+  isOwner: boolean
+): Incident | null {
+  if (isOwner) {
+    const newlyArrived = incidents.filter(
+      (i) => !prevStateMap.has(i.id) && i.status === 'pending'
+    );
+    if (newlyArrived.length === 0) return null;
+    const latest = [...newlyArrived].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() || b.id - a.id
+    )[0];
+    if (String(latest.profileId).toLowerCase() !== String(userId).toLowerCase()) {
+      return latest;
+    }
+    return null;
+  }
+
+  const newlyAnswered = incidents.filter((i) => {
+    const prev = prevStateMap.get(i.id);
+    const hadResponse = prev?.hasResponse ?? false;
+    return Boolean(i.ownerResponse) && (!hadResponse || !i.workerRead) && !i.workerRead;
+  });
+  if (newlyAnswered.length === 0) return null;
+  return [...newlyAnswered].sort(
+    (a, b) => new Date(b.reviewedAt || b.updatedAt || b.createdAt).getTime() - new Date(a.reviewedAt || a.updatedAt || a.createdAt).getTime() || b.id - a.id
+  )[0];
+}
+
+function findRecentCandidateIncident(
+  incidents: Incident[],
+  userId: string,
+  isOwner: boolean
+): Incident | null {
+  if (isOwner) {
+    const pendingUnattendedToday = incidents
+      .filter((i) => {
+        if (i.status !== 'pending' || i.ownerRead) return false;
+        if (isPreviewDismissed(i.id, userId)) return false;
+        return isRecentIncident(i.createdAt);
+      })
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() || b.id - a.id);
+    return pendingUnattendedToday[0] || null;
+  }
+
+  const answeredUnreadToday = incidents
+    .filter((i) => {
+      if (!i.ownerResponse || i.workerRead) return false;
+      if (isPreviewDismissed(i.id, userId)) return false;
+      return isRecentIncident(i.reviewedAt || i.updatedAt || i.createdAt);
+    })
+    .sort((a, b) => new Date(b.reviewedAt || b.updatedAt || b.createdAt).getTime() - new Date(a.reviewedAt || a.updatedAt || a.createdAt).getTime() || b.id - a.id);
+  return answeredUnreadToday[0] || null;
+}
+
 export function IncidentFloatingWidget() {
   const { user } = useAuthContext();
   const supabase = useMemo(() => createClient(), []);
@@ -330,41 +394,12 @@ export function IncidentFloatingWidget() {
       return;
     }
 
-    if (isOwner) {
-      // Propietario: detectar reportes pendientes recién llegados
-      const newlyArrived = incidents.filter(
-        (i) => !previousIncidentStateRef.current.has(i.id) && i.status === 'pending'
-      );
-
-      if (newlyArrived.length > 0) {
-        const latest = [...newlyArrived].sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() || b.id - a.id
-        )[0];
-
-        if (String(latest.profileId).toLowerCase() !== String(user.id).toLowerCase()) {
-          if (!isPreviewDismissed(latest.id, user.id) && activeIncidentPreview?.id !== latest.id && isIncidentFromToday(latest.createdAt)) {
-            safePlayIncidentSound();
-            showIncidentPreview(latest);
-          }
-        }
-      }
-    } else {
-      // Trabajador: detectar si el propietario acaba de responder a uno de sus reportes
-      const newlyAnswered = incidents.filter((i) => {
-        const prev = previousIncidentStateRef.current.get(i.id);
-        const hadResponse = prev?.hasResponse ?? false;
-        return Boolean(i.ownerResponse) && (!hadResponse || !i.workerRead) && !i.workerRead;
-      });
-
-      if (newlyAnswered.length > 0) {
-        const latest = [...newlyAnswered].sort(
-          (a, b) => new Date(b.reviewedAt || b.updatedAt || b.createdAt).getTime() - new Date(a.reviewedAt || a.updatedAt || a.createdAt).getTime() || b.id - a.id
-        )[0];
-
-        if (!isPreviewDismissed(latest.id, user.id) && activeIncidentPreview?.id !== latest.id && isIncidentFromToday(latest.reviewedAt || latest.updatedAt || latest.createdAt)) {
-          safePlayIncidentSound();
-          showIncidentPreview(latest);
-        }
+    const newlyIncident = detectNewlyArrivedIncident(incidents, previousIncidentStateRef.current, user.id, isOwner);
+    if (newlyIncident && !isPreviewDismissed(newlyIncident.id, user.id) && activeIncidentPreview?.id !== newlyIncident.id) {
+      const dateToCheck = isOwner ? newlyIncident.createdAt : (newlyIncident.reviewedAt || newlyIncident.updatedAt || newlyIncident.createdAt);
+      if (isIncidentFromToday(dateToCheck)) {
+        safePlayIncidentSound();
+        showIncidentPreview(newlyIncident);
       }
     }
 
@@ -384,36 +419,7 @@ export function IncidentFloatingWidget() {
     if (isOpen || !user?.id || !previewIncidentsEnabled) return;
     if (activeIncidentPreview) return;
 
-    let candidate: Incident | null = null;
-
-    const isRecentIncident = (dateInput: string | Date | null | undefined): boolean => {
-      if (!dateInput) return false;
-      const t = new Date(dateInput).getTime();
-      if (Number.isNaN(t)) return false;
-      return (Date.now() - t) < (15 * 60 * 1000);
-    };
-
-    if (isOwner) {
-      // Propietario: novedad pendiente reciente (últimos 15 minutos) no leída
-      const pendingUnattendedToday = incidents
-        .filter((i) => {
-          if (i.status !== 'pending' || i.ownerRead) return false;
-          if (isPreviewDismissed(i.id, user.id)) return false;
-          return isRecentIncident(i.createdAt);
-        })
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() || b.id - a.id);
-      candidate = pendingUnattendedToday[0] || null;
-    } else {
-      // Trabajador: novedad respondida reciente (últimos 15 minutos) que no ha leído
-      const answeredUnreadToday = incidents
-        .filter((i) => {
-          if (!i.ownerResponse || i.workerRead) return false;
-          if (isPreviewDismissed(i.id, user.id)) return false;
-          return isRecentIncident(i.reviewedAt || i.updatedAt || i.createdAt);
-        })
-        .sort((a, b) => new Date(b.reviewedAt || b.updatedAt || b.createdAt).getTime() - new Date(a.reviewedAt || a.updatedAt || a.createdAt).getTime() || b.id - a.id);
-      candidate = answeredUnreadToday[0] || null;
-    }
+    const candidate = findRecentCandidateIncident(incidents, user.id, isOwner);
 
     if (!candidate) return;
 

@@ -200,6 +200,81 @@ const SENSITIVE_PERMISSIONS = new Set([
   'Reportes'
 ]);
 
+// Combinar permisos de múltiples plantillas activas sin otorgar nunca canDelete
+function mergePermissions(presetKeys: PresetKey[], baseline: ModulePermissions): ModulePermissions {
+  if (presetKeys.length === 0) {
+    return { ...baseline };
+  }
+
+  const result: ModulePermissions = {};
+
+  presetKeys.forEach((key) => {
+    const templatePerms = PRESET_TEMPLATES[key].permissions;
+    Object.keys(templatePerms).forEach((moduleKey) => {
+      const perm = templatePerms[moduleKey];
+      if (!result[moduleKey]) {
+        result[moduleKey] = { ...perm };
+      } else {
+        result[moduleKey] = {
+          canCreate: result[moduleKey].canCreate || perm.canCreate,
+          canRead: result[moduleKey].canRead || perm.canRead,
+          canUpdate: result[moduleKey].canUpdate || perm.canUpdate,
+          canDelete: false,
+        };
+      }
+    });
+  });
+
+  return result;
+}
+
+function parseWorkerPermissions(permissions: any[]): ModulePermissions {
+  const perms: ModulePermissions = {};
+  permissions.forEach((perm: any) => {
+    const spanishModuleName = mapEnglishToSpanish(perm.moduleName);
+    perms[spanishModuleName] = {
+      canCreate: perm.canCreate,
+      canRead: perm.canRead,
+      canUpdate: perm.canUpdate,
+      canDelete: perm.canDelete,
+    };
+  });
+  return perms;
+}
+
+function detectMatchingPresets(perms: ModulePermissions): PresetKey[] {
+  if (arePermissionsEqual(perms, PRESET_TEMPLATES.acceso_total.permissions)) {
+    return ['acceso_total'];
+  }
+  const candidates: PresetKey[] = ['crianza', 'crianza_avanzada', 'gestion_control'];
+  const matching: PresetKey[] = [];
+
+  candidates.forEach((cand) => {
+    const candPerms = PRESET_TEMPLATES[cand].permissions;
+    const allModulesMatch = Object.keys(candPerms).every((mod) => {
+      const target = perms[mod];
+      const source = candPerms[mod];
+      if (!target) return false;
+      return (
+        (!source.canCreate || target.canCreate) &&
+        (!source.canRead || target.canRead) &&
+        (!source.canUpdate || target.canUpdate)
+      );
+    });
+    if (allModulesMatch) {
+      matching.push(cand);
+    }
+  });
+
+  if (matching.length > 0) {
+    const merged = mergePermissions(matching, {});
+    if (arePermissionsEqual(perms, merged)) {
+      return matching;
+    }
+  }
+  return [];
+}
+
 export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<EditWorkerModalProps>) {
   const [permissions, setPermissions] = useState<ModulePermissions>({});
   const [selectedCages, setSelectedCages] = useState<number[]>([]);
@@ -218,34 +293,6 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
   const sensitiveDropdownRef = useRef<HTMLDivElement>(null);
   const baselinePermissionsRef = useRef<ModulePermissions>({});
   const [selectedPresets, setSelectedPresets] = useState<PresetKey[]>([]);
-
-  // Combinar permisos de múltiples plantillas activas sin otorgar nunca canDelete
-  const mergePermissions = (presetKeys: PresetKey[], baseline: ModulePermissions): ModulePermissions => {
-    if (presetKeys.length === 0) {
-      return { ...baseline };
-    }
-
-    const result: ModulePermissions = {};
-
-    presetKeys.forEach((key) => {
-      const templatePerms = PRESET_TEMPLATES[key].permissions;
-      Object.keys(templatePerms).forEach((moduleKey) => {
-        const perm = templatePerms[moduleKey];
-        if (!result[moduleKey]) {
-          result[moduleKey] = { ...perm };
-        } else {
-          result[moduleKey] = {
-            canCreate: result[moduleKey].canCreate || perm.canCreate,
-            canRead: result[moduleKey].canRead || perm.canRead,
-            canUpdate: result[moduleKey].canUpdate || perm.canUpdate,
-            canDelete: false,
-          };
-        }
-      });
-    });
-
-    return result;
-  };
 
   const handleTogglePreset = (presetKey: PresetKey) => {
     let nextSelected: PresetKey[] = [];
@@ -292,54 +339,10 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
           
           // Cargar permisos existentes del trabajador
           if (workerData.permissions && workerData.permissions.length > 0) {
-            const perms: ModulePermissions = {};
-            workerData.permissions.forEach((perm: any) => {
-              // Convertir nombre de inglés a español normalizado
-              const spanishModuleName = mapEnglishToSpanish(perm.moduleName);
-              perms[spanishModuleName] = {
-                canCreate: perm.canCreate,
-                canRead: perm.canRead,
-                canUpdate: perm.canUpdate,
-                canDelete: perm.canDelete,
-              };
-            });
+            const perms = parseWorkerPermissions(workerData.permissions);
             setPermissions(perms);
             baselinePermissionsRef.current = perms;
-
-            if (arePermissionsEqual(perms, PRESET_TEMPLATES.acceso_total.permissions)) {
-              setSelectedPresets(['acceso_total']);
-            } else {
-              const candidates: PresetKey[] = ['crianza', 'crianza_avanzada', 'gestion_control'];
-              const matching: PresetKey[] = [];
-
-              candidates.forEach((cand) => {
-                const candPerms = PRESET_TEMPLATES[cand].permissions;
-                const allModulesMatch = Object.keys(candPerms).every((mod) => {
-                  const target = perms[mod];
-                  const source = candPerms[mod];
-                  if (!target) return false;
-                  return (
-                    (!source.canCreate || target.canCreate) &&
-                    (!source.canRead || target.canRead) &&
-                    (!source.canUpdate || target.canUpdate)
-                  );
-                });
-                if (allModulesMatch) {
-                  matching.push(cand);
-                }
-              });
-
-              if (matching.length > 0) {
-                const merged = mergePermissions(matching, {});
-                if (arePermissionsEqual(perms, merged)) {
-                  setSelectedPresets(matching);
-                } else {
-                  setSelectedPresets([]);
-                }
-              } else {
-                setSelectedPresets([]);
-              }
-            }
+            setSelectedPresets(detectMatchingPresets(perms));
           } else {
             // Si no tiene permisos, agregar Alimentación por defecto
             const defaultPerms: ModulePermissions = {

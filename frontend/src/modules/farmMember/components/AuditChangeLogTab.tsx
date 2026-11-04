@@ -168,6 +168,20 @@ interface DiffItem {
   isChanged: boolean;
 }
 
+const IGNORED_DIFF_KEYS = new Set(['id', 'galponId', 'createdAt', 'updatedAt', 'profileId']);
+
+function isWeightDiffChanged(bVal: any, aVal: any): boolean {
+  const bNum = bVal !== null && bVal !== undefined && bVal !== '' ? Number(bVal) : null;
+  const aNum = aVal !== null && aVal !== undefined && aVal !== '' ? Number(aVal) : null;
+  if (bNum === null && aNum === null) {
+    return false;
+  }
+  if (bNum === null || aNum === null || Number.isNaN(bNum) || Number.isNaN(aNum)) {
+    return bVal !== aVal;
+  }
+  return Math.abs(bNum - aNum) > 0.0001;
+}
+
 function computeDiff(before: any, after: any): DiffItem[] {
   const b = before && typeof before === 'object' ? before : {};
   const a = after && typeof after === 'object' ? after : {};
@@ -176,7 +190,7 @@ function computeDiff(before: any, after: any): DiffItem[] {
   const changed: DiffItem[] = [];
 
   for (const k of allKeys) {
-    if (['id', 'galponId', 'createdAt', 'updatedAt', 'profileId'].includes(k)) continue;
+    if (IGNORED_DIFF_KEYS.has(k)) continue;
 
     const bVal = b[k];
     const aVal = a[k];
@@ -184,20 +198,9 @@ function computeDiff(before: any, after: any): DiffItem[] {
     const aStr = formatValue(k, aVal);
     const label = getFieldLabel(k, aVal !== undefined ? aVal : bVal);
 
-    let isChanged = false;
-    if (k === 'weight') {
-      const bNum = bVal !== null && bVal !== undefined && bVal !== '' ? Number(bVal) : null;
-      const aNum = aVal !== null && aVal !== undefined && aVal !== '' ? Number(aVal) : null;
-      if (bNum === null && aNum === null) {
-        isChanged = false;
-      } else if (bNum === null || aNum === null || Number.isNaN(bNum) || Number.isNaN(aNum)) {
-        isChanged = bVal !== aVal;
-      } else {
-        isChanged = Math.abs(bNum - aNum) > 0.0001;
-      }
-    } else {
-      isChanged = JSON.stringify(bVal) !== JSON.stringify(aVal);
-    }
+    const isChanged = k === 'weight'
+      ? isWeightDiffChanged(bVal, aVal)
+      : JSON.stringify(bVal) !== JSON.stringify(aVal);
 
     if (isChanged) {
       changed.push({ key: k, label, beforeVal: bStr, afterVal: aStr, beforeRaw: bVal, afterRaw: aVal, isChanged: true });

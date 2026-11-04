@@ -53,7 +53,15 @@ class GrowthService {
                     this._processRabbitGrowthSync(rabbit, today, updatesResult);
                 }
 
-                await this._applyGrowthUpdates(updatesResult, rabbits, profileId, today, todayStr, AuditLog, Growth, Notification, memberships, ownedGalpones);
+                await this._applyGrowthUpdates({
+                    updatesResult,
+                    rabbits,
+                    profileId,
+                    Growth,
+                    Notification,
+                    preloadedMemberships: memberships,
+                    preloadedOwnedGalpones: ownedGalpones
+                });
 
             } catch (error) {
                 console.error('Error processing daily growth:', error);
@@ -197,7 +205,15 @@ class GrowthService {
         return messages.filter(m => allowedRabbitIds.has(Number(m.rabbitId))).map(m => m.text);
     }
 
-    async _applyGrowthUpdates(updatesResult, rabbits, profileId, today, todayStr, AuditLog, Growth, Notification, preloadedMemberships, preloadedOwnedGalpones) {
+    async _applyGrowthUpdates({
+        updatesResult,
+        rabbits,
+        profileId,
+        Growth,
+        Notification,
+        preloadedMemberships,
+        preloadedOwnedGalpones
+    }) {
         const { messages, rabbitsToUpdate, catchUpGrowths } = updatesResult;
 
         if (catchUpGrowths && catchUpGrowths.length > 0) {

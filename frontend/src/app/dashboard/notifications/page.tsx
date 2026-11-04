@@ -14,6 +14,19 @@ import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 import { routeNotification } from '@/shared/utils/notificationRouting';
 import { formatTime } from '@/shared/utils/dateUtils';
 
+function getNotificationBadgeLabel(type: string): string {
+  if (type === 'invitation') return 'Invitación';
+  if (type === 'warning') return 'Alerta';
+  return 'Aviso';
+}
+
+function formatUnitPlural(count: number, unit: string): string {
+  if (count === 1) return unit;
+  if (unit === 'jaula') return 'jaulas';
+  if (unit === 'conejo') return 'conejos';
+  return `${unit}s`;
+}
+
 export default function NotificationsPage() {
   const searchParams = useSearchParams();
   const initialFilter = searchParams.get('filter') || 'all';
@@ -225,35 +238,30 @@ export default function NotificationsPage() {
             return (
               <div className="divide-y divide-default">
                 {notifications.map((notification) => (
-                  <div
-                    role="button"
-                    tabIndex={0}
+                  <article
                     key={notification.id}
                     className={cn(
-                      "w-full text-left p-3.5 sm:p-5 transition-colors group cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 flex flex-col gap-2.5 sm:gap-3",
+                      "w-full text-left p-3.5 sm:p-5 transition-colors group flex flex-col gap-2.5 sm:gap-3",
                       !notification.read ? "bg-primary-50/60 dark:bg-primary-950/20 hover:bg-primary-50/90 dark:hover:bg-primary-950/30" : "hover:bg-theme-surface"
                     )}
-                    onClick={() => { void handleNotificationClick(notification); }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        void handleNotificationClick(notification);
-                      }
-                    }}
                   >
                     {/* Fila superior: icono de tipo y categoría a la izquierda, tiempo y eliminar a la derecha */}
                     <div className="flex items-center justify-between gap-3 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => { void handleNotificationClick(notification); }}
+                        className="flex items-center gap-2 text-left focus:outline-none"
+                      >
                         <div className={cn('w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-sm sm:text-base font-bold shrink-0', getTypeColor(notification.type))}>
                           {getIconByType(notification.type)}
                         </div>
                         <span className="text-xs font-semibold text-muted">
-                          {notification.type === 'invitation' ? 'Invitación' : notification.type === 'warning' ? 'Alerta' : 'Aviso'}
+                          {getNotificationBadgeLabel(notification.type)}
                         </span>
                         {!notification.read && (
                           <span className="w-2 h-2 rounded-full bg-primary-500 shrink-0" />
                         )}
-                      </div>
+                      </button>
 
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="text-xs text-theme-faint whitespace-nowrap">
@@ -262,8 +270,7 @@ export default function NotificationsPage() {
                         {!(notification.type === 'warning' || notification.type === 'invitation' || notification.data?.isContract) && (
                           <button 
                             type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
+                            onClick={() => {
                               void handleDelete(notification.id);
                             }}
                             className="text-theme-faint hover:text-red-500 transition-colors p-1 sm:opacity-0 sm:group-hover:opacity-100 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer"
@@ -276,20 +283,25 @@ export default function NotificationsPage() {
                       </div>
                     </div>
 
-                    {/* Fila de título completo a ancho total: idéntico a Novedades, visible sin puntos suspensivos */}
-                    <h4 className="text-sm sm:text-base font-semibold text-main leading-snug break-words">
-                      {notification.title}
-                    </h4>
+                    {/* Fila de título completo a ancho total y mensaje interactivo */}
+                    <button
+                      type="button"
+                      onClick={() => { void handleNotificationClick(notification); }}
+                      className="w-full text-left focus:outline-none flex flex-col gap-1.5"
+                    >
+                      <h4 className="text-sm sm:text-base font-semibold text-main leading-snug break-words">
+                        {notification.title}
+                      </h4>
 
-                    {/* Mensaje a ancho completo sin apretarse en pantalla móvil */}
-                    <p className="text-xs sm:text-sm text-muted leading-relaxed break-words whitespace-pre-wrap pl-0.5">
-                      {notification.message.split(/(\*\*.*?\*\*)/g).map((part: string, i: number) => {
-                        if (part.startsWith('**') && part.endsWith('**')) {
-                          return <strong key={i} className="font-semibold text-main">{part.slice(2, -2)}</strong>;
-                        }
-                        return part;
-                      })}
-                    </p>
+                      <p className="text-xs sm:text-sm text-muted leading-relaxed break-words whitespace-pre-wrap pl-0.5">
+                        {notification.message.split(/(\*\*.*?\*\*)/g).map((part: string, i: number) => {
+                          if (part.startsWith('**') && part.endsWith('**')) {
+                            return <strong key={`${notification.id}-part-${i}`} className="font-semibold text-main">{part.slice(2, -2)}</strong>;
+                          }
+                          return part;
+                        })}
+                      </p>
+                    </button>
 
                     {notification.data?.type === 'growth_summary' && (
                       <div className="mt-1 p-3.5 sm:p-4 rounded-xl bg-theme-surface border border-default">
@@ -361,14 +373,14 @@ export default function NotificationsPage() {
                           Detalle por trabajador • {(() => {
                             const total = notification.data.totalCount || notification.data.totalItems || 0;
                             const unit = notification.data.unitName || notification.data.unit || 'registro';
-                            const unitLabel = total === 1 ? unit : (unit === 'jaula' ? 'jaulas' : (unit === 'conejo' ? 'conejos' : `${unit}s`));
+                            const unitLabel = formatUnitPlural(total, unit);
                             return `${total} ${unitLabel} en total:`;
                           })()}
                         </p>
                         <ul className="text-xs sm:text-sm text-main max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto bg-card border border-default rounded-md p-2 divide-y divide-default">
                           {notification.data.workersList.map((worker: any) => {
                             const unit = notification.data.unitName || notification.data.unit || 'registro';
-                            const workerUnit = worker.count === 1 ? unit : (unit === 'jaula' ? 'jaulas' : (unit === 'conejo' ? 'conejos' : `${unit}s`));
+                            const workerUnit = formatUnitPlural(worker.count, unit);
                             return (
                               <li key={worker.name} className="flex items-center justify-between py-1.5 px-2">
                                 <span className="font-medium text-main">{worker.name}</span>
@@ -399,7 +411,7 @@ export default function NotificationsPage() {
                         </ul>
                       </div>
                     )}
-                  </div>
+                  </article>
                 ))}
               </div>
             );

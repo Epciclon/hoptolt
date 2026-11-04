@@ -84,8 +84,12 @@ class AssignmentService {
         if (!profileId) return;
         const isSingle = rabbits.length === 1;
         const singleIsFemale = isSingle && rabbits[0].sex === 'hembra';
-        const rabbitText = isSingle ? (singleIsFemale ? '1 coneja' : '1 conejo') : `${rabbits.length} conejos`;
-        const rabbitsField = isSingle ? (singleIsFemale ? 'coneja' : 'conejo') : 'rabbits';
+        let rabbitText = `${rabbits.length} conejos`;
+        let rabbitsField = 'rabbits';
+        if (isSingle) {
+            rabbitText = singleIsFemale ? '1 coneja' : '1 conejo';
+            rabbitsField = singleIsFemale ? 'coneja' : 'conejo';
+        }
 
         try {
             await recordWorkerChange({
@@ -160,10 +164,10 @@ class AssignmentService {
         
         const createdAssignments = await assignmentRepository.bulkCreate(toCreate);
         
-        notificationService.createRabbitAssignmentNotification(cage.id, rabbits, true)
+        void notificationService.createRabbitAssignmentNotification(cage.id, rabbits, true)
             .catch(err => console.error("Error creating notifications:", err));
 
-        this._recordAssignRabbitsAudit(galponId, profileId, cage, rabbits);
+        void this._recordAssignRabbitsAudit(galponId, profileId, cage, rabbits);
 
         return { assignments: createdAssignments, warnings };
     }
@@ -242,7 +246,7 @@ class AssignmentService {
         const warnings = this.validateCompatibility(targetCage, [rabbit], existingRabbits);
         await assignmentRepository.update(sourceAssignment, { cageId: targetCage.id });
         
-        this._recordMoveRabbitAudit(galponId, profileId, rabbit, currentCage, targetCage);
+        void this._recordMoveRabbitAudit(galponId, profileId, rabbit, currentCage, targetCage);
 
         return { message: 'Conejo movido exitosamente.', warnings };
     }
@@ -268,7 +272,7 @@ class AssignmentService {
             assignmentRepository.update(sourceAssignment, { cageId: targetCage.id })
         ]);
 
-        this._recordSwapAudit(galponId, profileId, rabbit, occupantRabbit, currentCage, targetCage);
+        void this._recordSwapAudit(galponId, profileId, rabbit, occupantRabbit, currentCage, targetCage);
 
         return { 
             message: 'Jaula llena. Se realizó un intercambio con el ocupante actual exitosamente.', 
@@ -318,8 +322,12 @@ class AssignmentService {
         if (!profileId) return;
         const isSingle = rabbits.length === 1;
         const singleIsFemale = isSingle && rabbits[0].sex === 'hembra';
-        const rabbitText = isSingle ? (singleIsFemale ? '1 coneja' : '1 conejo') : `${rabbits.length} conejos`;
-        const rabbitsField = isSingle ? (singleIsFemale ? 'coneja' : 'conejo') : 'rabbits';
+        let rabbitText = `${rabbits.length} conejos`;
+        let rabbitsField = 'rabbits';
+        if (isSingle) {
+            rabbitText = singleIsFemale ? '1 coneja' : '1 conejo';
+            rabbitsField = singleIsFemale ? 'coneja' : 'conejo';
+        }
 
         try {
             await recordWorkerChange({
@@ -378,7 +386,7 @@ class AssignmentService {
             
             await Promise.all(sourceAssignments.map(a => assignmentRepository.update(a, { cageId: targetCageId })));
 
-            this._recordMoveRabbitsAudit(galponId, profileId, targetCage, currentCage, rabbits);
+            void this._recordMoveRabbitsAudit(galponId, profileId, targetCage, currentCage, rabbits);
 
             return { message: 'Conejos movidos exitosamente.', warnings };
         }
@@ -444,7 +452,7 @@ class AssignmentService {
         const cages = await cageRepository.findOperativeWithCapacity(galponId, profileId);
         
         const counts = await assignmentRepository.countActiveGroupedByCage(galponId);
-        const countMap = new Map(counts.map(c => [c.cageId, parseInt(c.count, 10)]));
+        const countMap = new Map(counts.map(c => [c.cageId, Number.parseInt(c.count, 10)]));
 
         const cagesWithStats = cages.map(cage => {
             const occupied = countMap.get(cage.id) || 0;
@@ -472,9 +480,15 @@ class AssignmentService {
             const isFemale = rabbit?.sex === 'hembra';
             const prefix = isFemale ? 'Coneja' : 'Conejo';
             const article = isFemale ? 'a la coneja' : 'al conejo';
-            const rabbitLabel = rabbit ? (rabbit.name ? `${rabbit.name} - ${rabbit.code}` : rabbit.code) : null;
+            let rabbitLabel = null;
+            if (rabbit) {
+                rabbitLabel = rabbit.name ? `${rabbit.name} - ${rabbit.code}` : rabbit.code;
+            }
 
             const rabbitKey = isFemale ? 'coneja' : 'conejo';
+            const fallbackRabbitText = isFemale ? `Coneja ${assignment.rabbitId}` : `Conejo ${assignment.rabbitId}`;
+            const beforeRabbitValue = rabbitLabel || fallbackRabbitText;
+
             await recordWorkerChange({
                 galponId: galponId || assignment.galponId,
                 profileId,
@@ -484,7 +498,7 @@ class AssignmentService {
                 itemName: rabbitLabel ? `${prefix} ${rabbitLabel}` : `Asignación ${assignment.id}`,
                 summary: rabbitLabel ? `Liberó ${article} ${rabbitLabel} de su jaula` : `Liberó al conejo de su jaula`,
                 before: {
-                    [rabbitKey]: rabbitLabel || (isFemale ? `Coneja ${assignment.rabbitId}` : `Conejo ${assignment.rabbitId}`),
+                    [rabbitKey]: beforeRabbitValue,
                     cageNumber: cage ? cage.number : assignment.cageId
                 },
                 after: null

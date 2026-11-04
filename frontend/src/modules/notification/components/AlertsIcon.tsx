@@ -13,6 +13,81 @@ import { useAuth } from '@/modules/auth/hooks/useAuth';
 import { playWarningAlertSound } from '@/shared/utils/soundUtils';
 import { formatTime } from '@/shared/utils/dateUtils';
 
+const isWarningNotification = (n: any) => {
+  const t = n.data?.type;
+  if (t === 'incident' || t === 'incident_response') return false;
+  const title = (n.title || '').toLowerCase();
+  const msg = (n.message || '').toLowerCase();
+  if (title.includes('novedad') || msg.includes('novedad')) return false;
+
+  return n.type === 'warning' ||
+    t === 'feeding_reminder' ||
+    t === 'cleaning_warning' ||
+    t === 'birth_warning' ||
+    t === 'weaning_alert';
+};
+
+const getWarningWeight = (n: any) => {
+  if (n.data?.isContract) return 95;
+  const t = n.data?.type;
+  if (t === 'feeding_reminder') return 100;
+  if (t === 'birth_warning') return 90;
+  if (t === 'weaning_alert') return 80;
+  if (t === 'cleaning_warning') return 70;
+  if (n.type === 'warning') return 60;
+  return 10;
+};
+
+const isPreviewSeenOrDismissed = (id: number, userId: string) => {
+  if (typeof window === 'undefined') return false;
+  return (
+    sessionStorage.getItem(`hoptolt_prev_seen_${userId}_${id}`) === 'true' ||
+    localStorage.getItem(`hoptolt_prev_seen_${userId}_${id}`) === 'true' ||
+    sessionStorage.getItem(`hoptolt_prev_dismissed_${userId}_${id}`) === 'true' ||
+    localStorage.getItem(`hoptolt_prev_dismissed_${userId}_${id}`) === 'true'
+  );
+};
+
+const markPreviewSeen = (id: number, userId: string) => {
+  if (typeof window !== 'undefined') {
+    sessionStorage.setItem(`hoptolt_prev_seen_${userId}_${id}`, 'true');
+    localStorage.setItem(`hoptolt_prev_seen_${userId}_${id}`, 'true');
+  }
+};
+
+const markPreviewDismissed = (id: number, userId: string) => {
+  if (typeof window !== 'undefined') {
+    sessionStorage.setItem(`hoptolt_prev_dismissed_${userId}_${id}`, 'true');
+    localStorage.setItem(`hoptolt_prev_dismissed_${userId}_${id}`, 'true');
+  }
+};
+
+function selectCandidateWarning(unreadWarnings: any[], userId: string, now: number): any {
+  const feedingReminder = unreadWarnings.find(n => n.data?.type === 'feeding_reminder');
+
+  if (feedingReminder) {
+    const reminderId = feedingReminder.id;
+    const shift = feedingReminder.data?.shift || 'default';
+    const date = feedingReminder.data?.date || '';
+    const storageTimeKey = `hoptolt_last_feeding_popup_${userId}_${shift}_${date}`;
+    const lastTimeStr = localStorage.getItem(storageTimeKey);
+    const lastTime = lastTimeStr ? Number.parseInt(lastTimeStr, 10) : 0;
+
+    const isNeverSeen = !isPreviewSeenOrDismissed(reminderId, userId);
+    const FEEDING_INTERVAL = 60 * 60 * 1000;
+    const isIntervalDue = lastTime > 0 && (now - lastTime >= FEEDING_INTERVAL);
+
+    if ((isNeverSeen || isIntervalDue) && !sessionStorage.getItem(`hoptolt_prev_dismissed_${userId}_${reminderId}`)) {
+      return feedingReminder;
+    }
+  }
+
+  return unreadWarnings.find(n => {
+    if (n.data?.type === 'feeding_reminder') return false;
+    return !isPreviewSeenOrDismissed(n.id, userId);
+  }) || null;
+}
+
 export function AlertsIcon() {
   const ALERTS_LIMIT = 15;
   const { notifications, unreadCount, markAsRead, deleteNotification } = useNotifications({ limit: ALERTS_LIMIT, filter: 'alerts' });
@@ -49,31 +124,6 @@ export function AlertsIcon() {
     };
   }, []);
 
-  const isWarningNotification = (n: any) => {
-    const t = n.data?.type;
-    if (t === 'incident' || t === 'incident_response') return false;
-    const title = (n.title || '').toLowerCase();
-    const msg = (n.message || '').toLowerCase();
-    if (title.includes('novedad') || msg.includes('novedad')) return false;
-
-    return n.type === 'warning' ||
-      t === 'feeding_reminder' ||
-      t === 'cleaning_warning' ||
-      t === 'birth_warning' ||
-      t === 'weaning_alert';
-  };
-
-  const getWarningWeight = (n: any) => {
-    if (n.data?.isContract) return 95;
-    const t = n.data?.type;
-    if (t === 'feeding_reminder') return 100;
-    if (t === 'birth_warning') return 90;
-    if (t === 'weaning_alert') return 80;
-    if (t === 'cleaning_warning') return 70;
-    if (n.type === 'warning') return 60;
-    return 10;
-  };
-
   const getActionConfig = (notification: any) => {
     if (notification.data?.isContract) {
       return { label: 'Entendido', variant: 'outline' as const };
@@ -92,31 +142,6 @@ export function AlertsIcon() {
       return { label: 'Ir a Partos', variant: 'primary' as const };
     }
     return { label: 'Revisar Alerta', variant: 'primary' as const };
-  };
-
-  // Helpers de persistencia
-  const isPreviewSeenOrDismissed = (id: number, userId: string) => {
-    if (typeof window === 'undefined') return false;
-    return (
-      sessionStorage.getItem(`hoptolt_prev_seen_${userId}_${id}`) === 'true' ||
-      localStorage.getItem(`hoptolt_prev_seen_${userId}_${id}`) === 'true' ||
-      sessionStorage.getItem(`hoptolt_prev_dismissed_${userId}_${id}`) === 'true' ||
-      localStorage.getItem(`hoptolt_prev_dismissed_${userId}_${id}`) === 'true'
-    );
-  };
-
-  const markPreviewSeen = (id: number, userId: string) => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem(`hoptolt_prev_seen_${userId}_${id}`, 'true');
-      localStorage.setItem(`hoptolt_prev_seen_${userId}_${id}`, 'true');
-    }
-  };
-
-  const markPreviewDismissed = (id: number, userId: string) => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem(`hoptolt_prev_dismissed_${userId}_${id}`, 'true');
-      localStorage.setItem(`hoptolt_prev_dismissed_${userId}_${id}`, 'true');
-    }
   };
 
   // Filtrado de alertas activas
@@ -198,37 +223,7 @@ export function AlertsIcon() {
     }
 
     if (!activeWarningRef.current) {
-      const feedingReminder = unreadWarnings.find(n => n.data?.type === 'feeding_reminder');
-      let candidateWarning: any = null;
-
-      if (feedingReminder) {
-        const reminderId = feedingReminder.id;
-        const shift = feedingReminder.data?.shift || 'default';
-        const date = feedingReminder.data?.date || '';
-        const storageTimeKey = `hoptolt_last_feeding_popup_${userId}_${shift}_${date}`;
-        const lastTimeStr = localStorage.getItem(storageTimeKey);
-        const lastTime = lastTimeStr ? Number.parseInt(lastTimeStr, 10) : 0;
-
-        // Si la alerta de este turno específico nunca se ha visto, es NUEVA y debe sonar y mostrarse de inmediato
-        const isNeverSeen = !isPreviewSeenOrDismissed(reminderId, userId);
-
-        // Si ya fue vista pero sigue pendiente, re-alertar cada 60 minutos
-        const FEEDING_INTERVAL = 60 * 60 * 1000;
-        const isIntervalDue = lastTime > 0 && (now - lastTime >= FEEDING_INTERVAL);
-
-        const isDue = isNeverSeen || isIntervalDue;
-
-        if (isDue && !sessionStorage.getItem(`hoptolt_prev_dismissed_${userId}_${reminderId}`)) {
-          candidateWarning = feedingReminder;
-        }
-      }
-
-      if (!candidateWarning) {
-        candidateWarning = unreadWarnings.find(n => {
-          if (n.data?.type === 'feeding_reminder') return false;
-          return !isPreviewSeenOrDismissed(n.id, userId);
-        }) || null;
-      }
+      const candidateWarning = selectCandidateWarning(unreadWarnings, userId, now);
 
       if (candidateWarning) {
         activeWarningRef.current = candidateWarning;

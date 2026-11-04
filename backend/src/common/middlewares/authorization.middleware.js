@@ -33,7 +33,7 @@ const CONTROL_MODULES = [
 ];
 
 const REPRODUCTION_MODULE_VARIANTS = ['reproduction', 'reproduccion', 'reproduccionyparto', 'reproducción y parto'];
-const REPORTABLE_MODULES = ['feeding', 'cleaning', 'deworming', 'vaccination', 'mortality', 'reproduction'];
+const REPORTABLE_MODULES = new Set(['feeding', 'cleaning', 'deworming', 'vaccination', 'mortality', 'reproduction']);
 
 const MODULE_EXTRA_VARIANTS = {
     feeding: ['alimentación', 'Alimentación'],
@@ -51,7 +51,7 @@ const MODULE_EXTRA_VARIANTS = {
 };
 
 const ACTION_DISPLAY_NAMES = {
-    canRead: 'consultar',
+    canRead: 'leer',
     canCreate: 'crear',
     canUpdate: 'editar',
     canDelete: 'eliminar'
@@ -87,30 +87,37 @@ const MODULE_DISPLAY_NAMES = {
     'galpones': 'Galpones'
 };
 
-const getCandidateModuleNames = (moduleName) => {
-    const lower = moduleName.toLowerCase();
-    const candidateNames = new Set([
-        moduleName,
-        lower,
-        spanishToEnglishMap[lower],
-        englishToSpanishMap[lower]
-    ].filter(Boolean));
-
-    for (const name of Array.from(candidateNames)) {
-        const variants = MODULE_EXTRA_VARIANTS[name];
-        if (variants) {
-            variants.forEach(variant => candidateNames.add(variant));
-        }
+const findDirectPermission = async (membershipId, moduleName) => {
+    const spanishName = englishToSpanishMap[moduleName.toLowerCase()];
+    if (spanishName) {
+        const perm = await WorkerPermission.findOne({
+            where: { farmMemberId: membershipId, moduleName: spanishName }
+        });
+        if (perm) return perm;
     }
-    return Array.from(candidateNames);
+
+    const perm = await WorkerPermission.findOne({
+        where: { farmMemberId: membershipId, moduleName: moduleName }
+    });
+    if (perm) return perm;
+
+    const variants = MODULE_EXTRA_VARIANTS[moduleName] || (spanishName ? MODULE_EXTRA_VARIANTS[spanishName] : null);
+    if (variants) {
+        return WorkerPermission.findOne({
+            where: { farmMemberId: membershipId, moduleName: { [Op.in]: variants } }
+        });
+    }
+
+    return null;
 };
 
 const checkControlModulesFallback = async (membershipId, moduleName, action) => {
     if (moduleName !== 'assignments' || action !== 'canRead') return false;
+
     const hasControlPermission = await WorkerPermission.findOne({
         where: {
             farmMemberId: membershipId,
-            moduleName: { [Op.in]: CONTROL_MODULES },
+            moduleName: CONTROL_MODULES,
             [Op.or]: [
                 { canRead: true },
                 { canCreate: true }
@@ -174,7 +181,7 @@ const checkReproductionFallbacks = async (membershipId, moduleName, action, req)
     return false;
 };
 
-const checkCrossModuleFallbacks = async (membershipId, moduleName, action, req) => {
+const _checkRabbitAndCageFallbacks = async (membershipId, moduleName, action) => {
     if (moduleName === 'rabbits' && action === 'canRead') {
         const hasRelatedPermission = await WorkerPermission.findOne({
             where: {
@@ -186,6 +193,24 @@ const checkCrossModuleFallbacks = async (membershipId, moduleName, action, req) 
         if (hasRelatedPermission) return true;
     }
 
+    if ((moduleName === 'rabbits' || moduleName === 'cages') && action === 'canRead') {
+        const hasAssignmentPermission = await WorkerPermission.findOne({
+            where: {
+                farmMemberId: membershipId,
+                moduleName: { [Op.in]: ['assignments', 'asignarjaula', 'asignaciones', 'asignar jaula', 'asignacion', 'asignación', 'asignar'] },
+                [Op.or]: [{ canRead: true }, { canCreate: true }]
+            }
+        });
+        const ASSIGNMENT_VARIANTS = ['assignments', 'asignarjaula', 'asignaciones', 'asignar jaula', 'asignacion', 'asignación', 'asignar'];
+        if (hasAssignmentPermission && (!hasAssignmentPermission.moduleName || ASSIGNMENT_VARIANTS.includes(hasAssignmentPermission.moduleName)) && hasAssignmentPermission.moduleName) {
+            return true;
+        }
+    }
+
+    return false;
+};
+
+const _checkMedicalAndReportsFallbacks = async (membershipId, moduleName, action, req) => {
     if (moduleName === 'reproduction' && action === 'canRead' && req.path?.includes('/female/')) {
         const hasRabbitPermission = await WorkerPermission.findOne({
             where: {
@@ -195,17 +220,6 @@ const checkCrossModuleFallbacks = async (membershipId, moduleName, action, req) 
             }
         });
         if (hasRabbitPermission) return true;
-    }
-
-    if ((moduleName === 'rabbits' || moduleName === 'cages') && action === 'canRead') {
-        const hasAssignmentPermission = await WorkerPermission.findOne({
-            where: {
-                farmMemberId: membershipId,
-                moduleName: { [Op.in]: ['assignments', 'asignarjaula', 'asignaciones', 'asignar jaula', 'asignacion', 'asignación', 'asignar'] },
-                [Op.or]: [{ canRead: true }, { canCreate: true }]
-            }
-        });
-        if (hasAssignmentPermission) return true;
     }
 
     if ((moduleName === 'deworming' || moduleName === 'vaccination') && action === 'canRead') {
@@ -219,7 +233,7 @@ const checkCrossModuleFallbacks = async (membershipId, moduleName, action, req) 
         if (hasRabbitPermission) return true;
     }
 
-    if (REPORTABLE_MODULES.includes(moduleName) && action === 'canRead') {
+    if (REPORTABLE_MODULES.has(moduleName) && action === 'canRead') {
         const hasReportsPermission = await WorkerPermission.findOne({
             where: {
                 farmMemberId: membershipId,
@@ -233,14 +247,15 @@ const checkCrossModuleFallbacks = async (membershipId, moduleName, action, req) 
     return false;
 };
 
+const checkCrossModuleFallbacks = async (membershipId, moduleName, action, req) => {
+    if (await _checkRabbitAndCageFallbacks(membershipId, moduleName, action)) {
+        return true;
+    }
+    return _checkMedicalAndReportsFallbacks(membershipId, moduleName, action, req);
+};
+
 const hasWorkerPermission = async (membershipId, moduleName, action, req) => {
-    const candidateNames = getCandidateModuleNames(moduleName);
-    const permission = await WorkerPermission.findOne({
-        where: {
-            farmMemberId: membershipId,
-            moduleName: { [Op.in]: candidateNames }
-        }
-    });
+    const permission = await findDirectPermission(membershipId, moduleName);
 
     if (permission?.[action]) return true;
 
@@ -254,7 +269,7 @@ const hasWorkerPermission = async (membershipId, moduleName, action, req) => {
 const throwPermissionError = (moduleName, action) => {
     const actionText = ACTION_DISPLAY_NAMES[action] || action;
     const moduleText = MODULE_DISPLAY_NAMES[moduleName] || moduleName;
-    throw new AppError(`No tienes permisos para ${actionText} en el módulo ${moduleText}.`, 403);
+    throw new AppError(`No tiene permisos para ${actionText} en el módulo ${moduleText}`, 403);
 };
 
 /**

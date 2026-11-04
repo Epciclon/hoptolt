@@ -107,73 +107,70 @@ function IncidentCardItem({ incident, userRole, onOpenDetail, onDeleteRequest }:
   const isResolvedOrReviewed = incident.status === 'resolved' || incident.status === 'reviewed';
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={() => onOpenDetail(incident)}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onOpenDetail(incident);
-        }
-      }}
+    <article
       className={cn(
-        'p-3.5 sm:p-5 hover:bg-theme-surface/50 transition-colors flex flex-col gap-2.5 sm:gap-3 cursor-pointer group focus:outline-none',
+        'p-3.5 sm:p-5 hover:bg-theme-surface/50 transition-colors flex flex-col gap-2.5 sm:gap-3 group',
         isUnread && 'bg-primary-50/50 dark:bg-primary-900/15'
       )}
     >
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-950/50 text-primary-700 dark:text-primary-300 flex items-center justify-center font-bold text-xs shrink-0 border border-primary-200 dark:border-primary-800/40">
-            {isResolvedOrReviewed ? (
-              <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-400" />
-            ) : (
-              <Clock size={16} className="text-amber-600 dark:text-amber-400" />
-            )}
-          </div>
-          <div className="min-w-0 truncate">
-            <span className="font-semibold text-main text-xs sm:text-sm block truncate">
-              {userRole === 'owner' ? (
-                <>
-                  <span className="hidden sm:inline">Reportado por </span>
-                  <span className="sm:hidden">Por </span>
-                  {reporterName}
-                </>
+      <button
+        type="button"
+        onClick={() => onOpenDetail(incident)}
+        className="w-full text-left focus:outline-none flex flex-col gap-2.5 sm:gap-3"
+      >
+        <div className="flex items-center justify-between gap-3 w-full">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-950/50 text-primary-700 dark:text-primary-300 flex items-center justify-center font-bold text-xs shrink-0 border border-primary-200 dark:border-primary-800/40">
+              {isResolvedOrReviewed ? (
+                <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-400" />
               ) : (
-                'Mi reporte'
+                <Clock size={16} className="text-amber-600 dark:text-amber-400" />
               )}
-            </span>
-            <span className="text-xs text-muted hidden sm:block truncate">
-              {userRole === 'owner' ? 'Personal del galpón' : reporterName}
-            </span>
+            </div>
+            <div className="min-w-0 truncate">
+              <span className="font-semibold text-main text-xs sm:text-sm block truncate">
+                {userRole === 'owner' ? (
+                  <>
+                    <span className="hidden sm:inline">Reportado por </span>
+                    <span className="sm:hidden">Por </span>
+                    {reporterName}
+                  </>
+                ) : (
+                  'Mi reporte'
+                )}
+              </span>
+              <span className="text-xs text-muted hidden sm:block truncate">
+                {userRole === 'owner' ? 'Personal del galpón' : reporterName}
+              </span>
+            </div>
           </div>
+
+          <span className="text-xs text-theme-faint shrink-0 whitespace-nowrap">
+            {formatFriendlyDate(incident.createdAt)}
+          </span>
         </div>
 
-        <span className="text-xs text-theme-faint shrink-0 whitespace-nowrap">
-          {formatFriendlyDate(incident.createdAt)}
-        </span>
-      </div>
-
-      <div>
-        <h3 className="text-sm sm:text-base font-semibold text-main mb-1 group-hover:text-primary-600 transition-colors">
-          {incident.title}
-        </h3>
-        <p className="text-xs sm:text-sm text-muted line-clamp-2 leading-relaxed">
-          {incident.description}
-        </p>
-      </div>
-
-      {incident.ownerResponse && (
-        <div className="p-2.5 sm:p-3 rounded-xl bg-theme-surface border border-default text-xs text-main">
-          <div className="flex items-center gap-1.5 font-semibold text-primary-600 dark:text-primary-400 mb-1">
-            <CheckCircle2 size={14} />
-            <span>Respuesta de la administración:</span>
-          </div>
-          <p className="text-muted leading-relaxed line-clamp-2">
-            {incident.ownerResponse}
+        <div>
+          <h3 className="text-sm sm:text-base font-semibold text-main mb-1 group-hover:text-primary-600 transition-colors">
+            {incident.title}
+          </h3>
+          <p className="text-xs sm:text-sm text-muted line-clamp-2 leading-relaxed">
+            {incident.description}
           </p>
         </div>
-      )}
+
+        {incident.ownerResponse && (
+          <div className="p-2.5 sm:p-3 rounded-xl bg-theme-surface border border-default text-xs text-main w-full">
+            <div className="flex items-center gap-1.5 font-semibold text-primary-600 dark:text-primary-400 mb-1">
+              <CheckCircle2 size={14} />
+              <span>Respuesta de la administración:</span>
+            </div>
+            <p className="text-muted leading-relaxed line-clamp-2">
+              {incident.ownerResponse}
+            </p>
+          </div>
+        )}
+      </button>
 
       <div className="flex items-center justify-between gap-2 pt-2 border-t border-default/50">
         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
@@ -191,22 +188,100 @@ function IncidentCardItem({ incident, userRole, onOpenDetail, onDeleteRequest }:
           {userRole !== 'owner' && incident.status === 'pending' && (
             <button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDeleteRequest(incident.id);
-              }}
+              onClick={() => onDeleteRequest(incident.id)}
               title="Eliminar novedad"
               className="p-1 rounded-lg text-muted hover:text-red-600 hover:bg-red-500/10 transition-colors cursor-pointer"
             >
               <Trash2 size={15} />
             </button>
           )}
-          <span className="text-xs sm:text-sm text-primary-600 dark:text-primary-400 font-semibold flex items-center gap-1 whitespace-nowrap">
+          <button
+            type="button"
+            onClick={() => onOpenDetail(incident)}
+            className="text-xs sm:text-sm text-primary-600 dark:text-primary-400 font-semibold flex items-center gap-1 whitespace-nowrap focus:outline-none"
+          >
             {userRole === 'owner' && incident.status === 'pending' ? 'Atender novedad' : 'Ver detalle'}
             <ChevronRight size={14} />
-          </span>
+          </button>
         </div>
       </div>
+    </article>
+  );
+}
+
+interface IncidentsListBodyProps {
+  loading: boolean;
+  incidents: Incident[];
+  sortedIncidents: Incident[];
+  userRole: string;
+  search: string;
+  status: string;
+  category: string;
+  onOpenDetail: (incident: Incident) => void;
+  onDeleteRequest: (id: number) => void;
+  onRegisterClick: () => void;
+}
+
+function IncidentsListBody({
+  loading,
+  incidents,
+  sortedIncidents,
+  userRole,
+  search,
+  status,
+  category,
+  onOpenDetail,
+  onDeleteRequest,
+  onRegisterClick,
+}: IncidentsListBodyProps) {
+  if (loading) {
+    return (
+      <div className="p-12 text-center text-theme-faint">
+        <Clock className="w-8 h-8 animate-spin mx-auto mb-3" />
+        <p>Cargando novedades...</p>
+      </div>
+    );
+  }
+
+  if (incidents.length === 0) {
+    return (
+      <div className="p-16 text-center text-muted">
+        <div className="w-14 h-14 rounded-2xl bg-theme-surface border border-strong text-muted flex items-center justify-center mx-auto mb-3">
+          <CheckCircle2 size={28} className="text-emerald-500" />
+        </div>
+        <h3 className="text-base font-bold text-main">No se encontraron novedades</h3>
+        <p className="text-xs text-muted max-w-md mx-auto mt-1">
+          {search || status !== 'all' || category !== 'all'
+            ? 'No hay registros que coincidan con los filtros seleccionados.'
+            : 'El galpón se encuentra al día sin avisos o contratiempos reportados.'}
+        </p>
+        {userRole !== 'owner' && (
+          <div className="mt-5">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onRegisterClick}
+            >
+              + Registrar Novedad
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="divide-y divide-default">
+      {sortedIncidents.map((incident: Incident) => (
+        <IncidentCardItem
+          key={incident.id}
+          incident={incident}
+          userRole={userRole}
+          onOpenDetail={onOpenDetail}
+          onDeleteRequest={onDeleteRequest}
+        />
+      ))}
     </div>
   );
 }
@@ -476,48 +551,18 @@ export default function IncidentsPage() {
 
         {/* Listado unificado con divide-y idéntico a Notificaciones */}
         <div className="p-0 bg-card">
-          {loading ? (
-            <div className="p-12 text-center text-theme-faint">
-              <Clock className="w-8 h-8 animate-spin mx-auto mb-3" />
-              <p>Cargando novedades...</p>
-            </div>
-          ) : incidents.length === 0 ? (
-            <div className="p-16 text-center text-muted">
-              <div className="w-14 h-14 rounded-2xl bg-theme-surface border border-strong text-muted flex items-center justify-center mx-auto mb-3">
-                <CheckCircle2 size={28} className="text-emerald-500" />
-              </div>
-              <h3 className="text-base font-bold text-main">No se encontraron novedades</h3>
-              <p className="text-xs text-muted max-w-md mx-auto mt-1">
-                {search || status !== 'all' || category !== 'all'
-                  ? 'No hay registros que coincidan con los filtros seleccionados.'
-                  : 'El galpón se encuentra al día sin avisos o contratiempos reportados.'}
-              </p>
-              {userRole !== 'owner' && (
-                <div className="mt-5">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsFormOpen(true)}
-                  >
-                    + Registrar Novedad
-                  </Button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="divide-y divide-default">
-              {sortedIncidents.map((incident: Incident) => (
-                <IncidentCardItem
-                  key={incident.id}
-                  incident={incident}
-                  userRole={userRole}
-                  onOpenDetail={handleOpenDetail}
-                  onDeleteRequest={setIncidentToDelete}
-                />
-              ))}
-            </div>
-          )}
+          <IncidentsListBody
+            loading={loading}
+            incidents={incidents}
+            sortedIncidents={sortedIncidents}
+            userRole={userRole}
+            search={search}
+            status={status}
+            category={category}
+            onOpenDetail={handleOpenDetail}
+            onDeleteRequest={setIncidentToDelete}
+            onRegisterClick={() => setIsFormOpen(true)}
+          />
         </div>
 
         {/* Paginación en pie de Card idéntico a Notificaciones */}

@@ -6,6 +6,8 @@ const notificationService = require('../notification/notification.service');
 const galponRepository = require('../galpon/galpon.repository');
 const { recordWorkerChange } = require('../../common/helpers/audit.helper');
 
+const SENSITIVE_MODULES = new Set(['cages', 'races', 'rabbits', 'assignments', 'genealogy', 'reports']);
+
 class FarmMemberService {
     /**
      * Lista todos los trabajadores activos de un galpón.
@@ -149,8 +151,7 @@ class FarmMemberService {
         };
         const translate = (m) => MODULE_NAMES[m] || m;
 
-        const SENSITIVE_MODULES = ['cages', 'races', 'rabbits', 'assignments', 'genealogy', 'reports'];
-        const addedBreedingModules = addedModules.filter(m => !SENSITIVE_MODULES.includes(m));
+        const addedBreedingModules = addedModules.filter(m => !SENSITIVE_MODULES.has(m));
 
         const notifPromises = [];
 
@@ -255,7 +256,6 @@ class FarmMemberService {
      * Sincroniza el aviso de responsabilidad para trabajadores con permisos sensibles.
      */
     async _syncContractNotification(member, requestingProfileId, addedModules = []) {
-        const SENSITIVE_MODULES = ['cages', 'races', 'rabbits', 'assignments', 'genealogy', 'reports'];
         const SENSITIVE_LABELS = {
             cages: 'jaulas',
             races: 'razas',
@@ -284,7 +284,7 @@ class FarmMemberService {
         const safeContracts = Array.isArray(existingContracts) ? existingContracts : [];
 
         const activeSensitiveModules = safePermissions
-            .filter(p => SENSITIVE_MODULES.includes(p.moduleName) && (p.canCreate || p.canRead || p.canUpdate || p.canDelete))
+            .filter(p => SENSITIVE_MODULES.has(p.moduleName) && (p.canCreate || p.canRead || p.canUpdate || p.canDelete))
             .map(p => p.moduleName);
 
         const galponName = galpon?.name || 'tu galpón asignado';
@@ -409,7 +409,10 @@ class FarmMemberService {
     async logReportAudit(galponId, profileId, { moduleName, moduleLabel, startDate, endDate, format }) {
         const isDownload = format === 'pdf' || format === 'excel' || format === 'csv';
         const action = isDownload ? 'descargar' : 'consultar';
-        const formatLabel = isDownload ? (format ? format.toUpperCase() : 'PDF') : 'Vista previa';
+        let formatLabel = 'Vista previa';
+        if (isDownload) {
+            formatLabel = format ? format.toUpperCase() : 'PDF';
+        }
         const summary = isDownload
             ? `Descargó el reporte de ${moduleLabel || moduleName || 'estadísticas'} del galpón en ${formatLabel}`
             : `Consultó la vista previa del reporte de ${moduleLabel || moduleName || 'estadísticas'} del galpón`;
