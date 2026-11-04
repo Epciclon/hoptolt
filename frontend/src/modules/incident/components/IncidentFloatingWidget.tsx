@@ -77,6 +77,30 @@ function detectNewlyArrivedIncident(
   )[0];
 }
 
+function isPreviewDismissed(id: number, userId: string): boolean {
+  if (typeof window === 'undefined') return false;
+  return (
+    sessionStorage.getItem(`hoptolt_inc_seen_${userId}_${id}`) === 'true' ||
+    localStorage.getItem(`hoptolt_inc_seen_${userId}_${id}`) === 'true' ||
+    sessionStorage.getItem(`hoptolt_inc_dismissed_${userId}_${id}`) === 'true' ||
+    localStorage.getItem(`hoptolt_inc_dismissed_${userId}_${id}`) === 'true'
+  );
+}
+
+function markPreviewSeen(id: number, userId: string): void {
+  if (typeof window !== 'undefined') {
+    sessionStorage.setItem(`hoptolt_inc_seen_${userId}_${id}`, 'true');
+    localStorage.setItem(`hoptolt_inc_seen_${userId}_${id}`, 'true');
+  }
+}
+
+function markPreviewDismissed(id: number, userId: string): void {
+  if (typeof window !== 'undefined') {
+    sessionStorage.setItem(`hoptolt_inc_dismissed_${userId}_${id}`, 'true');
+    localStorage.setItem(`hoptolt_inc_dismissed_${userId}_${id}`, 'true');
+  }
+}
+
 function findRecentCandidateIncident(
   incidents: Incident[],
   userId: string,
@@ -187,31 +211,6 @@ export function IncidentFloatingWidget() {
     setSelectedIncident(incident);
     setDetailModalOpen(true);
     markAsRead(incident.id);
-  };
-
-  // Helpers de control de previa de novedad
-  const isPreviewDismissed = (id: number, userId: string) => {
-    if (typeof window === 'undefined') return false;
-    return (
-      sessionStorage.getItem(`hoptolt_inc_seen_${userId}_${id}`) === 'true' ||
-      localStorage.getItem(`hoptolt_inc_seen_${userId}_${id}`) === 'true' ||
-      sessionStorage.getItem(`hoptolt_inc_dismissed_${userId}_${id}`) === 'true' ||
-      localStorage.getItem(`hoptolt_inc_dismissed_${userId}_${id}`) === 'true'
-    );
-  };
-
-  const markPreviewSeen = (id: number, userId: string) => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem(`hoptolt_inc_seen_${userId}_${id}`, 'true');
-      localStorage.setItem(`hoptolt_inc_seen_${userId}_${id}`, 'true');
-    }
-  };
-
-  const markPreviewDismissed = (id: number, userId: string) => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem(`hoptolt_inc_dismissed_${userId}_${id}`, 'true');
-      localStorage.setItem(`hoptolt_inc_dismissed_${userId}_${id}`, 'true');
-    }
   };
 
   const showIncidentPreview = (incident: Incident) => {

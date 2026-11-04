@@ -73,7 +73,7 @@ interface IncidentCategorySelectorProps {
   showCategoryDropdown: boolean;
   setShowCategoryDropdown: React.Dispatch<React.SetStateAction<boolean>>;
   onOpen: () => void;
-  dropdownRef: React.RefObject<HTMLDivElement | null>;
+  dropdownRef: React.RefObject<HTMLDivElement>;
   filteredCategories: Array<{ value: string; label: string }>;
 }
 
@@ -172,7 +172,7 @@ interface IncidentModuleSelectorProps {
   showModuleDropdown: boolean;
   setShowModuleDropdown: React.Dispatch<React.SetStateAction<boolean>>;
   onOpen: () => void;
-  dropdownRef: React.RefObject<HTMLDivElement | null>;
+  dropdownRef: React.RefObject<HTMLDivElement>;
   filteredModules: Array<{ value: string; label: string }>;
 }
 
@@ -274,7 +274,7 @@ interface IncidentCageSelectorProps {
   showCageDropdown: boolean;
   setShowCageDropdown: React.Dispatch<React.SetStateAction<boolean>>;
   onOpen: () => void;
-  dropdownRef: React.RefObject<HTMLDivElement | null>;
+  dropdownRef: React.RefObject<HTMLDivElement>;
   onSelectCage: (id: number) => void;
   onRemoveCage: (id: number) => void;
   onClearAllCages: () => void;
