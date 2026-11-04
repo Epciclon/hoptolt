@@ -60,22 +60,29 @@ class DewormingService {
         const { Op } = require('sequelize');
         const { Rabbit, Assignment, Reproduction, Deworming, WorkerCage } = require('../../domain/models');
 
-        const membership = await FarmMember.findOne({
-            where: { profileId, galponId, status: 'active' }
-        });
-        if (!membership) throw new AppError('No tienes acceso a este galpón.', 403);
+        // Precarga masiva concurrente en un solo bloque paralelo
+        const [membership, galpon, rabbits, assignments, lactatingReps, previousDewormings] = await Promise.all([
+            FarmMember.findOne({
+                where: { profileId, galponId, status: 'active' }
+            }),
+            Galpon.findByPk(galponId),
+            Rabbit.findAll({ where: { id: { [Op.in]: rabbitIds } } }),
+            Assignment.findAll({ where: { rabbitId: { [Op.in]: rabbitIds }, status: 'asignado' } }),
+            Reproduction.findAll({ where: { femaleId: { [Op.in]: rabbitIds }, status: 'lactancia' } }),
+            Deworming.findAll({
+                where: { rabbitId: { [Op.in]: rabbitIds } },
+                order: [['dewormingDate', 'DESC']]
+            })
+        ]);
 
-        const galpon = await Galpon.findByPk(galponId);
+        if (!membership) throw new AppError('No tienes acceso a este galpón.', 403);
         if (!galpon) throw new AppError('Galpón no encontrado.', 404);
 
         const dewormingPeriod = galpon.dewormingPeriod || 30;
 
-        // Precarga masiva en batch para evitar N+1
-        const rabbits = await Rabbit.findAll({ where: { id: { [Op.in]: rabbitIds } } });
         const rabbitMap = new Map();
         rabbits.forEach(r => rabbitMap.set(r.id, r));
 
-        const assignments = await Assignment.findAll({ where: { rabbitId: { [Op.in]: rabbitIds }, status: 'asignado' } });
         const assignmentSet = new Set(assignments.map(a => a.rabbitId));
 
         // Si es trabajador, validar que todas las jaulas de los conejos estén asignadas a él
@@ -89,13 +96,8 @@ class DewormingService {
             }
         }
 
-        const lactatingReps = await Reproduction.findAll({ where: { femaleId: { [Op.in]: rabbitIds }, status: 'lactancia' } });
         const lactatingSet = new Set(lactatingReps.map(r => r.femaleId));
 
-        const previousDewormings = await Deworming.findAll({
-            where: { rabbitId: { [Op.in]: rabbitIds } },
-            order: [['dewormingDate', 'DESC']]
-        });
         const prevDewMap = new Map();
         previousDewormings.forEach(d => {
             if (!prevDewMap.has(d.rabbitId)) prevDewMap.set(d.rabbitId, d); // Solo necesitamos el último (por DESC)
@@ -116,7 +118,8 @@ class DewormingService {
         const createdDewormings = await Promise.all(toCreate.map(data => dewormingRepository.create(data)));
 
         const { notifyOwnerOnWorkerAction } = require('../../common/helpers/notification.helper');
-        await notifyOwnerOnWorkerAction(profileId, galponId, 'deworming', 'Desparasitación', rabbitIds.length, 'conejo');
+        notifyOwnerOnWorkerAction(profileId, galponId, 'deworming', 'Desparasitación', rabbitIds.length, 'conejo')
+            .catch(err => console.error('Error notifying owner on deworming:', err));
 
         return createdDewormings;
     }
@@ -141,10 +144,12 @@ class DewormingService {
         
         const queryOptions = filters.all ? {} : { limit: limitValue, offset };
         
-        const dewormings = await dewormingRepository.findByGalponId(galponId, queryOptions, filters);
-        const count = filters.all ? dewormings.length : await dewormingRepository.countByGalponId(galponId, filters);
+        const [dewormings, count] = await Promise.all([
+            dewormingRepository.findByGalponId(galponId, queryOptions, filters),
+            filters.all ? Promise.resolve(0) : dewormingRepository.countByGalponId(galponId, filters)
+        ]);
 
-        return createPaginatedResponse(dewormings, page, limit, count);
+        return createPaginatedResponse(dewormings, page, limit, filters.all ? dewormings.length : count);
     }
 
     async getGalponDewormingPeriod(galponId) {

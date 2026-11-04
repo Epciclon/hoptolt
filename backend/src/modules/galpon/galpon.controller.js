@@ -1,7 +1,6 @@
 const catchAsync = require('../../common/middlewares/catchAsync');
 const galponService = require('./galpon.service');
 const { toGalponDTO } = require('../../common/dtos/galpon.dto');
-const AppError = require('../../errors/AppError');
 
 exports.registerGalpon = catchAsync(async (req, res) => {
     const galpon = await galponService.registerGalpon(req.body, req.user.id);

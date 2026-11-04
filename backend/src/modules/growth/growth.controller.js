@@ -1,5 +1,4 @@
 const growthService = require('./growth.service');
-const AppError = require('../../errors/AppError');
 const { toGrowthDTO } = require('../../common/dtos/growth.dto');
 
 class GrowthController {

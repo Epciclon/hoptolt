@@ -21,3 +21,6 @@ pnpm-debug.log*
 # environments
 .env
 .env.*
+
+# dependencies
+node_modules/

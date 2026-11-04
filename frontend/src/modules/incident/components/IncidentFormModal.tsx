@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { X, AlertTriangle, ShieldAlert, Info, ChevronDown, Check } from 'lucide-react';
+import { X, AlertTriangle, Info, ChevronDown, Check } from 'lucide-react';
 import { Button, Dialog } from '@/shared/ui';
 import { cn } from '@/lib/utils';
 import { useIncidents } from '../hooks/useIncidents';
@@ -38,7 +38,7 @@ const BREEDING_MODULES = [
 export function IncidentFormModal({ isOpen, onClose, onSuccess }: Readonly<IncidentFormModalProps>) {
   const { user } = useAuthContext();
   const { hasPermission, role } = usePermissions();
-  const { createIncident, isCreating } = useIncidents();
+  const { createIncident, isCreating } = useIncidents({ enabled: false });
 
   const isOwner = role === 'owner';
 

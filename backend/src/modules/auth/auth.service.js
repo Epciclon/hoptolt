@@ -1,7 +1,7 @@
 const { Op } = require('sequelize');
 const sequelize = require('../../infrastructure/database/connection');
 const { Cage, Rabbit, Race, Assignment, Galpon, Genealogy, Feeding, Vaccination, Deworming, Growth, Cleaning, Mortality, Reproduction, Profile, FarmMember, WorkerPermission, WorkerCage, Invitation, Notification, AuditLog } = require('../../domain/models');
-const { supabase } = require('../../common/middlewares/auth.middleware');
+const { supabase, clearCache } = require('../../common/middlewares/auth.middleware');
 const authRepository = require('./auth.repository');
 const AppError = require('../../errors/AppError');
 
@@ -41,6 +41,7 @@ class AuthService {
             username: username ? username.toLowerCase() : email.split('@')[0]
         });
 
+        clearCache(id);
         return profile;
     }
 
@@ -59,6 +60,7 @@ class AuthService {
     async setActiveGalpon(profileId, galponId) {
         const profile = await authRepository.updateActiveGalpon(profileId, galponId);
         if (!profile) throw new AppError('Usuario no encontrado.', 404);
+        clearCache(profileId);
         return profile;
     }
 
@@ -67,13 +69,11 @@ class AuthService {
      * Útil para que el frontend traduzca username → email antes de llamar a Supabase signIn.
      */
     async resolveEmail(identifier) {
-        // Si parece un email, buscamos directamente
         if (identifier.includes('@')) {
             const profile = await authRepository.findByEmail(identifier.toLowerCase());
             if (!profile) throw new AppError('Usuario no encontrado.', 404);
             return profile.email;
         }
-        // Si es username, buscamos por username y retornamos el email
         const profile = await authRepository.findByUsername(identifier.toLowerCase());
         if (!profile) throw new AppError('Usuario no encontrado.', 404);
         return profile.email;
@@ -89,13 +89,15 @@ class AuthService {
 
         const usernameClean = username.trim().toLowerCase();
         
-        // Validar unicidad del username (distinto al perfil actual)
-        const existing = await authRepository.findByUsername(usernameClean);
+        const [existing, profile] = await Promise.all([
+            authRepository.findByUsername(usernameClean),
+            Profile.findByPk(profileId)
+        ]);
+
         if (existing && existing.id !== profileId) {
             throw new AppError('El nombre de usuario ya está en uso.', 400);
         }
 
-        const profile = await Profile.findByPk(profileId);
         if (!profile) throw new AppError('Usuario no encontrado.', 404);
 
         await profile.update({
@@ -103,6 +105,7 @@ class AuthService {
             username: usernameClean
         });
 
+        clearCache(profileId);
         return profile;
     }
 
@@ -141,6 +144,7 @@ class AuthService {
             });
 
             await t.commit();
+            clearCache(profileId);
         } catch (error) {
             await t.rollback();
             throw error;
@@ -155,20 +159,19 @@ class AuthService {
         const ownedGalponIds = ownedGalpones.map(g => g.id);
 
         let ownedCageIds = [];
-        if (ownedGalponIds.length > 0) {
-            const cages = await Cage.findAll({
-                where: { galponId: { [Op.in]: ownedGalponIds } },
-                transaction: t
-            });
-            ownedCageIds = cages.map(c => c.id);
-        }
-
         let ownedRabbitIds = [];
         if (ownedGalponIds.length > 0) {
-            const rabbits = await Rabbit.findAll({
-                where: { galponId: { [Op.in]: ownedGalponIds } },
-                transaction: t
-            });
+            const [cages, rabbits] = await Promise.all([
+                Cage.findAll({
+                    where: { galponId: { [Op.in]: ownedGalponIds } },
+                    transaction: t
+                }),
+                Rabbit.findAll({
+                    where: { galponId: { [Op.in]: ownedGalponIds } },
+                    transaction: t
+                })
+            ]);
+            ownedCageIds = cages.map(c => c.id);
             ownedRabbitIds = rabbits.map(r => r.id);
         }
 

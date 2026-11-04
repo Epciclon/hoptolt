@@ -1,5 +1,5 @@
 const incidentRepository = require('./incident.repository');
-const { FarmMember, Galpon, Notification, Profile } = require('../../domain/models');
+const { FarmMember, Galpon, Cage } = require('../../domain/models');
 const AppError = require('../../errors/AppError');
 const { Op } = require('sequelize');
 
@@ -26,7 +26,7 @@ class IncidentService {
     }
 
     async createIncident(user, galponId, data) {
-        const { role, galpon } = await this.getUserRole(user.id, galponId);
+        await this.getUserRole(user.id, galponId);
 
         const {
             module,
@@ -54,7 +54,6 @@ class IncidentService {
 
         let cagesList = [];
         if (finalCageIds.length > 0) {
-            const { Cage } = require('../../domain/models');
             const foundCages = await Cage.findAll({
                 where: { id: finalCageIds, galponId },
                 attributes: ['id', 'number', 'type']

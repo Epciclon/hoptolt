@@ -15,7 +15,7 @@ import { formatTime } from '@/shared/utils/dateUtils';
 
 export function AlertsIcon() {
   const ALERTS_LIMIT = 15;
-  const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications({ limit: ALERTS_LIMIT, filter: 'alerts' });
+  const { notifications, unreadCount, markAsRead, deleteNotification } = useNotifications({ limit: ALERTS_LIMIT, filter: 'alerts' });
   const { showToast } = useToast();
   const { user } = useAuth();
   const router = useRouter();
@@ -119,31 +119,11 @@ export function AlertsIcon() {
     }
   };
 
-  const isInitialMountRef = useRef(true);
-  const previousUnreadAlertsCountRef = useRef(0);
-  const [isAnimating, setIsAnimating] = useState(false);
-
   // Filtrado de alertas activas
   const alertNotifications = notifications.filter(isWarningNotification);
   const unreadAlerts = alertNotifications.filter(n => !n.read);
   const unreadAlertsCount = unreadCount !== undefined ? unreadCount : unreadAlerts.length;
   const remainingWarningsCount = Math.max(0, unreadAlertsCount - 1);
-
-  useEffect(() => {
-    if (isInitialMountRef.current) {
-      isInitialMountRef.current = false;
-      previousUnreadAlertsCountRef.current = unreadAlertsCount;
-      return;
-    }
-
-    if (unreadAlertsCount > previousUnreadAlertsCountRef.current) {
-      setIsAnimating(true);
-      setTimeout(() => {
-        setIsAnimating(false);
-      }, 2500);
-    }
-    previousUnreadAlertsCountRef.current = unreadAlertsCount;
-  }, [unreadAlertsCount]);
 
   useEffect(() => {
     const handleCloseAlerts = () => {

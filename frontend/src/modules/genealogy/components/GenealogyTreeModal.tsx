@@ -1,8 +1,7 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import { Dialog, Alert, LoadingMessage, RabbitAvatar } from '@/shared/ui';
-import { genealogyService } from '../services/genealogy.service';
+import { useGenealogyTree } from '../hooks/useGenealogy';
 import type { Rabbit } from '@/modules/rabbits/types/rabbit.types';
 import type { GenealogyTree } from '../types/genealogy.types';
 import { ZoomableViewer } from './ZoomableViewer';
@@ -13,12 +12,7 @@ interface GenealogyTreeModalProps {
 }
 
 export function GenealogyTreeModal({ rabbit, onClose }: Readonly<GenealogyTreeModalProps>) {
-  const { data: tree, isLoading: loading, error } = useQuery({
-    queryKey: ['genealogyTree', rabbit.id],
-    queryFn: () => genealogyService.getTree(rabbit.id),
-    staleTime: 5 * 60 * 1000,
-    retry: 1
-  });
+  const { data: tree, isLoading: loading, error } = useGenealogyTree(rabbit.id);
 
   let errorMessage = '';
   if (error instanceof Error) {

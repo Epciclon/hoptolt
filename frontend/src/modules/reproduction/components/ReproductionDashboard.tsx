@@ -7,7 +7,6 @@ import { MontasView } from './MontasView';
 import { ReproductionCatalog } from './ReproductionCatalog';
 import { GazaposView } from './GazaposView';
 import { ReproductionHistoryView } from './ReproductionHistoryView';
-import { useReproduction } from '../hooks/useReproduction';
 import { reproductionService } from '../services/reproduction.service';
 import { mortalityService } from '@/modules/mortality/services/mortality.service';
 import { Card, CardHeader, AuditHistoryView } from '@/shared/ui';

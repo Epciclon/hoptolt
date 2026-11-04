@@ -65,11 +65,29 @@ class FeedingService {
 
         const { Op } = require('sequelize');
         const { Cage, Assignment, Rabbit, Feeding, WorkerCage } = require('../../domain/models');
+        const { startOfDay, endOfDay } = feedingRepository._getEcuadorDayBounds(now);
 
-        // Verificar que el usuario tiene acceso al galpón y validar sus jaulas si es trabajador
-        const membership = await FarmMember.findOne({
-            where: { profileId, galponId, status: 'active' }
-        });
+        // Precarga concurrente en paralelo para reducir latencia de base de datos
+        const [membership, cages, assignments, existingFeedings] = await Promise.all([
+            FarmMember.findOne({
+                where: { profileId, galponId, status: 'active' }
+            }),
+            Cage.findAll({ where: { id: { [Op.in]: cageIds } } }),
+            Assignment.findAll({
+                where: { cageId: { [Op.in]: cageIds }, status: 'asignado' },
+                include: [{ model: Rabbit, as: 'rabbit', attributes: ['id', 'code', 'name', 'race', 'imageUrl'] }]
+            }),
+            Feeding.findAll({
+                where: {
+                    galponId,
+                    cageId: { [Op.in]: cageIds },
+                    shift: finalShift,
+                    feedingDate: { [Op.between]: [startOfDay, endOfDay] }
+                },
+                attributes: ['cageId']
+            })
+        ]);
+
         if (!membership) throw new AppError('No tienes acceso a este galpón.', 403);
 
         if (membership.role === 'worker') {
@@ -82,33 +100,15 @@ class FeedingService {
             }
         }
 
-        // Precarga de Jaulas
-        const cages = await Cage.findAll({ where: { id: { [Op.in]: cageIds } } });
         const cageMap = new Map();
         for (const c of cages) cageMap.set(c.id, c);
 
-        // Precarga de Asignaciones
-        const assignments = await Assignment.findAll({
-            where: { cageId: { [Op.in]: cageIds }, status: 'asignado' },
-            include: [{ model: Rabbit, as: 'rabbit', attributes: ['id', 'code', 'name', 'race', 'imageUrl'] }]
-        });
         const assignmentsMap = new Map();
         for (const a of assignments) {
             if (!assignmentsMap.has(a.cageId)) assignmentsMap.set(a.cageId, []);
             assignmentsMap.get(a.cageId).push(a);
         }
 
-        // Precarga de registros existentes (para validación de duplicados en el turno a nivel de galpón y jaula)
-        const { startOfDay, endOfDay } = feedingRepository._getEcuadorDayBounds(now);
-        const existingFeedings = await Feeding.findAll({
-            where: {
-                galponId,
-                cageId: { [Op.in]: cageIds },
-                shift: finalShift,
-                feedingDate: { [Op.between]: [startOfDay, endOfDay] }
-            },
-            attributes: ['cageId']
-        });
         const existingCountMap = new Map();
         for (const ef of existingFeedings) {
             existingCountMap.set(ef.cageId, (existingCountMap.get(ef.cageId) || 0) + 1);
@@ -120,27 +120,33 @@ class FeedingService {
         const createdFeedings = await Promise.all(toCreate.map(data => feedingRepository.create(data)));
 
         const { notifyOwnerOnWorkerAction } = require('../../common/helpers/notification.helper');
-        await notifyOwnerOnWorkerAction(profileId, galponId, 'feeding', 'Alimentación', cageIds.length, 'jaula');
+        notifyOwnerOnWorkerAction(profileId, galponId, 'feeding', 'Alimentación', cageIds.length, 'jaula')
+            .catch(err => console.error('Error notifying owner on feeding:', err));
 
-        // Sincronización asíncrona en tiempo real: verificar y limpiar recordatorios de alimentación si ya se completaron
-        try {
-            const notificationService = require('../notification/notification.service');
-            await notificationService.checkAndCreateFeedingNotifications(profileId);
+        // Sincronización asíncrona en background para no bloquear la respuesta HTTP del registro
+        setImmediate(async () => {
+            try {
+                const notificationService = require('../notification/notification.service');
+                const [galpon, members] = await Promise.all([
+                    galponRepository.findById(galponId),
+                    FarmMember.findAll({ where: { galponId, status: 'active' } })
+                ]);
 
-            const galpon = await galponRepository.findById(galponId);
-            if (galpon?.profileId && galpon.profileId !== profileId) {
-                await notificationService.checkAndCreateFeedingNotifications(galpon.profileId);
-            }
-
-            const members = await FarmMember.findAll({ where: { galponId, status: 'active' } });
-            for (const m of members) {
-                if (m.profileId && m.profileId !== profileId && m.profileId !== galpon?.profileId) {
-                    await notificationService.checkAndCreateFeedingNotifications(m.profileId);
+                const targetProfileIds = new Set([profileId]);
+                if (galpon?.profileId) targetProfileIds.add(galpon.profileId);
+                for (const m of (members || [])) {
+                    if (m?.profileId) targetProfileIds.add(m.profileId);
                 }
+
+                await Promise.all(
+                    Array.from(targetProfileIds).map(pid =>
+                        notificationService.checkAndCreateFeedingNotifications(pid)
+                    )
+                );
+            } catch (notifErr) {
+                console.error('Error synchronizing feeding notifications after register:', notifErr);
             }
-        } catch (notifErr) {
-            console.error('Error synchronizing feeding notifications after register:', notifErr);
-        }
+        });
 
         return createdFeedings;
     }
@@ -165,8 +171,10 @@ class FeedingService {
         
         const queryOptions = filters.all ? {} : { limit: limitValue, offset };
         
-        const feedings = await feedingRepository.findByGalponId(galponId, queryOptions, filters);
-        const total = await feedingRepository.countByGalponId(galponId, filters);
+        const [feedings, total] = await Promise.all([
+            feedingRepository.findByGalponId(galponId, queryOptions, filters),
+            feedingRepository.countByGalponId(galponId, filters)
+        ]);
 
         return createPaginatedResponse(feedings, filters.all ? 1 : pageValue, filters.all ? feedings.length : limitValue, total);
     }

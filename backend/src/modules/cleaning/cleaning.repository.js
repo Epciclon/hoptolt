@@ -1,10 +1,9 @@
-const { Cleaning, Profile } = require('../../domain/models');
+const { Cleaning, Profile, Cage, Assignment, Rabbit } = require('../../domain/models');
+const { Op } = require('sequelize');
 const { buildCommonFilters } = require('../../common/helpers/repository.helper');
 
 class CleaningRepository {
     async findByGalponId(galponId, options = {}, cageIds = null, filters = {}) {
-        const { Op } = require('sequelize');
-        const { Cage, Assignment, Rabbit } = require('../../domain/models');
         const { whereClause: filtersWhere, cageWhere } = buildCommonFilters(filters, 'cleaningDate');
         const where = { galponId, ...filtersWhere };
         
@@ -46,7 +45,6 @@ class CleaningRepository {
     }
 
     async countByGalponId(galponId, cageIds = null, filters = {}) {
-        const { Op } = require('sequelize');
         const { whereClause: filtersWhere, cageWhere } = buildCommonFilters(filters, 'cleaningDate');
         const where = { galponId, ...filtersWhere };
 
@@ -55,7 +53,6 @@ class CleaningRepository {
         }
 
         if (filters.cageType) {
-            const { Cage } = require('../../domain/models');
             return Cleaning.count({
                 where,
                 include: [

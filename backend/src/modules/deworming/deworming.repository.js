@@ -1,6 +1,5 @@
 const { Deworming } = require('../../domain/models');
-const { Op } = require('sequelize');
-const { buildCommonFilters, buildRabbitProfileIncludes, buildRabbitCountInclude } = require('../../common/helpers/repository.helper');
+const { buildCommonFilters, buildRabbitProfileIncludes } = require('../../common/helpers/repository.helper');
 
 class DewormingRepository {
     async findByGalponId(galponId, options = {}, filters = {}) {

@@ -1,12 +1,13 @@
 const catchAsync = require('../../common/middlewares/catchAsync');
 const incidentService = require('./incident.service');
+const { toIncidentDTO } = require('../../common/dtos/incident.dto');
 
 exports.createIncident = catchAsync(async (req, res) => {
     const incident = await incidentService.createIncident(req.user, req.galponId, req.body);
     res.status(201).json({
         success: true,
         message: 'Novedad registrada exitosamente.',
-        incident
+        incident: toIncidentDTO(incident)
     });
 });
 
@@ -14,7 +15,7 @@ exports.getIncidents = catchAsync(async (req, res) => {
     const result = await incidentService.getIncidents(req.user, req.galponId, req.query);
     res.status(200).json({
         success: true,
-        incidents: result.incidents,
+        incidents: (result.incidents || []).map(toIncidentDTO),
         pagination: result.pagination,
         userRole: result.userRole
     });
@@ -32,7 +33,7 @@ exports.getIncidentById = catchAsync(async (req, res) => {
     const incident = await incidentService.getById(req.user, req.galponId, req.params.id);
     res.status(200).json({
         success: true,
-        incident
+        incident: toIncidentDTO(incident)
     });
 });
 
@@ -41,7 +42,7 @@ exports.respondToIncident = catchAsync(async (req, res) => {
     res.status(200).json({
         success: true,
         message: 'Respuesta guardada exitosamente.',
-        incident
+        incident: toIncidentDTO(incident)
     });
 });
 

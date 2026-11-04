@@ -11,7 +11,6 @@ import { createClient } from '@/utils/supabase/client';
 
 import { PermissionGuard } from '@/shared/guards/PermissionGuard';
 import { IncidentFloatingWidget } from '@/modules/incident/components/IncidentFloatingWidget';
-import { cn } from '@/lib/utils';
 
 export default function DashboardLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const { user, loading } = useAuthContext();

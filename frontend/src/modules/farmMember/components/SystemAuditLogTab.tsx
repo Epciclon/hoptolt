@@ -235,7 +235,6 @@ export function SystemAuditLogTab({ galponId }: Readonly<SystemAuditLogTabProps>
 
   const logs = data?.logs || [];
   const totalPages = data?.totalPages || 1;
-  const total = data?.total || 0;
   const loading = isLoading && !data;
 
   // Suscripción Realtime para invalidar la caché ante nuevos registros automáticos

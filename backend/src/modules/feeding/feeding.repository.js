@@ -1,4 +1,4 @@
-const { Feeding, Cage } = require('../../domain/models');
+const { Feeding, Cage, Assignment, Rabbit, Profile } = require('../../domain/models');
 const { Op } = require('sequelize');
 const { buildCommonFilters } = require('../../common/helpers/repository.helper');
 
@@ -51,7 +51,6 @@ class FeedingRepository {
     }
 
     async findByGalponId(galponId, options = {}, filters = {}) {
-        const { Assignment, Rabbit } = require('../../domain/models');
         const { whereClause: filtersWhere, cageWhere } = buildCommonFilters(filters, 'feedingDate', true);
         const whereClause = { galponId, ...filtersWhere };
 
@@ -80,7 +79,7 @@ class FeedingRepository {
                     }]
                 },
                 { 
-                    model: require('../../domain/models').Profile, 
+                    model: Profile, 
                     as: 'profile', 
                     attributes: ['username', 'fullName', 'email'] 
                 }
@@ -95,8 +94,6 @@ class FeedingRepository {
 
         // Si hay filtro de jaula, necesitamos hacer el include para el count
         if (filters.cageType || filters.cageId || filters.cageIds) {
-            const { Cage } = require('../../domain/models');
-            
             return Feeding.count({ 
                 where: whereClause,
                 include: [
@@ -117,7 +114,7 @@ class FeedingRepository {
         return Feeding.findAll({
             include: [
                 { model: Cage, as: 'cage', attributes: ['number', 'type'] },
-                { model: require('../../domain/models').Profile, as: 'profile', attributes: ['fullName'] }
+                { model: Profile, as: 'profile', attributes: ['fullName'] }
             ]
         });
     }

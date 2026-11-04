@@ -1,5 +1,6 @@
 'use client';
 import { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 
 export function applyThemeToDOM(fontSize: string, fontFamily: string, bold: boolean, theme: string = 'light', avatarScale: string = '1') {
   document.documentElement.style.fontSize = fontSize;
@@ -23,7 +24,7 @@ export function applyThemeToDOM(fontSize: string, fontFamily: string, bold: bool
 }
 
 export function useThemeSync() {
-  const pathname = require('next/navigation').usePathname();
+  const pathname = usePathname();
   
   useEffect(() => {
     const applyCurrentTheme = () => {

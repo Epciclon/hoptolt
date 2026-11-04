@@ -77,6 +77,7 @@ export interface GetIncidentsParams {
   category?: string;
   module?: string;
   search?: string;
+  enabled?: boolean;
 }
 
 export interface IncidentsResponse {

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -19,6 +19,7 @@ const routeToPermissionMap: Record<string, string> = {
   '/dashboard/reproduction': 'reproduction',
   '/dashboard/users': 'farmMembers',
   '/dashboard/reports': 'reports',
+  '/dashboard/reportes': 'reports',
 };
 
 interface PermissionGuardProps {
@@ -60,4 +61,3 @@ export function PermissionGuard({ children, requiredPermission }: Readonly<Permi
 
   return <>{children}</>;
 }
-

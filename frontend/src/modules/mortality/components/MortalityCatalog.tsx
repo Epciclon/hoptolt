@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Dialog, LoadingMessage, CageGroupCard, RabbitSelectableCard, SelectionActionBar } from '@/shared/ui';
+import { Dialog, LoadingMessage, CageGroupCard, RabbitSelectableCard, SelectionActionBar } from '@/shared/ui';
 import { Pagination } from '@/shared/ui/Pagination';
 import { useCageSelection } from '@/shared/hooks/useCageSelection';
 import { useMortality } from '../hooks/useMortality';

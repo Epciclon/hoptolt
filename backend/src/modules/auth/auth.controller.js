@@ -1,6 +1,7 @@
 const catchAsync = require('../../common/middlewares/catchAsync');
 const authService = require('./auth.service');
 const { toProfileDTO } = require('../../common/dtos/profile.dto');
+const AppError = require('../../errors/AppError');
 
 /**
  * POST /api/auth/sync-profile

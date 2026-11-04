@@ -5,7 +5,6 @@ import { Input, Button, CageCatalog, LoadingMessage, Dialog, SelectionActionBar 
 import { Pagination } from '@/shared/ui/Pagination';
 import { useCageSelection } from '@/shared/hooks/useCageSelection';
 import { useFeeding } from '../hooks/useFeeding';
-import { useAuth } from '@/modules/auth/hooks/useAuth';
 import { useToast } from '@/shared/contexts/ToastContext';
 
 import { FilterBar } from '@/shared/ui/FilterBar';
@@ -39,7 +38,6 @@ const getEcuadorDateString = (date: Date) => {
 
 export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
   const { assignedRabbits, foodTypes, loading, createFeeding, feedings } = useFeeding();
-  const { user } = useAuth();
   const { can } = usePermissions();
   const canCreate = can('feeding', 'canCreate');
   const [searchTerm, setSearchTerm] = useState('');
@@ -55,7 +53,6 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
     currentPage,
     totalPages,
     setCurrentPage,
-    clearSelection,
   } = useCageSelection(assignedRabbits, searchTerm);
 
   const { showToast } = useToast();

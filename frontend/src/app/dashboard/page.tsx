@@ -1,22 +1,14 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense } from 'react';
 import { Card, CardHeader } from '@/shared/ui';
 import { Rabbit, Activity, Heart, Baby } from 'lucide-react';
-import { useActiveGalpon } from '@/modules/galpones/hooks/useActiveGalpon';
+import { useActiveGalpon, useGalponStats } from '@/modules/galpones/hooks/useActiveGalpon';
+import type { GalponStats } from '@/modules/galpones/types/galpon.types';
 import { DashboardCalendar } from '@/modules/reproduction/components/DashboardCalendar';
 import { InvitationBanner } from '@/modules/invitation/components/InvitationBanner';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
-import api from '@/lib/api';
-
-interface GalponStats {
-  maleRabbits: number;
-  femaleRabbits: number;
-  plannedBirths: number;
-  lactatingFemales: number;
-  matingFemales: number;
-}
 
 const statsMeta = [
   { key: 'maleRabbits' as keyof GalponStats, label: 'Conejos Machos', icon: Rabbit, color: 'text-indigo-500 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-900/40' },
@@ -30,28 +22,8 @@ function DashboardHomeContent() {
   const { user } = useAuthContext();
   const { hasPermission, loading: permissionsLoading } = usePermissions();
   const { activeGalpon, loading: galponLoading } = useActiveGalpon();
+  const { stats, loading: loadingStats } = useGalponStats(activeGalpon?.id);
   const canViewReproduction = !permissionsLoading && hasPermission('reproduction');
-  const [stats, setStats] = useState<GalponStats | null>(null);
-  const [loadingStats, setLoadingStats] = useState(false);
-
-  useEffect(() => {
-    if (!activeGalpon?.id) {
-      setStats(null);
-      return;
-    }
-    const fetchStats = async () => {
-      setLoadingStats(true);
-      try {
-        const { data } = await api.get<{ success: boolean; stats: GalponStats }>(`/galpones/${activeGalpon.id}/stats`);
-        setStats(data.stats);
-      } catch {
-        setStats(null);
-      } finally {
-        setLoadingStats(false);
-      }
-    };
-    fetchStats();
-  }, [activeGalpon?.id]);
 
   const isLoading = galponLoading || loadingStats;
 

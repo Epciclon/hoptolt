@@ -5,7 +5,6 @@ import { Button, Table } from '@/shared/ui';
 import type { Column } from '@/shared/ui/Table';
 import { useGalpones } from '../hooks/useGalpones';
 import { useActiveGalpon } from '../hooks/useActiveGalpon';
-import { useToast } from '@/shared/contexts/ToastContext';
 import type { Galpon } from '../types/galpon.types';
 import { getGalponBaseColumns } from '../utils/galponUtils';
 import { FullScreenLoader } from '@/shared/ui';
@@ -13,7 +12,6 @@ import { FullScreenLoader } from '@/shared/ui';
 export function SelectActiveGalpon() {
   const { galpones, loading } = useGalpones();
   const { activeGalpon, setActive } = useActiveGalpon();
-  const { showToast } = useToast();
   const [selecting, setSelecting] = useState(false);
 
   const handleSelectGalpon = async (galpon: Galpon) => {

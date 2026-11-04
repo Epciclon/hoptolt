@@ -1,6 +1,3 @@
-const { Rabbit } = require('../../domain/models');
-const AppError = require('../../errors/AppError');
-
 const validateRegisterGenealogy = (req, res, next) => {
     const errors = [];
     const { rabbitId, fatherId, motherId } = req.body;

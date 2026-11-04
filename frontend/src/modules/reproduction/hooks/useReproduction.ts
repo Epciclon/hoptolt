@@ -5,12 +5,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { reproductionService } from '../services/reproduction.service';
 
 
-export function useReproduction(filters?: { profileId?: string; date?: string; status?: string | null; search?: string; limit?: number }) {
+export function useReproduction(filters?: { profileId?: string; date?: string; status?: string | null; search?: string; limit?: number; enabled?: boolean }) {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(filters?.limit || 12);
   const [status, setStatus] = useState<string | null>(filters?.status || null);
   const [search, setSearch] = useState<string>(filters?.search || '');
+  const isEnabled = filters?.enabled !== false;
 
   // Query: Fetch Reproductions
   const {
@@ -36,28 +37,11 @@ export function useReproduction(filters?: { profileId?: string; date?: string; s
         endDate 
       });
     },
-    refetchInterval: 15000,
+    enabled: isEnabled,
+    refetchInterval: isEnabled ? 15000 : false,
   });
 
-  // Query: Fetch Females
-  const {
-    data: reproductionFemales = [],
-    isLoading: loadingFemales,
-  } = useQuery({
-    queryKey: ['reproductionFemales'],
-    queryFn: () => reproductionService.getReproductionFemales(),
-  });
-
-  // Query: Fetch Males
-  const {
-    data: reproductionMales = [],
-    isLoading: loadingMales,
-  } = useQuery({
-    queryKey: ['reproductionMales'],
-    queryFn: () => reproductionService.getReproductionMales(),
-  });
-
-  const loading = loadingReproductions || loadingFemales || loadingMales;
+  const loading = isEnabled && loadingReproductions;
   const error = errorReproductions ? (errorReproductions as Error).message : null;
 
   // Mutation: Create
@@ -151,8 +135,6 @@ export function useReproduction(filters?: { profileId?: string; date?: string; s
   return {
     reproductions: reproductionsData?.reproductions || [],
     pagination: reproductionsData?.pagination || { total: 0, page: 1, limit: 12, totalPages: 1 },
-    reproductionFemales,
-    reproductionMales,
     loading,
     error,
     fetchReproductions,

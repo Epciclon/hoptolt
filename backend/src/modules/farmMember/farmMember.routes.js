@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const farmMemberController = require('./farmMember.controller');
+const { validateUpdateWorker, validateLogReportAudit } = require('./farmMember.validator');
 const { authenticate } = require('../../common/middlewares/auth.middleware');
 
 // Todos los endpoints requieren autenticación
@@ -20,13 +21,13 @@ router.get('/galpones/:galponId/members', farmMemberController.getAllMembersByGa
 router.get('/farm-members/:id', farmMemberController.getWorkerById);
 
 // Editar trabajador (permisos y jaulas)
-router.put('/farm-members/:id', farmMemberController.updateWorker);
+router.put('/farm-members/:id', validateUpdateWorker, farmMemberController.updateWorker);
 
 // Registro de control de cambios del galpón (solo propietario)
 router.get('/galpones/:galponId/audit-logs', farmMemberController.getAuditLogsByGalpon);
 
 // Registro de auditoría al consultar/generar reporte (trabajadores)
-router.post('/galpones/:galponId/reports/audit', farmMemberController.logReportAudit);
+router.post('/galpones/:galponId/reports/audit', validateLogReportAudit, farmMemberController.logReportAudit);
 
 // Desvincular trabajador del galpón
 router.delete('/farm-members/:id', farmMemberController.removeWorker);

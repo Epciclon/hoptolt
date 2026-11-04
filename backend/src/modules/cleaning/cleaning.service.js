@@ -47,21 +47,27 @@ class CleaningService {
             throw new AppError('Debe seleccionar al menos una jaula.', 400);
         }
 
-        const { Profile } = require('../../domain/models');
-        const profile = await Profile.findByPk(profileId);
+        const { Profile, Cage, WorkerCage, Assignment, Rabbit, Notification } = require('../../domain/models');
+        const { Op } = require('sequelize');
+
+        // Precarga concurrente en paralelo
+        const [profile, membership, cages, assignments] = await Promise.all([
+            Profile.findByPk(profileId),
+            FarmMember.findOne({
+                where: { profileId, galponId, status: 'active' }
+            }),
+            Cage.findAll({ where: { id: { [Op.in]: cageIds } } }),
+            Assignment.findAll({
+                where: { cageId: { [Op.in]: cageIds }, status: 'asignado' },
+                include: [{ model: Rabbit, as: 'rabbit', attributes: ['id', 'code', 'name', 'race', 'imageUrl'] }]
+            })
+        ]);
+
         if (!profile) throw new AppError('Usuario no encontrado.', 404);
+        if (!membership) throw new AppError('No tienes acceso a este galpón.', 403);
         
         const responsibleName = this._getResponsibleName(profile);
 
-        const membership = await FarmMember.findOne({
-            where: { profileId, galponId, status: 'active' }
-        });
-        if (!membership) throw new AppError('No tienes acceso a este galpón.', 403);
-
-        const { Cage, WorkerCage, Assignment, Rabbit, Notification } = require('../../domain/models');
-        const { Op } = require('sequelize');
-
-        const cages = await Cage.findAll({ where: { id: { [Op.in]: cageIds } } });
         const cageMap = new Map();
         for (const c of cages) cageMap.set(c.id, c);
 
@@ -73,10 +79,6 @@ class CleaningService {
             for (const wc of workerCages) workerCagesSet.add(wc.cageId);
         }
 
-        const assignments = await Assignment.findAll({
-            where: { cageId: { [Op.in]: cageIds }, status: 'asignado' },
-            include: [{ model: Rabbit, as: 'rabbit', attributes: ['id', 'code', 'name', 'race', 'imageUrl'] }]
-        });
         const assignmentsMap = new Map();
         for (const a of assignments) {
             if (!assignmentsMap.has(a.cageId)) assignmentsMap.set(a.cageId, []);
@@ -108,11 +110,12 @@ class CleaningService {
             processedCageIds.push(toCreate[i].cageId);
         }
 
-        // Limpieza de advertencias en batch (background) para evitar cuellos de botella de N+1
+        // Limpieza de advertencias y notificación en background para no bloquear la respuesta
         this._bulkClearCleaningWarnings(processedCageIds, galponId, Notification).catch(err => console.error("Error clearing warnings:", err));
 
         const { notifyOwnerOnWorkerAction } = require('../../common/helpers/notification.helper');
-        await notifyOwnerOnWorkerAction(profileId, galponId, 'cleaning', 'Limpieza', processedCageIds.length, 'jaula');
+        notifyOwnerOnWorkerAction(profileId, galponId, 'cleaning', 'Limpieza', processedCageIds.length, 'jaula')
+            .catch(err => console.error('Error notifying owner on cleaning:', err));
 
         return createdCleanings;
     }
@@ -186,8 +189,10 @@ class CleaningService {
         
         const queryOptions = filters.all ? {} : { limit: limitValue, offset };
         
-        const cleanings = await cleaningRepository.findByGalponId(galponId, queryOptions, cageIds, filters);
-        const total = await cleaningRepository.countByGalponId(galponId, cageIds, filters);
+        const [cleanings, total] = await Promise.all([
+            cleaningRepository.findByGalponId(galponId, queryOptions, cageIds, filters),
+            cleaningRepository.countByGalponId(galponId, cageIds, filters)
+        ]);
 
         const mappedCleanings = cleanings.map(c => {
             const plain = c.toJSON();

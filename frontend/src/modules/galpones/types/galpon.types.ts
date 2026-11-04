@@ -1,4 +1,4 @@
-﻿export interface Galpon {
+export interface Galpon {
   id: number;
   name: string;
   province: string;
@@ -30,4 +30,12 @@ export interface UpdateGalponDto {
   foodTypes?: string[];
   vaccines?: Array<{ name: string; period: number }>;
   dewormingPeriod?: number;
+}
+
+export interface GalponStats {
+  maleRabbits: number;
+  femaleRabbits: number;
+  plannedBirths: number;
+  lactatingFemales: number;
+  matingFemales: number;
 }

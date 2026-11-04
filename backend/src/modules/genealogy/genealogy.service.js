@@ -18,13 +18,10 @@ class GenealogyService {
             throw new AppError('El conejo no puede ser su propia madre.', 400);
         }
 
-        if (fatherId) {
-            await this._validateParentUpdate(fatherId, rabbit, 'macho', 'padre');
-        }
-
-        if (motherId) {
-            await this._validateParentUpdate(motherId, rabbit, 'hembra', 'madre');
-        }
+        await Promise.all([
+            fatherId ? this._validateParentUpdate(fatherId, rabbit, 'macho', 'padre') : Promise.resolve(),
+            motherId ? this._validateParentUpdate(motherId, rabbit, 'hembra', 'madre') : Promise.resolve()
+        ]);
 
         let consanguinityWarning = null;
         if (fatherId && motherId) {
@@ -45,16 +42,21 @@ class GenealogyService {
 
         const targetFatherId = fatherId;
         const targetMotherId = motherId;
-        const fatherObj = targetFatherId ? await Rabbit.findByPk(targetFatherId, { paranoid: false }) : null;
+        const [fatherObj, motherObj, existing] = await Promise.all([
+            targetFatherId ? Rabbit.findByPk(targetFatherId, { paranoid: false }) : Promise.resolve(null),
+            targetMotherId ? Rabbit.findByPk(targetMotherId, { paranoid: false }) : Promise.resolve(null),
+            genealogyRepository.findByRabbitId(rabbitId)
+        ]);
+
         const fatherLabel = fatherObj ? (fatherObj.name ? `${fatherObj.name} - ${fatherObj.code}` : fatherObj.code) : 'Sin padre registrado';
-        const motherObj = targetMotherId ? await Rabbit.findByPk(targetMotherId, { paranoid: false }) : null;
         const motherLabel = motherObj ? (motherObj.name ? `${motherObj.name} - ${motherObj.code}` : motherObj.code) : 'Sin madre registrada';
 
-        const existing = await genealogyRepository.findByRabbitId(rabbitId);
         if (existing) {
-            const prevFatherObj = existing.fatherId ? await Rabbit.findByPk(existing.fatherId, { paranoid: false }) : null;
+            const [prevFatherObj, prevMotherObj] = await Promise.all([
+                existing.fatherId ? Rabbit.findByPk(existing.fatherId, { paranoid: false }) : Promise.resolve(null),
+                existing.motherId ? Rabbit.findByPk(existing.motherId, { paranoid: false }) : Promise.resolve(null)
+            ]);
             const prevFatherLabel = prevFatherObj ? (prevFatherObj.name ? `${prevFatherObj.name} - ${prevFatherObj.code}` : prevFatherObj.code) : 'Sin padre registrado';
-            const prevMotherObj = existing.motherId ? await Rabbit.findByPk(existing.motherId, { paranoid: false }) : null;
             const prevMotherLabel = prevMotherObj ? (prevMotherObj.name ? `${prevMotherObj.name} - ${prevMotherObj.code}` : prevMotherObj.code) : 'Sin madre registrada';
 
             const beforeData = { father: prevFatherLabel, mother: prevMotherLabel };
@@ -66,7 +68,7 @@ class GenealogyService {
             const result = await genealogyRepository.update(existing, { fatherId: newTargetFatherId, motherId: newTargetMotherId });
             
             if (profileId && hasChanged) {
-                await recordWorkerChange({
+                recordWorkerChange({
                     galponId,
                     profileId,
                     action: 'modificar',
@@ -76,7 +78,7 @@ class GenealogyService {
                     summary: `Actualizó el árbol genealógico ${article} ${rabbitLabel}`,
                     before: beforeData,
                     after: { father: fatherLabel, mother: motherLabel }
-                });
+                }).catch(err => console.error('Error recording worker change on update Genealogy:', err));
             }
 
             return { ...result.toJSON(), consanguinityWarning };
@@ -85,7 +87,7 @@ class GenealogyService {
         const result = await genealogyRepository.create({ rabbitId, fatherId, motherId, galponId });
 
         if (profileId) {
-            await recordWorkerChange({
+            recordWorkerChange({
                 galponId,
                 profileId,
                 action: 'crear',
@@ -95,7 +97,7 @@ class GenealogyService {
                 summary: `Registró el árbol genealógico ${article} ${rabbitLabel}`,
                 before: null,
                 after: { father: fatherLabel, mother: motherLabel }
-            });
+            }).catch(err => console.error('Error recording worker change on create Genealogy:', err));
         }
 
         return { ...result.toJSON(), consanguinityWarning };
@@ -104,20 +106,23 @@ class GenealogyService {
     async checkConsanguinity(rabbitId1, rabbitId2) {
         if (rabbitId1 === rabbitId2) return true;
 
-        const ancestorsOf2 = await this.getAncestors(rabbitId2, 5);
-        if (ancestorsOf2.includes(rabbitId1)) return true;
+        const [ancestorsOf2, ancestorsOf1, genealogy1, genealogy2] = await Promise.all([
+            this.getAncestors(rabbitId2, 5),
+            this.getAncestors(rabbitId1, 5),
+            genealogyRepository.findByRabbitId(rabbitId1),
+            genealogyRepository.findByRabbitId(rabbitId2)
+        ]);
 
-        const ancestorsOf1 = await this.getAncestors(rabbitId1, 5);
+        if (ancestorsOf2.includes(rabbitId1)) return true;
         if (ancestorsOf1.includes(rabbitId2)) return true;
 
-        const ancestors1 = await this.getAncestors(rabbitId1, 3);
-        const ancestors2 = await this.getAncestors(rabbitId2, 3);
+        const [ancestors1, ancestors2] = await Promise.all([
+            this.getAncestors(rabbitId1, 3),
+            this.getAncestors(rabbitId2, 3)
+        ]);
 
         const commonAncestors = ancestors1.filter(id => ancestors2.includes(id));
         if (commonAncestors.length > 0) return true;
-
-        const genealogy1 = await genealogyRepository.findByRabbitId(rabbitId1);
-        const genealogy2 = await genealogyRepository.findByRabbitId(rabbitId2);
 
         if (genealogy1 && genealogy2) {
             if (genealogy1.fatherId && genealogy1.fatherId === genealogy2.fatherId) return true;
@@ -129,23 +134,26 @@ class GenealogyService {
 
     async getAncestors(rabbitId, levels) {
         const ancestors = new Set();
-        const queue = [{ id: rabbitId, level: 0 }];
+        let currentLevelIds = [rabbitId];
 
-        while (queue.length > 0) {
-            const { id, level } = queue.shift();
-            if (level >= levels) continue;
-
-            const genealogy = await genealogyRepository.findByRabbitId(id);
-            if (genealogy) {
-                if (genealogy.fatherId) {
-                    ancestors.add(genealogy.fatherId);
-                    queue.push({ id: genealogy.fatherId, level: level + 1 });
-                }
-                if (genealogy.motherId) {
-                    ancestors.add(genealogy.motherId);
-                    queue.push({ id: genealogy.motherId, level: level + 1 });
+        for (let level = 0; level < levels && currentLevelIds.length > 0; level++) {
+            const genealogies = await Promise.all(
+                currentLevelIds.map(id => genealogyRepository.findByRabbitId(id))
+            );
+            const nextLevelIds = [];
+            for (const genealogy of genealogies) {
+                if (genealogy) {
+                    if (genealogy.fatherId && !ancestors.has(genealogy.fatherId)) {
+                        ancestors.add(genealogy.fatherId);
+                        nextLevelIds.push(genealogy.fatherId);
+                    }
+                    if (genealogy.motherId && !ancestors.has(genealogy.motherId)) {
+                        ancestors.add(genealogy.motherId);
+                        nextLevelIds.push(genealogy.motherId);
+                    }
                 }
             }
+            currentLevelIds = nextLevelIds;
         }
 
         return Array.from(ancestors);
@@ -185,18 +193,21 @@ class GenealogyService {
     }
 
     async editGenealogy(rabbitId, data, profileId = null, galponId = null) {
-        const genealogy = await genealogyRepository.findByRabbitId(rabbitId);
+        const [genealogy, rabbit] = await Promise.all([
+            genealogyRepository.findByRabbitId(rabbitId),
+            Rabbit.findByPk(rabbitId, { paranoid: false })
+        ]);
         if (!genealogy) throw new AppError('Relación genealógica no encontrada.', 404);
-
-        const { fatherId, motherId } = data;
-        const rabbit = await Rabbit.findByPk(rabbitId, { paranoid: false });
         if (!rabbit) throw new AppError('El conejo no existe.', 404);
 
+        const { fatherId, motherId } = data;
         const newFatherId = fatherId !== undefined ? fatherId : genealogy.fatherId;
         const newMotherId = motherId !== undefined ? motherId : genealogy.motherId;
 
-        await this._validateParentUpdate(newFatherId, rabbit, 'macho', 'padre');
-        await this._validateParentUpdate(newMotherId, rabbit, 'hembra', 'madre');
+        await Promise.all([
+            this._validateParentUpdate(newFatherId, rabbit, 'macho', 'padre'),
+            this._validateParentUpdate(newMotherId, rabbit, 'hembra', 'madre')
+        ]);
 
         let consanguinityWarning = null;
         if (newFatherId && newMotherId) {
@@ -210,9 +221,11 @@ class GenealogyService {
             };
         }
 
-        const prevFatherObj = genealogy.fatherId ? await Rabbit.findByPk(genealogy.fatherId, { paranoid: false }) : null;
+        const [prevFatherObj, prevMotherObj] = await Promise.all([
+            genealogy.fatherId ? Rabbit.findByPk(genealogy.fatherId, { paranoid: false }) : Promise.resolve(null),
+            genealogy.motherId ? Rabbit.findByPk(genealogy.motherId, { paranoid: false }) : Promise.resolve(null)
+        ]);
         const prevFatherLabel = prevFatherObj ? (prevFatherObj.name ? `${prevFatherObj.name} - ${prevFatherObj.code}` : prevFatherObj.code) : 'Sin padre registrado';
-        const prevMotherObj = genealogy.motherId ? await Rabbit.findByPk(genealogy.motherId, { paranoid: false }) : null;
         const prevMotherLabel = prevMotherObj ? (prevMotherObj.name ? `${prevMotherObj.name} - ${prevMotherObj.code}` : prevMotherObj.code) : 'Sin madre registrada';
 
         const beforeData = { father: prevFatherLabel, mother: prevMotherLabel };
@@ -226,9 +239,11 @@ class GenealogyService {
         genealogy.changed('motherId', true);
         const result = await genealogy.save();
 
-        const fatherObj = result.fatherId ? await Rabbit.findByPk(result.fatherId, { paranoid: false }) : null;
+        const [fatherObj, motherObj] = await Promise.all([
+            result.fatherId ? Rabbit.findByPk(result.fatherId, { paranoid: false }) : Promise.resolve(null),
+            result.motherId ? Rabbit.findByPk(result.motherId, { paranoid: false }) : Promise.resolve(null)
+        ]);
         const fatherLabel = fatherObj ? (fatherObj.name ? `${fatherObj.name} - ${fatherObj.code}` : fatherObj.code) : 'Sin padre registrado';
-        const motherObj = result.motherId ? await Rabbit.findByPk(result.motherId, { paranoid: false }) : null;
         const motherLabel = motherObj ? (motherObj.name ? `${motherObj.name} - ${motherObj.code}` : motherObj.code) : 'Sin madre registrada';
 
         const rabbitLabel = rabbit.name ? `${rabbit.name} - ${rabbit.code}` : rabbit.code;
@@ -237,7 +252,7 @@ class GenealogyService {
         const article = isFemale ? 'de la coneja' : 'del conejo';
 
         if (profileId && hasChanged) {
-            await recordWorkerChange({
+            recordWorkerChange({
                 galponId: galponId || rabbit.galponId,
                 profileId,
                 action: 'modificar',
@@ -247,25 +262,25 @@ class GenealogyService {
                 summary: `Actualizó el árbol genealógico ${article} ${rabbitLabel}`,
                 before: beforeData,
                 after: { father: fatherLabel, mother: motherLabel }
-            });
+            }).catch(err => console.error('Error recording worker change on editGenealogy:', err));
         }
 
         return { ...result.toJSON(), consanguinityWarning };
     }
 
-
-
     async getGenealogyTree(rabbitId, levels = 3) {
         const rabbit = await Rabbit.findByPk(rabbitId, { paranoid: false });
         if (!rabbit) throw new AppError('El conejo no existe.', 404);
 
-        const buildTree = async (id, currentLevel) => {
+        const buildTree = async (id, currentLevel, preloadedRabbit = null) => {
             if (currentLevel === 0) return null;
 
-            const currentRabbit = await Rabbit.findByPk(id, { paranoid: false });
+            const [currentRabbit, genealogy] = await Promise.all([
+                preloadedRabbit ? Promise.resolve(preloadedRabbit) : Rabbit.findByPk(id, { paranoid: false }),
+                genealogyRepository.findByRabbitId(id)
+            ]);
             if (!currentRabbit) return null;
 
-            const genealogy = await genealogyRepository.findByRabbitId(id);
             if (!genealogy) return {
                 id,
                 code: currentRabbit.code,
@@ -301,7 +316,7 @@ class GenealogyService {
             return tree;
         };
 
-        return buildTree(rabbitId, levels);
+        return buildTree(rabbitId, levels, rabbit);
     }
 
     async _validateParent(parentId, child, sex, label, checkRace = true) {
@@ -316,18 +331,21 @@ class GenealogyService {
 
     async _getConsanguinityWarning(fatherId, motherId, excludeRabbitId = null) {
         let warning = null;
-        const areRelated = await this.checkConsanguinity(fatherId, motherId);
+        const [areRelated, motherHasMultiplePartners, fatherHasMultiplePartners] = await Promise.all([
+            this.checkConsanguinity(fatherId, motherId),
+            this.checkMotherMultiplePartners(motherId, fatherId, excludeRabbitId),
+            this.checkFatherMultiplePartners(fatherId, motherId, excludeRabbitId)
+        ]);
+
         if (areRelated) {
             warning = 'ADVERTENCIA: Los conejos seleccionados son emparentados. El cruce de conejos consanguíneos puede causar mutaciones y problemas de salud en los descendientes.';
         }
 
-        const motherHasMultiplePartners = await this.checkMotherMultiplePartners(motherId, fatherId, excludeRabbitId);
         if (motherHasMultiplePartners) {
             if (warning) warning += ' Además, esta madre ya tiene hijos con otros padres.';
             else warning = 'ADVERTENCIA: Esta madre ya tiene hijos con otros padres. Esto puede causar problemas de salud en los descendientes.';
         }
 
-        const fatherHasMultiplePartners = await this.checkFatherMultiplePartners(fatherId, motherId, excludeRabbitId);
         if (fatherHasMultiplePartners) {
             if (warning) warning += ' Además, este padre ya tiene hijos con otras madres.';
             else warning = 'ADVERTENCIA: Este padre ya tiene hijos con otras madres. Esto puede causar problemas de salud en los descendientes.';

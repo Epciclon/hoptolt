@@ -1,6 +1,5 @@
 'use client';
 
-import { cn } from '@/lib/utils';
 import { useReproduction } from '../hooks/useReproduction';
 import type { Reproduction } from '../types/reproduction.types';
 import { Button, Dialog, Input, Select, RabbitSelectableCard, CageGroupCard, RabbitAvatar } from '@/shared/ui';
@@ -9,7 +8,7 @@ import { Pagination } from '@/shared/ui/Pagination';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Calendar, Heart, Info } from 'lucide-react';
 import { useToast } from '@/shared/contexts/ToastContext';
-import { mortalityService } from '@/modules/mortality/services/mortality.service';
+import { useMortality } from '@/modules/mortality/hooks/useMortality';
 import { WeaningWizard } from './WeaningWizard';
 import { formatDateString } from '@/shared/utils/dateUtils';
 import { matchesSmartSearch } from '@/shared/utils/rabbitUtils';
@@ -21,7 +20,8 @@ interface GazaposViewProps {
 }
 
 export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposViewProps>) {
-  const { reproductions, loading, cancelReproduction, finishLactation, registerBirth, fetchReproductions } = useReproduction({ status: 'lactancia', limit: 1000 });
+  const { reproductions, cancelReproduction, finishLactation, registerBirth, fetchReproductions } = useReproduction({ status: 'lactancia', limit: 1000 });
+  const { createMortality } = useMortality({ enabled: false });
   const onSuccess = fetchReproductions;
   const { showToast } = useToast();
   const { can } = usePermissions();
@@ -225,7 +225,7 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
     
     setRegisteringMortality(true);
     try {
-      await mortalityService.create({
+      await createMortality({
         rabbitId: toRegisterMortality.femaleId,
         cause: mortalityCause,
         observations: mortalityObs.trim(),
@@ -359,8 +359,6 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
                 {group.reproductions.map(reproduction => {
                   const isExpanded = expandedId === reproduction.id;
                   const daysInLactation = getDaysInLactation(reproduction.estimatedBirthDate);
-                  const readyToWean = isWeaningReady(reproduction.estimatedBirthDate);
-                  const hasKits = reproduction.bornKits !== null && reproduction.bornKits !== undefined;
 
                   let estimatedWeaningDate = '';
                   if (reproduction.estimatedBirthDate) {

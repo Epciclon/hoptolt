@@ -19,9 +19,9 @@ export function useRealtimeSync() {
     const tableMappings: Record<string, string[]> = {
       galpones: ['galpones'],
       cages: ['cages'],
-      rabbits: ['rabbits'],
+      rabbits: ['rabbits', 'galponStats'],
       races: ['races'],
-      reproductions: ['reproductions', 'birthCalendar'],
+      reproductions: ['reproductions', 'birthCalendar', 'galponStats'],
       vaccinations: ['vaccinations'],
       dewormings: ['dewormings'],
       feedings: ['feedings'],

@@ -22,14 +22,16 @@ class ReproductionService {
         if (female.galponId !== galponId) throw new AppError(`La coneja ${female.code}${this._getFemaleNameStr(female)} no pertenece al galpón activo.`, 400);
         if (female.sex !== 'hembra') throw new AppError(`El ID ${female.id} no corresponde a una hembra.`, 400);
 
-        const assignment = await Assignment.findOne({ where: { rabbitId: female.id, status: 'asignado' } });
+        const [assignment, activeMount] = await Promise.all([
+            Assignment.findOne({ where: { rabbitId: female.id, status: 'asignado' } }),
+            reproductionRepository.findActiveMountByFemaleId(female.id)
+        ]);
         if (!assignment) throw new AppError(`La coneja ${female.code}${this._getFemaleNameStr(female)} no tiene jaula asignada.`, 400);
 
         const cage = await Cage.findByPk(assignment.cageId);
         if (!cage) throw new AppError('Jaula no encontrada.', 404);
         if (cage.type !== 'reproducción') throw new AppError(`La coneja ${female.code}${this._getFemaleNameStr(female)} está en una jaula de ${cage.type}, no de reproducción.`, 400);
 
-        const activeMount = await reproductionRepository.findActiveMountByFemaleId(female.id);
         if (activeMount) {
             const ed = activeMount.estimatedBirthDate;
             const formattedDate = typeof ed === 'string' && ed.includes('-') ? ed.split('-').reverse().join('/') : new Date(ed).toLocaleDateString('es-EC');
@@ -101,8 +103,10 @@ class ReproductionService {
         if (filters.status) queryOptions.status = filters.status;
         if (filters.search) queryOptions.search = filters.search;
         
-        const reproductions = await reproductionRepository.findByGalponId(galponId, queryOptions, filters);
-        const total = await reproductionRepository.countByGalponId(galponId, queryOptions, filters);
+        const [reproductions, total] = await Promise.all([
+            reproductionRepository.findByGalponId(galponId, queryOptions, filters),
+            reproductionRepository.countByGalponId(galponId, queryOptions, filters)
+        ]);
 
         return createPaginatedResponse(reproductions, filters.all ? 1 : pageValue, filters.all ? reproductions.length : limitValue, total);
     }
@@ -172,23 +176,32 @@ class ReproductionService {
 
     async _getWeaningCalendar(galponId, year, month) {
         const lactancia = await reproductionRepository.findByGalponAndStatuses(galponId, ['lactancia']);
+        const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guayaquil', year: 'numeric', month: '2-digit', day: '2-digit' });
         
-        const results = [];
+        const matchingItems = [];
         for (const r of lactancia) {
             if (!r.estimatedBirthDate) continue;
             const weaningDate = new Date(r.estimatedBirthDate + 'T00:00:00-05:00');
             weaningDate.setDate(weaningDate.getDate() + 30);
             
-            const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guayaquil', year: 'numeric', month: '2-digit', day: '2-digit' });
             const weaningDateStr = formatter.format(weaningDate);
             const [wy, wm] = weaningDateStr.split('-');
 
             if (Number(wy) === Number(year) && Number(wm) === Number(month)) {
-                const fullR = await reproductionRepository.findByIdWithDetails(r.id);
-                if (fullR?.female && !fullR.female.deletedAt) {
-                    fullR.estimatedWeaningDate = weaningDateStr;
-                    results.push(fullR);
-                }
+                matchingItems.push({ id: r.id, weaningDateStr });
+            }
+        }
+
+        const detailedRecords = await Promise.all(
+            matchingItems.map(item => reproductionRepository.findByIdWithDetails(item.id))
+        );
+
+        const results = [];
+        for (let i = 0; i < detailedRecords.length; i++) {
+            const fullR = detailedRecords[i];
+            if (fullR?.female && !fullR.female.deletedAt) {
+                fullR.estimatedWeaningDate = matchingItems[i].weaningDateStr;
+                results.push(fullR);
             }
         }
         return results;
@@ -209,17 +222,21 @@ class ReproductionService {
             includeOptions[0].required = true;
         }
 
-        const availableFemales = await Rabbit.findAll({
-            where: { galponId, sex: 'hembra', id: { [Op.notIn]: busyFemaleIds.length ? busyFemaleIds : [0] } },
-            include: includeOptions
-        });
+        const [availableFemales, pastReproductions] = await Promise.all([
+            Rabbit.findAll({
+                where: { galponId, sex: 'hembra', id: { [Op.notIn]: busyFemaleIds.length ? busyFemaleIds : [0] } },
+                include: includeOptions
+            }),
+            reproductionRepository.findByGalponAndStatuses(galponId, ['completado', 'fallido'])
+        ]);
 
-        const pastReproductions = await reproductionRepository.findByGalponAndStatuses(galponId, ['completado', 'fallido']);
+        const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guayaquil', year: 'numeric', month: '2-digit', day: '2-digit' });
+        const todayStr = formatter.format(new Date());
+        const todayDate = new Date(todayStr + 'T00:00:00-05:00');
 
         return availableFemales.map(female => {
             const femalePast = pastReproductions.filter(r => r.femaleId === female.id).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
             let receptiveDate;
-            const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guayaquil', year: 'numeric', month: '2-digit', day: '2-digit' });
             
             if (femalePast.length > 0) {
                 const updatedStr = formatter.format(new Date(femalePast[0].updatedAt));
@@ -231,9 +248,6 @@ class ReproductionService {
             } else return null;
 
             if (receptiveDate) {
-                const todayStr = formatter.format(new Date());
-                const todayDate = new Date(todayStr + 'T00:00:00-05:00');
-
                 // Lógica de "escoba": si la fecha de celo es anterior a hoy, se arrastra a hoy.
                 if (receptiveDate < todayDate) {
                     receptiveDate = todayDate;
@@ -366,7 +380,6 @@ class ReproductionService {
     }
 
     async getAvailableMalesForMating(galponId) {
-
         const males = await Rabbit.findAll({
             where: { 
                 galponId, 
@@ -393,10 +406,12 @@ class ReproductionService {
 
     async getAvailableFemalesForMating(galponId, maleId) {
         const { Op } = require('sequelize');
-        const male = await Rabbit.findByPk(maleId);
+        const [male, busyReproductions] = await Promise.all([
+            Rabbit.findByPk(maleId),
+            reproductionRepository.findByGalponAndStatuses(galponId, ['monta', 'gestacion', 'lactancia'])
+        ]);
         if (!male) throw new AppError('Macho no encontrado.', 404);
 
-        const busyReproductions = await reproductionRepository.findByGalponAndStatuses(galponId, ['monta', 'gestacion', 'lactancia']);
         const busyFemaleIds = busyReproductions.map(r => r.femaleId);
 
         const females = await Rabbit.findAll({
@@ -415,16 +430,13 @@ class ReproductionService {
         });
 
         return females.filter(female => {
-            // Case-insensitive race match
             const femaleRace = (female.race || '').trim().toLowerCase();
             const maleRace = (male.race || '').trim().toLowerCase();
             if (femaleRace !== maleRace) return false;
 
-            // Must be in a reproduction cage
             const cageType = female.assignments?.[0]?.cage?.type;
             if (cageType && cageType.toLowerCase() !== 'reproducción') return false;
 
-            // Age >= 4 check
             if (female.age !== undefined && female.age !== null) return female.age >= 4;
             if (female.birthDate) {
                 const ageInMonths = (Date.now() - new Date(female.birthDate)) / (1000 * 60 * 60 * 24 * 30.44);
@@ -436,8 +448,10 @@ class ReproductionService {
 
     async startMating(data, galponId, profileId) {
         const { maleId, femaleId } = data;
-        const male = await Rabbit.findByPk(maleId);
-        const female = await Rabbit.findByPk(femaleId);
+        const [male, female] = await Promise.all([
+            Rabbit.findByPk(maleId),
+            Rabbit.findByPk(femaleId)
+        ]);
 
         if (!male || !female) throw new AppError('Conejos no encontrados.', 404);
         if (male.sex !== 'macho' || female.sex !== 'hembra') throw new AppError('Sexos incorrectos para la monta.', 400);
@@ -490,7 +504,8 @@ class ReproductionService {
         const result = await reproductionRepository.update(rep, { status: 'gestacion', profileId, updatedBySystem: false });
 
         const { notifyOwnerOnManualPhaseChange } = require('../../common/helpers/reproductionNotification.helper');
-        await notifyOwnerOnManualPhaseChange(profileId, galponId, reproductionId, 2, 'Gestación');
+        notifyOwnerOnManualPhaseChange(profileId, galponId, reproductionId, 2, 'Gestación')
+            .catch(err => console.error('Error notifying owner on finishMating:', err));
 
         return result;
     }
@@ -527,7 +542,8 @@ class ReproductionService {
 
         if (!wasInLactancia) {
             const { notifyOwnerOnManualPhaseChange } = require('../../common/helpers/reproductionNotification.helper');
-            await notifyOwnerOnManualPhaseChange(profileId, galponId, reproductionId, 3, 'Lactancia');
+            notifyOwnerOnManualPhaseChange(profileId, galponId, reproductionId, 3, 'Lactancia')
+                .catch(err => console.error('Error notifying owner on registerBirth:', err));
         }
 
         return result;

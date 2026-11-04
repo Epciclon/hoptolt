@@ -99,12 +99,6 @@ interface ConfirmDialogProps {
   centerHeader?: boolean;
 }
 
-const variantStyles = {
-  danger:  'bg-red-500 hover:bg-red-600 text-white',
-  warning: 'bg-amber-500 hover:bg-amber-600 text-white',
-  primary: 'bg-primary-500 hover:bg-primary-600 text-white',
-};
-
 export function ConfirmDialog({
   open,
   onClose,

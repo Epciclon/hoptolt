@@ -3,13 +3,10 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useState, useEffect } from 'react';
 import { Input, Button, RabbitAvatar } from '@/shared/ui';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { useReproduction } from '../hooks/useReproduction';
 import type { Reproduction } from '../types/reproduction.types';
-import { rabbitService } from '@/modules/rabbits/services/rabbit.service';
-import type { Rabbit } from '@/modules/rabbits/types/rabbit.types';
 import { Heart } from 'lucide-react';
 
 const schema = z.object({
@@ -28,10 +25,7 @@ interface ReproductionFormProps {
 
 export function ReproductionForm({ onSuccess, onCancel, editingReproduction }: Readonly<ReproductionFormProps>) {
   const { showToast } = useToast();
-  const { updateReproduction } = useReproduction();
-  const [femaleRabbit, setFemaleRabbit] = useState<Rabbit | null>(null);
-  const [maleRabbit, setMaleRabbit] = useState<Rabbit | null>(null);
-  const [loadingRabbits, setLoadingRabbits] = useState(false);
+  const { updateReproduction } = useReproduction({ enabled: false });
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -41,29 +35,6 @@ export function ReproductionForm({ onSuccess, onCancel, editingReproduction }: R
       mountDate: editingReproduction.mountDate.split('T')[0],
     } : undefined,
   });
-
-  useEffect(() => {
-    const fetchRabbitDetails = async () => {
-      if (editingReproduction) {
-        setLoadingRabbits(true);
-        try {
-          const female = await rabbitService.getById(editingReproduction.femaleId);
-          setFemaleRabbit(female);
-          if (editingReproduction.maleId) {
-            const male = await rabbitService.getById(editingReproduction.maleId);
-            setMaleRabbit(male);
-          }
-        } catch (err) {
-          console.error('Error al cargar detalles de la pareja:', err);
-          showToast('Error al cargar detalles de la pareja', 'error');
-        } finally {
-          setLoadingRabbits(false);
-        }
-      }
-    };
-    fetchRabbitDetails();
-  }, [editingReproduction, showToast]);
-
 
   const onSubmit = async (values: FormValues) => {
     if (!editingReproduction) return;
@@ -78,15 +49,6 @@ export function ReproductionForm({ onSuccess, onCancel, editingReproduction }: R
     }
   };
 
-
-  if (loadingRabbits) {
-    return (
-      <div className="py-12 flex justify-center items-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
-      </div>
-    );
-  }
-
   if (!editingReproduction) {
     return <p className="text-center text-muted py-6">No hay datos de monta para editar.</p>;
   }
@@ -97,7 +59,7 @@ export function ReproductionForm({ onSuccess, onCancel, editingReproduction }: R
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 p-4 border border-strong/80 rounded-xl bg-theme-surface/40 w-full">
         {/* Hembra */}
         <div className="flex flex-col items-center gap-1.5 text-center w-full sm:w-auto sm:flex-1 sm:max-w-[140px]">
-          <RabbitAvatar imageUrl={femaleRabbit?.imageUrl} alt={femaleRabbit?.code} size="lg" ring />
+          <RabbitAvatar imageUrl={editingReproduction.imageUrl} alt={editingReproduction.femaleCode} size="lg" ring />
           <div className="min-w-0 w-full">
             <span className="px-2.5 py-0.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 text-xs font-semibold rounded-full">Hembra</span>
             <h5 className="font-bold text-main text-sm sm:text-base mt-1.5 truncate w-full">
@@ -119,7 +81,7 @@ export function ReproductionForm({ onSuccess, onCancel, editingReproduction }: R
 
         {/* Macho */}
         <div className="flex flex-col items-center gap-1.5 text-center w-full sm:w-auto sm:flex-1 sm:max-w-[140px]">
-          <RabbitAvatar imageUrl={maleRabbit?.imageUrl} alt={maleRabbit?.code} size="lg" ring />
+          <RabbitAvatar imageUrl={editingReproduction.maleImageUrl} alt={editingReproduction.maleCode || undefined} size="lg" ring />
           <div className="min-w-0 w-full">
             <span className="px-2.5 py-0.5 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 text-xs font-semibold rounded-full">Macho</span>
             <h5 className="font-bold text-main text-sm sm:text-base mt-1.5 truncate w-full">

@@ -15,16 +15,17 @@ const { Op } = require('sequelize');
  */
 async function notifyOwnerOnWorkerAction(profileId, galponId, moduleName, moduleLabel, itemCount = 1, unitName = 'jaula') {
     try {
-        const workerMember = await FarmMember.findOne({
-            where: { profileId, galponId, status: 'active' },
-            include: [{ model: Profile, as: 'profile' }]
-        });
+        const [workerMember, ownerMember] = await Promise.all([
+            FarmMember.findOne({
+                where: { profileId, galponId, status: 'active' },
+                include: [{ model: Profile, as: 'profile' }]
+            }),
+            FarmMember.findOne({
+                where: { galponId, role: 'owner', status: 'active' }
+            })
+        ]);
 
         if (workerMember?.role === 'worker') {
-            const ownerMember = await FarmMember.findOne({
-                where: { galponId, role: 'owner', status: 'active' }
-            });
-
             if (ownerMember?.profileId) {
                 const workerName = workerMember.profile?.fullName || workerMember.profile?.username || 'Un trabajador';
                 const safeCount = Math.max(1, Number(itemCount) || 1);

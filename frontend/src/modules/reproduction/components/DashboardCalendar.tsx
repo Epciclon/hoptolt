@@ -126,7 +126,7 @@ export function DashboardCalendar() {
   const [calendarType, setCalendarType] = useState<CalendarEventType>('births');
   const [searchTerm, setSearchTerm] = useState('');
   
-  const { calendar, isFetching, error, fetchCalendar } = useDashboardCalendar();
+  const { calendar, error, fetchCalendar } = useDashboardCalendar();
   const { hasPermission, loading: permissionsLoading } = usePermissions();
 
   const searchParams = useSearchParams();

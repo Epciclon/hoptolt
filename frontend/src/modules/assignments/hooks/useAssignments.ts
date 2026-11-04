@@ -41,8 +41,7 @@ export function useAssignments() {
       queryClient.invalidateQueries({ queryKey: ['assignedRabbits'] });
       queryClient.invalidateQueries({ queryKey: ['operativeCages'] });
       queryClient.invalidateQueries({ queryKey: ['availableRabbits'] });
-      queryClient.invalidateQueries({ queryKey: ['reproductionMales'] });
-      queryClient.invalidateQueries({ queryKey: ['reproductionFemales'] });
+      queryClient.invalidateQueries({ queryKey: ['availableMalesForMating'] });
     },
   });
 
@@ -58,8 +57,7 @@ export function useAssignments() {
       queryClient.invalidateQueries({ queryKey: ['assignedRabbits'] });
       queryClient.invalidateQueries({ queryKey: ['operativeCages'] });
       queryClient.invalidateQueries({ queryKey: ['availableRabbits'] });
-      queryClient.invalidateQueries({ queryKey: ['reproductionMales'] });
-      queryClient.invalidateQueries({ queryKey: ['reproductionFemales'] });
+      queryClient.invalidateQueries({ queryKey: ['availableMalesForMating'] });
     },
   });
 
@@ -73,8 +71,7 @@ export function useAssignments() {
       queryClient.invalidateQueries({ queryKey: ['assignments'] });
       queryClient.invalidateQueries({ queryKey: ['assignedRabbits'] });
       queryClient.invalidateQueries({ queryKey: ['operativeCages'] });
-      queryClient.invalidateQueries({ queryKey: ['reproductionMales'] });
-      queryClient.invalidateQueries({ queryKey: ['reproductionFemales'] });
+      queryClient.invalidateQueries({ queryKey: ['availableMalesForMating'] });
     },
   });
 
@@ -88,8 +85,7 @@ export function useAssignments() {
       queryClient.invalidateQueries({ queryKey: ['assignments'] });
       queryClient.invalidateQueries({ queryKey: ['assignedRabbits'] });
       queryClient.invalidateQueries({ queryKey: ['operativeCages'] });
-      queryClient.invalidateQueries({ queryKey: ['reproductionMales'] });
-      queryClient.invalidateQueries({ queryKey: ['reproductionFemales'] });
+      queryClient.invalidateQueries({ queryKey: ['availableMalesForMating'] });
     },
   });
 

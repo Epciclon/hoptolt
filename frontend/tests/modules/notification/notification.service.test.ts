@@ -23,8 +23,11 @@ describe('notificationService', () => {
     const { notificationService } = await import('@/modules/notification/services/notification.service');
     const result = await notificationService.getAll({ limit: 10, offset: 0 });
 
-    expect(api.get).toHaveBeenCalledWith(expect.stringContaining('/notifications?'));
-    expect(result).toEqual(mockNotifications);
+    expect(api.get).toHaveBeenCalledWith('/notifications', { params: { limit: 10, offset: 0 } });
+    expect(result).toEqual({
+      notifications: mockNotifications,
+      pagination: { page: 1, limit: 10, total: 1, totalPages: 1 },
+    });
   });
 
   it('getAll passes unreadOnly filter', async () => {
@@ -33,8 +36,7 @@ describe('notificationService', () => {
     const { notificationService } = await import('@/modules/notification/services/notification.service');
     await notificationService.getAll({ unreadOnly: true });
 
-    const url = (api.get as any).mock.calls[0][0];
-    expect(url).toContain('unreadOnly=true');
+    expect(api.get).toHaveBeenCalledWith('/notifications', { params: { unreadOnly: true } });
   });
 
   it('getUnreadCount returns unread count', async () => {
@@ -43,7 +45,7 @@ describe('notificationService', () => {
     const { notificationService } = await import('@/modules/notification/services/notification.service');
     const result = await notificationService.getUnreadCount();
 
-    expect(api.get).toHaveBeenCalledWith('/notifications/unread-count');
+    expect(api.get).toHaveBeenCalledWith('/notifications/unread-count', { params: undefined });
     expect(result).toEqual({ count: 5 });
   });
 

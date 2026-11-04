@@ -1,9 +1,10 @@
 const farmMemberRepository = require('./farmMember.repository');
-const { Galpon, Profile, Cage, Rabbit, Assignment, Notification, WorkerPermission, AuditLog } = require('../../domain/models');
+const { Profile, Cage, Assignment, Notification, WorkerPermission, AuditLog } = require('../../domain/models');
 const { Sequelize, Op } = require('sequelize');
 const AppError = require('../../errors/AppError');
 const notificationService = require('../notification/notification.service');
 const galponRepository = require('../galpon/galpon.repository');
+const { recordWorkerChange } = require('../../common/helpers/audit.helper');
 
 class FarmMemberService {
     /**
@@ -11,9 +12,10 @@ class FarmMemberService {
      * Solo puede hacerlo el propietario del galpón.
      */
     async getWorkersByGalpon(galponId, requestingProfileId) {
-        await this._assertOwner(galponId, requestingProfileId);
-        const members = await farmMemberRepository.findByGalponId(galponId);
-        // Solo retornar workers (no el propietario en la lista)
+        const [, members] = await Promise.all([
+            this._assertOwner(galponId, requestingProfileId),
+            farmMemberRepository.findByGalponId(galponId)
+        ]);
         return members.filter(m => m.role === 'worker');
     }
 
@@ -39,7 +41,6 @@ class FarmMemberService {
     async createOwnerMembership(profileId, galponId) {
         const existing = await farmMemberRepository.findMembership(profileId, galponId);
         if (existing) {
-            // Si ya existe como inactive, reactivar como owner
             return farmMemberRepository.update(existing, { role: 'owner', status: 'active' });
         }
         return farmMemberRepository.create({ profileId, galponId, role: 'owner', status: 'active' });
@@ -54,8 +55,10 @@ class FarmMemberService {
             throw new AppError('Ya eres miembro de este galpón.', 400);
         }
         if (existing) {
-            await farmMemberRepository.replacePermissions(existing.id, []);
-            await farmMemberRepository.replaceWorkerCages(existing.id, []);
+            await Promise.all([
+                farmMemberRepository.replacePermissions(existing.id, []),
+                farmMemberRepository.replaceWorkerCages(existing.id, [])
+            ]);
             return farmMemberRepository.update(existing, { role: 'worker', status: 'active' });
         }
         return farmMemberRepository.create({ profileId, galponId, role: 'worker', status: 'active' });
@@ -120,21 +123,23 @@ class FarmMemberService {
         const addedModules = newModules.filter(m => !oldModules.includes(m));
         const removedModules = oldModules.filter(m => !newModules.includes(m));
 
-        // Enviar notificaciones si hubo cambios en jaulas o labores de crianza
-        if (addedCages.length > 0 || addedModules.length > 0 || removedCages.length > 0 || removedModules.length > 0) {
-            await this._sendUpdateNotifications(member, requestingProfileId, addedCages, addedModules, removedCages, removedModules);
-        }
-
-        // Sincronizar aviso de responsabilidad para permisos sensibles ("como teníamos previsto")
-        await this._syncContractNotification(member, requestingProfileId, addedModules);
+        // Enviar notificaciones y sincronizar aviso de responsabilidad en paralelo
+        await Promise.all([
+            (addedCages.length > 0 || addedModules.length > 0 || removedCages.length > 0 || removedModules.length > 0)
+                ? this._sendUpdateNotifications(member, requestingProfileId, addedCages, addedModules, removedCages, removedModules)
+                : Promise.resolve(),
+            this._syncContractNotification(member, requestingProfileId, addedModules)
+        ]);
 
         return farmMemberRepository.findById(farmMemberId);
     }
 
     async _sendUpdateNotifications(member, requestingProfileId, addedCages, addedModules, removedCages, removedModules) {
-        const ownerProfile = await Profile.findByPk(requestingProfileId);
+        const [ownerProfile, galpon] = await Promise.all([
+            Profile.findByPk(requestingProfileId),
+            galponRepository.findById(member.galponId)
+        ]);
         const ownerName = ownerProfile?.fullName?.trim() || ownerProfile?.username || 'El propietario';
-        const galpon = await galponRepository.findById(member.galponId);
         
         const MODULE_NAMES = {
             feeding: 'alimentación', vaccination: 'vacunación', deworming: 'desparasitación',
@@ -145,11 +150,10 @@ class FarmMemberService {
         const translate = (m) => MODULE_NAMES[m] || m;
 
         const SENSITIVE_MODULES = ['cages', 'races', 'rabbits', 'assignments', 'genealogy', 'reports'];
-
-        // Solo módulos de crianza para la notificación normal de antes
         const addedBreedingModules = addedModules.filter(m => !SENSITIVE_MODULES.includes(m));
 
-        // Notificación de asignaciones de crianza (jaulas y módulos habituales)
+        const notifPromises = [];
+
         if (addedCages.length > 0 || addedBreedingModules.length > 0) {
             let parts = [];
             if (addedCages.length === 1) {
@@ -164,12 +168,14 @@ class FarmMemberService {
                 parts.push(`los procesos de ${addedBreedingModules.map(translate).join(', ')}`);
             }
             
-            await notificationService.createNotification(member.profileId, {
-                type: 'info',
-                title: 'Nuevas asignaciones',
-                message: `${ownerName} te asignó ${parts.join(' y ')} en el galpón "${galpon.name}".`,
-                data: { galponId: galpon.id, type: 'task_assignment', category: 'breeding' }
-            });
+            notifPromises.push(
+                notificationService.createNotification(member.profileId, {
+                    type: 'info',
+                    title: 'Nuevas asignaciones',
+                    message: `${ownerName} te asignó ${parts.join(' y ')} en el galpón "${galpon.name}".`,
+                    data: { galponId: galpon.id, type: 'task_assignment', category: 'breeding' }
+                })
+            );
         }
 
         if (removedCages.length > 0 || removedModules.length > 0) {
@@ -186,12 +192,18 @@ class FarmMemberService {
                 parts.push(`los procesos de ${removedModules.map(translate).join(', ')}`);
             }
             
-            await notificationService.createNotification(member.profileId, {
-                type: 'info',
-                title: 'Asignaciones removidas',
-                message: `${ownerName} te quitó ${parts.join(' y ')} en el galpón "${galpon.name}".`,
-                data: { galponId: galpon.id, type: 'task_assignment', action: 'removed' }
-            });
+            notifPromises.push(
+                notificationService.createNotification(member.profileId, {
+                    type: 'info',
+                    title: 'Asignaciones removidas',
+                    message: `${ownerName} te quitó ${parts.join(' y ')} en el galpón "${galpon.name}".`,
+                    data: { galponId: galpon.id, type: 'task_assignment', action: 'removed' }
+                })
+            );
+        }
+
+        if (notifPromises.length > 0) {
+            await Promise.all(notifPromises);
         }
     }
 
@@ -204,35 +216,33 @@ class FarmMemberService {
         if (!member) throw new AppError('Miembro no encontrado.', 404);
         if (member.role === 'owner') throw new AppError('No se puede eliminar al propietario del galpón.', 400);
 
-        await this._assertOwner(member.galponId, requestingProfileId);
-        
-        // Obtener información para notificaciones
-        const galpon = await galponRepository.findById(member.galponId);
-        const ownerProfile = await Profile.findByPk(requestingProfileId);
+        const [, galpon, ownerProfile, workerProfile] = await Promise.all([
+            this._assertOwner(member.galponId, requestingProfileId),
+            galponRepository.findById(member.galponId),
+            Profile.findByPk(requestingProfileId),
+            Profile.findByPk(member.profileId)
+        ]);
         const ownerName = ownerProfile?.fullName?.trim() || ownerProfile?.username || 'el propietario';
 
-        await farmMemberRepository.deactivate(member);
+        await Promise.all([
+            farmMemberRepository.deactivate(member),
+            Notification.destroy({
+                where: {
+                    profileId: member.profileId,
+                    [Op.and]: [
+                        Sequelize.literal(`("data"->>'isContract')::boolean = true`),
+                        Sequelize.literal(`("data"->>'galponId') = '${String(member.galponId).replace(/'/g, '')}'`)
+                    ]
+                }
+            })
+        ]);
 
-        // Limpiar aviso de responsabilidad para este galpón si existía
-        await Notification.destroy({
-            where: {
-                profileId: member.profileId,
-                [Op.and]: [
-                    Sequelize.literal(`("data"->>'isContract')::boolean = true`),
-                    Sequelize.literal(`("data"->>'galponId') = '${String(member.galponId).replace(/'/g, '')}'`)
-                ]
-            }
-        });
-
-        // Si el trabajador tenía este galpón como activo, deseleccionarlo
-        const workerProfile = await Profile.findByPk(member.profileId);
         if (workerProfile && workerProfile.activeGalponId === member.galponId) {
             await workerProfile.update({ activeGalponId: null });
             const { clearCache } = require('../../common/middlewares/auth.middleware');
             clearCache(member.profileId);
         }
 
-        // Notificar al trabajador que fue eliminado del galpón
         await notificationService.createNotification(member.profileId, {
             type: 'error',
             title: 'Has sido eliminado del galpón',
@@ -243,8 +253,6 @@ class FarmMemberService {
 
     /**
      * Sincroniza el aviso de responsabilidad para trabajadores con permisos sensibles.
-     * Si tiene al menos un permiso sensible, se crea el aviso formal no eliminable.
-     * Si ya no tiene permisos sensibles, se retira automáticamente.
      */
     async _syncContractNotification(member, requestingProfileId, addedModules = []) {
         const SENSITIVE_MODULES = ['cages', 'races', 'rabbits', 'assignments', 'genealogy', 'reports'];
@@ -257,25 +265,30 @@ class FarmMemberService {
             reports: 'reportes'
         };
 
-        const currentPermissions = await WorkerPermission.findAll({ where: { farmMemberId: member.id } });
-        const activeSensitiveModules = currentPermissions
+        const [currentPermissions, galpon, ownerProfile, existingContracts] = await Promise.all([
+            WorkerPermission.findAll({ where: { farmMemberId: member.id } }),
+            galponRepository.findById(member.galponId),
+            requestingProfileId ? Profile.findByPk(requestingProfileId) : Promise.resolve(null),
+            Notification.findAll({
+                where: {
+                    profileId: member.profileId,
+                    [Op.and]: [
+                        Sequelize.literal(`("data"->>'isContract')::boolean = true`),
+                        Sequelize.literal(`("data"->>'galponId') = '${String(member.galponId).replace(/'/g, '')}'`)
+                    ]
+                }
+            })
+        ]);
+
+        const safePermissions = Array.isArray(currentPermissions) ? currentPermissions : [];
+        const safeContracts = Array.isArray(existingContracts) ? existingContracts : [];
+
+        const activeSensitiveModules = safePermissions
             .filter(p => SENSITIVE_MODULES.includes(p.moduleName) && (p.canCreate || p.canRead || p.canUpdate || p.canDelete))
             .map(p => p.moduleName);
 
-        const galpon = await galponRepository.findById(member.galponId);
         const galponName = galpon?.name || 'tu galpón asignado';
-        const ownerProfile = requestingProfileId ? await Profile.findByPk(requestingProfileId) : null;
         const ownerName = ownerProfile?.fullName?.trim() || ownerProfile?.username || 'El dueño';
-
-        const existingContracts = await Notification.findAll({
-            where: {
-                profileId: member.profileId,
-                [Op.and]: [
-                    Sequelize.literal(`("data"->>'isContract')::boolean = true`),
-                    Sequelize.literal(`("data"->>'galponId') = '${String(member.galponId).replace(/'/g, '')}'`)
-                ]
-            }
-        });
 
         if (activeSensitiveModules.length > 0) {
             const formattedModules = activeSensitiveModules.map(m => SENSITIVE_LABELS[m] || m);
@@ -288,12 +301,10 @@ class FarmMemberService {
 
             const message = `${ownerName} te dio permiso para manejar ${modulesList} en el galpón "${galponName}". Todo cambio queda guardado con tu nombre bajo tu responsabilidad.`;
 
-            // Si ya existía un contrato anterior, lo removemos para regenerarlo con un registro fresco
-            // Así llega como no leído con un ID nuevo, asegurando que se active la previa flotante en pantalla
-            if (existingContracts.length > 0) {
+            if (safeContracts.length > 0) {
                 await Notification.destroy({
                     where: {
-                        id: { [Op.in]: existingContracts.map(c => c.id) }
+                        id: { [Op.in]: safeContracts.map(c => c.id) }
                     }
                 });
             }
@@ -310,10 +321,12 @@ class FarmMemberService {
                     modules: activeSensitiveModules
                 }
             });
-        } else {
-            for (const contract of existingContracts) {
-                await contract.destroy();
-            }
+        } else if (safeContracts.length > 0) {
+            await Notification.destroy({
+                where: {
+                    id: { [Op.in]: safeContracts.map(c => c.id) }
+                }
+            });
         }
     }
 
@@ -328,7 +341,6 @@ class FarmMemberService {
             Sequelize.literal(`("AuditLog"."details"->>'galponId') = '${cleanGalponId}'`)
         ];
 
-        // Separar movimientos automáticos de HopTolt de los cambios hechos por trabajadores
         const isSystemRequest = filters.isSystem === true || filters.isSystem === 'true' || filters.source === 'system';
         if (isSystemRequest) {
             andClauses.push(Sequelize.literal(`("AuditLog"."details"->>'isSystem') = 'true'`));
@@ -395,10 +407,6 @@ class FarmMemberService {
      * Registra auditoría cuando un trabajador genera o consulta un reporte.
      */
     async logReportAudit(galponId, profileId, { moduleName, moduleLabel, startDate, endDate, format }) {
-        const { recordWorkerChange } = require('../../common/helpers/audit.helper');
-        const { AuditLog } = require('../../domain/models');
-        const { Op } = require('sequelize');
-
         const isDownload = format === 'pdf' || format === 'excel' || format === 'csv';
         const action = isDownload ? 'descargar' : 'consultar';
         const formatLabel = isDownload ? (format ? format.toUpperCase() : 'PDF') : 'Vista previa';
@@ -406,8 +414,6 @@ class FarmMemberService {
             ? `Descargó el reporte de ${moduleLabel || moduleName || 'estadísticas'} del galpón en ${formatLabel}`
             : `Consultó la vista previa del reporte de ${moduleLabel || moduleName || 'estadísticas'} del galpón`;
 
-        // Si el trabajador generó la vista previa o descargó este mismo reporte en los últimos 5 minutos,
-        // actualizamos el registro existente para evitar duplicar entradas en la bitácora de auditoría.
         const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
         const recentLog = await AuditLog.findOne({
             where: {
@@ -472,12 +478,11 @@ class FarmMemberService {
         if (!cageIds || cageIds.length === 0) return;
         
         await Promise.all(cageIds.map(async (cageId) => {
-            const cage = await Cage.findOne({ where: { id: cageId, galponId } });
+            const [cage, rabbitCount] = await Promise.all([
+                Cage.findOne({ where: { id: cageId, galponId } }),
+                Assignment.count({ where: { cageId, status: 'asignado' } })
+            ]);
             if (!cage) throw new AppError(`La jaula ${cageId} no pertenece a este galpón.`, 400);
-            
-            const rabbitCount = await Assignment.count({ 
-                where: { cageId, status: 'asignado' }
-            });
             
             if (rabbitCount === 0) {
                 throw new AppError(`La jaula ${cage.number} no tiene conejos asignados. Solo se pueden asignar jaulas ocupadas.`, 400);

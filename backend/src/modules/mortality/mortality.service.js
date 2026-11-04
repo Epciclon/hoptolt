@@ -9,26 +9,27 @@ class MortalityService {
 
         const { Profile } = require('../../domain/models');
 
-        const profile = await Profile.findByPk(profileId);
+        const [profile, membership, rabbit] = await Promise.all([
+            Profile.findByPk(profileId),
+            FarmMember.findOne({
+                where: { profileId, galponId, status: 'active' }
+            }),
+            Rabbit.findByPk(rabbitId)
+        ]);
+
         if (!profile) throw new AppError('Usuario no encontrado.', 404);
-
-        const membership = await FarmMember.findOne({
-            where: { profileId, galponId, status: 'active' }
-        });
         if (!membership) throw new AppError('No tienes acceso a este galpón.', 403);
-
-        const rabbit = await Rabbit.findByPk(rabbitId);
         if (!rabbit) throw new AppError(`El conejo con ID ${rabbitId} no existe.`, 404);
         if (rabbit.galponId !== galponId) throw new AppError(`El conejo con ID ${rabbitId} no pertenece al galpón activo.`, 400);
 
         if (membership.role === 'worker') {
             const { WorkerCage } = require('../../domain/models');
-            const workerCages = await WorkerCage.findAll({ where: { farmMemberId: membership.id } });
+            const [workerCages, activeAssignment] = await Promise.all([
+                WorkerCage.findAll({ where: { farmMemberId: membership.id } }),
+                Assignment.findOne({ where: { rabbitId, status: 'asignado' } })
+            ]);
             const assignedCageIds = new Set(workerCages.map(wc => Number(wc.cageId)));
 
-            const activeAssignment = await Assignment.findOne({
-                where: { rabbitId, status: 'asignado' }
-            });
             if (!activeAssignment || !assignedCageIds.has(Number(activeAssignment.cageId))) {
                 throw new AppError('No tienes permiso para registrar mortalidad de un conejo que no esté en tus jaulas asignadas.', 403);
             }
@@ -65,7 +66,8 @@ class MortalityService {
 
         const deathCount = isKits ? (Number(numberOfKits) || 1) : 1;
         const { notifyOwnerOnWorkerAction } = require('../../common/helpers/notification.helper');
-        await notifyOwnerOnWorkerAction(profileId, galponId, 'mortality', 'Mortalidad', deathCount, 'caso');
+        notifyOwnerOnWorkerAction(profileId, galponId, 'mortality', 'Mortalidad', deathCount, 'caso')
+            .catch(err => console.error('Error notifying owner on mortality:', err));
 
         return result;
     }
@@ -87,29 +89,34 @@ class MortalityService {
             const previousDeadKits = previousMortalities.reduce((acc, curr) => acc + curr.numberOfKits, 0);
             const originalBornKits = activeLactation.bornKits + previousDeadKits;
             
-            await Mortality.destroy({
-                where: { rabbitId, isKits: true, createdAt: { [Op.gte]: activeLactation.mountDate } }
-            });
-
             activeLactation.bornKits = originalBornKits;
             activeLactation.status = 'fallido';
             activeLactation.cancellationReason = `Mortalidad total de la camada (Causa: ${cause.trim()})`;
             activeLactation.updatedBySystem = false;
             activeLactation.profileId = profileId;
-            await activeLactation.save();
+
+            await Promise.all([
+                Mortality.destroy({
+                    where: { rabbitId, isKits: true, createdAt: { [Op.gte]: activeLactation.mountDate } }
+                }),
+                activeLactation.save()
+            ]);
             
             return { id: 'merged_total_mortality', rabbitId, cause, observations, deathDate: dDate, isKits: true, numberOfKits: originalBornKits };
         }
 
-        const mortality = await mortalityRepository.create({
-            rabbitId, cause: cause.trim(), observations: observations ? observations.trim() : null,
-            deathDate: dDate, isKits: true, numberOfKits, galponId, profileId
-        });
-
-        if (activeLactation && activeLactation.bornKits !== null) {
-            activeLactation.bornKits = Math.max(0, activeLactation.bornKits - numberOfKits);
-            await activeLactation.save();
-        }
+        const [mortality] = await Promise.all([
+            mortalityRepository.create({
+                rabbitId, cause: cause.trim(), observations: observations ? observations.trim() : null,
+                deathDate: dDate, isKits: true, numberOfKits, galponId, profileId
+            }),
+            (activeLactation && activeLactation.bornKits !== null)
+                ? (() => {
+                    activeLactation.bornKits = Math.max(0, activeLactation.bornKits - numberOfKits);
+                    return activeLactation.save();
+                })()
+                : Promise.resolve()
+        ]);
 
         return mortality;
     }
@@ -117,17 +124,19 @@ class MortalityService {
     async _processAdultMortality(rabbit, rabbitId, cause, observations, dDate, galponId, profileId) {
         const { Assignment } = require('../../domain/models');
 
-        const assignment = await Assignment.findOne({ where: { rabbitId, status: 'asignado' } });
-        if (assignment) {
-            await assignment.update({ status: 'liberado' });
-        }
+        const [assignment, mortality] = await Promise.all([
+            Assignment.findOne({ where: { rabbitId, status: 'asignado' } }),
+            mortalityRepository.create({
+                rabbitId, cause: cause.trim(), observations: observations ? observations.trim() : null,
+                deathDate: dDate, isKits: false, galponId, profileId
+            })
+        ]);
 
-        const mortality = await mortalityRepository.create({
-            rabbitId, cause: cause.trim(), observations: observations ? observations.trim() : null,
-            deathDate: dDate, isKits: false, galponId, profileId
-        });
+        await Promise.all([
+            assignment ? assignment.update({ status: 'liberado' }) : Promise.resolve(),
+            rabbit.destroy()
+        ]);
 
-        await rabbit.destroy();
         return mortality;
     }
 
@@ -147,8 +156,10 @@ class MortalityService {
         
         const queryOptions = filters.all ? {} : { limit: limitValue, offset };
         
-        const mortalities = await mortalityRepository.findByGalponId(galponId, queryOptions, filterProfileId, isKits, filters);
-        const total = await mortalityRepository.countByGalponId(galponId, filterProfileId, isKits, filters);
+        const [mortalities, total] = await Promise.all([
+            mortalityRepository.findByGalponId(galponId, queryOptions, filterProfileId, isKits, filters),
+            mortalityRepository.countByGalponId(galponId, filterProfileId, isKits, filters)
+        ]);
 
         return createPaginatedResponse(mortalities, filters.all ? 1 : pageValue, filters.all ? mortalities.length : limitValue, total);
     }

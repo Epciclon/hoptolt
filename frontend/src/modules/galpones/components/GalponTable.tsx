@@ -9,7 +9,6 @@ import { useActiveGalpon } from '../hooks/useActiveGalpon';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 import { useToast } from '@/shared/contexts/ToastContext';
 import type { Galpon } from '../types/galpon.types';
-import { galponService } from '../services/galpon.service';
 import { getGalponBaseColumns } from '../utils/galponUtils';
 import { FilterBar } from '@/shared/ui/FilterBar';
 import { FullScreenLoader } from '@/shared/ui';
@@ -19,7 +18,7 @@ interface GalponTableProps {
 }
 
 export function GalponTable({ onEdit }: Readonly<GalponTableProps>) {
-  const { galpones, loading, refetch } = useGalpones();
+  const { galpones, loading, deleteGalpon } = useGalpones();
   const { activeGalpon, setActive } = useActiveGalpon();
   const { user } = useAuthContext();
   const { showToast } = useToast();
@@ -38,10 +37,9 @@ export function GalponTable({ onEdit }: Readonly<GalponTableProps>) {
     if (!toDelete) return;
     setDeleting(true);
     try {
-      await galponService.delete(toDelete.id);
+      await deleteGalpon(toDelete.id);
       setToDelete(null);
       showToast(`Galpón "${toDelete.name}" eliminado correctamente.`, 'success');
-      refetch();
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Error al eliminar el galpón.', 'error');
     } finally {

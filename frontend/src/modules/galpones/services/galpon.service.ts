@@ -1,5 +1,5 @@
-﻿import api from '@/lib/api';
-import type { Galpon, CreateGalponDto, UpdateGalponDto } from '../types/galpon.types';
+import api from '@/lib/api';
+import type { Galpon, CreateGalponDto, UpdateGalponDto, GalponStats } from '../types/galpon.types';
 
 export const galponService = {
   async getAll(): Promise<Galpon[]> {
@@ -33,5 +33,10 @@ export const galponService = {
 
   async setActive(id: number): Promise<void> {
     await api.post(`/galpones/${id}/set-active`, {});
+  },
+
+  async getStats(id: number): Promise<GalponStats> {
+    const { data } = await api.get<{ success: boolean; stats: GalponStats }>(`/galpones/${id}/stats`);
+    return data.stats;
   },
 };

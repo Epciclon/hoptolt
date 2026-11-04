@@ -38,7 +38,7 @@ export function IncidentDetailModal({
   userRole
 }: Readonly<IncidentDetailModalProps>) {
   const { showToast } = useToast();
-  const { respondToIncident, isResponding, deleteIncident, isDeleting } = useIncidents();
+  const { respondToIncident, isResponding, deleteIncident, isDeleting } = useIncidents({ enabled: false });
   const [ownerResponse, setOwnerResponse] = useState(incident?.ownerResponse || '');
   const [selectedStatus, setSelectedStatus] = useState<FormStatus>(
     incident?.status === 'pending' ? 'pending' : 'draft'

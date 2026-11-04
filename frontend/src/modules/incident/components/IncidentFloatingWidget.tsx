@@ -9,14 +9,13 @@ import {
   ChevronRight,
   MessageSquare,
   AlertTriangle,
-  Send,
   CheckCheck,
   Trash2
 } from 'lucide-react';
 import { useIncidents } from '../hooks/useIncidents';
 import { incidentService } from '../services/incident.service';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
-import { Button, Badge, ConfirmDialog } from '@/shared/ui';
+import { Button, ConfirmDialog } from '@/shared/ui';
 import Link from 'next/link';
 import { IncidentDetailModal } from './IncidentDetailModal';
 import { IncidentFormModal } from './IncidentFormModal';
@@ -51,7 +50,6 @@ export function IncidentFloatingWidget() {
     incidents,
     counts,
     userRole,
-    loading,
     refetch,
     createIncident,
     isCreating,
@@ -490,13 +488,6 @@ export function IncidentFloatingWidget() {
     } catch (err: any) {
       setQuickError(err?.message || 'Error al registrar la novedad.');
     }
-  };
-
-  const getStatusBadge = (status: string) => {
-    if (status === 'resolved' || status === 'reviewed') {
-      return <Badge variant="success">Atendida</Badge>;
-    }
-    return <Badge variant="warning">Pendiente</Badge>;
   };
 
   // Filtrado de novedades según pestaña seleccionada ordenadas de más nueva a más antigua

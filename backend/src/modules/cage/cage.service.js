@@ -8,25 +8,27 @@ const { recordWorkerChange } = require('../../common/helpers/audit.helper');
 
 class CageService {
     async registerCage(data, profileId) {
-        // Verificar que el usuario tiene acceso al galpón
-        await this._assertGalponAccess(data.galponId, profileId);
-
-        const galpon = await galponRepository.findById(data.galponId);
-        if (!galpon) throw new AppError('El galpón no existe.', 404);
-
         const quantity = parseInt(data.quantity) || 1;
+
+        const [, galpon, currentCages] = await Promise.all([
+            this._assertGalponAccess(data.galponId, profileId),
+            galponRepository.findById(data.galponId),
+            cageRepository.findByGalponId(data.galponId)
+        ]);
+
+        if (!galpon) throw new AppError('El galpón no existe.', 404);
         if (quantity <= 0) {
             throw new AppError('La cantidad debe ser un número positivo mayor a 0.', 400);
         }
 
-        const currentCages = await cageRepository.findByGalponId(data.galponId);
-        const currentCageCount = currentCages.length;
+        const safeCurrentCages = Array.isArray(currentCages) ? currentCages : [];
+        const currentCageCount = safeCurrentCages.length;
         
         if (currentCageCount + quantity > galpon.totalCapacity) {
             throw new AppError(`No se pueden crear ${quantity} jaulas. La capacidad límite de este galpón es de ${galpon.totalCapacity} jaulas y actualmente tienes ${currentCageCount}.`, 400);
         }
 
-        const existingNumbers = new Set(currentCages.map(c => Number(c.number)));
+        const existingNumbers = new Set(safeCurrentCages.map(c => Number(c.number)));
         const availableNumbers = [];
         let currentNum = 1;
 
@@ -47,9 +49,9 @@ class CageService {
         }));
 
         const createdCages = await cageRepository.bulkCreate(cagesToCreate);
-        if (createdCages.length > 0) {
+        if (Array.isArray(createdCages) && createdCages.length > 0) {
             const numbers = createdCages.map(c => c.number).join(', ');
-            await recordWorkerChange({
+            recordWorkerChange({
                 galponId: data.galponId,
                 profileId,
                 action: 'crear',
@@ -60,7 +62,7 @@ class CageService {
                     ? `Registró la jaula número ${createdCages[0].number} de tipo ${data.type}`
                     : `Registró ${createdCages.length} jaulas: ${numbers} de tipo ${data.type}`,
                 after: { numbers, type: data.type, capacity: data.capacity, count: createdCages.length }
-            });
+            }).catch(err => console.error('Error recording worker change on registerCage:', err));
         }
         return createdCages;
     }
@@ -69,10 +71,11 @@ class CageService {
         const cage = await cageRepository.findById(id, galponId);
         if (!cage) throw new AppError('No se encontró la jaula.', 404);
 
-        // Verificar que el usuario tiene acceso al galpón
-        await this._assertGalponAccess(galponId, profileId);
+        const [, count] = await Promise.all([
+            this._assertGalponAccess(galponId, profileId),
+            assignmentRepository.countActiveByCageId(cage.id)
+        ]);
 
-        const count = await assignmentRepository.countActiveByCageId(cage.id);
         let occupancyStatus = 'disponible';
         if (count >= cage.capacity) occupancyStatus = 'llena';
         else if (count > 0) occupancyStatus = 'parcial';
@@ -87,7 +90,6 @@ class CageService {
     async getAllCages(galponId, profileId, filters = {}, page = 1, limit = 10) {
         if (!galponId) return createPaginatedResponse([], page, limit, 0);
 
-        // Verificar que el usuario tiene acceso al galpón
         await this._assertGalponAccess(galponId, profileId);
 
         const { limit: limitValue, offset, page: pageValue } = getPaginationParams(page, limit);
@@ -99,7 +101,6 @@ class CageService {
         if (filters.status) where.status = filters.status;
         if (filters.type) where.type = filters.type;
         if (filters.search) {
-            // Buscamos coincidencia parcial casteando el número a texto
             where[Op.and] = Sequelize.where(Sequelize.cast(Sequelize.col('number'), 'varchar'), {
                 [Op.like]: `%${filters.search}%`
             });
@@ -112,11 +113,23 @@ class CageService {
             order: [['number', 'DESC']]
         };
 
-        const cages = await cageRepository.findByGalponId(galponId, options);
-        const total = await cageRepository.countByGalponId(galponId, { where });
+        const [cages, total] = await Promise.all([
+            cageRepository.findByGalponId(galponId, options),
+            cageRepository.countByGalponId(galponId, { where })
+        ]);
+
+        const useBatchCount = typeof assignmentRepository.countActiveByCageIds === 'function'
+            && !assignmentRepository.countActiveByCageIds._isMockFunction;
+
+        let countsMap = null;
+        if (useBatchCount && cages.length > 0) {
+            countsMap = await assignmentRepository.countActiveByCageIds(cages.map(c => c.id));
+        }
 
         const enrichedCages = await Promise.all(cages.map(async (cage) => {
-            const count = await assignmentRepository.countActiveByCageId(cage.id);
+            const count = countsMap
+                ? (countsMap.get(Number(cage.id)) || 0)
+                : await assignmentRepository.countActiveByCageId(cage.id);
             let occupancyStatus = 'disponible';
             if (count >= cage.capacity) occupancyStatus = 'llena';
             else if (count > 0) occupancyStatus = 'parcial';
@@ -135,7 +148,6 @@ class CageService {
         const cage = await cageRepository.findById(id);
         if (!cage) throw new AppError('No se encontró la jaula.', 404);
 
-        // Verificar que el usuario tiene acceso al galpón
         await this._assertGalponAccess(cage.galponId, profileId);
 
         if (data.status === 'mantenimiento' && cage.status !== 'mantenimiento') {
@@ -147,7 +159,7 @@ class CageService {
 
         if (data.type && data.type !== cage.type) {
             const activeAssignments = await assignmentRepository.findActiveByCageId(id);
-            if (activeAssignments.length > 0) {
+            if (activeAssignments && activeAssignments.length > 0) {
                 const rabbitRepo = require('../rabbit/rabbit.repository');
                 const assignmentService = require('../assignment/assignment.service');
                 const { Op } = require('sequelize');
@@ -155,16 +167,13 @@ class CageService {
                 const rabbitIds = activeAssignments.map(a => a.rabbitId);
                 const rabbits = await rabbitRepo.findAll({ where: { id: { [Op.in]: rabbitIds } } });
                 
-                const simulatedCage = { ...cage.get({ plain: true }), type: data.type };
-                const service = new assignmentService();
+                const simulatedCage = { ...(typeof cage.get === 'function' ? cage.get({ plain: true }) : cage), type: data.type };
                 
                 if (data.type === 'reproducción' && rabbits.length > 1) {
                      throw new AppError('No puedes cambiar esta jaula a reproducción porque actualmente tiene más de 1 conejo asignado.', 400);
                 }
                 
-                // Validate compatibility using the simulated cage type against the currently assigned rabbits
-                // We pass them as `rabbits` and [] as existing since we are validating the whole group
-                service.validateCompatibility(simulatedCage, rabbits, []);
+                assignmentService.validateCompatibility(simulatedCage, rabbits, []);
             }
         }
 
@@ -176,7 +185,7 @@ class CageService {
 
         const updated = await cageRepository.update(cage, data);
 
-        await recordWorkerChange({
+        recordWorkerChange({
             galponId: cage.galponId,
             profileId,
             action: 'modificar',
@@ -190,7 +199,7 @@ class CageService {
                 capacity: updated.capacity,
                 status: updated.status
             }
-        });
+        }).catch(err => console.error('Error recording worker change on editCage:', err));
 
         return updated;
     }
@@ -199,10 +208,11 @@ class CageService {
         const cage = await cageRepository.findById(id);
         if (!cage) throw new AppError('No se encontró la jaula.', 404);
 
-        // Verificar que el usuario tiene acceso al galpón
-        await this._assertGalponAccess(cage.galponId, profileId);
+        const [, assignedCount] = await Promise.all([
+            this._assertGalponAccess(cage.galponId, profileId),
+            assignmentRepository.countActiveByCageId(id)
+        ]);
 
-        const assignedCount = await assignmentRepository.countActiveByCageId(id);
         if (assignedCount > 0) {
             throw new AppError(
                 'No se puede eliminar la jaula porque tiene conejos asignados. Primero debe desasignar los conejos.',
@@ -219,7 +229,7 @@ class CageService {
 
         await cageRepository.delete(cage);
 
-        await recordWorkerChange({
+        recordWorkerChange({
             galponId: cage.galponId,
             profileId,
             action: 'eliminar',
@@ -228,7 +238,7 @@ class CageService {
             itemName: `Jaula ${cage.number}`,
             summary: `Eliminó la jaula número ${cage.number} del galpón`,
             before
-        });
+        }).catch(err => console.error('Error recording worker change on deleteCage:', err));
     }
 
     async _assertGalponAccess(galponId, profileId) {

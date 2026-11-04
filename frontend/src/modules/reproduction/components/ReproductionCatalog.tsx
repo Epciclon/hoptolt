@@ -10,7 +10,7 @@ import { Calendar, Info, Heart } from 'lucide-react';
 import { ReproductionForm } from './ReproductionForm';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { Input } from '@/shared/ui/Input';
-import { mortalityService } from '@/modules/mortality/services/mortality.service';
+import { useMortality } from '@/modules/mortality/hooks/useMortality';
 import { formatDateString } from '@/shared/utils/dateUtils';
 import { matchesSmartSearch } from '@/shared/utils/rabbitUtils';
 import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
@@ -21,7 +21,8 @@ interface ReproductionCatalogProps {
 }
 
 export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<ReproductionCatalogProps>) {
-  const { reproductions, loading, cancelReproduction, registerBirth, fetchReproductions } = useReproduction({ status: 'gestacion', limit: 1000 });
+  const { reproductions, cancelReproduction, registerBirth, fetchReproductions } = useReproduction({ status: 'gestacion', limit: 1000 });
+  const { createMortality } = useMortality({ enabled: false });
   const onSuccess = fetchReproductions;
   const { showToast } = useToast();
   const { can } = usePermissions();
@@ -70,7 +71,7 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
     try {
       if (cancelReason === 'muerte') {
         // Registrar mortalidad de la coneja (esto libera la jaula y hace softdelete)
-        await mortalityService.create({
+        await createMortality({
             rabbitId: toCancel.femaleId,
             cause: 'otra',
             observations: 'Muerte durante la gestación',
@@ -209,7 +210,6 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
             >
                 {group.reproductions.map(reproduction => {
                   const isExpanded = expandedId === reproduction.id;
-                  const canGiveBirth = isBirthDateReached(reproduction.estimatedBirthDate);
                   const { daysLeft } = getDaysInGestation(reproduction.estimatedBirthDate);
                   const nearBirth = daysLeft >= 0 && daysLeft <= 3;
 

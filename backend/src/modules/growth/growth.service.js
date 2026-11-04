@@ -27,8 +27,10 @@ class GrowthService {
 
         const promise = (async () => {
             try {
-                const memberships = await FarmMember.findAll({ where: { profileId, status: 'active' } });
-                const ownedGalpones = await Galpon.findAll({ where: { profileId } });
+                const [memberships, ownedGalpones] = await Promise.all([
+                    FarmMember.findAll({ where: { profileId, status: 'active' } }),
+                    Galpon.findAll({ where: { profileId } })
+                ]);
 
                 const galponIds = new Set();
                 ownedGalpones.forEach(g => galponIds.add(g.id));
@@ -51,7 +53,7 @@ class GrowthService {
                     this._processRabbitGrowthSync(rabbit, today, updatesResult);
                 }
 
-                await this._applyGrowthUpdates(updatesResult, rabbits, profileId, today, todayStr, AuditLog, Growth, Notification);
+                await this._applyGrowthUpdates(updatesResult, rabbits, profileId, today, todayStr, AuditLog, Growth, Notification, memberships, ownedGalpones);
 
             } catch (error) {
                 console.error('Error processing daily growth:', error);
@@ -65,14 +67,15 @@ class GrowthService {
     }
 
     async getHistory(rabbitId) {
-        const rabbit = await Rabbit.findByPk(rabbitId);
+        const [rabbit, history] = await Promise.all([
+            Rabbit.findByPk(rabbitId),
+            Growth.findAll({
+                where: { rabbitId },
+                attributes: ['id', 'weight', 'recordDate', 'isManual'],
+                order: [['recordDate', 'DESC']]
+            })
+        ]);
         if (!rabbit) throw new AppError('Conejo no encontrado', 404);
-
-        const history = await Growth.findAll({
-            where: { rabbitId },
-            attributes: ['id', 'weight', 'recordDate', 'isManual'],
-            order: [['recordDate', 'DESC']]
-        });
 
         return history;
     }
@@ -128,7 +131,7 @@ class GrowthService {
         updatesResult.rabbitsToUpdate.push(updates);
     }
 
-    async _applyGrowthUpdates(updatesResult, rabbits, profileId, today, todayStr, AuditLog, Growth, Notification) {
+    async _applyGrowthUpdates(updatesResult, rabbits, profileId, today, todayStr, AuditLog, Growth, Notification, preloadedMemberships, preloadedOwnedGalpones) {
         const { messages, rabbitsToUpdate, catchUpGrowths } = updatesResult;
 
         if (catchUpGrowths && catchUpGrowths.length > 0) {
@@ -175,8 +178,8 @@ class GrowthService {
             }));
         }
 
-        const memberships = await FarmMember.findAll({ where: { profileId, status: 'active' } });
-        const ownedGalpones = await Galpon.findAll({ where: { profileId } });
+        const memberships = preloadedMemberships || await FarmMember.findAll({ where: { profileId, status: 'active' } });
+        const ownedGalpones = preloadedOwnedGalpones || await Galpon.findAll({ where: { profileId } });
         const isOwner = ownedGalpones.length > 0 || memberships.some(m => m.role === 'owner');
 
         let userMessages = [];
@@ -240,13 +243,17 @@ class GrowthService {
         }
     }
 
-    async rebuildGrowthHistory(rabbitId) {
+    async rebuildGrowthHistory(rabbitOrId, options = {}) {
         const { Rabbit, Growth } = require('../../domain/models');
-        const rabbit = await Rabbit.findByPk(rabbitId);
+        const rabbit = (rabbitOrId && typeof rabbitOrId === 'object' && rabbitOrId.id)
+            ? rabbitOrId
+            : await Rabbit.findByPk(rabbitOrId);
         if (!rabbit) return;
 
-        // Borramos todo historial anterior (basura) para armar de 0
-        await Growth.destroy({ where: { rabbitId: rabbit.id } });
+        // Borramos historial anterior solo cuando no es un conejo recién creado
+        if (!options.isNew) {
+            await Growth.destroy({ where: { rabbitId: rabbit.id } });
+        }
 
         const birthDate = new Date(rabbit.birthDate);
         const today = new Date();
@@ -280,9 +287,11 @@ class GrowthService {
             await Growth.bulkCreate(growthsToCreate);
         }
         
-        // 3. Actualizamos la edad (pero mantenemos el peso)
-        rabbit.age = endMonth;
-        await rabbit.save();
+        // 3. Actualizamos la edad solo si difiere de la actual
+        if (rabbit.age !== endMonth && typeof rabbit.save === 'function') {
+            rabbit.age = endMonth;
+            await rabbit.save();
+        }
     }
 }
 

@@ -1,6 +1,6 @@
 const rabbitRepository = require('./rabbit.repository');
 const raceRepository = require('../race/race.repository');
-const { Assignment, FarmMember, Growth } = require('../../domain/models');
+const { Assignment, FarmMember } = require('../../domain/models');
 const AppError = require('../../errors/AppError');
 const { getPaginationParams, createPaginatedResponse } = require('../../common/helpers/pagination.helper');
 const { generateRandomName } = require('../../common/helpers/names.helper');
@@ -74,14 +74,14 @@ class RabbitService {
     async registerRabbit(data, galponId, profileId) {
         const { name, race, sex, birthDate, weight, purpose, imageUrl } = data;
 
-        // Verificar que el usuario tiene acceso al galpón
-        await this._assertGalponAccess(galponId, profileId);
-
-        const raceExists = await raceRepository.findByName(race.trim());
+        // Verificar acceso al galpón y existencia de la raza en paralelo
+        const [, raceExists] = await Promise.all([
+            this._assertGalponAccess(galponId, profileId),
+            raceRepository.findByName(race.trim())
+        ]);
         if (!raceExists) throw new AppError('La raza especificada no existe.', 400);
 
-        let code = await this.generateCode(race, galponId);
-
+        const code = await this.generateCode(race, galponId);
         const age = this.calculateAge(birthDate);
 
         const rabbit = await rabbitRepository.create({
@@ -99,16 +99,14 @@ class RabbitService {
         });
 
         const growthService = require('../growth/growth.service');
-        await growthService.rebuildGrowthHistory(rabbit.id);
-
-        const savedRabbit = await rabbitRepository.findById(rabbit.id);
+        await growthService.rebuildGrowthHistory(rabbit, { isNew: true });
 
         const rabbitLabel = rabbit.name ? `${rabbit.name} - ${rabbit.code}` : rabbit.code;
         const isFemale = rabbit.sex === 'hembra';
         const prefix = isFemale ? 'Coneja' : 'Conejo';
         const article = isFemale ? 'a la coneja' : 'al conejo';
 
-        await recordWorkerChange({
+        recordWorkerChange({
             galponId,
             profileId,
             action: 'crear',
@@ -125,9 +123,9 @@ class RabbitService {
                 weight: rabbit.weight != null ? Number(rabbit.weight) : null,
                 imageUrl: rabbit.imageUrl || null
             }
-        });
+        }).catch(err => console.error('Error recording worker change on registerRabbit:', err));
 
-        return savedRabbit;
+        return rabbit;
     }
 
     async getRabbit(id, profileId) {
@@ -147,7 +145,6 @@ class RabbitService {
         await this._assertGalponAccess(galponId, profileId);
 
         const { limit: limitValue, offset, page: pageValue } = getPaginationParams(page, limit);
-        const { Op } = require('sequelize');
         
         const where = {};
         
@@ -169,18 +166,18 @@ class RabbitService {
             order: [['createdAt', 'DESC']]
         };
 
-        let rabbits = await rabbitRepository.findByGalpon(galponId, options);
-        
         const reproductionRepo = require('../reproduction/reproduction.repository');
-        const lactatingIds = await reproductionRepo.findLactatingFemaleIds(galponId);
+        const [rawRabbits, lactatingIds, total] = await Promise.all([
+            rabbitRepository.findByGalpon(galponId, options),
+            reproductionRepo.findLactatingFemaleIds(galponId),
+            rabbitRepository.countByGalpon(galponId, { where })
+        ]);
 
-        rabbits = rabbits.map(rabbit => {
+        const rabbits = rawRabbits.map(rabbit => {
             const rabbitData = rabbit.toJSON();
             rabbitData.isLactating = lactatingIds.has(rabbit.id);
             return rabbitData;
         });
-
-        const total = await rabbitRepository.countByGalpon(galponId, { where });
 
         return createPaginatedResponse(rabbits, pageValue, limitValue, total);
     }
@@ -206,9 +203,6 @@ class RabbitService {
             data.age = this.calculateAge(data.birthDate);
         }
 
-        const oldWeight = Number.parseFloat(rabbit.weight);
-        const newWeight = data.weight !== undefined ? Number.parseFloat(data.weight) : oldWeight;
-
         const normalize = str => (str || '').toString().trim().toLowerCase();
         const sexChanged = data.sex !== undefined && normalize(data.sex) !== normalize(rabbit.sex);
         const purposeChanged = data.purpose !== undefined && normalize(data.purpose) !== normalize(rabbit.purpose);
@@ -216,8 +210,6 @@ class RabbitService {
         if (data.birthDate) {
             const oldTime = new Date(rabbit.birthDate).getTime();
             const newTime = new Date(data.birthDate).getTime();
-            // If the difference is more than 24 hours, it definitely changed.
-            // This prevents false positives due to timezone shifts (e.g. 5 hours off).
             if (Math.abs(oldTime - newTime) > 24 * 60 * 60 * 1000) {
                 birthDateChanged = true;
             }
@@ -231,10 +223,11 @@ class RabbitService {
             
             const activeAssignment = await assignmentRepository.findActiveByRabbitId(id);
             if (activeAssignment) {
-                const cage = await cageRepository.findById(activeAssignment.cageId);
-                const activeAssignments = await assignmentRepository.findActiveByCageId(cage.id);
+                const [cage, activeAssignments] = await Promise.all([
+                    cageRepository.findById(activeAssignment.cageId),
+                    assignmentRepository.findActiveByCageId(activeAssignment.cageId)
+                ]);
                 
-                const { Op } = require('sequelize');
                 const otherRabbitIds = activeAssignments.filter(a => a.rabbitId !== id).map(a => a.rabbitId);
                 const otherRabbits = otherRabbitIds.length > 0 
                     ? await rabbitRepository.findAll({ where: { id: { [Op.in]: otherRabbitIds } } })
@@ -242,7 +235,7 @@ class RabbitService {
                 
                 // Simular el conejo actualizado
                 const simulatedRabbit = { 
-                    ...rabbit.get({ plain: true }), 
+                    ...(typeof rabbit.get === 'function' ? rabbit.get({ plain: true }) : rabbit), 
                     ...data 
                 };
                 
@@ -268,15 +261,10 @@ class RabbitService {
         const updatedRabbit = await rabbitRepository.update(rabbit, data);
 
         // Si el usuario cambia la fecha de nacimiento o el propósito, la curva estimada antigua se rompe.
-        // Debemos reconstruirla:
         if (birthDateChanged || purposeChanged) {
             const growthService = require('../growth/growth.service');
-            await growthService.rebuildGrowthHistory(rabbit.id);
+            await growthService.rebuildGrowthHistory(updatedRabbit || rabbit.id);
         }
-
-        // Ya no tocamos la tabla Growth manualmente.
-        // El peso se guardó en `rabbitRepository.update`. 
-        // El cron se encargará de empujar este peso al historial cuando el conejo cumpla su próximo mes (cada 30 días).
 
         const updatedName = updatedRabbit.name || rabbit.name;
         const rabbitLabel = updatedName ? `${updatedName} - ${rabbit.code}` : rabbit.code;
@@ -285,7 +273,7 @@ class RabbitService {
         const prefix = isFemale ? 'Coneja' : 'Conejo';
         const article = isFemale ? 'de la coneja' : 'del conejo';
 
-        await recordWorkerChange({
+        recordWorkerChange({
             galponId: rabbit.galponId,
             profileId,
             action: 'modificar',
@@ -303,7 +291,7 @@ class RabbitService {
                 birthDate: updatedRabbit.birthDate,
                 imageUrl: updatedRabbit.imageUrl || null
             }
-        });
+        }).catch(err => console.error('Error recording worker change on editRabbit:', err));
 
         return updatedRabbit;
     }
@@ -312,10 +300,12 @@ class RabbitService {
         const rabbit = await rabbitRepository.findById(id);
         if (!rabbit) throw new AppError('Conejo no encontrado.', 404);
 
-        // Verificar que el usuario tiene acceso al galpón
-        await this._assertGalponAccess(rabbit.galponId, profileId);
+        // Verificar acceso y asignaciones activas en paralelo
+        const [, assignmentCount] = await Promise.all([
+            this._assertGalponAccess(rabbit.galponId, profileId),
+            Assignment.count({ where: { rabbitId: rabbit.id, status: 'asignado' } })
+        ]);
 
-        const assignmentCount = await Assignment.count({ where: { rabbitId: rabbit.id, status: 'asignado' } });
         if (assignmentCount > 0) {
             throw new AppError('No se puede eliminar un conejo asignado a una jaula. Debe desasignarse primero.', 400);
         }
@@ -336,7 +326,7 @@ class RabbitService {
         const deletePrefix = isFemale ? 'Coneja' : 'Conejo';
         const deleteArticle = isFemale ? 'a la coneja' : 'al conejo';
 
-        await recordWorkerChange({
+        recordWorkerChange({
             galponId: rabbit.galponId,
             profileId,
             action: 'eliminar',
@@ -345,7 +335,7 @@ class RabbitService {
             itemName: `${deletePrefix} ${rabbitLabel}`,
             summary: `Eliminó ${deleteArticle} ${rabbitLabel} del galpón`,
             before
-        });
+        }).catch(err => console.error('Error recording worker change on deleteRabbit:', err));
     }
 
     async getAvailableRaces() {
@@ -374,8 +364,6 @@ class RabbitService {
             attempts++;
         }
         
-        // Si después de 10 intentos todos los nombres estaban usados (ej. miles de conejos),
-        // agregamos un sufijo numérico para garantizar unicidad al 100%
         if (!isUnique) {
             const num = Math.floor(Math.random() * 900) + 100;
             suggestedName = `${suggestedName} ${num}`;
@@ -387,7 +375,6 @@ class RabbitService {
     async getPotentialFathers(galponId, profileId) {
         if (!galponId) return [];
 
-        // Verificar que el usuario tiene acceso al galpón
         await this._assertGalponAccess(galponId, profileId);
 
         return rabbitRepository.findByGalponAndSexAndMinAge(galponId, 'macho', 4);
@@ -396,7 +383,6 @@ class RabbitService {
     async getPotentialMothers(galponId, profileId) {
         if (!galponId) return [];
 
-        // Verificar que el usuario tiene acceso al galpón
         await this._assertGalponAccess(galponId, profileId);
 
         return rabbitRepository.findByGalponAndSexAndMinAge(galponId, 'hembra', 4);

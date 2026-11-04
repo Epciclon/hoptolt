@@ -6,34 +6,33 @@ const reproductionRepository = require('../../modules/reproduction/reproduction.
  */
 async function notifyOwnerOnManualPhaseChange(profileId, galponId, reproductionId, newPhase, newPhaseName) {
     try {
-        const workerMember = await FarmMember.findOne({
-            where: { profileId, galponId, status: 'active' },
-            include: [{ model: Profile, as: 'profile' }]
-        });
-
-        if (workerMember?.role === 'worker') {
-            const ownerMember = await FarmMember.findOne({
+        const [workerMember, ownerMember, rep] = await Promise.all([
+            FarmMember.findOne({
+                where: { profileId, galponId, status: 'active' },
+                include: [{ model: Profile, as: 'profile' }]
+            }),
+            FarmMember.findOne({
                 where: { galponId, role: 'owner', status: 'active' }
-            });
+            }),
+            reproductionRepository.findByIdWithDetails(reproductionId)
+        ]);
 
-            if (ownerMember?.profileId) {
-                const rep = await reproductionRepository.findByIdWithDetails(reproductionId);
-                const code = rep?.female?.code || 'N/A';
-                const name = rep?.female?.name ? ` ${rep.female.name}` : '';
-                const workerName = workerMember.profile?.fullName || workerMember.profile?.username || 'Un trabajador';
-                
-                await Notification.create({
-                    profileId: ownerMember.profileId,
-                    type: 'info',
-                    title: 'Cambio de Fase Manual',
-                    message: `${workerName} ha movido manualmente a la coneja ${code}${name} a Fase ${newPhase} ${newPhaseName}.`,
-                    data: {
-                        type: 'reproduction_manual',
-                        reproductionId,
-                        phase: newPhase
-                    }
-                });
-            }
+        if (workerMember?.role === 'worker' && ownerMember?.profileId) {
+            const code = rep?.female?.code || 'N/A';
+            const name = rep?.female?.name ? ` ${rep.female.name}` : '';
+            const workerName = workerMember.profile?.fullName || workerMember.profile?.username || 'Un trabajador';
+            
+            await Notification.create({
+                profileId: ownerMember.profileId,
+                type: 'info',
+                title: 'Cambio de Fase Manual',
+                message: `${workerName} ha movido manualmente a la coneja ${code}${name} a Fase ${newPhase} ${newPhaseName}.`,
+                data: {
+                    type: 'reproduction_manual',
+                    reproductionId,
+                    phase: newPhase
+                }
+            });
         }
     } catch (error) {
         console.error('Error notifying owner on manual phase change:', error);
@@ -44,17 +43,16 @@ async function _notifyWorkersForPhaseChange(WorkerPermission, WorkerCage, Notifi
     await Promise.all(workers.map(async (worker) => {
         if (!worker.profileId) return;
 
-        const hasPermission = await WorkerPermission.findOne({
-            where: { farmMemberId: worker.id, moduleName: 'reproduccionyparto', canRead: true }
-        });
+        const [hasPermission, isAssigned] = await Promise.all([
+            WorkerPermission.findOne({
+                where: { farmMemberId: worker.id, moduleName: 'reproduccionyparto', canRead: true }
+            }),
+            WorkerCage.findOne({
+                where: { farmMemberId: worker.id, cageId }
+            })
+        ]);
         
-        if (!hasPermission) return;
-        
-        const isAssigned = await WorkerCage.findOne({
-            where: { farmMemberId: worker.id, cageId }
-        });
-        
-        if (!isAssigned) return;
+        if (!hasPermission || !isAssigned) return;
         
         await Notification.create({
             profileId: worker.profileId,
@@ -74,17 +72,18 @@ async function notifyAutomatedPhaseChange(rep, newPhase, newPhaseName) {
         const { WorkerPermission, WorkerCage, Notification } = require('../../domain/models');
         const reproductionRepository = require('../../modules/reproduction/reproduction.repository');
 
-        const fullRep = await reproductionRepository.findByIdWithDetails(rep.id);
+        const [fullRep, ownerMember] = await Promise.all([
+            reproductionRepository.findByIdWithDetails(rep.id),
+            FarmMember.findOne({
+                where: { galponId: rep.galponId, role: 'owner', status: 'active' }
+            })
+        ]);
         const female = fullRep?.female;
         if (!female) return;
 
         const code = female.code || 'N/A';
         const name = female.name ? ` ${female.name}` : '';
         const cageId = female.assignments?.[0]?.cageId;
-
-        const ownerMember = await FarmMember.findOne({
-            where: { galponId: rep.galponId, role: 'owner', status: 'active' }
-        });
 
         const message = `El sistema Hoptolt ha movido automáticamente a la coneja ${code}${name} a Fase ${newPhase} ${newPhaseName}.`;
         const dataPayload = { type: 'reproduction_automated', phase: newPhase };

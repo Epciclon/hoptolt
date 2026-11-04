@@ -40,14 +40,14 @@ describe('cageService', () => {
 
   it('create posts a new cage', async () => {
     const dto = { number: 102, type: 'engorde' as const };
-    const mockCage = { id: 2, ...dto };
-    vi.mocked(api.post).mockResolvedValue({ data: { success: true, cage: mockCage } });
+    const mockCages = [{ id: 2, ...dto }];
+    vi.mocked(api.post).mockResolvedValue({ data: { success: true, cages: mockCages } });
 
     const { cageService } = await import('@/modules/cages/services/cage.service');
     const result = await cageService.create(dto as any);
 
     expect(api.post).toHaveBeenCalledWith('/cages', dto);
-    expect(result).toEqual(mockCage);
+    expect(result).toEqual(mockCages);
   });
 
   it('update modifies a cage', async () => {

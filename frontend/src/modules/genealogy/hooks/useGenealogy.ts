@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { genealogyService } from '../services/genealogy.service';
@@ -18,7 +18,6 @@ export function useGenealogy() {
     queryFn: () => genealogyService.getAll(),
   });
 
-
   const getTree = async (rabbitId: number, levels?: number): Promise<GenealogyTree | null> => {
     return await genealogyService.getTree(rabbitId, levels);
   };
@@ -29,6 +28,7 @@ export function useGenealogy() {
       genealogyService.edit(rabbitId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['genealogies'] });
+      queryClient.invalidateQueries({ queryKey: ['genealogyTree'] });
     },
   });
 
@@ -45,4 +45,14 @@ export function useGenealogy() {
     getTree,
     editGenealogy,
   };
+}
+
+export function useGenealogyTree(rabbitId: number, levels?: number) {
+  return useQuery({
+    queryKey: ['genealogyTree', rabbitId, levels],
+    queryFn: () => genealogyService.getTree(rabbitId, levels),
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+    enabled: !!rabbitId,
+  });
 }

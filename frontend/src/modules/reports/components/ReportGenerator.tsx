@@ -278,15 +278,6 @@ const MORTALITY_COLUMNS: { ui: any[]; pdf: PDFColumn[] } = {
     ]
 };
 
-const STATUS_OPTIONS = [
-    { label: 'Monta', value: 'monta' },
-    { label: 'Gestación', value: 'gestacion' },
-    { label: 'Lactancia', value: 'lactancia' },
-    { label: 'Completado', value: 'completado' },
-    { label: 'Fallido', value: 'fallido' },
-    { label: 'Baja Parcial', value: 'parcial' }
-];
-
 const buildReproductionColumns = (selectedStatuses: string[]): { ui: any[]; pdf: PDFColumn[] } => {
     const isAll = selectedStatuses.length === 0;
     const showGazapos = !isAll && selectedStatuses.every(s => ['lactancia', 'completado', 'fallido', 'parcial'].includes(s));

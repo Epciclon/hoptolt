@@ -1,4 +1,5 @@
-const { Assignment } = require('../../domain/models');
+const { Assignment, Rabbit, Cage } = require('../../domain/models');
+const { Op } = require('sequelize');
 
 class AssignmentRepository {
     async findById(id) {
@@ -21,6 +22,20 @@ class AssignmentRepository {
         return Assignment.count({ where: { cageId, status: 'asignado' } });
     }
 
+    async countActiveByCageIds(cageIds) {
+        if (!Array.isArray(cageIds) || cageIds.length === 0) return new Map();
+        const rows = await Assignment.findAll({
+            where: { cageId: { [Op.in]: cageIds }, status: 'asignado' },
+            attributes: ['cageId']
+        });
+        const counts = new Map();
+        for (const r of rows) {
+            const cid = Number(r.cageId);
+            counts.set(cid, (counts.get(cid) || 0) + 1);
+        }
+        return counts;
+    }
+
     async findActiveByCageId(cageId) {
         return Assignment.findAll({ where: { cageId, status: 'asignado' } });
     }
@@ -33,8 +48,8 @@ class AssignmentRepository {
         return Assignment.findAll({
             where: { galponId, status: 'asignado' },
             include: [
-                { model: require('../../domain/models').Rabbit, as: 'rabbit' },
-                { model: require('../../domain/models').Cage, as: 'cage' }
+                { model: Rabbit, as: 'rabbit' },
+                { model: Cage, as: 'cage' }
             ]
         });
     }

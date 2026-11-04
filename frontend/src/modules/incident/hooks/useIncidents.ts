@@ -20,18 +20,18 @@ export function useIncidents(params?: GetIncidentsParams) {
   const category = params?.category ?? '';
   const moduleName = params?.module ?? '';
   const search = params?.search ?? '';
+  const isQueryEnabled = params?.enabled !== false && !!user && !!user?.activeGalponId;
 
   // Query: Incidents list (Gestionado por caché inteligente y Realtime)
   const {
     data,
-    isLoading,
     isPending,
     error,
     refetch
   } = useQuery({
     queryKey: ['incidents', 'list', user?.id, user?.activeGalponId, page, limit, status, category, moduleName, search],
     queryFn: () => incidentService.getAll(params),
-    enabled: !!user && !!user?.activeGalponId,
+    enabled: isQueryEnabled,
     placeholderData: (previousData) => previousData,
     staleTime: 2000,
     gcTime: 1000 * 60 * 30,
@@ -41,7 +41,7 @@ export function useIncidents(params?: GetIncidentsParams) {
   });
 
   // Solo se considera loading inicial si NO hay ningún dato previo
-  const loading = isPending && !data;
+  const loading = isQueryEnabled && isPending && !data;
 
   // Query: Counts (Gestionado por caché y Realtime)
   const {
@@ -50,7 +50,7 @@ export function useIncidents(params?: GetIncidentsParams) {
   } = useQuery({
     queryKey: ['incidents', 'counts', user?.id, user?.activeGalponId],
     queryFn: () => incidentService.getCounts(),
-    enabled: !!user && !!user?.activeGalponId,
+    enabled: isQueryEnabled,
     placeholderData: (previousData) => previousData,
     staleTime: 2000,
     gcTime: 1000 * 60 * 30,
@@ -61,7 +61,7 @@ export function useIncidents(params?: GetIncidentsParams) {
 
   // Realtime subscription via Supabase (Eventos push inmediatos en vivo)
   useEffect(() => {
-    if (!user || !user?.activeGalponId) return;
+    if (!isQueryEnabled || !user) return;
 
     const channelId = `realtime_incidents_${user.id}_${crypto.randomUUID()}`;
     const channel = supabase.channel(channelId)
@@ -104,7 +104,7 @@ export function useIncidents(params?: GetIncidentsParams) {
       supabase.removeChannel(channel);
       window.removeEventListener('incidents-updated', handleCustomUpdate);
     };
-  }, [user?.id, user?.activeGalponId, supabase, queryClient]);
+  }, [isQueryEnabled, user?.id, user?.activeGalponId, supabase, queryClient]);
 
   // Mutation: Create Incident
   const createMutation = useMutation({

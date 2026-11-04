@@ -6,7 +6,6 @@ import {
   Search,
   CheckCircle2,
   Clock,
-  User,
   AlertTriangle,
   RotateCcw,
   ChevronRight,
@@ -16,9 +15,9 @@ import {
 import { useIncidents } from '@/modules/incident/hooks/useIncidents';
 import { IncidentFormModal } from '@/modules/incident/components/IncidentFormModal';
 import { IncidentDetailModal } from '@/modules/incident/components/IncidentDetailModal';
-import type { Incident, IncidentStatus } from '@/modules/incident/types/incident.types';
+import type { Incident } from '@/modules/incident/types/incident.types';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
-import { Card, Button, Badge, Pagination, ConfirmDialog, FilterBar, Select } from '@/shared/ui';
+import { Card, Button, Pagination, ConfirmDialog, Select } from '@/shared/ui';
 import type { FilterConfig } from '@/shared/ui/FilterBar';
 import { cn } from '@/lib/utils';
 import { formatFriendlyDate } from '@/shared/utils/dateUtils';
@@ -131,16 +130,6 @@ export default function IncidentsPage() {
       ],
     },
   ], [category, moduleFilter]);
-
-  const getStatusBadge = (s: IncidentStatus) => {
-    switch (s) {
-      case 'resolved':
-      case 'reviewed':
-        return <Badge variant="success">Atendida</Badge>;
-      default:
-        return <Badge variant="warning">Pendiente</Badge>;
-    }
-  };
 
   const totalPages = pagination?.totalPages || 1;
 

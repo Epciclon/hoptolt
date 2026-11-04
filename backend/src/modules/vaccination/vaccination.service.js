@@ -8,8 +8,6 @@ class VaccinationService {
         return rabbit.name ? ' - ' + rabbit.name : '';
     }
 
-
-
     _validateSingleVaccination(rabbitId, params, vaccinationErrors) {
         const { rabbitMap, assignmentSet, lactatingSet, prevVacMap, vaccinePeriodMap, vaccines, galponId, currentDate } = params;
         
@@ -73,24 +71,31 @@ class VaccinationService {
         const { Op } = require('sequelize');
         const { Rabbit, Assignment, Reproduction, Vaccination, WorkerCage } = require('../../domain/models');
 
-        const membership = await FarmMember.findOne({
-            where: { profileId, galponId, status: 'active' }
-        });
-        if (!membership) throw new AppError('No tienes acceso a este galpón.', 403);
+        // Precarga masiva concurrente en un solo bloque paralelo
+        const [membership, galpon, rabbits, assignments, lactatingReps, previousVaccinations] = await Promise.all([
+            FarmMember.findOne({
+                where: { profileId, galponId, status: 'active' }
+            }),
+            Galpon.findByPk(galponId),
+            Rabbit.findAll({ where: { id: { [Op.in]: rabbitIds } } }),
+            Assignment.findAll({ where: { rabbitId: { [Op.in]: rabbitIds }, status: 'asignado' } }),
+            Reproduction.findAll({ where: { femaleId: { [Op.in]: rabbitIds }, status: 'lactancia' } }),
+            Vaccination.findAll({ 
+                where: { rabbitId: { [Op.in]: rabbitIds } },
+                order: [['vaccinationDate', 'DESC']]
+            })
+        ]);
 
-        const galpon = await Galpon.findByPk(galponId);
+        if (!membership) throw new AppError('No tienes acceso a este galpón.', 403);
         if (!galpon) throw new AppError('Galpón no encontrado.', 404);
 
         const galponVaccines = galpon.vaccines || [];
         const vaccinePeriodMap = new Map();
         galponVaccines.forEach(v => vaccinePeriodMap.set(v.name, v.period));
 
-        // Precarga masiva en batch para evitar N+1
-        const rabbits = await Rabbit.findAll({ where: { id: { [Op.in]: rabbitIds } } });
         const rabbitMap = new Map();
         rabbits.forEach(r => rabbitMap.set(r.id, r));
 
-        const assignments = await Assignment.findAll({ where: { rabbitId: { [Op.in]: rabbitIds }, status: 'asignado' } });
         const assignmentSet = new Set(assignments.map(a => a.rabbitId));
 
         // Si es trabajador, validar que todas las jaulas de los conejos estén asignadas a él
@@ -104,13 +109,8 @@ class VaccinationService {
             }
         }
 
-        const lactatingReps = await Reproduction.findAll({ where: { femaleId: { [Op.in]: rabbitIds }, status: 'lactancia' } });
         const lactatingSet = new Set(lactatingReps.map(r => r.femaleId));
 
-        const previousVaccinations = await Vaccination.findAll({ 
-            where: { rabbitId: { [Op.in]: rabbitIds } },
-            order: [['vaccinationDate', 'DESC']]
-        });
         const prevVacMap = new Map(); // rabbitId -> array of vaccinations
         previousVaccinations.forEach(v => {
             if (!prevVacMap.has(v.rabbitId)) prevVacMap.set(v.rabbitId, []);
@@ -132,7 +132,8 @@ class VaccinationService {
         const createdVaccinations = await Promise.all(toCreate.map(data => vaccinationRepository.create(data)));
 
         const { notifyOwnerOnWorkerAction } = require('../../common/helpers/notification.helper');
-        await notifyOwnerOnWorkerAction(profileId, galponId, 'vaccination', 'Vacunación', rabbitIds.length, 'conejo');
+        notifyOwnerOnWorkerAction(profileId, galponId, 'vaccination', 'Vacunación', rabbitIds.length, 'conejo')
+            .catch(err => console.error('Error notifying owner on vaccination:', err));
 
         return createdVaccinations;
     }
@@ -157,10 +158,12 @@ class VaccinationService {
         
         const queryOptions = filters.all ? {} : { limit: limitValue, offset };
         
-        const vaccinations = await vaccinationRepository.findByGalponId(galponId, queryOptions, filters);
-        const count = filters.all ? vaccinations.length : await vaccinationRepository.countByGalponId(galponId, filters);
+        const [vaccinations, count] = await Promise.all([
+            vaccinationRepository.findByGalponId(galponId, queryOptions, filters),
+            filters.all ? Promise.resolve(0) : vaccinationRepository.countByGalponId(galponId, filters)
+        ]);
 
-        return createPaginatedResponse(vaccinations, page, limit, count);
+        return createPaginatedResponse(vaccinations, page, limit, filters.all ? vaccinations.length : count);
     }
 
     async getGalponVaccines(galponId) {

@@ -28,7 +28,12 @@ async function recordWorkerChange({
             return;
         }
 
-        const profile = await Profile.findByPk(profileId);
+        const [profile, ownerMember] = await Promise.all([
+            Profile.findByPk(profileId),
+            FarmMember.findOne({
+                where: { galponId, role: 'owner', status: 'active' }
+            })
+        ]);
         const workerName = profile?.fullName?.trim() || profile?.username?.trim() || 'Trabajador';
 
         const createdLog = await AuditLog.create({
@@ -45,11 +50,6 @@ async function recordWorkerChange({
                 before: before || null,
                 after: after || null
             }
-        });
-
-        // Notificar al dueño del galpón sobre esta acción sensible
-        const ownerMember = await FarmMember.findOne({
-            where: { galponId, role: 'owner', status: 'active' }
         });
 
         if (ownerMember?.profileId) {
@@ -69,15 +69,27 @@ async function recordWorkerChange({
             const todayEnd = new Date();
             todayEnd.setHours(23, 59, 59, 999);
 
-            // Consultar todos los movimientos registrados hoy para este trabajador en este galpón
-            const todayLogs = await AuditLog.findAll({
-                where: {
-                    profileId,
-                    createdAt: { [Op.gte]: todayStart, [Op.lte]: todayEnd },
-                    'details.galponId': Number(galponId)
-                },
-                order: [['createdAt', 'ASC']]
-            });
+            // Consultar en paralelo los movimientos de hoy y la notificación existente
+            const [todayLogs, existingNotification] = await Promise.all([
+                AuditLog.findAll({
+                    where: {
+                        profileId,
+                        createdAt: { [Op.gte]: todayStart, [Op.lte]: todayEnd },
+                        'details.galponId': Number(galponId)
+                    },
+                    order: [['createdAt', 'ASC']]
+                }),
+                Notification.findOne({
+                    where: {
+                        profileId: ownerMember.profileId,
+                        title: 'Control de Cambios',
+                        createdAt: { [Op.gte]: todayStart, [Op.lte]: todayEnd },
+                        'data.galponId': Number(galponId),
+                        'data.workerProfileId': profileId
+                    },
+                    order: [['createdAt', 'DESC']]
+                })
+            ]);
 
             // Agrupar conteo de cambios por módulo
             const modulesMap = {};
@@ -119,18 +131,6 @@ async function recordWorkerChange({
             } else {
                 message = `**${workerName}** realizó ${totalChangesToday} cambios hoy`;
             }
-
-            // Buscar si ya existe una notificación de este trabajador en este galpón para el día de hoy
-            const existingNotification = await Notification.findOne({
-                where: {
-                    profileId: ownerMember.profileId,
-                    title: 'Control de Cambios',
-                    createdAt: { [Op.gte]: todayStart, [Op.lte]: todayEnd },
-                    'data.galponId': Number(galponId),
-                    'data.workerProfileId': profileId
-                },
-                order: [['createdAt', 'DESC']]
-            });
 
             if (existingNotification) {
                 const updatedData = {

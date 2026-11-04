@@ -9,49 +9,48 @@ class InvitationService {
      * El propietario crea una invitación para un correo específico.
      */
     async createInvitation(galponId, email, requestingProfileId) {
-        // Verificar que quien invita es propietario
-        const ownerMembership = await farmMemberRepository.findMembership(requestingProfileId, galponId);
+        const { Profile } = require('../../domain/models');
+
+        const [ownerMembership, requesterProfile, invitedProfile, existingPending] = await Promise.all([
+            farmMemberRepository.findMembership(requestingProfileId, galponId),
+            Profile.findByPk(requestingProfileId),
+            Profile.findOne({ where: { email: email.toLowerCase() } }),
+            invitationRepository.findPendingByEmail(email)
+        ]);
+
         if (ownerMembership?.role !== 'owner' || ownerMembership?.status !== 'active') {
             throw new AppError('No tienes permisos de propietario en este galpón.', 403);
         }
 
-        // Verificar que el email no sea el mismo del usuario que invita (no invitarse a sí mismo)
-        const { Profile } = require('../../domain/models');
-        const requesterProfile = await Profile.findByPk(requestingProfileId);
         if (requesterProfile && requesterProfile.email.toLowerCase() === email.toLowerCase()) {
             throw new AppError('No puedes invitarte a ti mismo.', 400);
         }
 
-        // Verificar que el usuario exista
-        const invitedProfile = await Profile.findOne({ where: { email: email.toLowerCase() } });
         if (!invitedProfile) {
             throw new AppError('El usuario con este correo no está registrado en el sistema.', 400);
         }
 
-        // Verificar que el usuario no sea ya trabajador en el mismo galpón
         const existingMembership = await farmMemberRepository.findMembership(invitedProfile.id, galponId);
         if (existingMembership?.status === 'active') {
             throw new AppError('Este usuario ya es trabajador en este galpón.', 400);
         }
 
-        // Verificar que no haya ya una invitación pendiente para ese email en ese galpón
-        const existingPending = await invitationRepository.findPendingByEmail(email);
         const alreadyInvited = existingPending.some(i => i.galponId === Number(galponId));
         if (alreadyInvited) {
             throw new AppError('Ya existe una invitación pendiente para ese correo en este galpón.', 400);
         }
 
-        const invitation = await invitationRepository.create({
-            galponId,
-            email: email.toLowerCase(),
-            invitedBy: requestingProfileId,
-            status: 'pending'
-        });
+        const [invitation, galpon] = await Promise.all([
+            invitationRepository.create({
+                galponId,
+                email: email.toLowerCase(),
+                invitedBy: requestingProfileId,
+                status: 'pending'
+            }),
+            invitationRepository.getGalponWithOwner(galponId)
+        ]);
 
-        // Si el perfil existe, crear notificación de invitación
-        const galpon = await invitationRepository.getGalponWithOwner(galponId);
-        const inviterProfile = await Profile.findByPk(requestingProfileId);
-        const inviterName = inviterProfile?.fullName?.trim() || inviterProfile?.username || 'el propietario';
+        const inviterName = requesterProfile?.fullName?.trim() || requesterProfile?.username || 'el propietario';
 
         await notificationService.createNotification(invitedProfile.id, {
             type: 'invitation',
@@ -104,43 +103,41 @@ class InvitationService {
             throw new AppError('Esta invitación no corresponde a tu cuenta.', 403);
         }
 
-        // Crear el farm_member como worker
-        await farmMemberService.createWorkerMembership(profileId, invitation.galponId);
-
-        // Marcar invitación como aceptada
-        await invitationRepository.updateStatus(invitation, 'accepted');
-
-        // Establecer el galpón como activo en el perfil del trabajador
         const { Profile } = require('../../domain/models');
-        await Profile.update({ activeGalponId: invitation.galponId }, { where: { id: profileId } });
+        const [, , , galpon, workerProfile] = await Promise.all([
+            farmMemberService.createWorkerMembership(profileId, invitation.galponId),
+            invitationRepository.updateStatus(invitation, 'accepted'),
+            Profile.update({ activeGalponId: invitation.galponId }, { where: { id: profileId } }),
+            invitationRepository.getGalponWithOwner(invitation.galponId),
+            Profile.findByPk(profileId)
+        ]);
 
-        // Invalidar el cache del perfil
         const { clearCache } = require('../../common/middlewares/auth.middleware');
         clearCache(profileId);
 
-        // Crear notificación al propietario
-        const galpon = await invitationRepository.getGalponWithOwner(invitation.galponId);
+        const notificationPromises = [];
         if (galpon?.profileId) {
-            // Obtener el perfil del trabajador para obtener su nombre de usuario
-            const { Profile } = require('../../domain/models');
-            const workerProfile = await Profile.findByPk(profileId);
             const workerName = workerProfile?.fullName?.trim() || workerProfile?.username || profileEmail;
-
-            await notificationService.createNotification(galpon.profileId, {
-                type: 'info',
-                title: '¡Nuevo trabajador en tu galpón!',
-                message: `${workerName} ha aceptado tu invitación para unirse al galpón "${galpon.name}".`,
-                data: { galponId: galpon.id, galponName: galpon.name, workerEmail: profileEmail, workerName }
-            });
+            notificationPromises.push(
+                notificationService.createNotification(galpon.profileId, {
+                    type: 'info',
+                    title: '¡Nuevo trabajador en tu galpón!',
+                    message: `${workerName} ha aceptado tu invitación para unirse al galpón "${galpon.name}".`,
+                    data: { galponId: galpon.id, galponName: galpon.name, workerEmail: profileEmail, workerName }
+                })
+            );
         }
 
-        // Crear notificación al trabajador
-        await notificationService.createNotification(profileId, {
-            type: 'info',
-            title: '¡Te has unido al galpón!',
-            message: `El galpón "${galpon.name}" ha sido agregado a tu lista de galpones y está activo.`,
-            data: { galponId: galpon.id, galponName: galpon.name }
-        });
+        notificationPromises.push(
+            notificationService.createNotification(profileId, {
+                type: 'info',
+                title: '¡Te has unido al galpón!',
+                message: `El galpón "${galpon.name}" ha sido agregado a tu lista de galpones y está activo.`,
+                data: { galponId: galpon.id, galponName: galpon.name }
+            })
+        );
+
+        await Promise.all(notificationPromises);
 
         return invitation;
     }
@@ -153,13 +150,13 @@ class InvitationService {
         if (!invitation) throw new AppError('Invitación no encontrada.', 404);
         if (invitation.status !== 'pending') throw new AppError('Solo se pueden revocar invitaciones pendientes.', 400);
 
-        // Permitir si el usuario es el propietario del galpón
-        const membership = await farmMemberRepository.findMembership(requestingProfileId, invitation.galponId);
-        const isOwner = membership?.role === 'owner';
-
-        // O si el usuario es la persona invitada (cuyo email coincide con la invitación)
         const { Profile } = require('../../domain/models');
-        const requesterProfile = await Profile.findByPk(requestingProfileId);
+        const [membership, requesterProfile] = await Promise.all([
+            farmMemberRepository.findMembership(requestingProfileId, invitation.galponId),
+            Profile.findByPk(requestingProfileId)
+        ]);
+
+        const isOwner = membership?.role === 'owner';
         const isInvitedUser = requesterProfile && requesterProfile.email.toLowerCase() === invitation.email.toLowerCase();
 
         if (!isOwner && !isInvitedUser) {
@@ -168,7 +165,6 @@ class InvitationService {
 
         await invitationRepository.updateStatus(invitation, 'revoked');
 
-        // Si fue el usuario invitado quien rechazó la invitación, notificar al propietario
         if (isInvitedUser) {
             const galpon = await invitationRepository.getGalponWithOwner(invitation.galponId);
             if (galpon?.profileId) {

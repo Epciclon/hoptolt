@@ -1,6 +1,6 @@
 'use client';
 
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,7 +9,6 @@ import { useToast } from '@/shared/contexts/ToastContext';
 import { genealogyService } from '../services/genealogy.service';
 import { rabbitService } from '@/modules/rabbits/services/rabbit.service';
 import type { Rabbit } from '@/modules/rabbits/types/rabbit.types';
-import type { UpdateGenealogyDto } from '../types/genealogy.types';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 
 const schema = z.object({
@@ -95,8 +94,6 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
   }, []);
 
   const [showWarningModal, setShowWarningModal] = useState(false);
-  const [warningDetails, setWarningDetails] = useState<string[]>([]);
-  const [consequenceExplanation, setConsequenceExplanation] = useState('');
   const [pendingValues, setPendingValues] = useState<FormValues | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
 
@@ -131,25 +128,7 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
     }
   }, [loading, rabbitId, rabbits, potentialFathers, potentialMothers, existingGenealogy, setValue]);
 
-  const handleConsanguinityWarning = (warningStr: string) => {
-    const details: string[] = [];
-    let explanation = '';
-    
-    if (warningStr.includes('madre ya tiene hijos con otros padres')) {
-      details.push('⚠️ La madre seleccionada ya tiene hijos con otros padres.');
-      explanation = 'Consecuencias: Los hijos de una misma madre con diferentes padres pueden tener menor variabilidad genética, lo que aumenta el riesgo de enfermedades hereditarias, reducción de la fertilidad, menor crecimiento y mayor susceptibilidad a infecciones en las camadas futuras.';
-    }
-    if (warningStr.includes('padre ya tiene hijos con otras madres')) {
-      details.push('⚠️ El padre seleccionado ya tiene hijos con otras madres.');
-      explanation = 'Consecuencias: Los hijos de un mismo padre con diferentes madres pueden acumular genes recesivos dañinos, lo que aumenta el riesgo de malformaciones congénitas, problemas de desarrollo, menor supervivencia y debilidad del sistema inmunológico en las generaciones siguientes.';
-    }
-    if (warningStr.includes('emparentados')) {
-      details.push('⚠️ Los conejos seleccionados son emparentados: incesto directo o ancestros comunes.');
-      explanation = 'Consecuencias: El cruce de conejos emparentados aumenta significativamente la expresión de genes recesivos dañinos, causando mutaciones genéticas, malformaciones físicas, esterilidad, baja tasa de supervivencia, problemas de crecimiento y enfermedades hereditarias severas en los descendientes.';
-    }
-    
-    setWarningDetails(details);
-    setConsequenceExplanation(explanation);
+  const handleConsanguinityWarning = () => {
     setShowWarningModal(true);
   };
 
@@ -163,7 +142,7 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
         const result = await genealogyService.edit(editData.rabbitId, payload);
         if (result?.requiresConfirmation || result?.consanguinityWarning) {
           setPendingValues(values);
-          handleConsanguinityWarning(result.consanguinityWarning || '');
+          handleConsanguinityWarning();
           return;
         }
         showToast('Relación genealógica actualizada exitosamente.', 'success');
@@ -187,7 +166,7 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
         const result = await genealogyService.register(payload);
         if (result?.requiresConfirmation || result?.consanguinityWarning) {
           setPendingValues(values);
-          handleConsanguinityWarning(result.consanguinityWarning || '');
+          handleConsanguinityWarning();
           return;
         }
         showToast('Relación genealógica registrada exitosamente.', 'success');
@@ -242,8 +221,6 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
       setRabbitSearch('');
       setFatherSearch('');
       setMotherSearch('');
-      setWarningDetails([]);
-      setConsequenceExplanation('');
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Error inesperado.', 'error');
     } finally {
@@ -255,8 +232,6 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
     if (isConfirming) return;
     setShowWarningModal(false);
     setPendingValues(null);
-    setWarningDetails([]);
-    setConsequenceExplanation('');
   };
 
   const handleRabbitSelect = (rabbit: Rabbit) => {

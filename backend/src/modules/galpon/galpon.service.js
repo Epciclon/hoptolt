@@ -26,12 +26,11 @@ class GalponService {
             profileId
         });
 
-        // Crear membresía de propietario automáticamente
-        await FarmMember.create({ profileId, galponId: galpon.id, role: 'owner', status: 'active' });
-
-        // Establecer como activo en el perfil del usuario
         const { Profile } = require('../../domain/models');
-        await Profile.update({ activeGalponId: galpon.id }, { where: { id: profileId } });
+        await Promise.all([
+            FarmMember.create({ profileId, galponId: galpon.id, role: 'owner', status: 'active' }),
+            Profile.update({ activeGalponId: galpon.id }, { where: { id: profileId } })
+        ]);
 
         // Invalidar el cache del perfil para que el middleware de autenticación obtenga el activeGalponId actualizado
         clearCache(profileId);
@@ -63,26 +62,30 @@ class GalponService {
         try {
             const { limit: limitValue, offset, page: pageValue } = getPaginationParams(page, limit);
 
-            // Obtener galpones propios (owner) con paginación
-            const ownGalpones = await galponRepository.findByProfileId(profileId, { limit: limitValue, offset });
+            const [ownGalpones, memberships, totalOwn, totalWorker] = await Promise.all([
+                galponRepository.findByProfileId(profileId, { limit: limitValue, offset }),
+                FarmMember.findAll({
+                    where: { profileId, status: 'active', role: 'worker' },
+                    include: [{ association: 'galpon' }],
+                    limit: limitValue,
+                    offset
+                }),
+                galponRepository.countByProfileId(profileId),
+                FarmMember.count({
+                    where: { profileId, status: 'active', role: 'worker' }
+                })
+            ]);
+
             const ownGalponesWithRole = ownGalpones.map(g => ({
                 ...g.get({ plain: true }),
                 memberRole: 'owner'
             }));
 
-            // Obtener galpones donde es worker (a través de FarmMember) con paginación
-            const memberships = await FarmMember.findAll({
-                where: { profileId, status: 'active', role: 'worker' },
-                include: [{ association: 'galpon' }],
-                limit: limitValue,
-                offset
-            });
             const workerGalpones = memberships.map(m => ({
                 ...m.galpon.get({ plain: true }),
                 memberRole: 'worker'
             }));
 
-            // Combinar ambos (evitar duplicados)
             const allGalpones = [...ownGalponesWithRole];
             workerGalpones.forEach(wg => {
                 if (!allGalpones.some(og => og.id === wg.id)) {
@@ -90,11 +93,6 @@ class GalponService {
                 }
             });
 
-            // Obtener total para paginación
-            const totalOwn = await galponRepository.countByProfileId(profileId);
-            const totalWorker = await FarmMember.count({
-                where: { profileId, status: 'active', role: 'worker' }
-            });
             const total = totalOwn + totalWorker;
 
             return createPaginatedResponse(allGalpones, pageValue, limitValue, total);
@@ -108,14 +106,13 @@ class GalponService {
         const galpon = await galponRepository.findById(id);
         if (!galpon) throw new AppError('Galpón no encontrado.', 404);
 
-        // Solo el propietario puede editar los detalles del galpón
-        await this._assertOwner(id, profileId);
+        const [, cageCount] = await Promise.all([
+            this._assertOwner(id, profileId),
+            data.totalCapacity ? Cage.count({ where: { galponId: id } }) : Promise.resolve(0)
+        ]);
 
-        if (data.totalCapacity) {
-            const cageCount = await Cage.count({ where: { galponId: id } });
-            if (cageCount > Number(data.totalCapacity)) {
-                throw new AppError('No se puede reducir la capacidad total por debajo del número de jaulas existentes.', 400);
-            }
+        if (data.totalCapacity && cageCount > Number(data.totalCapacity)) {
+            throw new AppError('No se puede reducir la capacidad total por debajo del número de jaulas existentes.', 400);
         }
 
         return galponRepository.update(galpon, data);
@@ -125,10 +122,11 @@ class GalponService {
         const galpon = await galponRepository.findById(id);
         if (!galpon) throw new AppError('Galpón no encontrado.', 404);
 
-        // Solo el propietario puede eliminar galpones (trabajadores nunca pueden eliminar)
-        await this._assertOwner(id, profileId);
+        const [, cageCount] = await Promise.all([
+            this._assertOwner(id, profileId),
+            Cage.count({ where: { galponId: id } })
+        ]);
 
-        const cageCount = await Cage.count({ where: { galponId: id } });
         if (cageCount > 0) {
             throw new AppError('No se puede eliminar un galpón que tiene jaulas asociadas.', 400);
         }
@@ -144,21 +142,20 @@ class GalponService {
         const profile = await Profile.findByPk(profileId);
         if (!profile?.activeGalponId) return null;
         
-        const galpon = await galponRepository.findById(profile.activeGalponId);
+        const [galpon, membership] = await Promise.all([
+            galponRepository.findById(profile.activeGalponId),
+            FarmMember.findOne({
+                where: { profileId, galponId: profile.activeGalponId, status: 'active' }
+            })
+        ]);
         if (!galpon) return null;
 
-        // Verificar si el usuario es propietario del galpón (creador)
         if (galpon.profileId === profileId) {
             return {
                 ...galpon.get({ plain: true }),
                 memberRole: 'owner'
             };
         }
-
-        // Obtener el rol del usuario en este galpón a través de farm_members
-        const membership = await FarmMember.findOne({
-            where: { profileId, galponId: galpon.id, status: 'active' }
-        });
 
         return {
             ...galpon.get({ plain: true }),
@@ -167,17 +164,18 @@ class GalponService {
     }
 
     async setActiveGalpon(id, profileId) {
-        const galpon = await galponRepository.findById(id);
+        const [galpon, membership] = await Promise.all([
+            galponRepository.findById(id),
+            FarmMember.findOne({
+                where: { profileId, galponId: id, status: 'active' }
+            })
+        ]);
         if (!galpon) throw new AppError('Galpón no encontrado.', 404);
-
-        // Verificar que el usuario tiene membresía en ese galpón
-        const membership = await FarmMember.findOne({
-            where: { profileId, galponId: id, status: 'active' }
-        });
         if (!membership) throw new AppError('No tienes acceso a este galpón.', 403);
 
         const { Profile } = require('../../domain/models');
         await Profile.update({ activeGalponId: id }, { where: { id: profileId } });
+        clearCache(profileId);
 
         return galpon;
     }

@@ -160,35 +160,11 @@ export function NotificationIcon() {
     }
   };
 
-  const isInitialMountRef = useRef(true);
-  const previousUnreadInfosCountRef = useRef(0);
-  const previousTotalChangesRef = useRef(0);
-  const [isAnimating, setIsAnimating] = useState(false);
-
   // Filtrado exclusivo de avisos generales y actividades
   const infoNotifications = notifications.filter(n => !isWarningNotification(n));
   const unreadInfos = infoNotifications.filter(n => !n.read);
   const unreadInfosCount = unreadCount !== undefined ? unreadCount : unreadInfos.length;
   const remainingInfosCount = Math.max(0, unreadInfosCount - 1);
-  const totalChanges = unreadInfos.reduce((sum: number, n: any) => sum + (n.data?.changeCount || 1), 0);
-
-  useEffect(() => {
-    if (isInitialMountRef.current) {
-      isInitialMountRef.current = false;
-      previousUnreadInfosCountRef.current = unreadInfosCount;
-      previousTotalChangesRef.current = totalChanges;
-      return;
-    }
-
-    if (unreadInfosCount > previousUnreadInfosCountRef.current || totalChanges > previousTotalChangesRef.current) {
-      setIsAnimating(true);
-      setTimeout(() => {
-        setIsAnimating(false);
-      }, 2500);
-    }
-    previousUnreadInfosCountRef.current = unreadInfosCount;
-    previousTotalChangesRef.current = totalChanges;
-  }, [unreadInfosCount, totalChanges]);
 
   useEffect(() => {
     const handleCloseNotifications = () => {

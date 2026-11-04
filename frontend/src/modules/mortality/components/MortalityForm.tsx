@@ -14,7 +14,7 @@ interface MortalityFormProps {
 }
 
 export function MortalityForm({ selectedRabbits, onSuccess, onCancel }: Readonly<MortalityFormProps>) {
-  const { createMortality } = useMortality();
+  const { createMortality } = useMortality({ enabled: false });
   const { showToast } = useToast();
   const [submitting, setSubmitting] = useState(false);
 

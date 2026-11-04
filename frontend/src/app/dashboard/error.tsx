@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import { AlertTriangle, RefreshCw, ArrowLeft } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 
 export default function DashboardError({
   error,

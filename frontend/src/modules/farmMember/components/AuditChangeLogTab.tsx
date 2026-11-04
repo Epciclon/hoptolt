@@ -389,7 +389,6 @@ export function AuditChangeLogTab({ galponId, workers }: Readonly<AuditChangeLog
 
   const logs = data?.logs || [];
   const totalPages = data?.totalPages || 1;
-  const totalCount = data?.total || 0;
   const loading = isLoading && !data;
 
   // Suscripción Realtime para invalidar la caché inmediatamente ante nuevos registros

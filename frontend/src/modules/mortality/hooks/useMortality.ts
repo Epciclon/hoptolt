@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { mortalityService } from '../services/mortality.service';
@@ -8,9 +8,10 @@ import { useActiveGalpon } from '@/modules/galpones/hooks/useActiveGalpon';
 import type { CreateMortalityDto } from '../types/mortality.types';
 import type { AssignedRabbit } from '@/modules/assignments/types/assignment.types';
 
-export function useMortality(filters?: { profileId?: string; date?: string; isKits?: boolean }) {
+export function useMortality(filters?: { profileId?: string; date?: string; isKits?: boolean; enabled?: boolean }) {
   const queryClient = useQueryClient();
   const { activeGalpon } = useActiveGalpon();
+  const isEnabled = filters?.enabled !== false && !!activeGalpon;
 
   // Query: Fetch Mortalities
   const {
@@ -36,7 +37,7 @@ export function useMortality(filters?: { profileId?: string; date?: string; isKi
         throw err;
       });
     },
-    enabled: !!activeGalpon,
+    enabled: isEnabled,
   });
 
   // Query: Fetch Assigned Rabbits
@@ -51,7 +52,7 @@ export function useMortality(filters?: { profileId?: string; date?: string; isKi
       if (err instanceof Error && err.message.includes('403')) return [];
       throw err;
     }),
-    enabled: !!activeGalpon,
+    enabled: isEnabled,
   });
 
   // Query: Fetch Assigned Cages (Membership)
@@ -71,13 +72,13 @@ export function useMortality(filters?: { profileId?: string; date?: string; isKi
       }
       return { isWorker: false, assignedCageIds: [] };
     },
-    enabled: !!activeGalpon,
+    enabled: isEnabled,
   });
 
   const isWorker = membershipData?.isWorker || false;
   const assignedCageIds = membershipData?.assignedCageIds || [];
 
-  const loading = loadingMortalities || loadingRabbits || loadingMembership;
+  const loading = isEnabled && (loadingMortalities || loadingRabbits || loadingMembership);
   let error = null;
   if (errorMortalities) {
     error = (errorMortalities as Error).message;

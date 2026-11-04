@@ -1,12 +1,11 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { galponService } from '../services/galpon.service';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 
 export function useActiveGalpon() {
   const { refetchUser } = useAuthContext();
-  const queryClient = useQueryClient();
 
   const { data: activeGalpon = null, isLoading: loading, error: queryError } = useQuery({
     queryKey: ['activeGalpon'],
@@ -51,3 +50,12 @@ export function useActiveGalpon() {
   return { activeGalpon, loading, error, setActive };
 }
 
+export function useGalponStats(galponId?: number) {
+  const { data: stats = null, isLoading: loading } = useQuery({
+    queryKey: ['galponStats', galponId],
+    queryFn: () => galponService.getStats(galponId!),
+    enabled: !!galponId,
+  });
+
+  return { stats, loading };
+}

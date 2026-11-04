@@ -218,30 +218,6 @@ function PartnerProfileCard({
   );
 }
 
-function ReporterProfileCard({ 
-  profile 
-}: Readonly<{ profile?: { fullName?: string | null; username?: string | null; email?: string | null } | null }>) {
-  return (
-    <div className="bg-theme-surface border border-strong rounded-lg p-3 w-full">
-      <p className="text-xs text-muted font-medium mb-1">Reportado por</p>
-      <div className="flex flex-col leading-tight">
-        <span className="text-sm font-semibold text-main">
-          {profile?.fullName || profile?.username || 'Sistema'}
-        </span>
-        {profile?.username && (
-          <span className="text-xs text-muted font-medium mt-0.5">
-            @{profile.username}
-          </span>
-        )}
-        {profile?.email && (
-          <span className="text-xs text-theme-faint mt-0.5 break-all">
-            {profile.email}
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
 function MortalityDetails({ record: selectedRecord }: Readonly<{ record: Mortality & { type: 'mortality'; maleCode?: string | null; maleName?: string | null; maleRace?: string | null; } }>) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

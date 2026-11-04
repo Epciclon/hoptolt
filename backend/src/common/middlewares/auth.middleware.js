@@ -14,8 +14,9 @@ if (supabaseUrl && supabaseAnonKey) {
     supabase = createClient(supabaseUrl, supabaseAnonKey);
 }
 
-// Cache simple en memoria para perfiles de usuario (TTL: 5 minutos)
+// Cache simple en memoria para perfiles de usuario y tokens JWT verificados (TTL: 5 minutos)
 const profileCache = new Map();
+const tokenCache = new Map();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
 
 function getFromCache(userId) {
@@ -33,8 +34,33 @@ function setCache(userId, profile) {
     });
 }
 
+function getTokenUserFromCache(token) {
+    const cached = tokenCache.get(token);
+    if (cached && Date.now() < cached.expiresAt) {
+        return cached.user;
+    }
+    if (cached) tokenCache.delete(token);
+    return null;
+}
+
+function setTokenUserCache(token, user, expSeconds) {
+    const now = Date.now();
+    const jwtExpMs = expSeconds ? expSeconds * 1000 : now + CACHE_TTL;
+    const expiresAt = Math.min(now + CACHE_TTL, jwtExpMs);
+    if (expiresAt > now) {
+        tokenCache.set(token, { user, expiresAt });
+    }
+}
+
 function clearCache(userId) {
     profileCache.delete(userId);
+    if (userId) {
+        for (const [tokenKey, entry] of tokenCache.entries()) {
+            if (entry?.user?.id === userId) {
+                tokenCache.delete(tokenKey);
+            }
+        }
+    }
 }
 
 /**
@@ -43,7 +69,7 @@ function clearCache(userId) {
  *
  * Flujo (Recomendado):
  *  1. Extrae el Bearer token del header Authorization.
- *  2. Lo verifica usando supabase.auth.getUser(token).
+ *  2. Lo verifica usando supabase.auth.getUser(token) o cache de sesión reciente.
  *  3. Usa user.id (UUID del usuario en Supabase Auth) para buscar el perfil local.
  *  4. Adjunta el perfil a req.user y llama a next().
  */
@@ -59,27 +85,34 @@ const authenticate = async (req, res, next) => {
         }
 
         const token = authHeader.split(' ')[1];
-
-        // Usamos el SDK de Supabase para obtener y verificar el usuario con el token.
-        // Esto confía en la verificación que hace la API de Supabase Auth,
-        // lo que es más seguro y no requiere conocer el JWT_SECRET.
-        const { data: { user }, error } = await supabase.auth.getUser(token);
-
-        if (error || !user) {
-            throw new AppError('Token inválido o expirado. Inicie sesión nuevamente.', 401);
-        }
+        const parts = token.split('.');
+        const isRealJwt = parts.length === 3;
+        let jwtPayload = null;
 
         // Verificar si es un token temporal de recuperación de contraseña (bloquear acceso a la API)
         try {
-            const parts = token.split('.');
             if (parts.length >= 2) {
-                const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf-8'));
-                if (Array.isArray(payload.amr) && payload.amr.some(item => item.method === 'recovery')) {
+                jwtPayload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf-8'));
+                if (Array.isArray(jwtPayload.amr) && jwtPayload.amr.some(item => item.method === 'recovery')) {
                     throw new AppError('Sesión de recuperación. Debe actualizar su contraseña antes de acceder al sistema.', 403);
                 }
             }
         } catch (jwtErr) {
             if (jwtErr instanceof AppError) throw jwtErr;
+        }
+
+        let user = isRealJwt ? getTokenUserFromCache(token) : null;
+        if (!user) {
+            // Usamos el SDK de Supabase para obtener y verificar el usuario con el token.
+            const { data: { user: verifiedUser }, error } = await supabase.auth.getUser(token);
+
+            if (error || !verifiedUser) {
+                throw new AppError('Token inválido o expirado. Inicie sesión nuevamente.', 401);
+            }
+            user = verifiedUser;
+            if (isRealJwt) {
+                setTokenUserCache(token, user, jwtPayload?.exp);
+            }
         }
 
         // Intentamos obtener el perfil del cache

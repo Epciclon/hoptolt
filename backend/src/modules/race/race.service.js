@@ -17,7 +17,7 @@ class RaceService {
         });
 
         if (galponId) {
-            await recordWorkerChange({
+            recordWorkerChange({
                 galponId,
                 profileId: workerProfileId || profileId,
                 action: 'crear',
@@ -26,7 +26,7 @@ class RaceService {
                 itemName: `Raza ${created.name}`,
                 summary: `Registró la nueva raza ${created.name}`,
                 after: { name: created.name, description: created.description, imageUrl: created.imageUrl || null }
-            });
+            }).catch(err => console.error('Error recording worker change on registerRace:', err));
         }
 
         return created;
@@ -57,8 +57,10 @@ class RaceService {
             order: [['createdAt', 'DESC']]
         };
 
-        const races = await raceRepository.findByProfile(profileId, options);
-        const total = await raceRepository.countByProfile(profileId, { where });
+        const [races, total] = await Promise.all([
+            raceRepository.findByProfile(profileId, options),
+            raceRepository.countByProfile(profileId, { where })
+        ]);
 
         return createPaginatedResponse(races, pageValue, limitValue, total);
     }
@@ -70,7 +72,7 @@ class RaceService {
         const updated = await raceRepository.update(race, data);
 
         if (galponId && profileId) {
-            await recordWorkerChange({
+            recordWorkerChange({
                 galponId,
                 profileId,
                 action: 'modificar',
@@ -80,7 +82,7 @@ class RaceService {
                 summary: `Modificó la información de la raza ${race.name}`,
                 before,
                 after: { name: updated.name, description: updated.description, imageUrl: updated.imageUrl || null }
-            });
+            }).catch(err => console.error('Error recording worker change on editRace:', err));
         }
 
         return updated;
@@ -99,7 +101,7 @@ class RaceService {
         await raceRepository.delete(race);
 
         if (galponId && profileId) {
-            await recordWorkerChange({
+            recordWorkerChange({
                 galponId,
                 profileId,
                 action: 'eliminar',
@@ -108,7 +110,7 @@ class RaceService {
                 itemName: `Raza ${race.name}`,
                 summary: `Eliminó la raza ${race.name} del catálogo`,
                 before
-            });
+            }).catch(err => console.error('Error recording worker change on deleteRace:', err));
         }
     }
 }
