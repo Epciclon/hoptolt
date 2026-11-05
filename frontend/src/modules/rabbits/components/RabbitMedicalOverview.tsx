@@ -109,13 +109,19 @@ export function RabbitMedicalOverview({ rabbit }: Readonly<RabbitMedicalOverview
               <>
                 <div className="flex items-center justify-between gap-2 border-b border-default/50 pb-2">
                   <span className="text-muted">Estado:</span>
-                  {dewormDiffDays! > 0 ? (
-                    <span className="font-bold text-main shrink-0 whitespace-nowrap">Faltan {dewormDiffDays} {dewormDiffDays === 1 ? 'día' : 'días'}</span>
-                  ) : dewormDiffDays === 0 ? (
-                    <span className="font-bold text-primary-600 shrink-0 whitespace-nowrap">¡Toca hoy!</span>
-                  ) : (
-                    <span className="font-bold text-emerald-600 shrink-0 whitespace-nowrap">Lista para dosis</span>
-                  )}
+                  {(() => {
+                    if (dewormDiffDays! > 0) {
+                      return (
+                        <span className="font-bold text-main shrink-0 whitespace-nowrap">
+                          Faltan {dewormDiffDays} {dewormDiffDays === 1 ? 'día' : 'días'}
+                        </span>
+                      );
+                    }
+                    if (dewormDiffDays === 0) {
+                      return <span className="font-bold text-primary-600 shrink-0 whitespace-nowrap">¡Toca hoy!</span>;
+                    }
+                    return <span className="font-bold text-emerald-600 shrink-0 whitespace-nowrap">Lista para dosis</span>;
+                  })()}
                 </div>
                 <div className="flex items-center justify-between gap-2 pb-1">
                   <span className="text-muted">Próxima Fecha:</span>

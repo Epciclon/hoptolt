@@ -99,6 +99,379 @@ function selectCandidateInfoNotification(unreadInfos: any[], userId: string, now
   }) || null;
 }
 
+function renderBoldMessageParts(message: string) {
+  let offset = 0;
+  return message.split(/(\*\*.*?\*\*)/g).map((part: string) => {
+    const key = `${part}-${offset}`;
+    offset += part.length;
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={key} className="font-semibold text-main">{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+}
+
+function getInfoPreviewHeaderLabel(notification: any): string {
+  if (notification.type === 'invitation') return 'Invitación';
+  const isAssignment =
+    notification.data?.type === 'task_assignment' ||
+    notification.title?.toLowerCase().includes('asignaci');
+  if (isAssignment) return 'Nueva Asignación';
+  return 'Aviso de Actividad';
+}
+
+function getInfoActionConfig(notification: any) {
+  const type = notification.data?.type;
+  const isAssignment = type === 'task_assignment' || notification.title?.toLowerCase().includes('asignaci');
+  if (isAssignment) {
+    return { label: 'Entendido', variant: 'primary' as const };
+  }
+  if (type === 'worker_sensitive_action') {
+    return { label: 'Ver Cambios', variant: 'primary' as const };
+  }
+  if (type === 'worker_action') {
+    return { label: 'Ver Historial', variant: 'outline' as const };
+  }
+  if (type === 'growth_summary') {
+    return { label: 'Ver Crecimiento', variant: 'outline' as const };
+  }
+  if (type === 'maturity') {
+    return { label: 'Ver Conejos', variant: 'outline' as const };
+  }
+  return { label: 'Ver Detalle', variant: 'outline' as const };
+}
+
+function getIconByType(type: string) {
+  switch (type) {
+    case 'info':
+      return 'ℹ';
+    case 'invitation':
+      return '📨';
+    default:
+      return '•';
+  }
+}
+
+function getTypeColor(type: string) {
+  switch (type) {
+    case 'info':
+      return 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950/40 dark:border-blue-900/60 dark:text-blue-400';
+    case 'invitation':
+      return 'bg-purple-50 border-purple-200 text-purple-800 dark:bg-purple-950/40 dark:border-purple-900/60 dark:text-purple-400';
+    default:
+      return 'bg-theme-surface border-strong text-main';
+  }
+}
+
+interface InfoFloatingPreviewProps {
+  notification: any;
+  alertOffset: number;
+  remainingInfosCount: number;
+  accepting: number | null;
+  rejecting: number | null;
+  onClose: (e?: React.MouseEvent) => void;
+  onSelect: (notification: any) => void;
+  onAcceptInvitation: (notification: any) => void;
+  onRejectInvitation: (notification: any) => void;
+}
+
+function InfoFloatingPreview({
+  notification,
+  alertOffset,
+  remainingInfosCount,
+  accepting,
+  rejecting,
+  onClose,
+  onSelect,
+  onAcceptInvitation,
+  onRejectInvitation,
+}: Readonly<InfoFloatingPreviewProps>) {
+  const actionConfig = getInfoActionConfig(notification);
+  const isInvitation = notification.type === 'invitation';
+
+  return (
+    <div
+      style={{ top: alertOffset > 0 ? `calc(4rem + ${alertOffset}px)` : '4rem' }}
+      className="fixed right-3 sm:right-6 left-3 sm:left-auto w-auto sm:w-96 max-w-[calc(100vw-1.5rem)] flex flex-col gap-2.5 z-[60] pointer-events-none transition-[top] duration-300 ease-out"
+    >
+      <div className="pointer-events-auto bg-card rounded-xl shadow-xl border border-blue-300 dark:border-blue-800/70 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
+        <div className="px-3.5 py-2 border-b border-default flex justify-between items-center bg-blue-500/10">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse shrink-0" />
+            <span className="font-semibold text-blue-900 dark:text-blue-300 text-xs uppercase tracking-wider">
+              {getInfoPreviewHeaderLabel(notification)}
+            </span>
+            {remainingInfosCount > 0 && (
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-blue-200/80 dark:bg-blue-900/60 text-blue-900 dark:text-blue-200">
+                + {remainingInfosCount} más
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-theme-faint hover:text-muted p-1 rounded hover:bg-theme-surface transition-colors cursor-pointer"
+            aria-label="Cerrar aviso"
+          >
+            <X size={15} />
+          </button>
+        </div>
+
+        <div className="relative w-full text-left p-4 bg-blue-50/50 dark:bg-blue-950/20 hover:bg-theme-surface transition-colors block">
+          {!isInvitation && (
+            <button
+              type="button"
+              onClick={() => onSelect(notification)}
+              aria-label={`Abrir notificación ${notification.title}`}
+              className="absolute inset-0 w-full h-full z-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          )}
+          <div className="relative z-10 pointer-events-none flex items-start gap-3">
+            <div className={cn('w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0', getTypeColor(notification.type))}>
+              {getIconByType(notification.type)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="font-medium text-main text-sm flex items-center gap-2">
+                {notification.title}
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" />
+              </h4>
+              <p className="text-sm text-muted mt-1 leading-relaxed">
+                {renderBoldMessageParts(notification.message)}
+              </p>
+
+              {notification.data?.workersList && notification.data.workersList.length > 1 && (
+                <div className="mt-2 p-1.5 bg-card/70 rounded border border-default text-xs flex flex-wrap gap-x-3 gap-y-1">
+                  {notification.data.workersList.map((w: any) => (
+                    <span key={w.name} className="inline-flex items-center gap-1">
+                      <span className="font-medium text-main">{w.name}:</span>
+                      <span className="font-semibold text-main">{w.count}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {notification.data?.type === 'worker_sensitive_action' && notification.data?.modulesBreakdown && notification.data.modulesBreakdown.length > 0 && (
+                <div className="mt-2.5 p-2 bg-theme-surface rounded-lg border border-default text-xs pointer-events-auto">
+                  <ul className="divide-y divide-default bg-card rounded border border-default max-h-28 overflow-y-auto">
+                    {notification.data.modulesBreakdown.map((m: any) => (
+                      <li key={m.module} className="flex items-center justify-between py-1 px-2.5">
+                        <span className="font-medium text-main">{m.label}</span>
+                        <span className="text-[10px] font-medium text-main bg-theme-surface px-2 py-0.5 rounded border border-default">
+                          {m.count} {m.count === 1 ? 'cambio' : 'cambios'}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="mt-3 flex items-center justify-between gap-2 pt-2.5 border-t border-default">
+                <p className="text-xs text-theme-faint">{formatTime(notification.updatedAt || notification.createdAt)}</p>
+
+                <div className="pointer-events-auto">
+                  {isInvitation ? (
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRejectInvitation(notification);
+                        }}
+                        disabled={accepting === notification.id || rejecting === notification.id}
+                        className="text-xs py-1 px-2.5 h-auto shadow-sm"
+                      >
+                        {rejecting === notification.id ? 'Rechazando...' : 'Rechazar'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onAcceptInvitation(notification);
+                        }}
+                        disabled={accepting === notification.id || rejecting === notification.id}
+                        className="text-xs py-1 px-2.5 h-auto shadow-sm"
+                      >
+                        {accepting === notification.id ? 'Aceptando...' : 'Aceptar'}
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant={actionConfig.variant}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelect(notification);
+                      }}
+                      className="text-xs py-1 px-3 shadow-sm h-auto"
+                    >
+                      {actionConfig.label}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface NotificationPopoverItemProps {
+  notification: any;
+  accepting: number | null;
+  rejecting: number | null;
+  onSelect: (notification: any) => void;
+  onDelete: (id: number) => Promise<void>;
+  onAcceptInvitation: (notification: any) => void;
+  onRejectInvitation: (notification: any) => void;
+}
+
+function NotificationPopoverItem({
+  notification,
+  accepting,
+  rejecting,
+  onSelect,
+  onDelete,
+  onAcceptInvitation,
+  onRejectInvitation,
+}: Readonly<NotificationPopoverItemProps>) {
+  return (
+    <div
+      className={cn(
+        'relative w-full text-left p-3.5 hover:bg-theme-surface transition-colors block',
+        !notification.read && 'bg-primary-50/40 dark:bg-primary-900/15'
+      )}
+    >
+      <button
+        type="button"
+        onClick={() => onSelect(notification)}
+        aria-label={`Abrir notificación ${notification.title}`}
+        className="absolute inset-0 w-full h-full z-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500"
+      />
+      <div className="relative z-10 pointer-events-none flex items-start gap-3">
+        <div className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5', getTypeColor(notification.type))}>
+          {getIconByType(notification.type)}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex justify-between items-start gap-2">
+            <h4 className="font-medium text-main text-xs sm:text-sm flex items-center gap-1.5">
+              {notification.title}
+              {!notification.read && (
+                <span className="w-1.5 h-1.5 rounded-full bg-primary-500 inline-block shrink-0" />
+              )}
+            </h4>
+            {notification.type !== 'invitation' && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void onDelete(notification.id);
+                }}
+                className="pointer-events-auto text-theme-faint hover:text-muted p-0.5"
+                aria-label="Eliminar notificación"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+          <p className="text-xs text-muted mt-1 leading-relaxed">
+            {renderBoldMessageParts(notification.message)}
+          </p>
+          <p className="text-xs text-theme-faint mt-2 font-medium">{formatTime(notification.updatedAt || notification.createdAt)}</p>
+
+          {notification.type === 'invitation' && (
+            <div className="pointer-events-auto flex gap-2 mt-2">
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAcceptInvitation(notification);
+                }}
+                disabled={accepting === notification.id || rejecting === notification.id}
+                className="text-xs py-1 px-3"
+              >
+                {accepting === notification.id ? 'Aceptando...' : 'Aceptar'}
+              </Button>
+              <Button
+                size="sm"
+                variant="danger"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRejectInvitation(notification);
+                }}
+                disabled={accepting === notification.id || rejecting === notification.id}
+                className="text-xs py-1 px-3"
+              >
+                {rejecting === notification.id ? 'Rechazando...' : 'Rechazar'}
+              </Button>
+            </div>
+          )}
+
+          {notification.data?.type === 'growth_summary' && (
+            <div className="mt-2 bg-theme-surface border border-default rounded-md p-2">
+              <p className="text-xs text-main font-medium mb-1">
+                Actualizaciones • {notification.data.updatesCount || 0}
+              </p>
+              <ul className="text-xs text-muted list-disc list-inside">
+                {notification.data.details?.slice(0, 3).map((detail: string) => (
+                  <li key={detail} className="truncate">{detail}</li>
+                ))}
+                {notification.data.details?.length > 3 && (
+                  <li className="italic text-theme-faint">... y más registros</li>
+                )}
+              </ul>
+            </div>
+          )}
+
+          {notification.data?.type === 'worker_action' && notification.data?.workersList && notification.data.workersList.length > 1 && (
+            <div className="pointer-events-auto mt-2 flex flex-col gap-1 p-2 rounded-md bg-theme-surface border border-default">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] text-main font-medium">
+                  Detalle por trabajador • {notification.data.totalCount || notification.data.totalItems || 0} {notification.data.unitName || notification.data.unit || 'registro'}s en total:
+                </span>
+              </div>
+              <ul className="text-[11px] text-main max-h-24 overflow-y-auto bg-card rounded p-1 border border-default divide-y divide-default">
+                {notification.data.workersList.map((worker: any) => (
+                  <li key={worker.name} className="flex items-center justify-between py-1 px-1.5">
+                    <span className="font-medium text-main">{worker.name}</span>
+                    <span className="text-[10px] font-medium text-main bg-theme-surface px-1.5 py-0.5 rounded border border-default">
+                      {worker.count} {notification.data.unitName || notification.data.unit || 'registro'}{worker.count === 1 ? '' : 's'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {notification.data?.type === 'worker_sensitive_action' && notification.data?.modulesBreakdown && notification.data.modulesBreakdown.length > 0 && (
+            <div className="pointer-events-auto mt-2 flex flex-col gap-1 p-2 rounded-md bg-theme-surface border border-default">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] text-main font-medium">
+                  Detalle por módulo sensible:
+                </span>
+              </div>
+              <ul className="text-[11px] text-main max-h-32 overflow-y-auto bg-card rounded p-1 border border-default divide-y divide-default">
+                {notification.data.modulesBreakdown.map((m: any) => (
+                  <li key={m.module} className="flex items-center justify-between py-1 px-2">
+                    <span className="font-medium text-main">{m.label}</span>
+                    <span className="text-[10px] font-medium text-main bg-theme-surface px-2 py-0.5 rounded border border-default">
+                      {m.count} {m.count === 1 ? 'cambio' : 'cambios'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function NotificationIcon() {
   const NOTIFICATION_LIMIT = 15;
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications({ limit: NOTIFICATION_LIMIT, filter: 'notices' });
@@ -116,17 +489,35 @@ export function NotificationIcon() {
   const infoTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [previewNotificationsEnabled, setPreviewNotificationsEnabled] = useState(true);
 
+  const clearActiveInfoTimerAndPreview = () => {
+    if (infoTimerRef.current) {
+      clearTimeout(infoTimerRef.current);
+      infoTimerRef.current = null;
+    }
+    activeInfoRef.current = null;
+    setActiveInfoPreview(null);
+  };
+
+  const activateInfoPreviewWithTimer = (candidate: any, userId: string) => {
+    activeInfoRef.current = candidate;
+    setActiveInfoPreview(candidate);
+    markPreviewSeen(candidate, userId);
+    playNotificationSound();
+
+    if (infoTimerRef.current) clearTimeout(infoTimerRef.current);
+    infoTimerRef.current = setTimeout(() => {
+      activeInfoRef.current = null;
+      setActiveInfoPreview(null);
+      infoTimerRef.current = null;
+    }, 14000);
+  };
+
   useEffect(() => {
     const syncSetting = () => {
       const enabled = typeof window !== 'undefined' ? localStorage.getItem('hoptolt_preview_notifications') !== 'false' : true;
       setPreviewNotificationsEnabled(enabled);
       if (!enabled) {
-        if (infoTimerRef.current) {
-          clearTimeout(infoTimerRef.current);
-          infoTimerRef.current = null;
-        }
-        activeInfoRef.current = null;
-        setActiveInfoPreview(null);
+        clearActiveInfoTimerAndPreview();
       }
     };
     syncSetting();
@@ -150,39 +541,15 @@ export function NotificationIcon() {
     };
     window.addEventListener('hoptolt_alert_preview_change', handleAlertChange);
 
-    const checkInitial = () => {
-      const el = document.getElementById('hoptolt-alert-preview');
-      if (el) {
-        setAlertOffset(el.getBoundingClientRect().height + 12);
-      }
-    };
-    checkInitial();
+    const el = document.getElementById('hoptolt-alert-preview');
+    if (el) {
+      setAlertOffset(el.getBoundingClientRect().height + 12);
+    }
 
     return () => {
       window.removeEventListener('hoptolt_alert_preview_change', handleAlertChange);
     };
   }, []);
-
-  const getActionConfig = (notification: any) => {
-    const type = notification.data?.type;
-    const isAssignment = type === 'task_assignment' || notification.title?.toLowerCase().includes('asignaci');
-    if (isAssignment) {
-      return { label: 'Entendido', variant: 'primary' as const };
-    }
-    if (type === 'worker_sensitive_action') {
-      return { label: 'Ver Cambios', variant: 'primary' as const };
-    }
-    if (type === 'worker_action') {
-      return { label: 'Ver Historial', variant: 'outline' as const };
-    }
-    if (type === 'growth_summary') {
-      return { label: 'Ver Crecimiento', variant: 'outline' as const };
-    }
-    if (type === 'maturity') {
-      return { label: 'Ver Conejos', variant: 'outline' as const };
-    }
-    return { label: 'Ver Detalle', variant: 'outline' as const };
-  };
 
   // Filtrado exclusivo de avisos generales y actividades
   const infoNotifications = notifications.filter(n => !isWarningNotification(n));
@@ -204,12 +571,7 @@ export function NotificationIcon() {
   const lastUserRef = useRef<string | null>(null);
   useEffect(() => {
     if (user?.id && lastUserRef.current && lastUserRef.current !== user.id) {
-      if (infoTimerRef.current) {
-        clearTimeout(infoTimerRef.current);
-        infoTimerRef.current = null;
-      }
-      activeInfoRef.current = null;
-      setActiveInfoPreview(null);
+      clearActiveInfoTimerAndPreview();
     }
     lastUserRef.current = user?.id || null;
   }, [user?.id]);
@@ -223,12 +585,7 @@ export function NotificationIcon() {
   // Previa Flotante Informativa con sonido de notificación
   useEffect(() => {
     if (isOpen || !previewNotificationsEnabled) {
-      if (infoTimerRef.current) {
-        clearTimeout(infoTimerRef.current);
-        infoTimerRef.current = null;
-      }
-      activeInfoRef.current = null;
-      setActiveInfoPreview(null);
+      clearActiveInfoTimerAndPreview();
       return;
     }
     if (typeof window === 'undefined' || !user?.id) return;
@@ -239,84 +596,27 @@ export function NotificationIcon() {
     if (activeInfoRef.current) {
       const currentActive = unreadInfos.find(n => n.id === activeInfoRef.current.id);
       if (!currentActive) {
-        if (infoTimerRef.current) {
-          clearTimeout(infoTimerRef.current);
-          infoTimerRef.current = null;
-        }
-        activeInfoRef.current = null;
-        setActiveInfoPreview(null);
-      } else {
-        const currentVersion = getNotificationVersion(currentActive);
-        const refVersion = getNotificationVersion(activeInfoRef.current);
-        if (currentVersion !== refVersion) {
-          activeInfoRef.current = currentActive;
-          setActiveInfoPreview(currentActive);
-          markPreviewSeen(currentActive, userId);
-          playNotificationSound();
-
-          if (infoTimerRef.current) clearTimeout(infoTimerRef.current);
-          infoTimerRef.current = setTimeout(() => {
-            activeInfoRef.current = null;
-            setActiveInfoPreview(null);
-            infoTimerRef.current = null;
-          }, 14000);
-        }
+        clearActiveInfoTimerAndPreview();
+      } else if (getNotificationVersion(currentActive) !== getNotificationVersion(activeInfoRef.current)) {
+        activateInfoPreviewWithTimer(currentActive, userId);
       }
     }
 
     if (!activeInfoRef.current) {
       const candidateInfo = selectCandidateInfoNotification(unreadInfos, userId, now);
-
       if (candidateInfo) {
-        activeInfoRef.current = candidateInfo;
-        setActiveInfoPreview(candidateInfo);
-        markPreviewSeen(candidateInfo, userId);
-        playNotificationSound();
-
-        if (infoTimerRef.current) clearTimeout(infoTimerRef.current);
-        infoTimerRef.current = setTimeout(() => {
-          activeInfoRef.current = null;
-          setActiveInfoPreview(null);
-          infoTimerRef.current = null;
-        }, 14000);
+        activateInfoPreviewWithTimer(candidateInfo, userId);
       }
     }
   }, [unreadInfos, isOpen, user?.id, previewNotificationsEnabled]);
 
   const handleCloseInfoPreview = (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    if (infoTimerRef.current) {
-      clearTimeout(infoTimerRef.current);
-      infoTimerRef.current = null;
-    }
     const currentItem = activeInfoRef.current || activeInfoPreview;
     if (currentItem && user?.id) {
       markPreviewDismissed(currentItem, user.id);
     }
-    activeInfoRef.current = null;
-    setActiveInfoPreview(null);
-  };
-
-  const getIconByType = (type: string) => {
-    switch (type) {
-      case 'info':
-        return 'ℹ';
-      case 'invitation':
-        return '📨';
-      default:
-        return '•';
-    }
-  };
-
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'info':
-        return 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950/40 dark:border-blue-900/60 dark:text-blue-400';
-      case 'invitation':
-        return 'bg-purple-50 border-purple-200 text-purple-800 dark:bg-purple-950/40 dark:border-purple-900/60 dark:text-purple-400';
-      default:
-        return 'bg-theme-surface border-strong text-main';
-    }
+    clearActiveInfoTimerAndPreview();
   };
 
   const handleAcceptInvitation = async (notification: any) => {
@@ -369,6 +669,16 @@ export function NotificationIcon() {
     setIsOpen(false);
   };
 
+  const handleDeleteNotification = async (id: number) => {
+    try {
+      await deleteNotification(id);
+      showToast('Notificación eliminada', 'success');
+    } catch (error) {
+      console.error(error);
+      showToast('Error al eliminar notificación', 'error');
+    }
+  };
+
   const sortedNotifications = [...infoNotifications].sort((a, b) => {
     const pA = getInfoWeight(a);
     const pB = getInfoWeight(b);
@@ -417,152 +727,20 @@ export function NotificationIcon() {
       </button>
 
       {activeInfoPreview && !isOpen && (
-        <div
-          style={{ top: alertOffset > 0 ? `calc(4rem + ${alertOffset}px)` : '4rem' }}
-          className="fixed right-3 sm:right-6 left-3 sm:left-auto w-auto sm:w-96 max-w-[calc(100vw-1.5rem)] flex flex-col gap-2.5 z-[60] pointer-events-none transition-[top] duration-300 ease-out"
-        >
-          <div className="pointer-events-auto bg-card rounded-xl shadow-xl border border-blue-300 dark:border-blue-800/70 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
-            <div className="px-3.5 py-2 border-b border-default flex justify-between items-center bg-blue-500/10">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse shrink-0" />
-                <span className="font-semibold text-blue-900 dark:text-blue-300 text-xs uppercase tracking-wider">
-                  {activeInfoPreview.type === 'invitation'
-                    ? 'Invitación'
-                    : (activeInfoPreview.data?.type === 'task_assignment' || activeInfoPreview.title?.toLowerCase().includes('asignaci'))
-                    ? 'Nueva Asignación'
-                    : 'Aviso de Actividad'}
-                </span>
-                {remainingInfosCount > 0 && (
-                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-blue-200/80 dark:bg-blue-900/60 text-blue-900 dark:text-blue-200">
-                    + {remainingInfosCount} más
-                  </span>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={handleCloseInfoPreview}
-                className="text-theme-faint hover:text-muted p-1 rounded hover:bg-theme-surface transition-colors cursor-pointer"
-                aria-label="Cerrar aviso"
-              >
-                <X size={15} />
-              </button>
-            </div>
-
-            <div
-              role="button"
-              tabIndex={0}
-              className="w-full text-left p-4 bg-blue-50/50 dark:bg-blue-950/20 hover:bg-theme-surface transition-colors cursor-pointer block focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onClick={() => {
-                if (activeInfoPreview.type !== 'invitation') {
-                  const item = activeInfoPreview;
-                  handleCloseInfoPreview();
-                  void handleNotificationClick(item);
-                }
-              }}
-              onKeyDown={(e) => {
-                if ((e.key === 'Enter' || e.key === ' ') && activeInfoPreview.type !== 'invitation') {
-                  e.preventDefault();
-                  const item = activeInfoPreview;
-                  handleCloseInfoPreview();
-                  void handleNotificationClick(item);
-                }
-              }}
-            >
-              <div className="flex items-start gap-3">
-                <div className={cn('w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0', getTypeColor(activeInfoPreview.type))}>
-                  {getIconByType(activeInfoPreview.type)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-main text-sm flex items-center gap-2">
-                    {activeInfoPreview.title}
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" />
-                  </h4>
-                  <p className="text-sm text-muted mt-1 leading-relaxed">
-                    {activeInfoPreview.message.split(/(\*\*.*?\*\*)/g).map((part: string, i: number) => {
-                      if (part.startsWith('**') && part.endsWith('**')) {
-                        return <strong key={i} className="font-semibold text-main">{part.slice(2, -2)}</strong>;
-                      }
-                      return part;
-                    })}
-                  </p>
-
-                  {activeInfoPreview.data?.workersList && activeInfoPreview.data.workersList.length > 1 && (
-                    <div className="mt-2 p-1.5 bg-card/70 rounded border border-default text-xs flex flex-wrap gap-x-3 gap-y-1">
-                      {activeInfoPreview.data.workersList.map((w: any) => (
-                        <span key={w.name} className="inline-flex items-center gap-1">
-                          <span className="font-medium text-main">{w.name}:</span>
-                          <span className="font-semibold text-main">{w.count}</span>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {activeInfoPreview.data?.type === 'worker_sensitive_action' && activeInfoPreview.data?.modulesBreakdown && activeInfoPreview.data.modulesBreakdown.length > 0 && (
-                    <div className="mt-2.5 p-2 bg-theme-surface rounded-lg border border-default text-xs">
-                      <ul className="divide-y divide-default bg-card rounded border border-default max-h-28 overflow-y-auto">
-                        {activeInfoPreview.data.modulesBreakdown.map((m: any) => (
-                          <li key={m.module} className="flex items-center justify-between py-1 px-2.5">
-                            <span className="font-medium text-main">{m.label}</span>
-                            <span className="text-[10px] font-medium text-main bg-theme-surface px-2 py-0.5 rounded border border-default">
-                              {m.count} {m.count === 1 ? 'cambio' : 'cambios'}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  <div className="mt-3 flex items-center justify-between gap-2 pt-2.5 border-t border-default">
-                    <p className="text-xs text-theme-faint">{formatTime(activeInfoPreview.updatedAt || activeInfoPreview.createdAt)}</p>
-
-                    {activeInfoPreview.type === 'invitation' ? (
-                      <div className="flex items-center gap-1.5">
-                        <Button
-                          size="sm"
-                          variant="danger"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void handleRejectInvitation(activeInfoPreview);
-                          }}
-                          disabled={accepting === activeInfoPreview.id || rejecting === activeInfoPreview.id}
-                          className="text-xs py-1 px-2.5 h-auto shadow-sm"
-                        >
-                          {rejecting === activeInfoPreview.id ? 'Rechazando...' : 'Rechazar'}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="primary"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void handleAcceptInvitation(activeInfoPreview);
-                          }}
-                          disabled={accepting === activeInfoPreview.id || rejecting === activeInfoPreview.id}
-                          className="text-xs py-1 px-2.5 h-auto shadow-sm"
-                        >
-                          {accepting === activeInfoPreview.id ? 'Aceptando...' : 'Aceptar'}
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant={getActionConfig(activeInfoPreview).variant}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const item = activeInfoPreview;
-                          handleCloseInfoPreview();
-                          void handleNotificationClick(item);
-                        }}
-                        className="text-xs py-1 px-3 shadow-sm h-auto"
-                      >
-                        {getActionConfig(activeInfoPreview).label}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <InfoFloatingPreview
+          notification={activeInfoPreview}
+          alertOffset={alertOffset}
+          remainingInfosCount={remainingInfosCount}
+          accepting={accepting}
+          rejecting={rejecting}
+          onClose={handleCloseInfoPreview}
+          onSelect={(item) => {
+            handleCloseInfoPreview();
+            void handleNotificationClick(item);
+          }}
+          onAcceptInvitation={(item) => { void handleAcceptInvitation(item); }}
+          onRejectInvitation={(item) => { void handleRejectInvitation(item); }}
+        />
       )}
 
       {/* Popover de Notificaciones */}
@@ -610,151 +788,16 @@ export function NotificationIcon() {
                 </div>
               ) : (
                 displayedNotifications.map((notification) => (
-                  <div
+                  <NotificationPopoverItem
                     key={notification.id}
-                    role="button"
-                    tabIndex={0}
-                    className={cn(
-                      'w-full text-left p-3.5 hover:bg-theme-surface transition-colors cursor-pointer block focus:outline-none focus:ring-2 focus:ring-primary-500',
-                      !notification.read && 'bg-primary-50/40 dark:bg-primary-900/15'
-                    )}
-                    onClick={() => { void handleNotificationClick(notification); }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        void handleNotificationClick(notification);
-                      }
-                    }}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5', getTypeColor(notification.type))}>
-                        {getIconByType(notification.type)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start gap-2">
-                          <h4 className="font-medium text-main text-xs sm:text-sm flex items-center gap-1.5">
-                            {notification.title}
-                            {!notification.read && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-primary-500 inline-block shrink-0" />
-                            )}
-                          </h4>
-                          {notification.type !== 'invitation' && (
-                            <button
-                              type="button"
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                try {
-                                  await deleteNotification(notification.id);
-                                  showToast('Notificación eliminada', 'success');
-                                } catch (error) {
-                                  console.error(error);
-                                  showToast('Error al eliminar notificación', 'error');
-                                }
-                              }}
-                              className="text-theme-faint hover:text-muted p-0.5"
-                              aria-label="Eliminar notificación"
-                            >
-                              <X size={13} />
-                            </button>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted mt-1 leading-relaxed">
-                          {notification.message.split(/(\*\*.*?\*\*)/g).map((part: string, i: number) => {
-                            if (part.startsWith('**') && part.endsWith('**')) {
-                              return <strong key={i} className="font-semibold text-main">{part.slice(2, -2)}</strong>;
-                            }
-                            return part;
-                          })}
-                        </p>
-                        <p className="text-xs text-theme-faint mt-2 font-medium">{formatTime(notification.updatedAt || notification.createdAt)}</p>
-
-                        {notification.type === 'invitation' && (
-                          <div className="flex gap-2 mt-2">
-                            <Button
-                              size="sm"
-                              variant="primary"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                void handleAcceptInvitation(notification);
-                              }}
-                              disabled={accepting === notification.id || rejecting === notification.id}
-                              className="text-xs py-1 px-3"
-                            >
-                              {accepting === notification.id ? 'Aceptando...' : 'Aceptar'}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="danger"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                void handleRejectInvitation(notification);
-                              }}
-                              disabled={accepting === notification.id || rejecting === notification.id}
-                              className="text-xs py-1 px-3"
-                            >
-                              {rejecting === notification.id ? 'Rechazando...' : 'Rechazar'}
-                            </Button>
-                          </div>
-                        )}
-
-                        {notification.data?.type === 'growth_summary' && (
-                          <div className="mt-2 bg-theme-surface border border-default rounded-md p-2">
-                            <p className="text-xs text-main font-medium mb-1">
-                              Actualizaciones • {notification.data.updatesCount || 0}
-                            </p>
-                            <ul className="text-xs text-muted list-disc list-inside">
-                              {notification.data.details?.slice(0, 3).map((detail: string) => (
-                                <li key={detail} className="truncate">{detail}</li>
-                              ))}
-                              {notification.data.details?.length > 3 && (
-                                <li className="italic text-theme-faint">... y más registros</li>
-                              )}
-                            </ul>
-                          </div>
-                        )}
-
-                        {notification.data?.type === 'worker_action' && notification.data?.workersList && notification.data.workersList.length > 1 && (
-                          <div className="mt-2 flex flex-col gap-1 p-2 rounded-md bg-theme-surface border border-default">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-[11px] text-main font-medium">
-                                Detalle por trabajador • {notification.data.totalCount || notification.data.totalItems || 0} {notification.data.unitName || notification.data.unit || 'registro'}s en total:
-                              </span>
-                            </div>
-                            <ul className="text-[11px] text-main max-h-24 overflow-y-auto bg-card rounded p-1 border border-default divide-y divide-default">
-                              {notification.data.workersList.map((worker: any) => (
-                                <li key={worker.name} className="flex items-center justify-between py-1 px-1.5">
-                                  <span className="font-medium text-main">{worker.name}</span>
-                                  <span className="text-[10px] font-medium text-main bg-theme-surface px-1.5 py-0.5 rounded border border-default">
-                                    {worker.count} {notification.data.unitName || notification.data.unit || 'registro'}{worker.count === 1 ? '' : 's'}
-                                  </span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {notification.data?.type === 'worker_sensitive_action' && notification.data?.modulesBreakdown && notification.data.modulesBreakdown.length > 0 && (
-                          <div className="mt-2 flex flex-col gap-1 p-2 rounded-md bg-theme-surface border border-default">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-[11px] text-main font-medium">
-                                Detalle por módulo sensible:
-                              </span>
-                            </div>
-                            <ul className="text-[11px] text-main max-h-32 overflow-y-auto bg-card rounded p-1 border border-default divide-y divide-default">
-                              {notification.data.modulesBreakdown.map((m: any) => (
-                                <li key={m.module} className="flex items-center justify-between py-1 px-2">
-                                  <span className="font-medium text-main">{m.label}</span>
-                                  <span className="text-[10px] font-medium text-main bg-theme-surface px-2 py-0.5 rounded border border-default">
-                                    {m.count} {m.count === 1 ? 'cambio' : 'cambios'}
-                                  </span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                    notification={notification}
+                    accepting={accepting}
+                    rejecting={rejecting}
+                    onSelect={(item) => { void handleNotificationClick(item); }}
+                    onDelete={handleDeleteNotification}
+                    onAcceptInvitation={(item) => { void handleAcceptInvitation(item); }}
+                    onRejectInvitation={(item) => { void handleRejectInvitation(item); }}
+                  />
                 ))
               )}
             </div>

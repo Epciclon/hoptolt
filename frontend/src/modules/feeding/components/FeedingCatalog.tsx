@@ -117,7 +117,7 @@ function FeedingProgressStats({
                   ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
                   : 'bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800/60'
               }`}>
-              {pendingCagesThisShift.length === 0 ? '0 pendientes - Completo' : `${pendingCagesThisShift.length} pendiente${pendingCagesThisShift.length > 1 ? 's' : ''}`}
+              {`${pendingCagesThisShift.length} pendiente${pendingCagesThisShift.length > 1 ? 's' : ''}`}
             </span>
           </div>
 

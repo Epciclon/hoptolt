@@ -45,14 +45,7 @@ export function ZoomableViewer({ children }: Readonly<ZoomableViewerProps>) {
     });
   };
 
-  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    setIsDragging(false);
-    try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    } catch {}
-  };
-
-  const handlePointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
+  const handlePointerEnd = (e: React.PointerEvent<HTMLDivElement>) => {
     setIsDragging(false);
     try {
       e.currentTarget.releasePointerCapture(e.pointerId);
@@ -120,8 +113,8 @@ export function ZoomableViewer({ children }: Readonly<ZoomableViewerProps>) {
         ref={containerRef}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerCancel}
+        onPointerUp={handlePointerEnd}
+        onPointerCancel={handlePointerEnd}
         onWheel={handleWheel}
       >
         <div 

@@ -252,7 +252,11 @@ export function MortalityForm({ selectedRabbits, onSuccess, onCancel }: Readonly
           variant="danger"
           disabled={submitting}
         >
-          {submitting ? 'Procesando...' : selectedRabbits.length === 1 ? 'Confirmar Baja' : `Confirmar Bajas: ${selectedRabbits.length}`}
+          {(() => {
+            if (submitting) return 'Procesando...';
+            if (selectedRabbits.length === 1) return 'Confirmar Baja';
+            return `Confirmar Bajas: ${selectedRabbits.length}`;
+          })()}
         </Button>
       </div>
 

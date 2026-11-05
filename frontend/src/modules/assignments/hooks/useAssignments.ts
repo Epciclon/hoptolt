@@ -61,7 +61,7 @@ export function useAssignments() {
     },
   });
 
-  const assignRabbits = async (payload: { cageId: number; rabbitIds: number[] }): Promise<{ assignments: Assignment[]; warnings: string[] }> => {
+  const assignRabbits = (payload: { cageId: number; rabbitIds: number[] }): Promise<{ assignments: Assignment[]; warnings: string[] }> => {
     return assignRabbitsMutation.mutateAsync(payload);
   };
 

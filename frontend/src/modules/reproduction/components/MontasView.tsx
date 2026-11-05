@@ -238,59 +238,66 @@ export function MontasView({ searchTerm, onSearchChange }: Readonly<MontasViewPr
 
             {expandedMaleId === macho.id && (
               <div className="mt-2 animate-in fade-in slide-in-from-top-1 duration-150">
-                {macho.isOccupied ? (
-                  (canCreate || canUpdate || canDelete) ? (
-                    <div className="mt-4 flex flex-col gap-2">
-                      {(canCreate || canUpdate) && (
-                        <Button 
-                          variant="primary" 
-                          className="w-full"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setFinishingReproduction(macho.activeMonta!);
-                          }}
-                        >
-                          Finalizar Monta
-                        </Button>
-                      )}
-                      {canDelete && (
-                        <Button 
-                          variant="danger" 
-                          className="w-full justify-center gap-2"
-                          icon={<X size={16} />}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setCancelingReproduction(macho.activeMonta!);
-                          }}
-                        >
-                          Cancelar Monta
-                        </Button>
-                      )}
-                    </div>
-                  ) : (
+                {(() => {
+                  if (macho.isOccupied) {
+                    if (canCreate || canUpdate || canDelete) {
+                      return (
+                        <div className="mt-4 flex flex-col gap-2">
+                          {(canCreate || canUpdate) && (
+                            <Button 
+                              variant="primary" 
+                              className="w-full"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setFinishingReproduction(macho.activeMonta!);
+                              }}
+                            >
+                              Finalizar Monta
+                            </Button>
+                          )}
+                          {canDelete && (
+                            <Button 
+                              variant="danger" 
+                              className="w-full justify-center gap-2"
+                              icon={<X size={16} />}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCancelingReproduction(macho.activeMonta!);
+                              }}
+                            >
+                              Cancelar Monta
+                            </Button>
+                          )}
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="text-center w-full py-2 text-xs text-muted font-medium">
+                        Solo consulta
+                      </div>
+                    );
+                  }
+                  if (canCreate) {
+                    return (
+                      <Button 
+                        variant="primary" 
+                        className="w-full"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedMale(macho);
+                          setShowMatingModal(true);
+                        }}
+                      >
+                        Elegir Pareja
+                      </Button>
+                    );
+                  }
+                  return (
                     <div className="text-center w-full py-2 text-xs text-muted font-medium">
                       Solo consulta
                     </div>
-                  )
-                ) : (
-                  canCreate ? (
-                    <Button 
-                      variant="primary" 
-                      className="w-full"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedMale(macho);
-                        setShowMatingModal(true);
-                      }}
-                    >
-                      Elegir Pareja
-                    </Button>
-                  ) : (
-                    <div className="text-center w-full py-2 text-xs text-muted font-medium">
-                      Solo consulta
-                    </div>
-                  )
-                )}
+                  );
+                })()}
               </div>
             )}
           </RabbitSelectableCard>

@@ -66,7 +66,7 @@ export function useVaccination(filters?: { profileId?: string; date?: string }) 
     },
   });
 
-  const createVaccination = async (payload: { rabbitIds: number[]; vaccines: string[] }) => {
+  const createVaccination = (payload: { rabbitIds: number[]; vaccines: string[] }) => {
     return createVaccinationMutation.mutateAsync(payload);
   };
 

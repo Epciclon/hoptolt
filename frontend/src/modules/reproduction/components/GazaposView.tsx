@@ -799,7 +799,12 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
                 <div className="flex flex-col items-center justify-center text-center gap-1 pt-1.5">
                   <span className="text-muted font-medium text-xs">Estado de Lactancia</span>
                   <span className={`font-bold text-xs sm:text-sm ${readyToWean ? 'text-emerald-600 dark:text-emerald-400' : 'text-main'}`}>
-                    {daysInLactation >= 30 ? 'Lista para destetar' : `En curso • Faltan ${30 - daysInLactation} día${30 - daysInLactation !== 1 ? 's' : ''}`}
+                    {(() => {
+                      if (daysInLactation >= 30) return 'Lista para destetar';
+                      const remainingDays = 30 - daysInLactation;
+                      const suffix = remainingDays === 1 ? '' : 's';
+                      return `En curso • Faltan ${remainingDays} día${suffix}`;
+                    })()}
                   </span>
                 </div>
               </div>

@@ -69,7 +69,7 @@ export function useDeworming(filters?: { profileId?: string; date?: string }) {
     },
   });
 
-  const createDeworming = async (payload: { rabbitIds: number[] }) => {
+  const createDeworming = (payload: { rabbitIds: number[] }) => {
     return createDewormingMutation.mutateAsync(payload);
   };
 

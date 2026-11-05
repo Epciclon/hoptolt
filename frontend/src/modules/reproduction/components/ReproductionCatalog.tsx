@@ -213,6 +213,14 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
                   const isExpanded = expandedId === reproduction.id;
                   const { daysLeft } = getDaysInGestation(reproduction.estimatedBirthDate);
                   const nearBirth = daysLeft >= 0 && daysLeft <= 3;
+                  const getGestationBannerText = (): string | null => {
+                    if (daysLeft === 0) return '¡Parto estimado hoy!';
+                    if (nearBirth && daysLeft > 0) {
+                      const suffix = daysLeft === 1 ? '' : 's';
+                      return `Parto estimado en ${daysLeft} día${suffix}`;
+                    }
+                    return null;
+                  };
 
                   return (
               <RabbitSelectableCard
@@ -237,13 +245,7 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
                   isNearThreshold={nearBirth}
                   dateLabel="Parto estimado"
                   formattedDate={formatDateTime(reproduction.estimatedBirthDate)}
-                  bannerText={
-                    daysLeft === 0
-                      ? '¡Parto estimado hoy!'
-                      : nearBirth && daysLeft > 0
-                        ? `Parto estimado en ${daysLeft} día${daysLeft !== 1 ? 's' : ''}`
-                        : null
-                  }
+                  bannerText={getGestationBannerText()}
                   bannerTone="orange"
                 />
 

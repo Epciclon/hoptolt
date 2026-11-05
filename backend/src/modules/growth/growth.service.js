@@ -45,8 +45,6 @@ class GrowthService {
                 if (rabbits.length === 0) return;
 
                 const today = new Date();
-                const todayStr = today.toLocaleDateString('sv', { timeZone: 'America/Guayaquil' });
-                
                 const updatesResult = { messages: [], rabbitsToUpdate: [], catchUpGrowths: [] };
 
                 for (const rabbit of rabbits) {

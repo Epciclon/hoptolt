@@ -100,7 +100,7 @@ export function useMortality(filters?: { profileId?: string; date?: string; isKi
     },
   });
 
-  const createMortality = async (payload: CreateMortalityDto) => {
+  const createMortality = (payload: CreateMortalityDto) => {
     return createMortalityMutation.mutateAsync(payload);
   };
 

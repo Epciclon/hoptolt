@@ -31,12 +31,20 @@ const getModuleLabel = (mod?: string | null) => {
   }
 };
 
+function resolveAffectedCages(incident: Incident): any[] {
+  if (incident.cages && incident.cages.length > 0) {
+    return incident.cages;
+  }
+  if (Array.isArray(incident.cage)) {
+    return incident.cage;
+  }
+  return [incident.cage];
+}
+
 function IncidentAffectedCages({ incident }: Readonly<{ incident: Incident }>) {
   if (!((incident.cages && incident.cages.length > 0) || incident.cage)) return null;
 
-  const cagesToShow = (incident.cages && incident.cages.length > 0)
-    ? incident.cages
-    : (Array.isArray(incident.cage) ? incident.cage : [incident.cage]);
+  const cagesToShow = resolveAffectedCages(incident);
 
   return (
     <div className="p-3 rounded-xl bg-theme-surface border border-default flex items-center gap-2 text-xs">
@@ -182,11 +190,11 @@ function IncidentOwnerResponseForm({
           disabled={isResponding}
           className="w-full sm:w-auto"
         >
-          {isResponding
-            ? 'Guardando...'
-            : selectedStatus === 'pending'
-              ? 'Guardar como Pendiente'
-              : 'Guardar Respuesta'}
+          {(() => {
+            if (isResponding) return 'Guardando...';
+            if (selectedStatus === 'pending') return 'Guardar como Pendiente';
+            return 'Guardar Respuesta';
+          })()}
         </Button>
       </div>
     </form>
@@ -364,35 +372,41 @@ export function IncidentDetailModal({
 
           {/* Acciones inferiores del modal */}
           <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2.5 pt-3 border-t border-default mt-4">
-            {userRole !== 'owner' && incident.status === 'pending' ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setShowDeleteConfirm(true)}
-                disabled={isDeleting}
-                className="w-full sm:w-auto text-red-600 dark:text-red-400 hover:bg-red-500/10 border-red-500/30 flex items-center justify-center gap-1.5"
-              >
-                <Trash2 size={14} />
-                <span>{isDeleting ? 'Eliminando...' : 'Eliminar Novedad'}</span>
-              </Button>
-            ) : userRole === 'owner' && incident.ownerResponse && !isEditingResponse ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setIsEditingResponse(true);
-                  setSelectedStatus('draft');
-                }}
-                className="w-full sm:w-auto flex items-center justify-center gap-1.5"
-              >
-                <MessageSquare size={14} className="text-primary-500" />
-                <span>Editar Respuesta</span>
-              </Button>
-            ) : (
-              <div />
-            )}
+            {(() => {
+              if (userRole !== 'owner' && incident.status === 'pending') {
+                return (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowDeleteConfirm(true)}
+                    disabled={isDeleting}
+                    className="w-full sm:w-auto text-red-600 dark:text-red-400 hover:bg-red-500/10 border-red-500/30 flex items-center justify-center gap-1.5"
+                  >
+                    <Trash2 size={14} />
+                    <span>{isDeleting ? 'Eliminando...' : 'Eliminar Novedad'}</span>
+                  </Button>
+                );
+              }
+              if (userRole === 'owner' && incident.ownerResponse && !isEditingResponse) {
+                return (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setIsEditingResponse(true);
+                      setSelectedStatus('draft');
+                    }}
+                    className="w-full sm:w-auto flex items-center justify-center gap-1.5"
+                  >
+                    <MessageSquare size={14} className="text-primary-500" />
+                    <span>Editar Respuesta</span>
+                  </Button>
+                );
+              }
+              return <div />;
+            })()}
             <Button
               type="button"
               variant="outline"

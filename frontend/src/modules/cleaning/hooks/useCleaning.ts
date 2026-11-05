@@ -94,7 +94,7 @@ export function useCleaning(filters?: { profileId?: string; date?: string }) {
     },
   });
 
-  const createCleaning = async (payload: CreateCleaningDto) => {
+  const createCleaning = (payload: CreateCleaningDto) => {
     return createCleaningMutation.mutateAsync(payload);
   };
 

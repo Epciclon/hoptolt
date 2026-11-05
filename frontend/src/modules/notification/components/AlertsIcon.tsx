@@ -88,6 +88,186 @@ function selectCandidateWarning(unreadWarnings: any[], userId: string, now: numb
   }) || null;
 }
 
+function renderBoldMessageParts(message: string) {
+  let offset = 0;
+  return message.split(/(\*\*.*?\*\*)/g).map((part: string) => {
+    const key = `${part}-${offset}`;
+    offset += part.length;
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={key} className="font-semibold text-main">{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+}
+
+function getWarningActionConfig(notification: any) {
+  if (notification.data?.isContract) {
+    return { label: 'Entendido', variant: 'outline' as const };
+  }
+  const type = notification.data?.type;
+  if (type === 'feeding_reminder') {
+    return { label: 'Ir a Alimentar', variant: 'primary' as const };
+  }
+  if (type === 'cleaning_warning') {
+    return { label: 'Ir a Limpiar', variant: 'primary' as const };
+  }
+  if (type === 'weaning_alert') {
+    return { label: 'Ir a Destetar', variant: 'primary' as const };
+  }
+  if (type === 'birth_warning') {
+    return { label: 'Ir a Partos', variant: 'primary' as const };
+  }
+  return { label: 'Revisar Alerta', variant: 'primary' as const };
+}
+
+function sortAlertNotifications(alerts: any[]) {
+  return [...alerts].sort((a, b) => {
+    const pA = getWarningWeight(a);
+    const pB = getWarningWeight(b);
+    if (pA !== pB) return pB - pA;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+}
+
+interface WarningFloatingPreviewProps {
+  warning: any;
+  remainingWarningsCount: number;
+  onClose: (e?: React.MouseEvent) => void;
+  onSelect: (warning: any) => void;
+}
+
+function WarningFloatingPreview({
+  warning,
+  remainingWarningsCount,
+  onClose,
+  onSelect,
+}: Readonly<WarningFloatingPreviewProps>) {
+  const actionConfig = getWarningActionConfig(warning);
+  return (
+    <div
+      id="hoptolt-alert-preview"
+      className="fixed top-16 right-3 sm:right-6 left-3 sm:left-auto w-auto sm:w-96 max-w-[calc(100vw-1.5rem)] flex flex-col gap-2.5 z-[60] pointer-events-none"
+    >
+      <div className="pointer-events-auto bg-card rounded-xl shadow-xl border border-amber-300 dark:border-amber-800/70 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
+        <div className="px-3.5 py-2 border-b border-default flex justify-between items-center bg-amber-500/10">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="flex h-2 w-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
+            <span className="font-semibold text-main text-xs uppercase tracking-wider">
+              Alerta Importante
+            </span>
+            {remainingWarningsCount > 0 && (
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-theme-surface text-main border border-default">
+                + {remainingWarningsCount} más
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-theme-faint hover:text-muted p-1 rounded hover:bg-theme-surface transition-colors cursor-pointer"
+            aria-label="Cerrar alerta"
+          >
+            <X size={15} />
+          </button>
+        </div>
+
+        <div className="relative w-full text-left p-4 bg-card hover:bg-theme-surface transition-colors block">
+          <button
+            type="button"
+            onClick={() => onSelect(warning)}
+            aria-label={`Abrir alerta ${warning.title}`}
+            className="absolute inset-0 w-full h-full z-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-500"
+          />
+          <div className="relative z-10 pointer-events-none flex items-start gap-3">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-amber-600 dark:text-amber-400">
+              <AlertTriangle size={15} className="text-amber-600 dark:text-amber-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="font-medium text-main text-sm flex items-center gap-2">
+                {warning.title}
+                <span className="w-1.5 h-1.5 rounded-full bg-primary-500 inline-block" />
+              </h4>
+              <p className="text-sm text-muted mt-1 leading-relaxed">
+                {renderBoldMessageParts(warning.message)}
+              </p>
+              <div className="mt-3 flex items-center justify-between gap-2 pt-2.5 border-t border-default">
+                <p className="text-xs text-theme-faint">{formatTime(warning.createdAt)}</p>
+                <div className="pointer-events-auto">
+                  <Button
+                    size="sm"
+                    variant={actionConfig.variant}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelect(warning);
+                    }}
+                    className="text-xs py-1 px-3 shadow-sm h-auto bg-amber-600 hover:bg-amber-700 text-white"
+                  >
+                    {actionConfig.label}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface AlertPopoverItemProps {
+  notification: any;
+  onSelect: (notification: any) => void;
+  onDelete: (id: number) => Promise<void>;
+}
+
+function AlertPopoverItem({ notification, onSelect, onDelete }: Readonly<AlertPopoverItemProps>) {
+  return (
+    <div
+      className={cn(
+        'relative w-full text-left p-3.5 hover:bg-theme-surface transition-colors block',
+        !notification.read && 'bg-primary-50/40 dark:bg-primary-900/15'
+      )}
+    >
+      <button
+        type="button"
+        onClick={() => onSelect(notification)}
+        aria-label={`Abrir alerta ${notification.title}`}
+        className="absolute inset-0 w-full h-full z-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500"
+      />
+      <div className="relative z-10 pointer-events-none flex items-start gap-3">
+        <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-amber-600 dark:text-amber-400 mt-0.5">
+          <AlertTriangle size={13} className="text-amber-600 dark:text-amber-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex justify-between items-start gap-2">
+            <h4 className="font-medium text-main text-xs sm:text-sm flex items-center gap-1.5">
+              {notification.title}
+              {!notification.read && (
+                <span className="w-1.5 h-1.5 rounded-full bg-primary-500 inline-block shrink-0" />
+              )}
+            </h4>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                void onDelete(notification.id);
+              }}
+              className="pointer-events-auto text-theme-faint hover:text-muted p-0.5"
+              aria-label="Eliminar alerta"
+            >
+              <X size={13} />
+            </button>
+          </div>
+          <p className="text-xs text-muted mt-1 leading-relaxed">
+            {renderBoldMessageParts(notification.message)}
+          </p>
+          <p className="text-xs text-theme-faint mt-2 font-medium">{formatTime(notification.createdAt)}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function AlertsIcon() {
   const ALERTS_LIMIT = 15;
   const { notifications, unreadCount, markAsRead, deleteNotification } = useNotifications({ limit: ALERTS_LIMIT, filter: 'alerts' });
@@ -102,17 +282,21 @@ export function AlertsIcon() {
   const warningTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [previewAlertsEnabled, setPreviewAlertsEnabled] = useState(true);
 
+  const clearActiveWarningTimerAndPreview = () => {
+    if (warningTimerRef.current) {
+      clearTimeout(warningTimerRef.current);
+      warningTimerRef.current = null;
+    }
+    activeWarningRef.current = null;
+    setActiveWarningPreview(null);
+  };
+
   useEffect(() => {
     const syncSetting = () => {
       const enabled = typeof window !== 'undefined' ? localStorage.getItem('hoptolt_preview_alerts') !== 'false' : true;
       setPreviewAlertsEnabled(enabled);
       if (!enabled) {
-        if (warningTimerRef.current) {
-          clearTimeout(warningTimerRef.current);
-          warningTimerRef.current = null;
-        }
-        activeWarningRef.current = null;
-        setActiveWarningPreview(null);
+        clearActiveWarningTimerAndPreview();
       }
     };
     syncSetting();
@@ -123,26 +307,6 @@ export function AlertsIcon() {
       window.removeEventListener('storage', syncSetting);
     };
   }, []);
-
-  const getActionConfig = (notification: any) => {
-    if (notification.data?.isContract) {
-      return { label: 'Entendido', variant: 'outline' as const };
-    }
-    const type = notification.data?.type;
-    if (type === 'feeding_reminder') {
-      return { label: 'Ir a Alimentar', variant: 'primary' as const };
-    }
-    if (type === 'cleaning_warning') {
-      return { label: 'Ir a Limpiar', variant: 'primary' as const };
-    }
-    if (type === 'weaning_alert') {
-      return { label: 'Ir a Destetar', variant: 'primary' as const };
-    }
-    if (type === 'birth_warning') {
-      return { label: 'Ir a Partos', variant: 'primary' as const };
-    }
-    return { label: 'Revisar Alerta', variant: 'primary' as const };
-  };
 
   // Filtrado de alertas activas
   const alertNotifications = notifications.filter(isWarningNotification);
@@ -169,12 +333,7 @@ export function AlertsIcon() {
       if (typeof window !== 'undefined') {
         localStorage.removeItem(`hoptolt_last_feeding_popup_${lastUserRef.current}`);
       }
-      if (warningTimerRef.current) {
-        clearTimeout(warningTimerRef.current);
-        warningTimerRef.current = null;
-      }
-      activeWarningRef.current = null;
-      setActiveWarningPreview(null);
+      clearActiveWarningTimerAndPreview();
     }
     lastUserRef.current = user?.id || null;
   }, [user?.id]);
@@ -188,97 +347,70 @@ export function AlertsIcon() {
   // Previa Flotante con sonido dedicado de alerta
   useEffect(() => {
     if (isOpen || !previewAlertsEnabled) {
-      if (warningTimerRef.current) {
-        clearTimeout(warningTimerRef.current);
-        warningTimerRef.current = null;
-      }
-      activeWarningRef.current = null;
-      setActiveWarningPreview(null);
+      clearActiveWarningTimerAndPreview();
       return;
     }
     if (typeof window === 'undefined' || !user?.id) return;
 
     const now = Date.now();
     const userId = user.id;
+    const unreadWarnings = sortAlertNotifications(alertNotifications.filter(n => !n.read));
 
-    const unreadWarnings = alertNotifications
-      .filter(n => !n.read)
-      .sort((a, b) => {
-        const wA = getWarningWeight(a);
-        const wB = getWarningWeight(b);
-        if (wA !== wB) return wB - wA;
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      });
-
-    if (activeWarningRef.current) {
-      const stillActive = unreadWarnings.some(n => n.id === activeWarningRef.current.id);
-      if (!stillActive) {
-        if (warningTimerRef.current) {
-          clearTimeout(warningTimerRef.current);
-          warningTimerRef.current = null;
-        }
-        activeWarningRef.current = null;
-        setActiveWarningPreview(null);
-      }
+    if (activeWarningRef.current && !unreadWarnings.some(n => n.id === activeWarningRef.current.id)) {
+      clearActiveWarningTimerAndPreview();
     }
 
-    if (!activeWarningRef.current) {
-      const candidateWarning = selectCandidateWarning(unreadWarnings, userId, now);
+    if (activeWarningRef.current) return;
 
-      if (candidateWarning) {
-        activeWarningRef.current = candidateWarning;
-        setActiveWarningPreview(candidateWarning);
-        markPreviewSeen(candidateWarning.id, userId);
-        playWarningAlertSound();
+    const candidateWarning = selectCandidateWarning(unreadWarnings, userId, now);
+    if (!candidateWarning) return;
 
-        if (candidateWarning.data?.type === 'feeding_reminder') {
-          const shift = candidateWarning.data?.shift || 'default';
-          const date = candidateWarning.data?.date || '';
-          localStorage.setItem(`hoptolt_last_feeding_popup_${userId}_${shift}_${date}`, now.toString());
-        }
+    activeWarningRef.current = candidateWarning;
+    setActiveWarningPreview(candidateWarning);
+    markPreviewSeen(candidateWarning.id, userId);
+    playWarningAlertSound();
 
-        if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
-        warningTimerRef.current = setTimeout(() => {
-          activeWarningRef.current = null;
-          setActiveWarningPreview(null);
-          warningTimerRef.current = null;
-        }, 14000);
-      }
+    if (candidateWarning.data?.type === 'feeding_reminder') {
+      const shift = candidateWarning.data?.shift || 'default';
+      const date = candidateWarning.data?.date || '';
+      localStorage.setItem(`hoptolt_last_feeding_popup_${userId}_${shift}_${date}`, now.toString());
     }
+
+    if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
+    warningTimerRef.current = setTimeout(() => {
+      activeWarningRef.current = null;
+      setActiveWarningPreview(null);
+      warningTimerRef.current = null;
+    }, 14000);
   }, [alertNotifications, isOpen, user?.id, previewAlertsEnabled]);
 
   useEffect(() => {
-    if (activeWarningPreview && !isOpen) {
-      const emitState = () => {
-        const el = document.getElementById('hoptolt-alert-preview');
-        const h = el ? el.getBoundingClientRect().height : 185;
-        window.dispatchEvent(new CustomEvent('hoptolt_alert_preview_change', { detail: { active: true, height: h } }));
-      };
-      emitState();
-      const t1 = setTimeout(emitState, 60);
-      const t2 = setTimeout(emitState, 250);
-      return () => {
-        clearTimeout(t1);
-        clearTimeout(t2);
-        window.dispatchEvent(new CustomEvent('hoptolt_alert_preview_change', { detail: { active: false, height: 0 } }));
-      };
-    } else {
+    if (!activeWarningPreview || isOpen) {
       window.dispatchEvent(new CustomEvent('hoptolt_alert_preview_change', { detail: { active: false, height: 0 } }));
+      return;
     }
+    const emitState = () => {
+      const el = document.getElementById('hoptolt-alert-preview');
+      const h = el ? el.getBoundingClientRect().height : 185;
+      window.dispatchEvent(new CustomEvent('hoptolt_alert_preview_change', { detail: { active: true, height: h } }));
+    };
+    emitState();
+    const t1 = setTimeout(emitState, 60);
+    const t2 = setTimeout(emitState, 250);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      window.dispatchEvent(new CustomEvent('hoptolt_alert_preview_change', { detail: { active: false, height: 0 } }));
+    };
   }, [activeWarningPreview, isOpen]);
 
   const handleCloseWarningPreview = (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    if (warningTimerRef.current) {
-      clearTimeout(warningTimerRef.current);
-      warningTimerRef.current = null;
-    }
     const currentItem = activeWarningRef.current || activeWarningPreview;
     if (currentItem && user?.id) {
       markPreviewDismissed(currentItem.id, user.id);
     }
-    activeWarningRef.current = null;
-    setActiveWarningPreview(null);
+    clearActiveWarningTimerAndPreview();
   };
 
   const handleNotificationClick = async (notification: any) => {
@@ -300,13 +432,17 @@ export function AlertsIcon() {
     setIsOpen(false);
   };
 
-  const sortedAlerts = [...alertNotifications].sort((a, b) => {
-    const pA = getWarningWeight(a);
-    const pB = getWarningWeight(b);
-    if (pA !== pB) return pB - pA;
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
+  const handleDeleteAlert = async (id: number) => {
+    try {
+      await deleteNotification(id);
+      showToast('Alerta eliminada', 'success');
+    } catch (error) {
+      console.error(error);
+      showToast('Error al eliminar alerta', 'error');
+    }
+  };
 
+  const sortedAlerts = sortAlertNotifications(alertNotifications);
   const displayedAlerts = sortedAlerts.slice(0, ALERTS_LIMIT);
 
   return (
@@ -345,89 +481,15 @@ export function AlertsIcon() {
       </button>
 
       {activeWarningPreview && !isOpen && (
-        <div
-          id="hoptolt-alert-preview"
-          className="fixed top-16 right-3 sm:right-6 left-3 sm:left-auto w-auto sm:w-96 max-w-[calc(100vw-1.5rem)] flex flex-col gap-2.5 z-[60] pointer-events-none"
-        >
-          <div className="pointer-events-auto bg-card rounded-xl shadow-xl border border-amber-300 dark:border-amber-800/70 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
-            <div className="px-3.5 py-2 border-b border-default flex justify-between items-center bg-amber-500/10">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="flex h-2 w-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
-                <span className="font-semibold text-main text-xs uppercase tracking-wider">
-                  Alerta Importante
-                </span>
-                {remainingWarningsCount > 0 && (
-                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-theme-surface text-main border border-default">
-                    + {remainingWarningsCount} más
-                  </span>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={handleCloseWarningPreview}
-                className="text-theme-faint hover:text-muted p-1 rounded hover:bg-theme-surface transition-colors cursor-pointer"
-                aria-label="Cerrar alerta"
-              >
-                <X size={15} />
-              </button>
-            </div>
-
-            <div
-              role="button"
-              tabIndex={0}
-              className="w-full text-left p-4 bg-card hover:bg-theme-surface transition-colors cursor-pointer block focus:outline-none focus:ring-2 focus:ring-amber-500"
-              onClick={() => {
-                const item = activeWarningPreview;
-                handleCloseWarningPreview();
-                void handleNotificationClick(item);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  const item = activeWarningPreview;
-                  handleCloseWarningPreview();
-                  void handleNotificationClick(item);
-                }
-              }}
-            >
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-amber-600 dark:text-amber-400">
-                  <AlertTriangle size={15} className="text-amber-600 dark:text-amber-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-main text-sm flex items-center gap-2">
-                    {activeWarningPreview.title}
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary-500 inline-block" />
-                  </h4>
-                  <p className="text-sm text-muted mt-1 leading-relaxed">
-                    {activeWarningPreview.message.split(/(\*\*.*?\*\*)/g).map((part: string, i: number) => {
-                      if (part.startsWith('**') && part.endsWith('**')) {
-                        return <strong key={i} className="font-semibold text-main">{part.slice(2, -2)}</strong>;
-                      }
-                      return part;
-                    })}
-                  </p>
-                  <div className="mt-3 flex items-center justify-between gap-2 pt-2.5 border-t border-default">
-                    <p className="text-xs text-theme-faint">{formatTime(activeWarningPreview.createdAt)}</p>
-                    <Button
-                      size="sm"
-                      variant={getActionConfig(activeWarningPreview).variant}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const item = activeWarningPreview;
-                        handleCloseWarningPreview();
-                        void handleNotificationClick(item);
-                      }}
-                      className="text-xs py-1 px-3 shadow-sm h-auto bg-amber-600 hover:bg-amber-700 text-white"
-                    >
-                      {getActionConfig(activeWarningPreview).label}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <WarningFloatingPreview
+          warning={activeWarningPreview}
+          remainingWarningsCount={remainingWarningsCount}
+          onClose={handleCloseWarningPreview}
+          onSelect={(item) => {
+            handleCloseWarningPreview();
+            void handleNotificationClick(item);
+          }}
+        />
       )}
 
       {/* Popover de Alertas */}
@@ -465,64 +527,12 @@ export function AlertsIcon() {
                 </div>
               ) : (
                 displayedAlerts.map((notification) => (
-                  <div
+                  <AlertPopoverItem
                     key={notification.id}
-                    role="button"
-                    tabIndex={0}
-                    className={cn(
-                      'w-full text-left p-3.5 hover:bg-theme-surface transition-colors cursor-pointer block focus:outline-none focus:ring-2 focus:ring-primary-500',
-                      !notification.read && 'bg-primary-50/40 dark:bg-primary-900/15'
-                    )}
-                    onClick={() => { void handleNotificationClick(notification); }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        void handleNotificationClick(notification);
-                      }
-                    }}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-amber-600 dark:text-amber-400 mt-0.5">
-                        <AlertTriangle size={13} className="text-amber-600 dark:text-amber-400" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start gap-2">
-                          <h4 className="font-medium text-main text-xs sm:text-sm flex items-center gap-1.5">
-                            {notification.title}
-                            {!notification.read && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-primary-500 inline-block shrink-0" />
-                            )}
-                          </h4>
-                          <button
-                            type="button"
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              try {
-                                await deleteNotification(notification.id);
-                                showToast('Alerta eliminada', 'success');
-                              } catch (error) {
-                                console.error(error);
-                                showToast('Error al eliminar alerta', 'error');
-                              }
-                            }}
-                            className="text-theme-faint hover:text-muted p-0.5"
-                            aria-label="Eliminar alerta"
-                          >
-                            <X size={13} />
-                          </button>
-                        </div>
-                        <p className="text-xs text-muted mt-1 leading-relaxed">
-                          {notification.message.split(/(\*\*.*?\*\*)/g).map((part: string, i: number) => {
-                            if (part.startsWith('**') && part.endsWith('**')) {
-                              return <strong key={i} className="font-semibold text-main">{part.slice(2, -2)}</strong>;
-                            }
-                            return part;
-                          })}
-                        </p>
-                        <p className="text-xs text-theme-faint mt-2 font-medium">{formatTime(notification.createdAt)}</p>
-                      </div>
-                    </div>
-                  </div>
+                    notification={notification}
+                    onSelect={(item) => { void handleNotificationClick(item); }}
+                    onDelete={handleDeleteAlert}
+                  />
                 ))
               )}
             </div>

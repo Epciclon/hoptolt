@@ -168,6 +168,10 @@ export function CleaningCatalog({ onSuccess }: Readonly<CleaningCatalogProps>) {
                 {pendingOverdueCages.map(cage => {
                   const isSelected = selectedCageNumbers.includes(cage.cageNumber);
                   const days = getCageDaysWithoutCleaning(cage.cageId);
+                  const rabbitCountLabel = cage.rabbits.length === 1 ? 'conejo' : 'conejos';
+                  const daysSummary = days !== null ? ' - Acumula ' + String(days) + ' días sin limpieza' : ' - Sin registros previos';
+                  const actionSummary = isSelected ? 'deseleccionar' : 'seleccionar';
+                  const buttonTitle = `Jaula ${cage.cageNumber} (${cage.rabbits.length} ${rabbitCountLabel})${daysSummary} - Clic para ${actionSummary}`;
                   return (
                     <button
                       key={cage.cageId}
@@ -178,7 +182,7 @@ export function CleaningCatalog({ onSuccess }: Readonly<CleaningCatalogProps>) {
                           ? 'bg-primary-600 text-white border-primary-700 ring-2 ring-primary-500/25'
                           : 'bg-theme-surface dark:bg-card text-main border-default hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400'
                       }`}
-                      title={`Jaula ${cage.cageNumber} (${cage.rabbits.length} ${cage.rabbits.length === 1 ? 'conejo' : 'conejos'})${days !== null ? ` - Acumula ${days} días sin limpieza` : ' - Sin registros previos'} - Clic para ${isSelected ? 'deseleccionar' : 'seleccionar'}`}
+                      title={buttonTitle}
                     >
                       <span>{cage.cageNumber}</span>
                     </button>
@@ -232,7 +236,11 @@ export function CleaningCatalog({ onSuccess }: Readonly<CleaningCatalogProps>) {
                       </p>
                       {days !== null && (
                         <p className={`text-xs font-medium mt-1 ${days === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-theme-faint'}`}>
-                          {days === 0 ? 'Limpiada hoy' : `Hace ${days} día${days > 1 ? 's' : ''}`}
+                          {(() => {
+                            if (days === 0) return 'Limpiada hoy';
+                            const suffix = days > 1 ? 's' : '';
+                            return `Hace ${days} día${suffix}`;
+                          })()}
                         </p>
                       )}
                     </>

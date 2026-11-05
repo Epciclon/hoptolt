@@ -78,11 +78,11 @@ export function useReproduction(filters?: { profileId?: string; date?: string; s
     },
   });
 
-  const createReproduction = async (payload: { femaleId: number; mountDate: string }) => {
+  const createReproduction = (payload: { femaleId: number; mountDate: string }) => {
     return createReproductionMutation.mutateAsync(payload);
   };
 
-  const updateReproduction = async (id: number, payload: { maleId?: number; mountDate: string }) => {
+  const updateReproduction = (id: number, payload: { maleId?: number; mountDate: string }) => {
     return updateReproductionMutation.mutateAsync({ id, payload });
   };
 

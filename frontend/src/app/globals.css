@@ -126,20 +126,22 @@
   font-weight: 600;
 }
 
-.theme-bold h1,
-.theme-bold h2,
-.theme-bold h3,
-.theme-bold h4,
-.theme-bold h5,
-.theme-bold h6,
-.theme-bold strong,
-.theme-bold b,
-.theme-bold .font-bold,
-.theme-bold [class*="font-bold"],
-.theme-bold .font-extrabold,
-.theme-bold [class*="font-extrabold"],
-.theme-bold .font-black {
-  font-weight: 800 !important;
+.theme-bold.theme-bold :is(
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  strong,
+  b,
+  .font-bold,
+  [class*="font-bold"],
+  .font-extrabold,
+  [class*="font-extrabold"],
+  .font-black
+) {
+  font-weight: 800;
 }
 
 @keyframes bellRing {
@@ -157,11 +159,6 @@
   100% { transform: rotate(0); }
 }
 
-.animate-bell-ring {
-  transform-origin: top center;
-  animation: bellRing 2.8s ease-in-out infinite;
-}
-
 @keyframes alertWiggle {
   0%, 100% { transform: rotate(0); }
   5% { transform: rotate(-10deg) scale(1.05); }
@@ -171,17 +168,22 @@
   25% { transform: rotate(0); }
 }
 
-.animate-alert-wiggle {
-  animation: alertWiggle 3s ease-in-out infinite;
-}
-
 @keyframes badgePop {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.15); }
 }
 
-.animate-badge-pop {
-  animation: badgePop 1.8s ease-in-out infinite;
+@media (prefers-reduced-motion: no-preference) {
+  .animate-bell-ring {
+    transform-origin: top center;
+    animation: bellRing 2.8s ease-in-out infinite;
+  }
+
+  .animate-alert-wiggle {
+    animation: alertWiggle 3s ease-in-out infinite;
+  }
+
+  .animate-badge-pop {
+    animation: badgePop 1.8s ease-in-out infinite;
+  }
 }
-
-

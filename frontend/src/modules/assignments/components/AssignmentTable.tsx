@@ -142,57 +142,60 @@ export function AssignmentTable() {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start w-full">
             {paginatedGroups.map(group => {
               const selectedIds = selectedRabbitsByCage[group.cageId] || [];
+              const renderCageFooter = () => {
+                if (selectedIds.length === 0) return undefined;
+                if (!canCreate && !canDelete) {
+                  return (
+                    <div className="text-center w-full py-1 text-xs text-muted font-medium">
+                      Solo consulta
+                    </div>
+                  );
+                }
+                return (
+                  <div className="flex gap-2 w-full animate-in fade-in slide-in-from-top-1 duration-200">
+                    {canCreate && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const selectedAssignments = group.assignments.filter(a => selectedIds.includes(a.rabbitId));
+                          setTransferRabbitData({
+                            rabbits: selectedAssignments.map(a => ({
+                              id: a.rabbitId,
+                              name: a.rabbitName || '',
+                              code: a.rabbitCode || '',
+                              age: a.rabbitAge,
+                              purpose: (a as any).rabbitPurpose
+                            })),
+                            currentCageId: group.cageId,
+                            cageType: group.cageType
+                          });
+                        }}
+                        className="w-full text-main border-strong hover:bg-theme-hover"
+                      >
+                        {selectedIds.length === 1 ? 'Mover' : `Mover ${selectedIds.length}`}
+                      </Button>
+                    )}
+                    {canDelete && (
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => handleUnassignCage(group.cageId)}
+                        className="w-full"
+                      >
+                        {selectedIds.length === 1 ? 'Desasignar' : `Desasignar ${selectedIds.length}`}
+                      </Button>
+                    )}
+                  </div>
+                );
+              };
+
               return (
                 <CageGroupCard
                   key={group.cageId}
                   cageNumber={group.cageNumber as number}
                   cageType={group.cageType}
-                  footer={
-                    selectedIds.length > 0 ? (
-                      (canCreate || canDelete) ? (
-                        <div className="flex gap-2 w-full animate-in fade-in slide-in-from-top-1 duration-200">
-                          {canCreate && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                const selectedAssignments = group.assignments.filter(a => selectedIds.includes(a.rabbitId));
-                                setTransferRabbitData({
-                                  rabbits: selectedAssignments.map(a => ({
-                                    id: a.rabbitId,
-                                    name: a.rabbitName || '',
-                                    code: a.rabbitCode || '',
-                                    age: a.rabbitAge,
-                                    purpose: (a as any).rabbitPurpose
-                                  })),
-                                  currentCageId: group.cageId,
-                                  cageType: group.cageType
-                                });
-                              }}
-                              className="w-full text-main border-strong hover:bg-theme-hover"
-                            >
-                              {selectedIds.length === 1 ? 'Mover' : `Mover ${selectedIds.length}`}
-                            </Button>
-                          )}
-                          {canDelete && (
-                            <Button
-                              variant="danger"
-                              size="sm"
-
-                              onClick={() => handleUnassignCage(group.cageId)}
-                              className="w-full"
-                            >
-                              {selectedIds.length === 1 ? 'Desasignar' : `Desasignar ${selectedIds.length}`}
-                            </Button>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-center w-full py-1 text-xs text-muted font-medium">
-                          Solo consulta
-                        </div>
-                      )
-                    ) : undefined
-                  }
+                  footer={renderCageFooter()}
                 >
                     {group.assignments.map(assignment => {
                       const isSelected = selectedIds.includes(assignment.rabbitId);

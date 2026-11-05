@@ -195,6 +195,15 @@ export function Sidebar({ collapsed, onToggle }: Readonly<SidebarProps>) {
 
           const isOpen = openGroups.includes(item.name);
           const hasActiveChild = item.children.some((c) => isActive(c.href));
+          const getGroupButtonStateClass = () => {
+            if (hasActiveChild && !isOpen) {
+              return 'bg-primary-500 text-white shadow-sm hover:bg-primary-600';
+            }
+            if (hasActiveChild && isOpen) {
+              return 'bg-primary-500/20 text-primary-300 font-semibold border border-primary-500/30';
+            }
+            return 'text-slate-300 hover:bg-card/10 hover:text-white';
+          };
 
           return (
             <div key={item.name} className="mb-1">
@@ -202,11 +211,7 @@ export function Sidebar({ collapsed, onToggle }: Readonly<SidebarProps>) {
                 onClick={() => toggleGroup(item.name)}
                 className={cn(
                   'w-full flex items-center gap-2.5 sm:gap-3 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all',
-                  hasActiveChild && !isOpen
-                    ? 'bg-primary-500 text-white shadow-sm hover:bg-primary-600'
-                    : hasActiveChild && isOpen
-                      ? 'bg-primary-500/20 text-primary-300 font-semibold border border-primary-500/30'
-                      : 'text-slate-300 hover:bg-card/10 hover:text-white',
+                  getGroupButtonStateClass(),
                 )}
               >
                 <Icon size={16} className="shrink-0 sm:w-[18px] sm:h-[18px]" />

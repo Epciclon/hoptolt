@@ -375,3 +375,4 @@ export function AuditLogDetailDialog({
     </Dialog>
   );
 }
+
