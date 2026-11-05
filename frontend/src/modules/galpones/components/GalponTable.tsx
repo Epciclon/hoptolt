@@ -2,15 +2,13 @@
 
 import { useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
-import { Table, Button, ConfirmDialog, FullScreenLoader } from '@/shared/ui';
-import type { Column } from '@/shared/ui/Table';
+import { Table, Button, ConfirmDialog, FullScreenLoader, FilterBar, type Column } from '@/shared/ui';
 import { useGalpones } from '../hooks/useGalpones';
 import { useActiveGalpon } from '../hooks/useActiveGalpon';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 import { useToast } from '@/shared/contexts/ToastContext';
 import type { Galpon } from '../types/galpon.types';
 import { getGalponBaseColumns } from '../utils/galponUtils';
-import { FilterBar } from '@/shared/ui/FilterBar';
 
 interface GalponTableProps {
   onEdit?: (galpon: Galpon) => void;

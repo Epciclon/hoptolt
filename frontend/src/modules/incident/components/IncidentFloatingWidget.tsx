@@ -358,10 +358,12 @@ function IncidentListItemCard({ incident, isOwner, onSelect, onDelete }: Readonl
   );
 }
 
+type IncidentWidgetTab = 'pending' | 'reviewed' | 'my-reports' | 'report';
+
 interface IncidentFloatingPanelProps {
   isOwner: boolean;
-  activeTab: 'pending' | 'reviewed' | 'my-reports' | 'report';
-  setActiveTab: (tab: 'pending' | 'reviewed' | 'my-reports' | 'report') => void;
+  activeTab: IncidentWidgetTab;
+  setActiveTab: (tab: IncidentWidgetTab) => void;
   unreadCount: number;
   pendingCount: number;
   totalCount: number;
@@ -703,7 +705,7 @@ export function IncidentFloatingWidget() {
   const isOwner = user?.role === 'owner' || userRole === 'owner';
 
   const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'pending' | 'reviewed' | 'my-reports' | 'report'>('pending');
+  const [activeTab, setActiveTab] = useState<IncidentWidgetTab>('pending');
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [formModalOpen, setFormModalOpen] = useState(false);

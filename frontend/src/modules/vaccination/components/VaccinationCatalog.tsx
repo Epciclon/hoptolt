@@ -195,18 +195,19 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
         onToggleRabbit={toggleRabbit}
         renderExtras={(rabbit) => {
           const lastVaccination = getRabbitLastVaccination(rabbit.id);
+          const vaccineTitle = lastVaccination ? lastVaccination.vaccines.join(', ') : 'Nunca';
           return (
-            <>
+            <div>
               <p className="text-xs text-muted mb-0.5">Última vacunación:</p>
-              <p className="text-xs font-medium text-main truncate" title={lastVaccination ? lastVaccination.vaccines.join(', ') : 'Nunca'}>
-                {lastVaccination ? lastVaccination.vaccines.join(', ') : 'Nunca'}
+              <p className="text-xs font-medium text-main truncate" title={vaccineTitle}>
+                {vaccineTitle}
               </p>
               {lastVaccination && (
                 <p className="text-xs text-muted mt-0.5">
                   {formatDateTime(lastVaccination.vaccinationDate)}
                 </p>
               )}
-            </>
+            </div>
           );
         }}
       />

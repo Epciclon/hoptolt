@@ -239,7 +239,7 @@ function InfoFloatingPreview({
                 {renderBoldMessageParts(notification.message)}
               </p>
 
-              {notification.data?.workersList && notification.data.workersList.length > 1 && (
+              {(notification.data?.workersList?.length ?? 0) > 1 && (
                 <div className="mt-2 p-1.5 bg-card/70 rounded border border-default text-xs flex flex-wrap gap-x-3 gap-y-1">
                   {notification.data.workersList.map((w: any) => (
                     <span key={w.name} className="inline-flex items-center gap-1">
@@ -250,7 +250,7 @@ function InfoFloatingPreview({
                 </div>
               )}
 
-              {notification.data?.type === 'worker_sensitive_action' && notification.data?.modulesBreakdown && notification.data.modulesBreakdown.length > 0 && (
+              {notification.data?.type === 'worker_sensitive_action' && (notification.data?.modulesBreakdown?.length ?? 0) > 0 && (
                 <div className="mt-2.5 p-2 bg-theme-surface rounded-lg border border-default text-xs pointer-events-auto">
                   <ul className="divide-y divide-default bg-card rounded border border-default max-h-28 overflow-y-auto">
                     {notification.data.modulesBreakdown.map((m: any) => (
@@ -427,7 +427,7 @@ function NotificationPopoverItem({
             </div>
           )}
 
-          {notification.data?.type === 'worker_action' && notification.data?.workersList && notification.data.workersList.length > 1 && (
+          {notification.data?.type === 'worker_action' && (notification.data?.workersList?.length ?? 0) > 1 && (
             <div className="pointer-events-auto mt-2 flex flex-col gap-1 p-2 rounded-md bg-theme-surface border border-default">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[11px] text-main font-medium">
@@ -447,7 +447,7 @@ function NotificationPopoverItem({
             </div>
           )}
 
-          {notification.data?.type === 'worker_sensitive_action' && notification.data?.modulesBreakdown && notification.data.modulesBreakdown.length > 0 && (
+          {notification.data?.type === 'worker_sensitive_action' && (notification.data?.modulesBreakdown?.length ?? 0) > 0 && (
             <div className="pointer-events-auto mt-2 flex flex-col gap-1 p-2 rounded-md bg-theme-surface border border-default">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[11px] text-main font-medium">

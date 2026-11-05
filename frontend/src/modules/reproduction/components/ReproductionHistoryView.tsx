@@ -1,8 +1,7 @@
 'use client';
 
 import type { Reproduction } from '../types/reproduction.types';
-import { FilterBar } from '@/shared/ui/FilterBar';
-import { Table, Column, RabbitAvatar, Dialog, DateTimeBadge } from '@/shared/ui';
+import { Table, type Column, RabbitAvatar, Dialog, DateTimeBadge, FilterBar } from '@/shared/ui';
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { mortalityService } from '@/modules/mortality/services/mortality.service';

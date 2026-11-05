@@ -19,6 +19,20 @@ export interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement
   onChange?: (e: { target: { value: string; name?: string } }) => void;
 }
 
+const getDisplayLabel = (
+  selectedOption?: { label: string; value: string },
+  placeholder?: string,
+  options: { label: string; value: string }[] = []
+): string => {
+  if (selectedOption) {
+    return selectedOption.label;
+  }
+  if (placeholder) {
+    return placeholder;
+  }
+  return options[0]?.label ?? 'Seleccionar...';
+};
+
 export const Select = forwardRef<HTMLSelectElement, Readonly<SelectProps>>(
   ({ label, error, hint, options, placeholder, className, id, required, value = '', onChange, name, disabled, ...props }, ref) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -27,8 +41,7 @@ export const Select = forwardRef<HTMLSelectElement, Readonly<SelectProps>>(
     const selectId = id ?? label?.toLowerCase().replace(/\s+/g, '-');
 
     const selectedOption = options.find((opt) => opt.value === value);
-    const fallbackLabel = options[0] ? options[0].label : 'Seleccionar...';
-    const displayLabel = selectedOption ? selectedOption.label : (placeholder || fallbackLabel);
+    const displayLabel = getDisplayLabel(selectedOption, placeholder, options);
 
     useEffect(() => {
       const handleClickOutside = (e: MouseEvent) => {

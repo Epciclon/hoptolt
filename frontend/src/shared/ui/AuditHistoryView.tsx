@@ -143,7 +143,7 @@ function AuditWorkerCard({ member, isExpanded, onSelect, onToggleExpand }: Reado
   );
 }
 
-export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: AuditHistoryViewProps) {
+export function AuditHistoryView({ renderTable, fetchActiveDates, moduleName }: Readonly<AuditHistoryViewProps>) {
   const { activeGalpon } = useActiveGalpon();
   const [selectedWorker, setSelectedWorker] = useState<FarmMember | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(getEcuadorDateString());

@@ -10,6 +10,23 @@ interface SelectionActionBarProps {
   isDisabled?: boolean;
 }
 
+function getSelectedText(itemName: string, count: number): string {
+  const isFeminine = itemName.trim().toLowerCase().endsWith('a');
+  const genderSuffix = isFeminine ? 'a' : 'o';
+  const pluralSuffix = count === 1 ? '' : 's';
+  return `seleccionad${genderSuffix}${pluralSuffix}`;
+}
+
+function getMobileButtonLabel(buttonText: string, mobileButtonText?: string): string {
+  if (mobileButtonText) {
+    return mobileButtonText;
+  }
+  if (buttonText.startsWith('Registrar ')) {
+    return 'Registrar';
+  }
+  return buttonText;
+}
+
 export function SelectionActionBar({
   count,
   itemName,
@@ -21,12 +38,9 @@ export function SelectionActionBar({
 }: Readonly<SelectionActionBarProps>) {
   if (count === 0) return null;
 
-  const isFeminine = itemName.trim().toLowerCase().endsWith('a');
-  const pluralSuffix = count !== 1 ? 's' : '';
-  const genderSuffix = isFeminine ? 'a' : 'o';
-  const selectedText = `seleccionad${genderSuffix}${pluralSuffix}`;
-
-  const mobileLabel = mobileButtonText || (buttonText.startsWith('Registrar ') ? 'Registrar' : buttonText);
+  const pluralSuffix = count === 1 ? '' : 's';
+  const selectedText = getSelectedText(itemName, count);
+  const mobileLabel = getMobileButtonLabel(buttonText, mobileButtonText);
 
   return (
     <div className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 shadow-xl border-2 border-primary-500 bg-theme-surface px-2.5 py-1.5 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl flex items-center justify-between gap-2.5 sm:gap-6 w-auto max-w-[calc(100vw-5rem)] sm:max-w-none">

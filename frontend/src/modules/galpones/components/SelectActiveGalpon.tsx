@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Table, FullScreenLoader } from '@/shared/ui';
-import type { Column } from '@/shared/ui/Table';
+import { Button, Table, FullScreenLoader, type Column } from '@/shared/ui';
 import { useGalpones } from '../hooks/useGalpones';
 import { useActiveGalpon } from '../hooks/useActiveGalpon';
 import type { Galpon } from '../types/galpon.types';

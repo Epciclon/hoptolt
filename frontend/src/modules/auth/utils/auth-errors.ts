@@ -84,7 +84,7 @@ export function translateAuthError(error: unknown): string {
   // Normalizar: decodificar URL y reemplazar signos '+' por espacios
   try {
     rawMessage = decodeURIComponent(rawMessage.replace(/\+/g, ' '));
-  } catch {
+  } catch (_error) {
     // Si falla decodeURIComponent, continuar con rawMessage
   }
 

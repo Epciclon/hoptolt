@@ -94,13 +94,14 @@ export function DewormingCatalog({ onSuccess }: Readonly<DewormingCatalogProps>)
         onToggleRabbit={toggleRabbit}
         renderExtras={(rabbit) => {
           const lastDeworming = getRabbitLastDeworming(rabbit.id);
+          const formattedDate = lastDeworming ? formatDateTime(lastDeworming.dewormingDate) : 'Nunca';
           return (
-            <>
+            <div>
               <p className="text-xs text-muted mb-0.5">Última desparasitación:</p>
-              <p className="text-xs font-medium text-main truncate" title={lastDeworming ? formatDateTime(lastDeworming.dewormingDate) : 'Nunca'}>
-                {lastDeworming ? formatDateTime(lastDeworming.dewormingDate) : 'Nunca'}
+              <p className="text-xs font-medium text-main truncate" title={formattedDate}>
+                {formattedDate}
               </p>
-            </>
+            </div>
           );
         }}
       />
