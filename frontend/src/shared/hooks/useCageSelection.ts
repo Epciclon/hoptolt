@@ -131,3 +131,14 @@ export function useCageSelection(
     setCurrentPage,
   };
 }
+
+export function formatBatchRabbitError(err: unknown, selectedCount: number): string {
+  const errorMessage = err instanceof Error ? err.message : 'Error inesperado.';
+  const errorLines = errorMessage.split('\n').filter(line => line.trim().startsWith('El conejo'));
+  const hasValidRabbits = errorLines.length < selectedCount;
+
+  if (hasValidRabbits) {
+    return `${errorMessage}\n\nPor favor, deselecciona los conejos con problemas mencionados arriba para registrar los demás.`;
+  }
+  return errorMessage;
+}

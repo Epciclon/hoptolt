@@ -30,31 +30,49 @@ function formatWeightBadge(weight: unknown): string | undefined {
   return `${num} kg`;
 }
 
+function extractWeightFromTail(tail: string): number | undefined {
+  const lowerTail = tail.toLowerCase();
+  const kgIdx = lowerTail.indexOf('kg');
+  if (kgIdx <= 0) return undefined;
+  const beforeKg = tail.slice(0, kgIdx).trimEnd();
+  const lastSep = Math.max(beforeKg.lastIndexOf(' '), beforeKg.lastIndexOf('•'));
+  const candidate = beforeKg.slice(lastSep + 1).trim();
+  const parsed = Number(candidate);
+  return !Number.isNaN(parsed) && parsed > 0 ? parsed : undefined;
+}
+
 function parseLegacyGrowthDetailLine(line: string, index: number): GrowthSummaryItem | null {
   const trimmed = line.trim();
   if (!trimmed) return null;
 
-  const regex = /^(.+?)\s+ha alcanzado los?\s+(\d+)\s+mes(?:es)?(?:\s+de edad)?\.?(.*)$/i;
-  const match = regex.exec(trimmed);
-  if (match) {
-    const name = match[1].trim();
-    const months = Number.parseInt(match[2], 10);
-    const tail = match[3] || '';
-    const isMature = tail.toLowerCase().includes('madurez');
-    const weightMatch = /(\d+(?:\.\d+)?)\s*kg/i.exec(tail);
-    const fallbackWeight = months >= 8 ? 4.2 : DEFAULT_WEIGHT_BY_MONTH[months];
-    const resolvedWeight = weightMatch ? Number(weightMatch[1]) : fallbackWeight;
-    const ageBadge = months === 1 ? '1 mes' : `${months} meses`;
-    const weightBadge = formatWeightBadge(resolvedWeight);
-    const baseBadge = weightBadge ? `${ageBadge} • ${weightBadge}` : `${ageBadge} de edad`;
-    return {
-      key: `${name}-${index}`,
-      name,
-      ageBadge,
-      weightBadge,
-      isMature,
-      badge: isMature ? `${baseBadge} • Madurez` : baseBadge,
-    };
+  const lower = trimmed.toLowerCase();
+  const marker = ' ha alcanzado ';
+  const markerIdx = lower.indexOf(marker);
+  if (markerIdx > 0) {
+    const name = trimmed.slice(0, markerIdx).trim();
+    const afterMarker = trimmed.slice(markerIdx + marker.length).trim();
+    const mesIdx = afterMarker.toLowerCase().indexOf('mes');
+    const digitMatch = mesIdx > 0 ? /\d+/.exec(afterMarker.slice(0, mesIdx)) : null;
+
+    if (digitMatch) {
+      const months = Number.parseInt(digitMatch[0], 10);
+      const tail = afterMarker.slice(mesIdx);
+      const isMature = tail.toLowerCase().includes('madurez');
+      const extractedWeight = extractWeightFromTail(tail);
+      const fallbackWeight = months >= 8 ? 4.2 : DEFAULT_WEIGHT_BY_MONTH[months];
+      const resolvedWeight = extractedWeight ?? fallbackWeight;
+      const ageBadge = months === 1 ? '1 mes' : `${months} meses`;
+      const weightBadge = formatWeightBadge(resolvedWeight);
+      const baseBadge = weightBadge ? `${ageBadge} • ${weightBadge}` : `${ageBadge} de edad`;
+      return {
+        key: `${name}-${index}`,
+        name,
+        ageBadge,
+        weightBadge,
+        isMature,
+        badge: isMature ? `${baseBadge} • Madurez` : baseBadge,
+      };
+    }
   }
 
   return {
@@ -121,5 +139,48 @@ export function extractGrowthSummaryData(notification: any): GrowthSummaryViewDa
     summaryMessage,
     items,
   };
+}
+
+export function isWarningNotification(n: any): boolean {
+  const t = n.data?.type;
+  if (t === 'incident' || t === 'incident_response') return false;
+  const title = (n.title || '').toLowerCase();
+  const msg = (n.message || '').toLowerCase();
+  if (title.includes('novedad') || msg.includes('novedad')) return false;
+
+  return (
+    n.type === 'warning' ||
+    t === 'feeding_reminder' ||
+    t === 'cleaning_warning' ||
+    t === 'birth_warning' ||
+    t === 'weaning_alert'
+  );
+}
+
+export function sortNotificationsByRecent<T extends { updatedAt?: string; createdAt: string }>(items: T[]): T[] {
+  return [...items].sort((a, b) => {
+    const timeA = new Date(a.updatedAt || a.createdAt).getTime();
+    const timeB = new Date(b.updatedAt || b.createdAt).getTime();
+    return timeB - timeA;
+  });
+}
+
+export function isPreviewKeySeenOrDismissed(userId: string, versionKey: string): boolean {
+  if (typeof window === 'undefined') return false;
+  const seenKey = `hoptolt_prev_seen_${userId}_${versionKey}`;
+  const dismissedKey = `hoptolt_prev_dismissed_${userId}_${versionKey}`;
+  return (
+    sessionStorage.getItem(seenKey) === 'true' ||
+    localStorage.getItem(seenKey) === 'true' ||
+    sessionStorage.getItem(dismissedKey) === 'true' ||
+    localStorage.getItem(dismissedKey) === 'true'
+  );
+}
+
+export function markPreviewKeyState(userId: string, versionKey: string, state: 'seen' | 'dismissed'): void {
+  if (typeof window === 'undefined') return;
+  const key = `hoptolt_prev_${state}_${userId}_${versionKey}`;
+  sessionStorage.setItem(key, 'true');
+  localStorage.setItem(key, 'true');
 }
 

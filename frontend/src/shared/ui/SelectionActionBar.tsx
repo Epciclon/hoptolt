@@ -8,6 +8,7 @@ interface SelectionActionBarProps {
   onRegister: () => void;
   isSubmitting?: boolean;
   isDisabled?: boolean;
+  canCreate?: boolean;
 }
 
 function getSelectedText(itemName: string, count: number): string {
@@ -35,8 +36,17 @@ export function SelectionActionBar({
   onRegister,
   isSubmitting,
   isDisabled,
+  canCreate = true,
 }: Readonly<SelectionActionBarProps>) {
   if (count === 0) return null;
+
+  if (!canCreate) {
+    return (
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-theme-surface border border-strong shadow-lg rounded-xl px-4 py-2 text-xs text-muted font-medium">
+        Solo consulta
+      </div>
+    );
+  }
 
   const pluralSuffix = count === 1 ? '' : 's';
   const selectedText = getSelectedText(itemName, count);

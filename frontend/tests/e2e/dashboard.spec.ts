@@ -42,7 +42,20 @@ async function mockApi(page: Page) {
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, galpon: { id: 1, name: 'Galpón Principal' } }) });
   });
   await page.route('**/api/galpones/*/stats', async route => {
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, stats: { totalCages: 10, totalRabbits: 45, totalRaces: 5, totalAssignments: 30 } }) });
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        stats: {
+          maleRabbits: 10,
+          femaleRabbits: 35,
+          plannedBirths: 4,
+          lactatingFemales: 6,
+          matingFemales: 2
+        }
+      })
+    });
   });
   await page.route('**/api/invitations**', async route => {
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true, invitations: [] }) });
@@ -75,10 +88,11 @@ test.describe('Dashboard', () => {
     await page.waitForLoadState('load');
     await page.waitForTimeout(2000);
 
-    await expect(page.locator('text=Total Jaulas')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('text=Total Conejos')).toBeVisible();
-    await expect(page.locator('text=Razas Registradas')).toBeVisible();
-    await expect(page.locator('text=Asignaciones')).toBeVisible();
+    await expect(page.locator('text=Conejos Machos')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=Conejas Hembras')).toBeVisible();
+    await expect(page.locator('text=Partos Planeados')).toBeVisible();
+    await expect(page.locator('text=Conejas en Lactancia')).toBeVisible();
+    await expect(page.locator('text=Conejas en Monta')).toBeVisible();
   });
 
   test('sidebar navigation is visible', async ({ page }) => {

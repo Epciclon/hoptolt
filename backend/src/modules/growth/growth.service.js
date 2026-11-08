@@ -248,22 +248,43 @@ class GrowthService {
         };
     }
 
+    _extractWeightFromTail(tail) {
+        const lowerTail = tail.toLowerCase();
+        const kgIdx = lowerTail.indexOf('kg');
+        if (kgIdx <= 0) return null;
+        const beforeKg = tail.slice(0, kgIdx).trimEnd();
+        const lastSpace = Math.max(beforeKg.lastIndexOf(' '), beforeKg.lastIndexOf('•'));
+        const candidate = beforeKg.slice(lastSpace + 1).trim();
+        const parsed = Number(candidate);
+        return !Number.isNaN(parsed) && parsed > 0 ? parsed : null;
+    }
+
     _parseLegacyGrowthLineForEnrichment(line) {
         const trimmed = (line || '').trim();
         if (!trimmed) return null;
-        const match = /^(.+?)\s+ha alcanzado los?\s+(\d+)\s+mes(?:es)?(?:\s+de edad)?(.*)$/i.exec(trimmed);
-        if (!match) return null;
-        const name = match[1].trim();
-        const age = Number.parseInt(match[2], 10);
-        const tail = match[3] || '';
-        const weightMatch = /(\d+(?:\.\d+)?)\s*kg/i.exec(tail);
+        const lower = trimmed.toLowerCase();
+        const marker = ' ha alcanzado ';
+        const markerIdx = lower.indexOf(marker);
+        if (markerIdx <= 0) return null;
+
+        const name = trimmed.slice(0, markerIdx).trim();
+        const afterMarker = trimmed.slice(markerIdx + marker.length).trim();
+        const mesIdx = afterMarker.toLowerCase().indexOf('mes');
+        if (mesIdx <= 0) return null;
+
+        const digitMatch = /\d+/.exec(afterMarker.slice(0, mesIdx));
+        if (!digitMatch) return null;
+
+        const age = Number.parseInt(digitMatch[0], 10);
+        const tail = afterMarker.slice(mesIdx);
+        const weight = this._extractWeightFromTail(tail);
         const codeParts = name.split(' - ');
         const code = codeParts[codeParts.length - 1].trim();
         return {
             name,
             code,
             age,
-            weight: weightMatch ? Number(weightMatch[1]) : null,
+            weight,
             isMature: tail.toLowerCase().includes('madurez')
         };
     }

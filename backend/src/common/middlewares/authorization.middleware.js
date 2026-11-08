@@ -127,75 +127,40 @@ const checkControlModulesFallback = async (membershipId, moduleName, action) => 
     return Boolean(hasControlPermission);
 };
 
-const checkReproductionFallbacks = async (membershipId, moduleName, action, req) => {
-    if (moduleName === 'genealogy' && action === 'canCreate') {
-        return Boolean(await WorkerPermission.findOne({
-            where: {
-                farmMemberId: membershipId,
-                moduleName: { [Op.in]: REPRODUCTION_MODULE_VARIANTS },
-                [Op.or]: [{ canCreate: true }, { canUpdate: true }]
-            }
-        }));
-    }
+const ASSIGNMENT_MODULE_VARIANTS = ['assignments', 'asignarjaula', 'asignaciones', 'asignar jaula', 'asignacion', 'asignación', 'asignar'];
+const CREATE_OR_UPDATE_CRITERIA = { [Op.or]: [{ canCreate: true }, { canUpdate: true }] };
 
-    if (moduleName === 'mortality' && action === 'canCreate') {
-        return Boolean(await WorkerPermission.findOne({
-            where: {
-                farmMemberId: membershipId,
-                moduleName: { [Op.in]: REPRODUCTION_MODULE_VARIANTS },
-                [Op.or]: [{ canCreate: true }, { canUpdate: true }]
-            }
-        }));
+const hasModulePermission = async (membershipId, moduleVariants, criteria) => {
+    const record = await WorkerPermission.findOne({
+        where: {
+            farmMemberId: membershipId,
+            moduleName: { [Op.in]: moduleVariants },
+            ...criteria
+        }
+    });
+    return Boolean(record);
+};
+
+const checkReproductionFallbacks = async (membershipId, moduleName, action, req) => {
+    if ((moduleName === 'genealogy' || moduleName === 'mortality' || moduleName === 'rabbits') && action === 'canCreate') {
+        return hasModulePermission(membershipId, REPRODUCTION_MODULE_VARIANTS, CREATE_OR_UPDATE_CRITERIA);
     }
 
     if (moduleName === 'mortality' && action === 'canRead') {
-        return Boolean(await WorkerPermission.findOne({
-            where: {
-                farmMemberId: membershipId,
-                moduleName: { [Op.in]: REPRODUCTION_MODULE_VARIANTS },
-                canRead: true
-            }
-        }));
-    }
-
-    if (moduleName === 'rabbits' && action === 'canCreate') {
-        return Boolean(await WorkerPermission.findOne({
-            where: {
-                farmMemberId: membershipId,
-                moduleName: { [Op.in]: REPRODUCTION_MODULE_VARIANTS },
-                [Op.or]: [{ canCreate: true }, { canUpdate: true }]
-            }
-        }));
+        return hasModulePermission(membershipId, REPRODUCTION_MODULE_VARIANTS, { canRead: true });
     }
 
     if (moduleName === 'reproduction' && action === 'canUpdate') {
-        return Boolean(await WorkerPermission.findOne({
-            where: {
-                farmMemberId: membershipId,
-                moduleName: { [Op.in]: REPRODUCTION_MODULE_VARIANTS },
-                canCreate: true
-            }
-        }));
+        return hasModulePermission(membershipId, REPRODUCTION_MODULE_VARIANTS, { canCreate: true });
     }
 
     if (moduleName === 'reproduction' && action === 'canCreate' && req.path?.includes('consanguinity')) {
-        return Boolean(await WorkerPermission.findOne({
-            where: {
-                farmMemberId: membershipId,
-                moduleName: { [Op.in]: [...REPRODUCTION_MODULE_VARIANTS, 'genealogy', 'genealogia', 'genealogía', 'Genealogía'] },
-                [Op.or]: [{ canCreate: true }, { canUpdate: true }]
-            }
-        }));
+        const consangVariants = [...REPRODUCTION_MODULE_VARIANTS, 'genealogy', 'genealogia', 'genealogía', 'Genealogía'];
+        return hasModulePermission(membershipId, consangVariants, CREATE_OR_UPDATE_CRITERIA);
     }
 
     if (moduleName === 'reproduction' && action === 'canDelete' && req.body?.action === 'fail') {
-        return Boolean(await WorkerPermission.findOne({
-            where: {
-                farmMemberId: membershipId,
-                moduleName: { [Op.in]: REPRODUCTION_MODULE_VARIANTS },
-                canUpdate: true
-            }
-        }));
+        return hasModulePermission(membershipId, REPRODUCTION_MODULE_VARIANTS, { canUpdate: true });
     }
 
     return false;
@@ -204,7 +169,7 @@ const checkReproductionFallbacks = async (membershipId, moduleName, action, req)
 const RABBIT_VIEWER_MODULES = Array.from(new Set([
     'rabbits', 'conejos', 'conejo', 'Conejos',
     'genealogy', 'genealogia', 'genealogía', 'Genealogía',
-    'assignments', 'asignarjaula', 'asignaciones', 'asignar jaula', 'asignacion', 'asignación', 'asignar', 'Asignaciones', 'Asignar Jaula',
+    ...ASSIGNMENT_MODULE_VARIANTS, 'Asignaciones', 'Asignar Jaula',
     'reports', 'reportes', 'reporte', 'Reportes',
     ...REPRODUCTION_MODULE_VARIANTS,
     ...CONTROL_MODULES,
@@ -220,37 +185,26 @@ const ANY_ACTIVE_PERMISSION_OR = [
 
 const _checkRabbitAndCageFallbacks = async (membershipId, moduleName, action, req) => {
     if (moduleName === 'rabbits' && action === 'canRead') {
-        const hasRelatedPermission = await WorkerPermission.findOne({
-            where: {
-                farmMemberId: membershipId,
-                moduleName: { [Op.in]: RABBIT_VIEWER_MODULES },
-                [Op.or]: ANY_ACTIVE_PERMISSION_OR
-            }
-        });
-        if (hasRelatedPermission) return true;
+        if (await hasModulePermission(membershipId, RABBIT_VIEWER_MODULES, { [Op.or]: ANY_ACTIVE_PERMISSION_OR })) {
+            return true;
+        }
     }
 
     if (moduleName === 'assignments' && action === 'canCreate' && req?.path?.includes('/move')) {
-        const hasAssignmentUpdate = await WorkerPermission.findOne({
-            where: {
-                farmMemberId: membershipId,
-                moduleName: { [Op.in]: ['assignments', 'asignarjaula', 'asignaciones', 'asignar jaula', 'asignacion', 'asignación', 'asignar'] },
-                canUpdate: true
-            }
-        });
-        if (hasAssignmentUpdate) return true;
+        if (await hasModulePermission(membershipId, ASSIGNMENT_MODULE_VARIANTS, { canUpdate: true })) {
+            return true;
+        }
     }
 
     if ((moduleName === 'rabbits' || moduleName === 'cages') && action === 'canRead') {
         const hasAssignmentPermission = await WorkerPermission.findOne({
             where: {
                 farmMemberId: membershipId,
-                moduleName: { [Op.in]: ['assignments', 'asignarjaula', 'asignaciones', 'asignar jaula', 'asignacion', 'asignación', 'asignar'] },
+                moduleName: { [Op.in]: ASSIGNMENT_MODULE_VARIANTS },
                 [Op.or]: [{ canRead: true }, { canCreate: true }, { canUpdate: true }]
             }
         });
-        const ASSIGNMENT_VARIANTS = ['assignments', 'asignarjaula', 'asignaciones', 'asignar jaula', 'asignacion', 'asignación', 'asignar'];
-        if (hasAssignmentPermission && (!hasAssignmentPermission.moduleName || ASSIGNMENT_VARIANTS.includes(hasAssignmentPermission.moduleName)) && hasAssignmentPermission.moduleName) {
+        if (hasAssignmentPermission?.moduleName && ASSIGNMENT_MODULE_VARIANTS.includes(hasAssignmentPermission.moduleName)) {
             return true;
         }
     }
@@ -269,14 +223,7 @@ const _checkCatalogCreateReadFallback = async (membershipId, moduleName, action,
     const rule = CATALOG_HELPER_ENDPOINTS[moduleName];
     if (!rule || !req?.path?.includes(rule.pathFragment)) return false;
 
-    const hasCreate = await WorkerPermission.findOne({
-        where: {
-            farmMemberId: membershipId,
-            moduleName: { [Op.in]: rule.variants },
-            canCreate: true
-        }
-    });
-    return Boolean(hasCreate);
+    return hasModulePermission(membershipId, rule.variants, { canCreate: true });
 };
 
 const _checkMedicalAndReportsFallbacks = async (membershipId, moduleName, action, req) => {
@@ -292,25 +239,13 @@ const _checkMedicalAndReportsFallbacks = async (membershipId, moduleName, action
         moduleName === 'vaccination';
 
     if (isRabbitDetailContext) {
-        const hasRabbitPermission = await WorkerPermission.findOne({
-            where: {
-                farmMemberId: membershipId,
-                moduleName: { [Op.in]: RABBIT_VIEWER_MODULES },
-                [Op.or]: ANY_ACTIVE_PERMISSION_OR
-            }
-        });
-        if (hasRabbitPermission) return true;
+        if (await hasModulePermission(membershipId, RABBIT_VIEWER_MODULES, { [Op.or]: ANY_ACTIVE_PERMISSION_OR })) {
+            return true;
+        }
     }
 
     if (REPORTABLE_MODULES.has(moduleName)) {
-        const hasReportsPermission = await WorkerPermission.findOne({
-            where: {
-                farmMemberId: membershipId,
-                moduleName: { [Op.in]: ['reports', 'reportes', 'reporte'] },
-                canRead: true
-            }
-        });
-        return Boolean(hasReportsPermission);
+        return hasModulePermission(membershipId, ['reports', 'reportes', 'reporte'], { canRead: true });
     }
 
     return false;

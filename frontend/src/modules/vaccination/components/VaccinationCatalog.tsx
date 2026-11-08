@@ -6,7 +6,7 @@ import { Input, LoadingMessage, CageGroupGrid, SelectionActionBar } from '@/shar
 import { Pagination } from '@/shared/ui/Pagination';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { useVaccination } from '../hooks/useVaccination';
-import { useCageSelection } from '@/shared/hooks/useCageSelection';
+import { useCageSelection, formatBatchRabbitError } from '@/shared/hooks/useCageSelection';
 import { formatDateTime } from '@/shared/utils/dateUtils';
 
 import { FilterBar } from '@/shared/ui/FilterBar';
@@ -94,16 +94,7 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
       clearSelection();
       onSuccess?.();
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error inesperado.';
-      // Contar cuántos conejos tienen problemas (líneas que empiezan con "El conejo")
-      const errorLines = errorMessage.split('\n').filter(line => line.trim().startsWith('El conejo'));
-      const hasValidRabbits = errorLines.length < selectedRabbitIds.length;
-
-      if (hasValidRabbits) {
-        showToast(`${errorMessage}\n\nPor favor, deselecciona los conejos con problemas mencionados arriba para registrar los demás.`, 'error');
-      } else {
-        showToast(errorMessage, 'error');
-      }
+      showToast(formatBatchRabbitError(err, selectedRabbitIds.length), 'error');
     }
   };
 
@@ -221,22 +212,15 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
         </div>
       )}
 
-      {canCreate ? (
-        <SelectionActionBar
-          count={selectedRabbitIds.length}
-          itemName="conejo"
-          buttonText="Registrar Vacunación"
-          onRegister={handleRegister}
-          isSubmitting={isCreating}
-          isDisabled={selectedVaccines.length === 0}
-        />
-      ) : (
-        selectedRabbitIds.length > 0 && (
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-theme-surface border border-strong shadow-lg rounded-xl px-4 py-2 text-xs text-muted font-medium">
-            Solo consulta
-          </div>
-        )
-      )}
+      <SelectionActionBar
+        count={selectedRabbitIds.length}
+        itemName="conejo"
+        buttonText="Registrar Vacunación"
+        onRegister={handleRegister}
+        isSubmitting={isCreating}
+        isDisabled={selectedVaccines.length === 0}
+        canCreate={canCreate}
+      />
     </div>
   );
 }

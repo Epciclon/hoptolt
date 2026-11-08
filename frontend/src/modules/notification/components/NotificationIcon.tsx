@@ -13,21 +13,13 @@ import { routeNotification } from '@/shared/utils/notificationRouting';
 import { useAuth } from '@/modules/auth/hooks/useAuth';
 import { playNotificationSound } from '@/shared/utils/soundUtils';
 import { formatTime } from '@/shared/utils/dateUtils';
-import { extractGrowthSummaryData } from '../utils/growthNotificationUtils';
-
-const isWarningNotification = (n: any) => {
-  const t = n.data?.type;
-  if (t === 'incident' || t === 'incident_response') return false;
-  const title = (n.title || '').toLowerCase();
-  const msg = (n.message || '').toLowerCase();
-  if (title.includes('novedad') || msg.includes('novedad')) return false;
-
-  return n.type === 'warning' ||
-    t === 'feeding_reminder' ||
-    t === 'cleaning_warning' ||
-    t === 'birth_warning' ||
-    t === 'weaning_alert';
-};
+import {
+  extractGrowthSummaryData,
+  isWarningNotification,
+  sortNotificationsByRecent,
+  isPreviewKeySeenOrDismissed,
+  markPreviewKeyState,
+} from '../utils/growthNotificationUtils';
 
 const getNotificationVersion = (n: any) => {
   const logId = n.data?.lastLogId || n.data?.logId || 0;
@@ -36,42 +28,17 @@ const getNotificationVersion = (n: any) => {
   return `${n.id}_${logId}_${count}_${time}`;
 };
 
-const isPreviewSeenOrDismissed = (n: any, userId: string) => {
-  if (typeof window === 'undefined') return false;
-  const version = getNotificationVersion(n);
-  const id = n.id;
-  return (
-    sessionStorage.getItem(`hoptolt_prev_seen_${userId}_${id}_${version}`) === 'true' ||
-    localStorage.getItem(`hoptolt_prev_seen_${userId}_${id}_${version}`) === 'true' ||
-    sessionStorage.getItem(`hoptolt_prev_dismissed_${userId}_${id}_${version}`) === 'true' ||
-    localStorage.getItem(`hoptolt_prev_dismissed_${userId}_${id}_${version}`) === 'true'
-  );
-};
+const isPreviewSeenOrDismissed = (n: any, userId: string) =>
+  isPreviewKeySeenOrDismissed(userId, `${n.id}_${getNotificationVersion(n)}`);
 
-const markPreviewSeen = (n: any, userId: string) => {
-  if (typeof window !== 'undefined') {
-    const version = getNotificationVersion(n);
-    const id = n.id;
-    sessionStorage.setItem(`hoptolt_prev_seen_${userId}_${id}_${version}`, 'true');
-    localStorage.setItem(`hoptolt_prev_seen_${userId}_${id}_${version}`, 'true');
-  }
-};
+const markPreviewSeen = (n: any, userId: string) =>
+  markPreviewKeyState(userId, `${n.id}_${getNotificationVersion(n)}`, 'seen');
 
-const markPreviewDismissed = (n: any, userId: string) => {
-  if (typeof window !== 'undefined') {
-    const version = getNotificationVersion(n);
-    const id = n.id;
-    sessionStorage.setItem(`hoptolt_prev_dismissed_${userId}_${id}_${version}`, 'true');
-    localStorage.setItem(`hoptolt_prev_dismissed_${userId}_${id}_${version}`, 'true');
-  }
-};
+const markPreviewDismissed = (n: any, userId: string) =>
+  markPreviewKeyState(userId, `${n.id}_${getNotificationVersion(n)}`, 'dismissed');
 
 function selectCandidateInfoNotification(unreadInfos: any[], userId: string, now: number): any {
-  const sortedCandidates = [...unreadInfos].sort((a, b) => {
-    const timeA = new Date(a.updatedAt || a.createdAt).getTime();
-    const timeB = new Date(b.updatedAt || b.createdAt).getTime();
-    return timeB - timeA;
-  });
+  const sortedCandidates = sortNotificationsByRecent(unreadInfos);
 
   return sortedCandidates.find(n => {
     if (isPreviewSeenOrDismissed(n, userId)) return false;

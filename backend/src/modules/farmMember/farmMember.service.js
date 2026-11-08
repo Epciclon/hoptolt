@@ -330,6 +330,26 @@ class FarmMemberService {
         }
     }
 
+    _stripAndExtractLegacyCages(summaryStr) {
+        const lower = summaryStr.toLowerCase();
+        const startIdx = lower.indexOf('[jaulas:');
+        if (startIdx === -1) {
+            return { cleanSummary: summaryStr, bracketCages: [] };
+        }
+        const endIdx = summaryStr.indexOf(']', startIdx);
+        if (endIdx === -1) {
+            return { cleanSummary: summaryStr, bracketCages: [] };
+        }
+        const inner = summaryStr.slice(startIdx + 8, endIdx);
+        const bracketCages = inner
+            .split(',')
+            .map(s => Number.parseInt(s.trim(), 10))
+            .filter(n => !Number.isNaN(n));
+        const before = summaryStr.slice(0, startIdx).trimEnd();
+        const after = summaryStr.slice(endIdx + 1);
+        return { cleanSummary: `${before}${after}`, bracketCages };
+    }
+
     _extractShiftLogMeta(log) {
         const d = log.details || {};
         const summaryStr = String(d.summary || '');
@@ -337,19 +357,13 @@ class FarmMemberService {
         const parsedCount = countMatch ? Number.parseInt(countMatch[1], 10) : 0;
         const unfedCount = Number(d.unfedCount) || parsedCount || 0;
 
+        const { cleanSummary, bracketCages } = this._stripAndExtractLegacyCages(summaryStr);
         let cages = Array.isArray(d.cages) ? d.cages.map(Number).filter(n => !Number.isNaN(n)) : [];
         if (cages.length === 0) {
-            const bracketMatch = /\[jaulas:\s*([^\]]+)\]/i.exec(summaryStr);
-            if (bracketMatch) {
-                cages = bracketMatch[1]
-                    .split(',')
-                    .map(s => Number.parseInt(s.trim(), 10))
-                    .filter(n => !Number.isNaN(n));
-            }
+            cages = bracketCages;
         }
         cages.sort((a, b) => a - b);
 
-        const cleanSummary = summaryStr.replace(/\s*\[jaulas:[^\]]*\]/gi, '');
         const shiftKey = d.shift || (String(d.itemName || summaryStr).toLowerCase().includes('mañana') ? 'mañana' : 'tarde');
         const dateKey = d.date || new Date(log.createdAt).toLocaleDateString('sv', { timeZone: 'America/Guayaquil' });
 

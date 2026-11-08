@@ -7,17 +7,7 @@ import type { AuditLogItem, AuditLogFilters, FarmMember } from '../types/farmMem
 import { SectionMessage } from '@/shared/ui';
 import { Pagination } from '@/shared/ui/Pagination';
 import { Filter, User } from 'lucide-react';
-import {
-  type AuditDiffItem,
-  AUDIT_IGNORED_DIFF_KEYS,
-  useAuditLogsRealtime,
-  AuditDateFilters,
-  AuditClearFiltersButton,
-  AuditFallbackBeforeAfter,
-  AuditStandardDiffValue,
-  AuditLogListCard,
-  AuditLogDetailDialog,
-} from './AuditLogShared';
+import { type AuditDiffItem, AUDIT_IGNORED_DIFF_KEYS, useAuditLogsRealtime, AuditDateFilters, AuditClearFiltersButton, AuditFallbackBeforeAfter, AuditStandardDiffValue, AuditLogListCard, AuditLogDetailDialog } from './AuditLogShared';
 
 interface AuditChangeLogTabProps {
   galponId: number;

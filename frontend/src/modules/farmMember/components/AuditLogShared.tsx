@@ -176,12 +176,32 @@ interface AuditLogListCardProps {
   onSelectLog: (log: AuditLogItem) => void;
 }
 
+function stripAndExtractLegacyCages(rawSummary: string): { cleanSummary: string; bracketCages: number[] } {
+  const lower = rawSummary.toLowerCase();
+  const startIdx = lower.indexOf('[jaulas:');
+  if (startIdx === -1) {
+    return { cleanSummary: rawSummary, bracketCages: [] };
+  }
+  const endIdx = rawSummary.indexOf(']', startIdx);
+  if (endIdx === -1) {
+    return { cleanSummary: rawSummary, bracketCages: [] };
+  }
+  const inner = rawSummary.slice(startIdx + 8, endIdx);
+  const bracketCages = inner
+    .split(',')
+    .map((s) => Number.parseInt(s.trim(), 10))
+    .filter((n) => !Number.isNaN(n));
+  const before = rawSummary.slice(0, startIdx).trimEnd();
+  const after = rawSummary.slice(endIdx + 1);
+  return { cleanSummary: `${before}${after}`, bracketCages };
+}
+
 export function extractAuditSummaryAndCages(
   log: AuditLogItem,
   fallbackSummary: string
 ): { cleanSummary: string; pendingCages: number[] } {
   const rawSummary = String(log.details?.summary || fallbackSummary);
-  const cleanSummary = rawSummary.replace(/\s*\[jaulas:[^\]]*\]/gi, '');
+  const { cleanSummary, bracketCages } = stripAndExtractLegacyCages(rawSummary);
 
   const rawCages = Array.isArray(log.details?.cages) ? log.details.cages : [];
   let parsedCages: number[] = rawCages
@@ -189,13 +209,7 @@ export function extractAuditSummaryAndCages(
     .filter((n: number) => !Number.isNaN(n));
 
   if (parsedCages.length === 0) {
-    const bracketMatch = /\[jaulas:\s*([^\]]+)\]/i.exec(rawSummary);
-    if (bracketMatch) {
-      parsedCages = bracketMatch[1]
-        .split(',')
-        .map((s) => Number.parseInt(s.trim(), 10))
-        .filter((n) => !Number.isNaN(n));
-    }
+    parsedCages = bracketCages;
   }
 
   const uniqueSorted = Array.from(new Set(parsedCages)).sort((a, b) => a - b);

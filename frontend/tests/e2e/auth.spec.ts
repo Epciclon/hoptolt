@@ -69,6 +69,7 @@ test.describe('Register Page', () => {
   });
 
   test('shows validation errors for empty fields', async ({ page }) => {
+    await page.locator('input[type="checkbox"]').check();
     await page.locator('#btn-register').click();
     await expect(page.locator('text=El nombre es obligatorio')).toBeVisible();
     await expect(page.locator('text=Mínimo 4 caracteres')).toBeVisible();
@@ -82,6 +83,7 @@ test.describe('Register Page', () => {
     await page.locator('#email').fill('test@example.com');
     await page.locator('#confirmPassword').fill('abcdef');
     await page.locator('#password').fill('abcdef');
+    await page.locator('input[type="checkbox"]').check();
     await page.locator('#btn-register').click();
     await expect(page.locator('text=Debe contener al menos un carácter especial')).toBeVisible();
   });
@@ -92,6 +94,7 @@ test.describe('Register Page', () => {
     await page.locator('#email').fill('test@example.com');
     await page.locator('#password').fill('Test123!@#');
     await page.locator('#confirmPassword').fill('Different123!@#');
+    await page.locator('input[type="checkbox"]').check();
     await page.locator('#btn-register').click();
     await expect(page.locator('text=Las contraseñas no coinciden')).toBeVisible();
   });
@@ -102,6 +105,7 @@ test.describe('Register Page', () => {
     await page.locator('#email').fill('test@example.com');
     await page.locator('#password').fill('Test123!@#');
     await page.locator('#confirmPassword').fill('Test123!@#');
+    await page.locator('input[type="checkbox"]').check();
     await page.locator('#btn-register').click();
     await expect(page.locator('text=Solo letras, números y guión bajo')).toBeVisible();
   });
@@ -115,6 +119,7 @@ test.describe('Register Page', () => {
 
 test.describe('404 Page', () => {
   test('shows 404 page for unknown routes', async ({ page }) => {
+    await page.context().addCookies([{ name: 'e2e_bypass', value: 'true', url: 'http://localhost:3000' }]);
     const response = await page.goto('/nonexistent-route');
     expect(response?.status()).toBe(404);
   });

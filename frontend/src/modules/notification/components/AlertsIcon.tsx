@@ -12,20 +12,12 @@ import { routeNotification } from '@/shared/utils/notificationRouting';
 import { useAuth } from '@/modules/auth/hooks/useAuth';
 import { playWarningAlertSound } from '@/shared/utils/soundUtils';
 import { formatTime } from '@/shared/utils/dateUtils';
-
-const isWarningNotification = (n: any) => {
-  const t = n.data?.type;
-  if (t === 'incident' || t === 'incident_response') return false;
-  const title = (n.title || '').toLowerCase();
-  const msg = (n.message || '').toLowerCase();
-  if (title.includes('novedad') || msg.includes('novedad')) return false;
-
-  return n.type === 'warning' ||
-    t === 'feeding_reminder' ||
-    t === 'cleaning_warning' ||
-    t === 'birth_warning' ||
-    t === 'weaning_alert';
-};
+import {
+  isWarningNotification,
+  sortNotificationsByRecent as sortAlertNotifications,
+  isPreviewKeySeenOrDismissed,
+  markPreviewKeyState,
+} from '../utils/growthNotificationUtils';
 
 const getAlertVersion = (n: any) => {
   const count = n.data?.cagesCount || n.data?.count || 1;
@@ -33,32 +25,14 @@ const getAlertVersion = (n: any) => {
   return `${n.id}_${count}_${updated}`;
 };
 
-const isPreviewSeenOrDismissed = (n: any, userId: string) => {
-  if (typeof window === 'undefined') return false;
-  const ver = getAlertVersion(n);
-  return (
-    sessionStorage.getItem(`hoptolt_prev_seen_${userId}_${ver}`) === 'true' ||
-    localStorage.getItem(`hoptolt_prev_seen_${userId}_${ver}`) === 'true' ||
-    sessionStorage.getItem(`hoptolt_prev_dismissed_${userId}_${ver}`) === 'true' ||
-    localStorage.getItem(`hoptolt_prev_dismissed_${userId}_${ver}`) === 'true'
-  );
-};
+const isPreviewSeenOrDismissed = (n: any, userId: string) =>
+  isPreviewKeySeenOrDismissed(userId, getAlertVersion(n));
 
-const markPreviewSeen = (n: any, userId: string) => {
-  if (typeof window !== 'undefined') {
-    const ver = getAlertVersion(n);
-    sessionStorage.setItem(`hoptolt_prev_seen_${userId}_${ver}`, 'true');
-    localStorage.setItem(`hoptolt_prev_seen_${userId}_${ver}`, 'true');
-  }
-};
+const markPreviewSeen = (n: any, userId: string) =>
+  markPreviewKeyState(userId, getAlertVersion(n), 'seen');
 
-const markPreviewDismissed = (n: any, userId: string) => {
-  if (typeof window !== 'undefined') {
-    const ver = getAlertVersion(n);
-    sessionStorage.setItem(`hoptolt_prev_dismissed_${userId}_${ver}`, 'true');
-    localStorage.setItem(`hoptolt_prev_dismissed_${userId}_${ver}`, 'true');
-  }
-};
+const markPreviewDismissed = (n: any, userId: string) =>
+  markPreviewKeyState(userId, getAlertVersion(n), 'dismissed');
 
 function selectCandidateWarning(unreadWarnings: any[], userId: string, now: number): any {
   const feedingReminder = unreadWarnings.find(n => n.data?.type === 'feeding_reminder');
@@ -116,14 +90,6 @@ function getWarningActionConfig(notification: any) {
     return { label: 'Ir a Partos', variant: 'primary' as const };
   }
   return { label: 'Revisar Alerta', variant: 'primary' as const };
-}
-
-function sortAlertNotifications(alerts: any[]) {
-  return [...alerts].sort((a, b) => {
-    const timeA = new Date(a.updatedAt || a.createdAt).getTime();
-    const timeB = new Date(b.updatedAt || b.createdAt).getTime();
-    return timeB - timeA;
-  });
 }
 
 interface WarningFloatingPreviewProps {
