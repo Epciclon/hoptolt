@@ -22,7 +22,7 @@ describe('CageController', () => {
   describe('registerCage', () => {
     it('should call registerCage and return 201', async () => {
       req = { body: { number: 'C1', type: 'reproducción' }, user: { id: 'user1' } };
-      cageService.registerCage.mockResolvedValue({ id: 'c1', number: 'C1' });
+      cageService.registerCage.mockResolvedValue([{ id: 'c1', number: 'C1' }]);
 
       await cageController.registerCage(req, res, next);
 
@@ -81,7 +81,7 @@ describe('CageController', () => {
       expect(cageService.getAllCages).toHaveBeenCalledWith(
         1, 'user1',
         { search: undefined, type: undefined, status: undefined },
-        1, 10
+        1, 12
       );
     });
   });

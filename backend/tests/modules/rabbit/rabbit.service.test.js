@@ -2,6 +2,9 @@ require('../../setup');
 
 jest.mock('../../../src/modules/rabbit/rabbit.repository');
 jest.mock('../../../src/modules/race/race.repository');
+jest.mock('../../../src/modules/growth/growth.service', () => ({
+  rebuildGrowthHistory: jest.fn().mockResolvedValue(undefined),
+}));
 jest.mock('../../../src/common/helpers/names.helper', () => ({
   generateRandomName: jest.fn((sex) => (sex === 'hembra' ? 'Luna' : 'Max')),
 }));
@@ -12,6 +15,7 @@ jest.mock('node:crypto', () => ({
 
 const rabbitRepository = require('../../../src/modules/rabbit/rabbit.repository');
 const raceRepository = require('../../../src/modules/race/race.repository');
+const growthService = require('../../../src/modules/growth/growth.service');
 const rabbitService = require('../../../src/modules/rabbit/rabbit.service');
 const { FarmMember, Growth, Assignment } = require('../../../src/domain/models');
 
@@ -69,12 +73,12 @@ describe('RabbitService', () => {
     });
 
     it('creates rabbit with generated code and initial growth record', async () => {
-      const result = await rabbitService.registerRabbit(
+      await rabbitService.registerRabbit(
         { name: 'Bunny', race: 'New Zealand', sex: 'macho', birthDate: '2024-01-01', weight: 1.0, purpose: 'Engorde', imageUrl: null },
         1, 'p1'
       );
       expect(rabbitRepository.create).toHaveBeenCalled();
-      expect(Growth.create).toHaveBeenCalled();
+      expect(growthService.rebuildGrowthHistory).toHaveBeenCalled();
     });
 
     it('throws error when race does not exist', async () => {
@@ -139,26 +143,18 @@ describe('RabbitService', () => {
     });
 
     it('updates rabbit and creates growth record on weight change', async () => {
-      Growth.findOne.mockResolvedValue(null);
-      Growth.create = jest.fn().mockResolvedValue({ id: 2 });
       rabbitRepository.update = jest.fn().mockResolvedValue({ id: 1, weight: 2.0 });
 
       await rabbitService.editRabbit(1, { weight: 2.0 }, 'p1');
-      expect(Growth.create).toHaveBeenCalled();
+      expect(rabbitRepository.update).toHaveBeenCalled();
     });
 
-    it('reuses monthly growth record on same month', async () => {
-      const now = new Date();
-      const latestGrowth = {
-        recordDate: now,
-        update: jest.fn().mockResolvedValue({}),
-      };
-      Growth.findOne.mockResolvedValue(latestGrowth);
-      Growth.create = jest.fn();
+    it('rebuilds growth history when purpose or birthDate changes', async () => {
+      Assignment.findOne = jest.fn().mockResolvedValue(null);
+      rabbitRepository.update = jest.fn().mockResolvedValue({ id: 1, purpose: 'Reproducción', birthDate: '2024-02-01' });
 
-      await rabbitService.editRabbit(1, { weight: 2.0 }, 'p1');
-      expect(latestGrowth.update).toHaveBeenCalled();
-      expect(Growth.create).not.toHaveBeenCalled();
+      await rabbitService.editRabbit(1, { birthDate: '2024-02-01' }, 'p1');
+      expect(growthService.rebuildGrowthHistory).toHaveBeenCalled();
     });
   });
 
@@ -192,13 +188,13 @@ describe('RabbitService', () => {
   });
 
   describe('suggestName', () => {
-    it('returns generated name for sex', () => {
-      expect(rabbitService.suggestName('hembra')).toBe('Luna');
-      expect(rabbitService.suggestName('macho')).toBe('Max');
+    it('returns generated name for sex', async () => {
+      await expect(rabbitService.suggestName('hembra')).resolves.toBe('Luna');
+      await expect(rabbitService.suggestName('macho')).resolves.toBe('Max');
     });
 
-    it('defaults to macho for invalid sex', () => {
-      expect(rabbitService.suggestName('unknown')).toBe('Max');
+    it('defaults to macho for invalid sex', async () => {
+      await expect(rabbitService.suggestName('unknown')).resolves.toBe('Max');
     });
   });
 });

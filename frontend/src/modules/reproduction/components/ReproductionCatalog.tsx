@@ -5,13 +5,12 @@ import { FilterBar } from '@/shared/ui/FilterBar';
 import { Pagination } from '@/shared/ui/Pagination';
 import type { Reproduction } from '../types/reproduction.types';
 import { Dialog, Select, RabbitSelectableCard, CageGroupCard, Button } from '@/shared/ui';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Calendar, Info } from 'lucide-react';
 import { ReproductionForm } from './ReproductionForm';
 import { ReproductionPairSection, ReproductionPhaseProgressCard } from './ReproductionSharedCards';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { Input } from '@/shared/ui/Input';
-import { useMortality } from '@/modules/mortality/hooks/useMortality';
 import { formatDateString } from '@/shared/utils/dateUtils';
 import { matchesSmartSearch } from '@/shared/utils/rabbitUtils';
 import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
@@ -23,7 +22,6 @@ interface ReproductionCatalogProps {
 
 export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<ReproductionCatalogProps>) {
   const { reproductions, cancelReproduction, registerBirth, fetchReproductions } = useReproduction({ status: 'gestacion', limit: 1000 });
-  const { createMortality } = useMortality({ enabled: false });
   const onSuccess = fetchReproductions;
   const { showToast } = useToast();
   const { can } = usePermissions();
@@ -46,6 +44,7 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedDetails, setSelectedDetails] = useState<Reproduction | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const lastDetailsReproduction = useRef<Reproduction | null>(null);
   
   const [filterRace, setFilterRace] = useState('');
 
@@ -57,34 +56,30 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
     let action: 'delete' | 'fail' = 'delete';
     let finalReason = cancelReason;
 
-    if (cancelReason === 'muerte' || cancelReason === 'otro') {
-        action = 'fail';
-        if (cancelReason === 'otro') {
-            if (!cancelReasonOther.trim()) {
-                showToast('Debe especificar la razón.', 'error');
-                return;
-            }
-            finalReason = cancelReasonOther;
-        }
+    if (cancelReason === 'no_preniada') {
+      finalReason = 'No quedó preñada';
+    } else if (cancelReason === 'error') {
+      finalReason = 'Error de registro';
+    } else if (cancelReason === 'aborto') {
+      action = 'fail';
+      finalReason = 'Aborto';
+    } else if (cancelReason === 'otro') {
+      action = 'fail';
+      if (!cancelReasonOther.trim()) {
+        showToast('Debe especificar la razón.', 'error');
+        return;
+      }
+      finalReason = cancelReasonOther.trim();
     }
 
     setCanceling(true);
     try {
-      if (cancelReason === 'muerte') {
-        // Registrar mortalidad de la coneja (esto libera la jaula y hace softdelete)
-        await createMortality({
-            rabbitId: toCancel.femaleId,
-            cause: 'otra',
-            observations: 'Muerte durante la gestación',
-            deathDate: new Date().toISOString()
-        });
-      }
-
       await cancelReproduction(toCancel.id, action, finalReason);
       
       setToCancel(null);
       setCancelReason('');
       setCancelReasonOther('');
+      lastDetailsReproduction.current = null;
       showToast(action === 'delete' ? 'Monta eliminada correctamente.' : 'Cancelación registrada en el historial.', 'success');
       onSuccess?.();
     } catch (error: any) {
@@ -253,7 +248,7 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
                   <div 
                     className="mt-3 flex flex-col gap-2 animate-in fade-in slide-in-from-top-1 duration-150"
                   >
-                    {canCreate && (
+                    {(canCreate || canUpdate) && (
                       <Button
                         type="button"
                         variant="primary"
@@ -283,7 +278,7 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
                     >
                       Ver Detalles
                     </Button>
-                    {!canCreate && (
+                    {!(canCreate || canUpdate) && (
                       <span className="text-xs text-muted font-medium py-1 px-2 text-center w-full">
                         Solo consulta
                       </span>
@@ -313,20 +308,24 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
           setToCancel(null);
           setCancelReason('');
           setCancelReasonOther('');
+          if (lastDetailsReproduction.current) {
+            setSelectedDetails(lastDetailsReproduction.current);
+            lastDetailsReproduction.current = null;
+          }
         }}
         title={(() => {
           const label = toCancel?.femaleName ? `${toCancel.femaleName} - ${toCancel.femaleCode}` : (toCancel?.femaleCode ?? '');
           return `Cancelar Parto: ${label}`;
         })()}
       >
-        <div className="p-4">
-          <div className="bg-theme-surface border border-strong rounded-xl p-4 mb-4">
-            <p className="text-sm text-main">
-              Selecciona la razón por la cual estás cancelando este parto.
+        <div className="space-y-4">
+          <div className="bg-theme-surface border border-strong rounded-xl p-3.5">
+            <p className="text-sm text-main leading-relaxed">
+              Selecciona el motivo por el cual se cancela la gestación. Si se debe a no preñez o error de registro, el proceso se descartará; si ocurrió un aborto u otra complicación, quedará en el historial como fallido.
             </p>
           </div>
           
-          <div className="mb-6 space-y-4">
+          <div className="space-y-4">
             <Select
               label="Razón de cancelación"
               value={cancelReason}
@@ -335,7 +334,6 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
                 { value: 'no_preniada', label: 'No quedó preñada' },
                 { value: 'error', label: 'Error de registro' },
                 { value: 'aborto', label: 'Aborto' },
-                { value: 'muerte', label: 'Muerte de la madre' },
                 { value: 'otro', label: 'Otro' },
               ]}
               placeholder="Seleccione una razón..."
@@ -357,8 +355,16 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
             )}
           </div>
 
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => { setToCancel(null); setCancelReason(''); setCancelReasonOther(''); }}>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => {
+              setToCancel(null);
+              setCancelReason('');
+              setCancelReasonOther('');
+              if (lastDetailsReproduction.current) {
+                setSelectedDetails(lastDetailsReproduction.current);
+                lastDetailsReproduction.current = null;
+              }
+            }}>
               Cerrar
             </Button>
             <Button 
@@ -385,12 +391,12 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
           return `Registrar Parto: ${label}`;
         })()}
       >
-        <form onSubmit={handleRegisterBirth} className="p-4">
-          <p className="text-sm text-muted mb-4">
+        <form onSubmit={handleRegisterBirth} className="space-y-4">
+          <p className="text-sm text-muted">
             Ingresa la fecha real del parto. La coneja pasará a la fase de lactancia por un mes aproximado.
           </p>
           
-          <div className="mb-6">
+          <div>
             <Input
               label="Fecha de Parto"
               type="date"
@@ -401,7 +407,7 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
             />
           </div>
 
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => { setToRegisterBirth(null); setActualBirthDate(''); }}>
               Cancelar
             </Button>
@@ -411,7 +417,8 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
               disabled={!actualBirthDate || registeringBirth}
               loading={registeringBirth}
             >
-              Guardar y Pasar a Fase 3
+              <span className="sm:hidden">Guardar</span>
+              <span className="hidden sm:inline">Guardar y Pasar a Fase 3</span>
             </Button>
           </div>
         </form>
@@ -475,6 +482,7 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
                     className="flex-1 justify-center py-2.5 text-sm font-semibold"
                     onClick={() => {
                       const rep = selectedDetails;
+                      lastDetailsReproduction.current = rep;
                       setSelectedDetails(null);
                       setToCancel(rep);
                     }}

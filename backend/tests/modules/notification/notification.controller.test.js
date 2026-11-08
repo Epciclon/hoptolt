@@ -56,37 +56,41 @@ describe('NotificationController', () => {
 
   describe('getMyNotifications', () => {
     it('should call getNotificationsByProfile and return 200', async () => {
-      req = { user: { id: 'user1' }, query: { limit: '10', offset: '0', unreadOnly: 'true' } };
-      notificationService.getNotificationsByProfile.mockResolvedValue([{ id: 'n1' }]);
+      req = { user: { id: 'user1' }, query: { limit: '10', page: '1', unreadOnly: 'true' } };
+      notificationService.getNotificationsByProfile.mockResolvedValue({ data: [{ id: 'n1' }], pagination: {} });
 
       await notificationController.getMyNotifications(req, res, next);
 
       expect(notificationService.getNotificationsByProfile).toHaveBeenCalledWith('user1', {
-        limit: 10, offset: 0, unreadOnly: true
+        page: 1, limit: 10, unreadOnly: true, freshSession: false, filter: undefined, search: undefined
       });
-      expect(res.json).toHaveBeenCalledWith([{ id: 'n1' }]);
+      expect(res.json).toHaveBeenCalledWith({
+        success: true,
+        notifications: [{ id: 'n1' }],
+        pagination: {}
+      });
     });
 
     it('should use defaults when query params are missing', async () => {
       req = { user: { id: 'user1' }, query: {} };
-      notificationService.getNotificationsByProfile.mockResolvedValue([]);
+      notificationService.getNotificationsByProfile.mockResolvedValue({ data: [], pagination: {} });
 
       await notificationController.getMyNotifications(req, res, next);
 
       expect(notificationService.getNotificationsByProfile).toHaveBeenCalledWith('user1', {
-        limit: 20, offset: 0, unreadOnly: false
+        page: 1, limit: 12, unreadOnly: false, freshSession: false, filter: undefined, search: undefined
       });
     });
   });
 
   describe('getUnreadCount', () => {
     it('should call getUnreadCount and return count', async () => {
-      req = { user: { id: 'user1' } };
+      req = { user: { id: 'user1' }, query: {} };
       notificationService.getUnreadCount.mockResolvedValue(5);
 
       await notificationController.getUnreadCount(req, res, next);
 
-      expect(notificationService.getUnreadCount).toHaveBeenCalledWith('user1');
+      expect(notificationService.getUnreadCount).toHaveBeenCalledWith('user1', undefined);
       expect(res.json).toHaveBeenCalledWith({ count: 5 });
     });
   });

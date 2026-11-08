@@ -11,14 +11,14 @@ describe('GrowthService', () => {
   describe('calculateEstimatedWeight', () => {
     it('returns correct weight for Engorde purpose', () => {
       expect(growthService.calculateEstimatedWeight('Engorde', 0)).toBe(0.05);
-      expect(growthService.calculateEstimatedWeight('Engorde', 3)).toBe(1.5);
-      expect(growthService.calculateEstimatedWeight('Engorde', 8)).toBe(2.8);
+      expect(growthService.calculateEstimatedWeight('Engorde', 3)).toBe(2.6);
+      expect(growthService.calculateEstimatedWeight('Engorde', 8)).toBe(4.2);
     });
 
     it('returns correct weight for Reproducción purpose', () => {
       expect(growthService.calculateEstimatedWeight('Reproducción', 0)).toBe(0.05);
-      expect(growthService.calculateEstimatedWeight('Reproducción', 6)).toBe(2.15);
-      expect(growthService.calculateEstimatedWeight('Reproducción', 12)).toBe(3.0);
+      expect(growthService.calculateEstimatedWeight('Reproducción', 6)).toBe(4.0);
+      expect(growthService.calculateEstimatedWeight('Reproducción', 12)).toBe(4.2);
     });
 
     it('returns 0 for unknown purpose', () => {

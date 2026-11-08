@@ -11,6 +11,7 @@ import { createClient } from '@/utils/supabase/client';
 
 import { PermissionGuard } from '@/shared/guards/PermissionGuard';
 import { IncidentFloatingWidget } from '@/modules/incident/components/IncidentFloatingWidget';
+import { RabbitQuickViewProvider } from '@/modules/rabbits/contexts/RabbitQuickViewContext';
 
 export default function DashboardLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const { user, loading } = useAuthContext();
@@ -155,7 +156,7 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
             onClick={toggleSidebar} 
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleSidebar(); }}
             aria-label="Cerrar menú lateral"
-            className="fixed inset-0 bg-black/50 z-40 xl:hidden transition-opacity duration-300 w-full h-full border-none cursor-pointer outline-none"
+            className="fixed inset-0 bg-black/50 z-[45] xl:hidden transition-opacity duration-300 w-full h-full border-none cursor-pointer outline-none"
           />
         )}
         
@@ -163,7 +164,9 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
           <Header />
           <main className="flex-1 p-2.5 sm:p-4 md:p-6 pb-28 sm:pb-24 max-w-full min-w-0 overflow-x-hidden">
             <PermissionGuard>
-              {children}
+              <RabbitQuickViewProvider>
+                {children}
+              </RabbitQuickViewProvider>
             </PermissionGuard>
           </main>
         </div>

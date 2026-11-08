@@ -362,7 +362,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
         toggleCage={toggleCage}
       />
 
-      <div className="bg-card border border-strong rounded-lg p-4 shadow-sm flex flex-col gap-4 relative z-30 w-full">
+      <div className="bg-card border border-strong rounded-lg p-4 shadow-sm flex flex-col gap-4 relative z-20 w-full">
         <div className="flex items-center justify-between border-b border-default pb-3">
           <span className="text-sm font-medium text-main">Turno Actual:</span>
           <span className={`px-3 py-1 rounded-full text-xs font-bold ${currentEcuadorShift === 'mañana' ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-400' : 'bg-orange-100 dark:bg-orange-500/10 text-orange-800 dark:text-orange-400'}`}>
@@ -370,7 +370,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
           </span>
         </div>
 
-        <div className="w-full relative z-30" ref={foodDropdownRef}>
+        <div className="w-full relative z-20" ref={foodDropdownRef}>
           <span className="block text-sm font-medium text-main mb-2">Tipos de Alimento</span>
           <Input
             placeholder="Busca y selecciona tipos de alimento"
@@ -382,7 +382,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
             onFocus={() => setShowFoodDropdown(true)}
           />
           {showFoodDropdown && (
-            <div className="absolute z-50 w-full border border-default dark:border-slate-700 rounded-lg max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto bg-card dark:bg-slate-900 mt-1.5 shadow-2xl">
+            <div className="absolute z-30 w-full border border-default dark:border-slate-700 rounded-lg max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto bg-card dark:bg-slate-900 mt-1.5 shadow-2xl">
               {filteredFoodTypes.length === 0 ? (
                 <p className="text-muted text-sm p-3">No hay tipos de alimento disponibles</p>
               ) : (

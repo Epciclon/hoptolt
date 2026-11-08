@@ -330,6 +330,100 @@ class FarmMemberService {
         }
     }
 
+    _extractShiftLogMeta(log) {
+        const d = log.details || {};
+        const summaryStr = String(d.summary || '');
+        const countMatch = /con\s+(\d+)\s+jaula/i.exec(summaryStr);
+        const parsedCount = countMatch ? Number.parseInt(countMatch[1], 10) : 0;
+        const unfedCount = Number(d.unfedCount) || parsedCount || 0;
+
+        let cages = Array.isArray(d.cages) ? d.cages.map(Number).filter(n => !Number.isNaN(n)) : [];
+        if (cages.length === 0) {
+            const bracketMatch = /\[jaulas:\s*([^\]]+)\]/i.exec(summaryStr);
+            if (bracketMatch) {
+                cages = bracketMatch[1]
+                    .split(',')
+                    .map(s => Number.parseInt(s.trim(), 10))
+                    .filter(n => !Number.isNaN(n));
+            }
+        }
+        cages.sort((a, b) => a - b);
+
+        const cleanSummary = summaryStr.replace(/\s*\[jaulas:[^\]]*\]/gi, '');
+        const shiftKey = d.shift || (String(d.itemName || summaryStr).toLowerCase().includes('mañana') ? 'mañana' : 'tarde');
+        const dateKey = d.date || new Date(log.createdAt).toLocaleDateString('sv', { timeZone: 'America/Guayaquil' });
+
+        return { unfedCount, cages, cleanSummary, shiftKey, dateKey };
+    }
+
+    _groupShiftAuditLogs(shiftLogs) {
+        const groups = new Map();
+        for (const log of shiftLogs) {
+            const meta = this._extractShiftLogMeta(log);
+            const key = `${meta.dateKey}_${meta.shiftKey}`;
+            const bucket = groups.get(key) || [];
+            bucket.push({ log, meta });
+            groups.set(key, bucket);
+        }
+        return groups;
+    }
+
+    async _normalizeWinnerShiftLog(winner) {
+        const curDetails = winner.log.details || {};
+        const needsNormalize =
+            curDetails.summary !== winner.meta.cleanSummary ||
+            !Array.isArray(curDetails.cages) ||
+            curDetails.unfedCount !== winner.meta.unfedCount;
+
+        if (!needsNormalize) return;
+
+        winner.log.details = {
+            ...curDetails,
+            summary: winner.meta.cleanSummary,
+            cages: winner.meta.cages,
+            unfedCount: winner.meta.unfedCount,
+            shift: curDetails.shift || winner.meta.shiftKey,
+            date: curDetails.date || winner.meta.dateKey
+        };
+        winner.log.changed('details', true);
+        await winner.log.save();
+    }
+
+    async _normalizeAndDeduplicateShiftAuditLogs(cleanGalponId) {
+        try {
+            const shiftLogs = await AuditLog.findAll({
+                where: {
+                    entity: 'feeding',
+                    action: 'Turno cerrado con pendientes',
+                    [Op.and]: [
+                        Sequelize.literal(`("AuditLog"."details"->>'galponId') = '${cleanGalponId}'`)
+                    ]
+                },
+                order: [['createdAt', 'DESC']]
+            });
+
+            if (shiftLogs.length === 0) return;
+
+            const groups = this._groupShiftAuditLogs(shiftLogs);
+            const idsToDelete = [];
+
+            for (const items of groups.values()) {
+                items.sort((a, b) => b.meta.unfedCount - a.meta.unfedCount || b.log.id - a.log.id);
+                const [winner, ...duplicates] = items;
+                for (const dup of duplicates) {
+                    idsToDelete.push(dup.log.id);
+                }
+                await this._normalizeWinnerShiftLog(winner);
+            }
+
+            if (idsToDelete.length > 0) {
+                await AuditLog.destroy({ where: { id: { [Op.in]: idsToDelete } } });
+            }
+        } catch (err) {
+            console.error('Error al normalizar registros de turno en auditoría:', err);
+        }
+    }
+
     /**
      * Consulta el registro de control de cambios del galpón (solo propietario).
      */
@@ -343,6 +437,7 @@ class FarmMemberService {
 
         const isSystemRequest = filters.isSystem === true || filters.isSystem === 'true' || filters.source === 'system';
         if (isSystemRequest) {
+            await this._normalizeAndDeduplicateShiftAuditLogs(cleanGalponId);
             andClauses.push(Sequelize.literal(`("AuditLog"."details"->>'isSystem') = 'true'`));
         } else {
             andClauses.push(Sequelize.literal(`(("AuditLog"."details"->>'isSystem') IS NULL OR ("AuditLog"."details"->>'isSystem') = 'false')`));

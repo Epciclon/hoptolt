@@ -102,7 +102,7 @@ describe('GalponController', () => {
 
       await galponController.getAllGalpones(req, res, next);
 
-      expect(galponService.getAllGalpones).toHaveBeenCalledWith('user1', 1, 10);
+      expect(galponService.getAllGalpones).toHaveBeenCalledWith('user1', 1, 12);
     });
   });
 

@@ -15,9 +15,9 @@ describe('ReproductionService', () => {
   });
 
   describe('calculateEstimatedBirthDate', () => {
-    it('returns date 31 days after mount date', () => {
+    it('returns date 30 days after mount date', () => {
       const result = reproductionService.calculateEstimatedBirthDate('2024-01-01');
-      expect(result).toBe('2024-02-01');
+      expect(result).toBe('2024-01-31');
     });
   });
 

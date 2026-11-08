@@ -10,7 +10,7 @@ import { useQueryClient } from '@tanstack/react-query';
 interface AuthContextValue {
   user: Profile | null;
   loading: boolean;
-  refetchUser: (silent?: boolean) => Promise<void>;
+  refetchUser: (silent?: boolean) => Promise<Profile | null>;
   logout: () => Promise<void>;
   supabase: ReturnType<typeof createClient>;
 }
@@ -25,7 +25,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   const queryClient = useQueryClient();
 
-  const fetchUser = useCallback(async (silent = false) => {
+  const fetchUser = useCallback(async (silent = false): Promise<Profile | null> => {
     if (!silent) setLoading(true);
     try {
       // E2E Bypass en cliente
@@ -33,7 +33,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
         const profile = await authService.getMe();
         setUser(profile);
         if (!silent) setLoading(false);
-        return;
+        return profile;
       }
 
       const { data: { session } } = await supabase.auth.getSession();
@@ -41,15 +41,17 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       if (!session) {
         setUser(null);
         if (!silent) setLoading(false);
-        return;
+        return null;
       }
 
       // Si hay sesión en Supabase, traemos el perfil enriquecido del backend
       const profile = await authService.getMe();
       setUser(profile);
+      return profile;
     } catch (error) {
       console.error(error);
       setUser(null);
+      return null;
     } finally {
       if (!silent) setLoading(false);
     }

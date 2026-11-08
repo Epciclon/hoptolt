@@ -451,6 +451,7 @@ export function DashboardCalendar() {
                         alt={entry.femaleName || entry.femaleCode}
                         size="xl"
                         ring
+                        rabbitCode={entry.femaleCode}
                       />
                     </div>
 
@@ -534,6 +535,8 @@ export function DashboardCalendar() {
                           imageUrl={entry.maleImageUrl}
                           alt={entry.maleName || entry.maleCode}
                           size="sm"
+                          rabbitId={entry.maleId}
+                          rabbitCode={entry.maleCode}
                         />
                         <div className="min-w-0 text-left">
                           <p className="text-[10px] uppercase tracking-wider text-theme-faint font-bold leading-none mb-0.5">

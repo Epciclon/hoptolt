@@ -22,12 +22,12 @@ describe('CageService', () => {
 
     it('creates cage when all validations pass', async () => {
       galponRepository.findById.mockResolvedValue({ id: 1, totalCapacity: 50 });
-      cageRepository.countByGalponId.mockResolvedValue(5);
-      cageRepository.findByNumberAndGalpon.mockResolvedValue(null);
-      cageRepository.create.mockResolvedValue({ id: 1, number: 10, type: 'engorde' });
+      cageRepository.findByGalponId.mockResolvedValue([]);
+      cageRepository.bulkCreate = jest.fn().mockResolvedValue([{ id: 1, number: 1, type: 'engorde' }]);
 
-      const result = await cageService.registerCage({ number: 10, type: 'engorde', capacity: 8, galponId: 1 }, 'p1');
-      expect(result.id).toBe(1);
+      const result = await cageService.registerCage({ type: 'engorde', capacity: 8, galponId: 1 }, 'p1');
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe(1);
     });
 
     it('throws when galpon does not exist', async () => {
@@ -36,16 +36,17 @@ describe('CageService', () => {
     });
 
     it('throws when capacity reached', async () => {
-      galponRepository.findById.mockResolvedValue({ id: 1, totalCapacity: 10 });
-      cageRepository.countByGalponId.mockResolvedValue(10);
-      await expect(cageService.registerCage({ number: 11, capacity: 8, galponId: 1 }, 'p1')).rejects.toMatchObject({ statusCode: 400 });
+      galponRepository.findById.mockResolvedValue({ id: 1, totalCapacity: 2 });
+      cageRepository.findByGalponId.mockResolvedValue([{ id: 1, number: 1 }, { id: 2, number: 2 }]);
+      await expect(cageService.registerCage({ type: 'engorde', capacity: 8, galponId: 1 }, 'p1')).rejects.toMatchObject({ statusCode: 400 });
     });
 
-    it('throws when cage number duplicate', async () => {
+    it('assigns next available number when previous cage numbers exist', async () => {
       galponRepository.findById.mockResolvedValue({ id: 1, totalCapacity: 50 });
-      cageRepository.countByGalponId.mockResolvedValue(5);
-      cageRepository.findByNumberAndGalpon.mockResolvedValue({ id: 2, number: 10 });
-      await expect(cageService.registerCage({ number: 10, capacity: 8, galponId: 1 }, 'p1')).rejects.toMatchObject({ statusCode: 400 });
+      cageRepository.findByGalponId.mockResolvedValue([{ id: 1, number: 1 }]);
+      cageRepository.bulkCreate = jest.fn().mockResolvedValue([{ id: 2, number: 2, type: 'engorde' }]);
+      const result = await cageService.registerCage({ type: 'engorde', capacity: 8, galponId: 1 }, 'p1');
+      expect(result[0].number).toBe(2);
     });
   });
 

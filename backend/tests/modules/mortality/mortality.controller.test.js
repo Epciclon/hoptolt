@@ -75,10 +75,10 @@ describe('MortalityController', () => {
       await mortalityController.getMortalities(req, res, next);
 
       expect(mortalityService.getMortalities).toHaveBeenCalledWith(
-        1, 'user1', 1, 10, null,
+        1, 'user1', 1, 12, null,
         {
           startDate: undefined, endDate: undefined, races: undefined,
-          causes: undefined, profileId: undefined, all: false
+          causes: undefined, profileId: undefined, search: undefined, all: false
         }
       );
     });
@@ -90,10 +90,10 @@ describe('MortalityController', () => {
       await mortalityController.getMortalities(req, res, next);
 
       expect(mortalityService.getMortalities).toHaveBeenCalledWith(
-        1, 'user1', 1, 10, null,
+        1, 'user1', 1, 12, null,
         {
           startDate: undefined, endDate: undefined, races: undefined,
-          causes: undefined, profileId: undefined, all: false
+          causes: undefined, profileId: undefined, search: undefined, all: false
         }
       );
       expect(res.status).toHaveBeenCalledWith(200);

@@ -30,7 +30,7 @@ export function Header() {
   };
 
   return (
-    <header className="h-14 bg-card border-b border-strong flex items-center justify-between px-3 sm:px-6 sticky top-0 z-30">
+    <header className="h-14 bg-card border-b border-strong flex items-center justify-between px-3 sm:px-6 sticky top-0 z-40">
       <button
         type="button"
         onClick={() => window.dispatchEvent(new CustomEvent('toggle-sidebar'))}

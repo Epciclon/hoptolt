@@ -15,6 +15,7 @@ interface RabbitDetailsModalProps {
   onClose: () => void;
   rabbit: Rabbit | null;
   onEdit?: (rabbit: Rabbit) => void;
+  onlyCurrent?: boolean;
 }
 
 export function RabbitDetailsModal({
@@ -22,6 +23,7 @@ export function RabbitDetailsModal({
   onClose,
   rabbit,
   onEdit,
+  onlyCurrent = false,
 }: Readonly<RabbitDetailsModalProps>) {
   const [activeTab, setActiveTab] = useState<'info' | 'medical' | 'partos'>('info');
 
@@ -41,7 +43,7 @@ export function RabbitDetailsModal({
     <Dialog open={open} onClose={onClose} title={modalTitle} size="xl">
       <div className="flex flex-col h-full w-full bg-card">
         <div className="border-b border-strong">
-          <nav className="flex gap-2 sm:gap-4 px-3 sm:px-6 overflow-x-auto" aria-label="Tabs">
+          <nav className="flex gap-2 sm:gap-4 px-2.5 sm:px-6 overflow-x-auto" aria-label="Tabs">
             <button type="button"
               onClick={() => setActiveTab('info')}
               className={`py-3 sm:py-4 px-1 inline-flex items-center gap-1.5 sm:gap-2 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap transition-colors cursor-pointer ${
@@ -64,7 +66,7 @@ export function RabbitDetailsModal({
             >
               <Activity size={16} />
               <span className="sm:hidden">Crecimiento</span>
-              <span className="hidden sm:inline">Historial de Crecimiento</span>
+              <span className="hidden sm:inline">{onlyCurrent ? 'Crecimiento Actual' : 'Historial de Crecimiento'}</span>
             </button>
             {showPartosTab && (
               <button type="button"
@@ -76,7 +78,8 @@ export function RabbitDetailsModal({
                 }`}
               >
                 <Baby size={16} />
-                <span>Partos</span>
+                <span className="sm:hidden">Partos</span>
+                <span className="hidden sm:inline">{onlyCurrent ? 'Parto Actual' : 'Partos'}</span>
               </button>
             )}
           </nav>
@@ -86,12 +89,12 @@ export function RabbitDetailsModal({
           {activeTab === 'info' && (
             <div className="space-y-4 sm:space-y-6">
               <div className="flex flex-col items-center justify-center pb-2 relative">
-                <RabbitAvatar imageUrl={rabbit.imageUrl} alt={rabbit.name || rabbit.code} size="2xl" ring />
+                <RabbitAvatar imageUrl={rabbit.imageUrl} alt={rabbit.name || rabbit.code} size="2xl" ring disableQuickView />
                 <h3 className="text-lg sm:text-xl font-bold text-main mt-2">{rabbit.name || 'Sin nombre'}</h3>
                 <span className="text-xs sm:text-sm text-muted font-medium">{rabbit.code}</span>
                 {onEdit && (
                    <div className="mt-3 sm:mt-4">
-                     <Button type="button" variant="outline" size="sm" icon={<Pencil size={14} />} onClick={() => { onEdit(rabbit); onClose(); }}>
+                     <Button type="button" variant="outline" size="sm" icon={<Pencil size={14} />} onClick={() => { onEdit(rabbit); }}>
                        Editar Conejo
                      </Button>
                    </div>
@@ -150,13 +153,14 @@ export function RabbitDetailsModal({
                 rabbitBirthDate={rabbit.birthDate}
                 rabbitAge={rabbit.age}
                 rabbitWeight={rabbit.weight}
+                onlyCurrent={onlyCurrent}
               />
             </div>
           )}
 
           {activeTab === 'partos' && showPartosTab && (
             <div className="w-full min-h-[300px]">
-              <RabbitReproductionHistory rabbitId={rabbit.id} />
+              <RabbitReproductionHistory rabbitId={rabbit.id} onlyCurrent={onlyCurrent} />
             </div>
           )}
         </div>

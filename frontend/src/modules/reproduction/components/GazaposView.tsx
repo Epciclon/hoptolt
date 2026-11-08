@@ -91,7 +91,6 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
 
   const lactancias = reproductions.filter(r => {
     if (r.status !== 'lactancia') return false;
-    if (r.isFemaleDeleted) return false;
     if (filterRace && String(r.femaleRace).toLowerCase() !== filterRace.toLowerCase()) return false;
     return matchesSmartSearch(searchTerm, r.cageNumber, r.femaleCode, r.femaleName);
   });
@@ -467,7 +466,7 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
         <div className="space-y-4">
           <div className="bg-theme-surface border border-strong rounded-xl p-3.5">
             <p className="text-sm text-main leading-relaxed">
-              Selecciona la razón por la cual la lactancia ha fallado, como enfermedad grave o pérdida de crías. El registro pasará al Historial como Fallido.
+              Selecciona el motivo por el cual se suspende la lactancia. El registro pasará al historial como fallido y la coneja quedará libre.
             </p>
           </div>
           
@@ -486,7 +485,6 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
                 { value: 'Mortalidad total de la camada', label: 'Mortalidad total de la camada' },
                 { value: 'Madre mató o abandonó a las crías', label: 'Madre mató o abandonó a las crías' },
                 { value: 'Enfermedad grave o Agalactia', label: 'Enfermedad grave o Agalactia' },
-                { value: 'Muerte de la madre', label: 'Muerte de la madre' },
                 { value: 'Otra', label: 'Otra' }
               ]}
               required
@@ -771,41 +769,56 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between pb-2 border-b border-default/50">
-                  <span className="text-muted font-medium">Gazapos Vivos</span>
-                  <div className="flex items-center gap-2">
-                    <span className={`font-bold text-sm sm:text-base ${hasKits ? 'text-main' : 'text-amber-600 dark:text-amber-400'}`}>
+                <div className="flex flex-col gap-2 pb-2.5 border-b border-default/50">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted font-medium">Gazapos Vivos</span>
+                    <span className={`font-bold shrink-0 text-right ${hasKits ? 'text-main' : 'text-amber-600 dark:text-amber-400'}`}>
                       {hasKits ? selectedDetails.bornKits : 'Sin registrar'}
                     </span>
-                    {hasKits && (canCreate || canUpdate) && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 px-2 text-xs text-primary-600 hover:text-primary-700 font-semibold"
-                        onClick={() => {
-                          lastDetailsReproduction.current = selectedDetails;
-                          setToRegisterKits(selectedDetails);
-                          setBornKits(selectedDetails.bornKits ?? '');
-                          setSelectedDetails(null);
-                        }}
-                      >
-                        Editar
-                      </Button>
-                    )}
                   </div>
+                  {(canCreate || canUpdate) && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="w-full h-auto py-1.5 px-3 text-xs justify-center text-primary-600 dark:text-primary-400 hover:text-primary-700 bg-primary-500/10 hover:bg-primary-500/20 border border-primary-500/20 rounded-lg font-semibold"
+                      onClick={() => {
+                        lastDetailsReproduction.current = selectedDetails;
+                        setToRegisterKits(selectedDetails);
+                        setBornKits(hasKits ? (selectedDetails.bornKits ?? '') : '');
+                        setSelectedDetails(null);
+                      }}
+                    >
+                      {hasKits ? 'Editar Gazapos' : 'Registrar Gazapos'}
+                    </Button>
+                  )}
                 </div>
 
-                <div className="flex flex-col items-center justify-center text-center gap-1 pt-1.5">
+                <div className="flex flex-col items-center justify-center text-center gap-0.5 pt-1.5">
                   <span className="text-muted font-medium text-xs">Estado de Lactancia</span>
-                  <span className={`font-bold text-xs sm:text-sm ${readyToWean ? 'text-emerald-600 dark:text-emerald-400' : 'text-main'}`}>
-                    {(() => {
-                      if (daysInLactation >= 30) return 'Lista para destetar';
-                      const remainingDays = 30 - daysInLactation;
-                      const suffix = remainingDays === 1 ? '' : 's';
-                      return `En curso • Faltan ${remainingDays} día${suffix}`;
-                    })()}
-                  </span>
+                  {readyToWean ? (
+                    <>
+                      <span className="font-bold text-xs text-emerald-600 dark:text-emerald-400">
+                        Lista para destetar
+                      </span>
+                      <span className="text-muted font-medium text-xs">
+                        Etapa de 30 días completada
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-bold text-xs text-main">
+                        En curso
+                      </span>
+                      <span className="text-muted font-medium text-xs">
+                        {(() => {
+                          const remainingDays = 30 - daysInLactation;
+                          const suffix = remainingDays === 1 ? '' : 's';
+                          return `Faltan ${remainingDays} día${suffix}`;
+                        })()}
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -825,10 +838,11 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
                     Cancelar Lactancia
                   </Button>
                 )}
-                {hasKits && (canCreate || canUpdate) && (
+                {(canCreate || canUpdate) && (
                   <Button
                     type="button"
                     variant="primary"
+                    disabled={!hasKits || (selectedDetails.bornKits ?? 0) <= 0}
                     className="flex-1 justify-center py-2.5 text-sm font-semibold"
                     onClick={() => {
                       lastDetailsReproduction.current = selectedDetails;
@@ -837,21 +851,6 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
                     }}
                   >
                     Baja de Gazapos
-                  </Button>
-                )}
-                {!hasKits && (canCreate || canUpdate) && (
-                  <Button
-                    type="button"
-                    variant="primary"
-                    className="flex-1 justify-center py-2.5 text-sm font-semibold"
-                    onClick={() => {
-                      lastDetailsReproduction.current = selectedDetails;
-                      setToRegisterKits(selectedDetails);
-                      setBornKits('');
-                      setSelectedDetails(null);
-                    }}
-                  >
-                    Registrar Gazapos
                   </Button>
                 )}
               </div>

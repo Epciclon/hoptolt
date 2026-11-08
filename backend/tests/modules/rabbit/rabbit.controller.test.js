@@ -161,12 +161,12 @@ describe('RabbitController', () => {
 
   describe('suggestName', () => {
     it('should call suggestName and return 200', async () => {
-      req = { query: { sex: 'macho' } };
-      rabbitService.suggestName.mockReturnValue('Thor');
+      req = { query: { sex: 'macho' }, galponId: 1 };
+      rabbitService.suggestName.mockResolvedValue('Thor');
 
       await rabbitController.suggestName(req, res, next);
 
-      expect(rabbitService.suggestName).toHaveBeenCalledWith('macho');
+      expect(rabbitService.suggestName).toHaveBeenCalledWith('macho', 1);
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({ success: true, name: 'Thor' });
     });

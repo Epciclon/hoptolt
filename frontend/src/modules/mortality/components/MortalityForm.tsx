@@ -150,7 +150,7 @@ export function MortalityForm({ selectedRabbits, onSuccess, onCancel }: Readonly
               key={r.id}
               className="flex items-center gap-3 bg-card border border-strong rounded-xl p-2.5 shadow-sm w-full min-w-0"
             >
-              <RabbitAvatar imageUrl={r.imageUrl} alt={r.code} size="sm" />
+              <RabbitAvatar imageUrl={r.imageUrl} alt={r.code} size="sm" rabbitId={r.id} rabbitCode={r.code} />
               <div className="flex flex-col leading-tight justify-center min-w-0 flex-1">
                 <span className="text-sm font-semibold text-main truncate">
                   {r.name || r.code}

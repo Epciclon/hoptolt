@@ -82,7 +82,7 @@ describe('FeedingController', () => {
       await feedingController.getFeedings(req, res, next);
 
       expect(feedingService.getFeedings).toHaveBeenCalledWith(
-        1, 'user1', 1, 10,
+        1, 'user1', 1, 12,
         { startDate: undefined, endDate: undefined, races: undefined, profileId: undefined, cageType: undefined, all: false }
       );
     });

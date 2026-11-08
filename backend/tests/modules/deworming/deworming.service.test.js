@@ -16,6 +16,7 @@ describe('DewormingService', () => {
 
   describe('registerDeworming', () => {
     beforeEach(() => {
+      FarmMember.findOne.mockResolvedValue({ id: 1, role: 'owner', status: 'active' });
       Galpon.findByPk.mockResolvedValue({ id: 1, dewormingPeriod: 30 });
       Rabbit.findAll = jest.fn().mockResolvedValue([{ id: 1, code: 'R001', name: 'Bunny', galponId: 1 }]);
       Assignment.findAll = jest.fn().mockResolvedValue([{ rabbitId: 1, status: 'asignado' }]);

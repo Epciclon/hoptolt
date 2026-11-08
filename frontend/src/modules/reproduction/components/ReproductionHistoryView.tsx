@@ -27,16 +27,21 @@ type HistoryRecord =
 const renderKits = (row: HistoryRecord) => {
   if (row.type === 'mortality') {
     const amount = row.numberOfKits;
-    return <span className="font-medium text-main">{amount === 1 ? '1 muerto' : `${amount} muertos`}</span>;
+    return <span className="font-medium text-main whitespace-nowrap">{amount === 1 ? '1 muerto' : `${amount} muertos`}</span>;
   }
   const hasKits = row.bornKits !== null && row.bornKits !== undefined && row.bornKits > 0;
-  if (!hasKits) return <span className="text-theme-faint">-</span>;
+  if (!hasKits) {
+    if (row.status === 'completado') {
+      return <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 whitespace-nowrap">Sin registrar</span>;
+    }
+    return <span className="text-theme-faint">-</span>;
+  }
   
   const isFallido = row.status === 'fallido';
   const label = isFallido ? 'muerto' : 'vivo';
   const labelPlural = isFallido ? 'muertos' : 'vivos';
   const text = row.bornKits === 1 ? `1 ${label}` : `${row.bornKits} ${labelPlural}`;
-  return <span className="font-medium text-main">{text}</span>;
+  return <span className="font-medium text-main whitespace-nowrap">{text}</span>;
 };
 
 const historyColumns: Column<HistoryRecord>[] = [
@@ -115,11 +120,11 @@ const historyColumns: Column<HistoryRecord>[] = [
     render: (row) => {
       if (row.type === 'reproduction') {
         if (row.status === 'completado') {
-          return <span className="px-2.5 py-1 bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs font-medium rounded-full border border-emerald-200 dark:border-emerald-500/20">Completado</span>;
+          return <span className="inline-flex items-center justify-center whitespace-nowrap px-2.5 py-1 bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs font-medium rounded-full border border-emerald-200 dark:border-emerald-500/20">Completado</span>;
         }
-        return <span className="px-2.5 py-1 bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400 text-xs font-medium rounded-full border border-red-200 dark:border-red-500/20">Fallido</span>;
+        return <span className="inline-flex items-center justify-center whitespace-nowrap px-2.5 py-1 bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400 text-xs font-medium rounded-full border border-red-200 dark:border-red-500/20">Fallido</span>;
       } else {
-        return <span className="px-2.5 py-1 bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 text-xs font-medium rounded-full border border-blue-200 dark:border-blue-500/20">Baja Parcial</span>;
+        return <span className="inline-flex items-center justify-center whitespace-nowrap px-2.5 py-1 bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 text-xs font-medium rounded-full border border-blue-200 dark:border-blue-500/20">Baja Parcial</span>;
       }
     }
   },
@@ -178,7 +183,7 @@ function RabbitProfileCard({
     <div className="bg-theme-surface border border-strong rounded-lg p-3">
       <p className="text-xs text-muted font-medium mb-1">Coneja</p>
       <div className="flex items-center gap-3 mt-2">
-        <RabbitAvatar imageUrl={imageUrl} alt="Coneja" size="md" />
+        <RabbitAvatar imageUrl={imageUrl} alt={name || code || 'Coneja'} size="md" rabbitCode={code} />
         <div className="flex flex-col leading-tight">
           <span className="text-sm font-bold text-main">{name || code}</span>
           {name && <span className="text-xs text-muted">{code}</span>}
@@ -199,7 +204,7 @@ function PartnerProfileCard({
     <div className="bg-theme-surface border border-strong rounded-lg p-3">
       <p className="text-xs text-muted font-medium mb-1">Pareja</p>
       <div className="flex items-center gap-3 mt-2">
-        <RabbitAvatar imageUrl={imageUrl} alt="Pareja" size="md" />
+        <RabbitAvatar imageUrl={imageUrl} alt={name || code || 'Pareja'} size="md" rabbitCode={code} />
         <div className="flex flex-col leading-tight">
           {code ? (
             <>
@@ -329,11 +334,14 @@ function ReproductionDetails({ record: selectedRecord }: Readonly<{ record: Repr
         </p>
       </div>
 
-      {!!selectedRecord.bornKits && (
+      {(Boolean(selectedRecord.bornKits) || selectedRecord.status === 'completado') && (
         <div className="bg-theme-surface border border-strong rounded-lg p-3 w-full">
           <p className="text-xs text-muted font-medium mb-1">Cantidad de Gazapos</p>
           <p className="text-sm font-semibold text-main mt-2">
             {(() => {
+              if (!selectedRecord.bornKits) {
+                return <span className="text-amber-600 dark:text-amber-400">Sin registrar</span>;
+              }
               const isFallido = selectedRecord.status === 'fallido';
               const labelSingular = isFallido ? 'muerto' : 'vivo';
               const labelPlural = isFallido ? 'muertos' : 'vivos';
@@ -408,7 +416,7 @@ export function ReproductionHistoryView({ profileId, date }: Readonly<Reproducti
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-1 items-start">
-        <p className="text-base font-medium text-main">Aquí se encuentran los registros históricos de montas que han finalizado exitosamente destetadas o que han fallado por abortos o muertes.</p>
+        <p className="text-sm sm:text-base font-medium text-main">Historial de ciclos reproductivos completados, partos fallidos y bajas de gazapos.</p>
       </div>
       <FilterBar
         searchValue={searchTerm}

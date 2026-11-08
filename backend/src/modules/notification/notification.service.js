@@ -8,6 +8,7 @@ const AppError = require('../../errors/AppError');
 
 const ongoingChecks = new Map();
 const lastChecksTimestamp = new Map();
+const ongoingShiftAuditLocks = new Set();
 
 class NotificationService {
     async checkAndCreateBirthNotifications(profileId) {
@@ -309,14 +310,103 @@ class NotificationService {
         return rawData;
     }
 
+    _extractIncidentCoveredCages(incidents) {
+        let coversAllFeeding = false;
+        const coveredCageIds = new Set();
+        const coveredCageNumbers = new Set();
+
+        for (const inc of incidents) {
+            const mod = String(inc.module || '').toLowerCase().trim();
+            const isFeedingOrGeneral = !mod || mod === 'alimentacion' || mod === 'alimentación' || mod === 'feeding' || mod === 'general';
+            if (!isFeedingOrGeneral) continue;
+
+            const cagesArr = Array.isArray(inc.cages) ? inc.cages : [];
+            if (cagesArr.length === 0 && !inc.cageId && (mod === 'alimentacion' || mod === 'alimentación' || mod === 'feeding')) {
+                coversAllFeeding = true;
+                break;
+            }
+            if (inc.cageId) coveredCageIds.add(Number(inc.cageId));
+            for (const c of cagesArr) {
+                if (c?.id) coveredCageIds.add(Number(c.id));
+                if (c?.number !== undefined) coveredCageNumbers.add(Number(c.number));
+            }
+        }
+
+        return { coversAllFeeding, coveredCageIds, coveredCageNumbers };
+    }
+
+    async _computeGalponUnjustifiedUnfedCages(galponId, shift, dateStr) {
+        const { Cage, Assignment, Feeding, Incident } = require('../../domain/models');
+        const startOfDay = new Date(`${dateStr}T00:00:00-05:00`);
+        const endOfDay = new Date(`${dateStr}T23:59:59.999-05:00`);
+
+        const activeAssignments = await Assignment.findAll({
+            where: { status: 'asignado' },
+            include: [{
+                model: Cage,
+                as: 'cage',
+                where: { galponId },
+                required: true,
+                attributes: ['id', 'number']
+            }],
+            attributes: ['cageId']
+        });
+
+        const cageMap = new Map();
+        for (const a of activeAssignments) {
+            const cId = Number(a.cageId);
+            const cNum = Number(a.cage?.number ?? cId);
+            cageMap.set(cId, cNum);
+        }
+        if (cageMap.size === 0) return [];
+
+        const allCageIds = Array.from(cageMap.keys());
+        const [fedRecords, incidents] = await Promise.all([
+            Feeding.findAll({
+                where: {
+                    galponId,
+                    cageId: { [Op.in]: allCageIds },
+                    shift,
+                    feedingDate: { [Op.between]: [startOfDay, endOfDay] }
+                },
+                attributes: ['cageId']
+            }),
+            Incident.findAll({
+                where: {
+                    galponId,
+                    createdAt: { [Op.between]: [startOfDay, endOfDay] }
+                },
+                attributes: ['module', 'cageId', 'cages']
+            })
+        ]);
+
+        const { coversAllFeeding, coveredCageIds, coveredCageNumbers } = this._extractIncidentCoveredCages(incidents);
+        if (coversAllFeeding) return [];
+
+        const fedCageIds = new Set(fedRecords.map(f => Number(f.cageId)));
+        const unjustifiedNumbers = [];
+
+        for (const [cId, cNum] of cageMap.entries()) {
+            if (fedCageIds.has(cId)) continue;
+            if (coveredCageIds.has(cId) || coveredCageNumbers.has(cNum)) continue;
+            unjustifiedNumbers.push(cNum);
+        }
+
+        return unjustifiedNumbers.sort((a, b) => a - b);
+    }
+
     async _recordPendingFeedingShiftAudit(d) {
-        if (!d.galponId || !d.shift || !d.date || d.unfedCount <= 0) return;
+        if (!d?.galponId || !d?.shift || !d?.date || d.unfedCount <= 0) return;
+
+        const cleanGalponId = Number(d.galponId);
+        const lockKey = `${cleanGalponId}_${d.date}_${d.shift}`;
+        if (ongoingShiftAuditLocks.has(lockKey)) return;
+        ongoingShiftAuditLocks.add(lockKey);
 
         const { AuditLog } = require('../../domain/models');
         const { recordSystemChange } = require('../../common/helpers/audit.helper');
 
         try {
-            const cleanGalponId = Number(d.galponId);
             const existingLog = await AuditLog.findOne({
                 where: {
                     entity: 'feeding',
@@ -327,48 +417,56 @@ class NotificationService {
                 }
             });
 
-            if (!existingLog) {
-                const shiftLabel = d.shift === 'mañana' ? 'la mañana' : 'la tarde';
-                const cagesLabel = d.unfedCount === 1 ? '1 jaula' : `${d.unfedCount} jaulas`;
-                const cagesListStr = Array.isArray(d.cages) && d.cages.length > 0 ? ` [jaulas: ${d.cages.join(', ')}]` : '';
+            if (existingLog) return;
 
-                await recordSystemChange({
-                    galponId: cleanGalponId,
-                    action: 'Turno cerrado con pendientes',
-                    entity: 'feeding',
-                    entityId: cleanGalponId,
-                    itemName: `Turno de ${shiftLabel}`,
-                    summary: `HopTolt registró el cierre del turno de ${shiftLabel} con ${cagesLabel}${cagesListStr} sin alimentar y sin reporte de novedad`,
-                    cages: d.cages || [],
-                    unfedCount: d.unfedCount,
-                    shift: d.shift,
-                    date: d.date
-                });
-            }
+            const unjustifiedCages = await this._computeGalponUnjustifiedUnfedCages(cleanGalponId, d.shift, d.date);
+            if (unjustifiedCages.length === 0) return;
+
+            const shiftLabel = d.shift === 'mañana' ? 'la mañana' : 'la tarde';
+            const cagesLabel = unjustifiedCages.length === 1 ? '1 jaula' : `${unjustifiedCages.length} jaulas`;
+
+            await recordSystemChange({
+                galponId: cleanGalponId,
+                action: 'Turno cerrado con pendientes',
+                entity: 'feeding',
+                entityId: cleanGalponId,
+                itemName: `Turno de ${shiftLabel}`,
+                summary: `HopTolt registró el cierre del turno de ${shiftLabel} con ${cagesLabel} sin alimentar y sin reporte de novedad`,
+                cages: unjustifiedCages,
+                unfedCount: unjustifiedCages.length,
+                shift: d.shift,
+                date: d.date
+            });
         } catch (logErr) {
             console.error('Error al registrar auditoría de omisión de alimentación:', logErr);
+        } finally {
+            ongoingShiftAuditLocks.delete(lockKey);
         }
     }
 
     async _cleanupInactiveShiftReminders(profileId) {
         const { Notification } = require('../../domain/models');
-        const { Op } = require('sequelize');
 
         const existingReminders = await Notification.findAll({
             where: { profileId, type: 'warning' }
         });
         const toDelete = [];
-        const auditPayloads = [];
+        const uniqueShiftPayloads = new Map();
 
         for (const n of existingReminders) {
             const d = this._parseNotificationData(n.data);
             if (d?.type !== 'feeding_reminder') continue;
 
             toDelete.push(n.id);
-            auditPayloads.push(d);
+            const key = `${d.galponId}_${d.date}_${d.shift}`;
+            if (!uniqueShiftPayloads.has(key)) {
+                uniqueShiftPayloads.set(key, d);
+            }
         }
 
-        await Promise.all(auditPayloads.map(d => this._recordPendingFeedingShiftAudit(d)));
+        for (const d of uniqueShiftPayloads.values()) {
+            await this._recordPendingFeedingShiftAudit(d);
+        }
 
         if (toDelete.length > 0) {
             await Notification.destroy({ where: { id: { [Op.in]: toDelete } } });
@@ -428,9 +526,8 @@ class NotificationService {
 
     async _findPendingFeedingForGalpon(entry, activeShift, startOfDay, endOfDay) {
         const { Cage, Assignment, Feeding, WorkerCage } = require('../../domain/models');
-        const { Op } = require('sequelize');
         const { galpon, isOwner, memberId } = entry;
-        let cageIdsToCheck = [];
+        const cageNumberById = new Map();
 
         if (isOwner) {
             const activeAssignments = await Assignment.findAll({
@@ -440,11 +537,14 @@ class NotificationService {
                     as: 'cage',
                     where: { galponId: galpon.id },
                     required: true,
-                    attributes: ['id']
+                    attributes: ['id', 'number']
                 }],
                 attributes: ['cageId']
             });
-            cageIdsToCheck = Array.from(new Set(activeAssignments.map(a => Number(a.cageId))));
+            for (const a of activeAssignments) {
+                const cId = Number(a.cageId);
+                cageNumberById.set(cId, Number(a.cage?.number ?? cId));
+            }
         } else {
             const workerCages = await WorkerCage.findAll({ where: { farmMemberId: memberId } });
             const assignedCageIds = workerCages.map(wc => Number(wc.cageId));
@@ -459,14 +559,18 @@ class NotificationService {
                         as: 'cage',
                         where: { galponId: galpon.id },
                         required: true,
-                        attributes: ['id']
+                        attributes: ['id', 'number']
                     }],
                     attributes: ['cageId']
                 });
-                cageIdsToCheck = Array.from(new Set(activeAssignments.map(a => Number(a.cageId))));
+                for (const a of activeAssignments) {
+                    const cId = Number(a.cageId);
+                    cageNumberById.set(cId, Number(a.cage?.number ?? cId));
+                }
             }
         }
 
+        const cageIdsToCheck = Array.from(cageNumberById.keys());
         if (cageIdsToCheck.length === 0) return null;
 
         const fedRecords = await Feeding.findAll({
@@ -483,10 +587,16 @@ class NotificationService {
 
         if (unfedCageIds.length === 0) return null;
 
+        const unfedCageNumbers = unfedCageIds
+            .map(id => cageNumberById.get(id) ?? id)
+            .sort((a, b) => a - b);
+
         return {
             galpon,
+            isOwner: Boolean(isOwner),
             unfedCount: unfedCageIds.length,
-            unfedCageIds
+            unfedCageIds,
+            unfedCageNumbers
         };
     }
 
@@ -549,8 +659,9 @@ class NotificationService {
                         shift: activeShift,
                         date: todayStr,
                         galponId,
+                        isOwner: Boolean(pendingInfo.isOwner),
                         unfedCount: pendingInfo.unfedCount,
-                        cages: pendingInfo.unfedCageIds || [],
+                        cages: pendingInfo.unfedCageNumbers || pendingInfo.unfedCageIds || [],
                         lastNotifiedAt: new Date().toISOString()
                     },
                     createdAt: new Date()
@@ -986,8 +1097,13 @@ class NotificationService {
             notificationRepository.countByProfileId(profileId, queryOptions)
         ]);
 
+        const dtos = (notifications || []).map(toNotificationDTO);
+        if (typeof growthService.enrichGrowthNotifications === 'function') {
+            await growthService.enrichGrowthNotifications(dtos);
+        }
+
         return createPaginatedResponse(
-            (notifications || []).map(toNotificationDTO),
+            dtos,
             pageValue,
             limitValue,
             total || 0

@@ -6,9 +6,66 @@ on:
   pull_request:
     branches: [ "main" ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  architecture-checks:
+    name: Validación de Arquitectura e Integridad
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verificar arquitectura de carpetas, capas y cobertura modular
+        run: node scripts/validate-architecture.js
+
+  backend-checks:
+    name: Revisión del Backend
+    needs: architecture-checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ./backend/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Verificar sintaxis del punto de entrada
+        run: node --check src/app.js
+
+      - name: Ejecutar Pruebas Unitarias e Integración con Cobertura
+        run: npm run test:coverage
+
+      - name: Guardar Reporte de Cobertura Backend
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporte-cobertura-backend
+          path: backend/coverage/
+          retention-days: 10
+
   frontend-checks:
     name: Revisión del Frontend
+    needs: architecture-checks
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -31,13 +88,13 @@ jobs:
       - name: Ejecutar Linter
         run: npm run lint
 
-      - name: Revisar Tipado (TypeScript)
+      - name: Revisar Tipado TypeScript
         run: npx tsc --noEmit
 
-      - name: Ejecutar Pruebas Unitarias (Vitest)
+      - name: Ejecutar Pruebas Unitarias Vitest
         run: npm run test
 
-      - name: Compilar App (Build Next.js)
+      - name: Compilar App Next.js
         run: npm run build
         env:
           NEXT_PUBLIC_SUPABASE_URL: "https://fake.supabase.co"
@@ -47,9 +104,9 @@ jobs:
       - name: Instalar Navegadores de Playwright
         run: npx playwright install --with-deps chromium
 
-      - name: Ejecutar Pruebas E2E (Playwright)
+      - name: Ejecutar Pruebas E2E Playwright
         run: npm run test:e2e
-        
+
       - name: Guardar Reporte de Playwright
         if: always()
         uses: actions/upload-artifact@v4
@@ -57,27 +114,3 @@ jobs:
           name: reporte-playwright
           path: frontend/playwright-report/
           retention-days: 10
-
-  backend-checks:
-    name: Revisión del Backend
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./backend
-
-    steps:
-      - name: Descargar repositorio
-        uses: actions/checkout@v4
-
-      - name: Configurar Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: ./backend/package-lock.json
-
-      - name: Instalar dependencias
-        run: npm ci
-
-      - name: Ejecutar Pruebas Unitarias e Integración (Jest)
-        run: npm run test

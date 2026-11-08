@@ -33,13 +33,13 @@ export function MortalityDashboard() {
       <div className="w-full">
         {activeTab === 'registro' || !isOwner ? (
           <>
-            <SectionMessage message="En esta fase se puede registrar las bajas o mortalidades ocurridas." />
+            <SectionMessage message="Selecciona el ejemplar fallecido e indica la causa para actualizar el inventario del galpón." />
             <MortalityCatalog />
           </>
         ) : null}
         {isOwner && activeTab === 'historial' && (
           <>
-            <SectionMessage message="En esta fase se puede revisar el historial diario de mortalidades registradas en la granja por trabajador. Selecciona un trabajador para revisar su registro de actividades diarias." />
+            <SectionMessage message="Consulta el registro histórico de bajas reportadas por cada integrante del galpón." />
             <AuditHistoryView 
               moduleName="mortality"
               renderTable={(profileId, date) => <MortalityTable profileId={profileId} date={date} />}

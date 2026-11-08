@@ -163,7 +163,7 @@ export function WeaningWizard({ open, onClose, onFinish, reproduction, finishing
   return (
     <>
     <Dialog open={open && !showEarlyFinishConfirm} onClose={handleCloseAttempt} title={title} size="xl">
-      <div className="p-4" ref={topRef}>
+      <div ref={topRef}>
 
         {/* Paso previo: La coneja no tiene gazapos registrados */}
         {step === 'unregistered' && (
@@ -446,9 +446,9 @@ export function WeaningWizard({ open, onClose, onFinish, reproduction, finishing
       title="Finalizar anticipadamente"
       size="sm"
     >
-      <div className="p-4 flex flex-col gap-4">
+      <div className="flex flex-col gap-4">
         <p className="text-main text-sm">
-          Ya has registrado <strong>{currentIndex}</strong> cría(s) de las {keepCount} que indicaste.
+          Ya has registrado <strong>{currentIndex}</strong> {currentIndex === 1 ? 'cría' : 'crías'} de las {keepCount} que indicaste.
         </p>
         <div className="bg-theme-surface border border-strong rounded-xl p-3">
           <p className="text-muted text-xs">

@@ -27,38 +27,36 @@ const isWarningNotification = (n: any) => {
     t === 'weaning_alert';
 };
 
-const getWarningWeight = (n: any) => {
-  if (n.data?.isContract) return 95;
-  const t = n.data?.type;
-  if (t === 'feeding_reminder') return 100;
-  if (t === 'birth_warning') return 90;
-  if (t === 'weaning_alert') return 80;
-  if (t === 'cleaning_warning') return 70;
-  if (n.type === 'warning') return 60;
-  return 10;
+const getAlertVersion = (n: any) => {
+  const count = n.data?.cagesCount || n.data?.count || 1;
+  const updated = new Date(n.updatedAt || n.createdAt).getTime();
+  return `${n.id}_${count}_${updated}`;
 };
 
-const isPreviewSeenOrDismissed = (id: number, userId: string) => {
+const isPreviewSeenOrDismissed = (n: any, userId: string) => {
   if (typeof window === 'undefined') return false;
+  const ver = getAlertVersion(n);
   return (
-    sessionStorage.getItem(`hoptolt_prev_seen_${userId}_${id}`) === 'true' ||
-    localStorage.getItem(`hoptolt_prev_seen_${userId}_${id}`) === 'true' ||
-    sessionStorage.getItem(`hoptolt_prev_dismissed_${userId}_${id}`) === 'true' ||
-    localStorage.getItem(`hoptolt_prev_dismissed_${userId}_${id}`) === 'true'
+    sessionStorage.getItem(`hoptolt_prev_seen_${userId}_${ver}`) === 'true' ||
+    localStorage.getItem(`hoptolt_prev_seen_${userId}_${ver}`) === 'true' ||
+    sessionStorage.getItem(`hoptolt_prev_dismissed_${userId}_${ver}`) === 'true' ||
+    localStorage.getItem(`hoptolt_prev_dismissed_${userId}_${ver}`) === 'true'
   );
 };
 
-const markPreviewSeen = (id: number, userId: string) => {
+const markPreviewSeen = (n: any, userId: string) => {
   if (typeof window !== 'undefined') {
-    sessionStorage.setItem(`hoptolt_prev_seen_${userId}_${id}`, 'true');
-    localStorage.setItem(`hoptolt_prev_seen_${userId}_${id}`, 'true');
+    const ver = getAlertVersion(n);
+    sessionStorage.setItem(`hoptolt_prev_seen_${userId}_${ver}`, 'true');
+    localStorage.setItem(`hoptolt_prev_seen_${userId}_${ver}`, 'true');
   }
 };
 
-const markPreviewDismissed = (id: number, userId: string) => {
+const markPreviewDismissed = (n: any, userId: string) => {
   if (typeof window !== 'undefined') {
-    sessionStorage.setItem(`hoptolt_prev_dismissed_${userId}_${id}`, 'true');
-    localStorage.setItem(`hoptolt_prev_dismissed_${userId}_${id}`, 'true');
+    const ver = getAlertVersion(n);
+    sessionStorage.setItem(`hoptolt_prev_dismissed_${userId}_${ver}`, 'true');
+    localStorage.setItem(`hoptolt_prev_dismissed_${userId}_${ver}`, 'true');
   }
 };
 
@@ -66,25 +64,25 @@ function selectCandidateWarning(unreadWarnings: any[], userId: string, now: numb
   const feedingReminder = unreadWarnings.find(n => n.data?.type === 'feeding_reminder');
 
   if (feedingReminder) {
-    const reminderId = feedingReminder.id;
+    const reminderVer = getAlertVersion(feedingReminder);
     const shift = feedingReminder.data?.shift || 'default';
     const date = feedingReminder.data?.date || '';
     const storageTimeKey = `hoptolt_last_feeding_popup_${userId}_${shift}_${date}`;
     const lastTimeStr = localStorage.getItem(storageTimeKey);
     const lastTime = lastTimeStr ? Number.parseInt(lastTimeStr, 10) : 0;
 
-    const isNeverSeen = !isPreviewSeenOrDismissed(reminderId, userId);
+    const isNeverSeen = !isPreviewSeenOrDismissed(feedingReminder, userId);
     const FEEDING_INTERVAL = 60 * 60 * 1000;
     const isIntervalDue = lastTime > 0 && (now - lastTime >= FEEDING_INTERVAL);
 
-    if ((isNeverSeen || isIntervalDue) && !sessionStorage.getItem(`hoptolt_prev_dismissed_${userId}_${reminderId}`)) {
+    if ((isNeverSeen || isIntervalDue) && !sessionStorage.getItem(`hoptolt_prev_dismissed_${userId}_${reminderVer}`)) {
       return feedingReminder;
     }
   }
 
   return unreadWarnings.find(n => {
     if (n.data?.type === 'feeding_reminder') return false;
-    return !isPreviewSeenOrDismissed(n.id, userId);
+    return !isPreviewSeenOrDismissed(n, userId);
   }) || null;
 }
 
@@ -122,10 +120,9 @@ function getWarningActionConfig(notification: any) {
 
 function sortAlertNotifications(alerts: any[]) {
   return [...alerts].sort((a, b) => {
-    const pA = getWarningWeight(a);
-    const pB = getWarningWeight(b);
-    if (pA !== pB) return pB - pA;
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    const timeA = new Date(a.updatedAt || a.createdAt).getTime();
+    const timeB = new Date(b.updatedAt || b.createdAt).getTime();
+    return timeB - timeA;
   });
 }
 
@@ -190,8 +187,25 @@ function WarningFloatingPreview({
               <p className="text-sm text-muted mt-1 leading-relaxed">
                 {renderBoldMessageParts(warning.message)}
               </p>
+              {warning.data?.type === 'cleaning_warning' && (warning.data?.pendingCages?.length ?? 0) > 0 && (
+                <div className="mt-2.5 p-2 bg-theme-surface rounded-lg border border-default text-xs pointer-events-auto">
+                  <p className="text-[11px] text-main font-medium mb-1">
+                    Jaulas con falta de limpieza • {warning.data.cagesCount || warning.data.pendingCages.length}
+                  </p>
+                  <ul className="divide-y divide-default bg-card rounded border border-default max-h-28 overflow-y-auto">
+                    {warning.data.pendingCages.map((cage: any) => (
+                      <li key={cage.cageCode || cage.cageId} className="flex items-center justify-between py-1 px-2.5 gap-2">
+                        <span className="font-medium text-main">Jaula {cage.cageCode}</span>
+                        <span className="text-[10px] font-medium text-main bg-theme-surface px-2 py-0.5 rounded border border-default shrink-0">
+                          {cage.daysWithoutCleaning} {cage.daysWithoutCleaning === 1 ? 'día' : 'días'} sin limpieza
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <div className="mt-3 flex items-center justify-between gap-2 pt-2.5 border-t border-default">
-                <p className="text-xs text-theme-faint">{formatTime(warning.createdAt)}</p>
+                <p className="text-xs text-theme-faint">{formatTime(warning.updatedAt || warning.createdAt)}</p>
                 <div className="pointer-events-auto">
                   <Button
                     size="sm"
@@ -261,7 +275,27 @@ function AlertPopoverItem({ notification, onSelect, onDelete }: Readonly<AlertPo
           <p className="text-xs text-muted mt-1 leading-relaxed">
             {renderBoldMessageParts(notification.message)}
           </p>
-          <p className="text-xs text-theme-faint mt-2 font-medium">{formatTime(notification.createdAt)}</p>
+          <p className="text-xs text-theme-faint mt-2 font-medium">{formatTime(notification.updatedAt || notification.createdAt)}</p>
+
+          {notification.data?.type === 'cleaning_warning' && (notification.data?.pendingCages?.length ?? 0) > 0 && (
+            <div className="pointer-events-auto mt-2 flex flex-col gap-1 p-2 rounded-md bg-theme-surface border border-default">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] text-main font-medium">
+                  Jaulas con falta de limpieza • {notification.data.cagesCount || notification.data.pendingCages.length}
+                </span>
+              </div>
+              <ul className="text-[11px] text-main max-h-28 overflow-y-auto bg-card rounded p-1 border border-default divide-y divide-default">
+                {notification.data.pendingCages.map((cage: any) => (
+                  <li key={cage.cageCode || cage.cageId} className="flex items-center justify-between py-1 px-1.5 gap-2">
+                    <span className="font-medium text-main">Jaula {cage.cageCode}</span>
+                    <span className="text-[10px] font-medium text-main bg-theme-surface px-1.5 py-0.5 rounded border border-default shrink-0">
+                      {cage.daysWithoutCleaning} {cage.daysWithoutCleaning === 1 ? 'día' : 'días'} sin limpieza
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -356,8 +390,11 @@ export function AlertsIcon() {
     const userId = user.id;
     const unreadWarnings = sortAlertNotifications(alertNotifications.filter(n => !n.read));
 
-    if (activeWarningRef.current && !unreadWarnings.some(n => n.id === activeWarningRef.current.id)) {
-      clearActiveWarningTimerAndPreview();
+    if (activeWarningRef.current) {
+      const currentInList = unreadWarnings.find(n => n.id === activeWarningRef.current.id);
+      if (!currentInList || getAlertVersion(currentInList) !== getAlertVersion(activeWarningRef.current)) {
+        clearActiveWarningTimerAndPreview();
+      }
     }
 
     if (activeWarningRef.current) return;
@@ -367,7 +404,7 @@ export function AlertsIcon() {
 
     activeWarningRef.current = candidateWarning;
     setActiveWarningPreview(candidateWarning);
-    markPreviewSeen(candidateWarning.id, userId);
+    markPreviewSeen(candidateWarning, userId);
     playWarningAlertSound();
 
     if (candidateWarning.data?.type === 'feeding_reminder') {
@@ -408,7 +445,7 @@ export function AlertsIcon() {
     e?.stopPropagation();
     const currentItem = activeWarningRef.current || activeWarningPreview;
     if (currentItem && user?.id) {
-      markPreviewDismissed(currentItem.id, user.id);
+      markPreviewDismissed(currentItem, user.id);
     }
     clearActiveWarningTimerAndPreview();
   };

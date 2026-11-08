@@ -4,7 +4,7 @@ const { toReproductionDTO, toAvailableRabbitDTO } = require('../../common/dtos/r
 
 exports.registerReproduction = catchAsync(async (req, res) => {
     const galponId = req.galponId;
-    const reproduction = await reproductionService.registerReproduction(req.body, galponId);
+    const reproduction = await reproductionService.registerReproduction(req.body, galponId, req.user?.id);
     res.status(201).json({ success: true, message: 'Monta registrada exitosamente.', reproduction: toReproductionDTO(reproduction) });
 });
 
@@ -25,7 +25,7 @@ exports.startMating = catchAsync(async (req, res) => {
 
 exports.finishMating = catchAsync(async (req, res) => {
     const reproduction = await reproductionService.finishMating(req.params.id, req.galponId, req.user.id);
-    res.status(200).json({ success: true, message: 'Monta finalizada. La hembra ha regresado a gestación.', reproduction: toReproductionDTO(reproduction) });
+    res.status(200).json({ success: true, message: 'Monta finalizada. La hembra ha ingresado a Fase 2: Gestación.', reproduction: toReproductionDTO(reproduction) });
 });
 
 exports.getReproductionByFemaleId = catchAsync(async (req, res) => {
@@ -74,7 +74,7 @@ exports.editReproduction = catchAsync(async (req, res) => {
 });
 
 exports.deleteReproduction = catchAsync(async (req, res) => {
-    await reproductionService.deleteReproduction(req.params.id);
+    await reproductionService.deleteReproduction(req.params.id, req.user?.id);
     res.status(200).json({ success: true, message: 'Monta eliminada exitosamente.' });
 });
 

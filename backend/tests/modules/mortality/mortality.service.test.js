@@ -17,15 +17,17 @@ describe('MortalityService', () => {
   describe('registerMortality', () => {
     beforeEach(() => {
       Profile.findByPk.mockResolvedValue({ id: 'p1', fullName: 'Juan', username: 'juan', email: 'j@e.com' });
+      FarmMember.findOne.mockResolvedValue({ id: 1, role: 'owner', status: 'active' });
       Rabbit.findByPk.mockResolvedValue({ id: 1, code: 'R001', name: 'Bunny', galponId: 1, birthDate: '2024-01-01' });
     });
 
-    it('registers adult mortality and frees assignment', async () => {
+    it('registers adult mortality, accepts ISO deathDate, and frees assignment', async () => {
       Assignment.findOne = jest.fn().mockResolvedValue({ id: 1, status: 'asignado', update: jest.fn().mockResolvedValue({}) });
       mortalityRepository.create.mockResolvedValue({ id: 1, rabbitId: 1, cause: 'enfermedad', isKits: false });
-      Rabbit.findByPk.mockResolvedValue({ id: 1, code: 'R001', name: 'Bunny', galponId: 1, birthDate: '2024-01-01', destroy: jest.fn().mockResolvedValue(true) });
+      Rabbit.findByPk.mockResolvedValue({ id: 1, code: 'R001', name: 'Bunny', sex: 'hembra', galponId: 1, birthDate: '2024-01-01', destroy: jest.fn().mockResolvedValue(true) });
+      Reproduction.findOne = jest.fn().mockResolvedValue({ id: 10, status: 'gestacion', update: jest.fn().mockResolvedValue({}) });
 
-      const result = await mortalityService.registerMortality({ rabbitId: 1, cause: 'enfermedad', observations: 'sick', deathDate: '2024-06-01', isKits: false }, 1, 'p1');
+      const result = await mortalityService.registerMortality({ rabbitId: 1, cause: 'enfermedad', observations: 'sick', deathDate: '2024-06-01T15:30:00.000Z', isKits: false }, 1, 'p1');
       expect(result.isKits).toBe(false);
     });
 

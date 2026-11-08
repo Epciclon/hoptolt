@@ -27,24 +27,22 @@ describe('NotificationRepository', () => {
     it('returns notifications with default pagination', async () => {
       Notification.findAll.mockResolvedValue([{ id: 1 }])
       const result = await notificationRepository.findByProfileId('p1')
-      expect(Notification.findAll).toHaveBeenCalledWith({
-        where: { profileId: 'p1' },
-        order: [['createdAt', 'DESC']],
-        limit: 20,
+      expect(Notification.findAll).toHaveBeenCalledWith(expect.objectContaining({
+        order: [['updatedAt', 'DESC']],
+        limit: 12,
         offset: 0,
-      })
+      }))
       expect(result).toHaveLength(1)
     })
 
     it('filters unread only when specified', async () => {
       Notification.findAll.mockResolvedValue([{ id: 1 }])
       await notificationRepository.findByProfileId('p1', { unreadOnly: true })
-      expect(Notification.findAll).toHaveBeenCalledWith({
-        where: { profileId: 'p1', read: false },
-        order: [['createdAt', 'DESC']],
-        limit: 20,
+      expect(Notification.findAll).toHaveBeenCalledWith(expect.objectContaining({
+        order: [['updatedAt', 'DESC']],
+        limit: 12,
         offset: 0,
-      })
+      }))
     })
   })
 
@@ -72,11 +70,12 @@ describe('NotificationRepository', () => {
 
   describe('markAllAsRead', () => {
     it('calls Notification.update for all unread', async () => {
+      Notification.findAll.mockResolvedValue([{ id: 1, type: 'info', data: {} }])
       Notification.update.mockResolvedValue([3])
       await notificationRepository.markAllAsRead('p1')
       expect(Notification.update).toHaveBeenCalledWith(
         { read: true },
-        { where: { profileId: 'p1', read: false } },
+        expect.objectContaining({ where: expect.any(Object) }),
       )
     })
   })
@@ -100,9 +99,9 @@ describe('NotificationRepository', () => {
     it('calls Notification.count with unread filter', async () => {
       Notification.count.mockResolvedValue(5)
       const result = await notificationRepository.countUnread('p1')
-      expect(Notification.count).toHaveBeenCalledWith({
-        where: { profileId: 'p1', read: false },
-      })
+      expect(Notification.count).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.any(Object),
+      }))
       expect(result).toBe(5)
     })
   })

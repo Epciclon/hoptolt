@@ -21,12 +21,12 @@ describe('RaceController', () => {
 
   describe('registerRace', () => {
     it('should call registerRace and return 201', async () => {
-      req = { body: { name: 'Rex', description: 'Conejo Rex' }, user: { id: 'user1' } };
+      req = { body: { name: 'Rex', description: 'Conejo Rex' }, user: { id: 'user1' }, galponId: 1 };
       raceService.registerRace.mockResolvedValue({ id: 'race1', name: 'Rex' });
 
       await raceController.registerRace(req, res, next);
 
-      expect(raceService.registerRace).toHaveBeenCalledWith(req.body, req.user.id);
+      expect(raceService.registerRace).toHaveBeenCalledWith(req.body, req.user.id, 1, req.user.id);
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
     });
@@ -85,31 +85,31 @@ describe('RaceController', () => {
       expect(raceService.getAllRaces).toHaveBeenCalledWith(
         'owner1',
         { search: undefined },
-        1, 10
+        1, 12
       );
     });
   });
 
   describe('editRace', () => {
     it('should call editRaceDescription and return 200', async () => {
-      req = { params: { id: 'race1' }, body: { description: 'Updated desc' } };
+      req = { params: { id: 'race1' }, body: { description: 'Updated desc' }, user: { id: 'user1' }, galponId: 1 };
       raceService.editRaceDescription.mockResolvedValue({ id: 'race1', description: 'Updated desc' });
 
       await raceController.editRace(req, res, next);
 
-      expect(raceService.editRaceDescription).toHaveBeenCalledWith('race1', { description: 'Updated desc' });
+      expect(raceService.editRaceDescription).toHaveBeenCalledWith('race1', { description: 'Updated desc' }, 'user1', 1);
       expect(res.status).toHaveBeenCalledWith(200);
     });
   });
 
   describe('deleteRace', () => {
     it('should call deleteRace and return 200', async () => {
-      req = { params: { id: 'race1' } };
+      req = { params: { id: 'race1' }, user: { id: 'user1' }, galponId: 1 };
       raceService.deleteRace.mockResolvedValue();
 
       await raceController.deleteRace(req, res, next);
 
-      expect(raceService.deleteRace).toHaveBeenCalledWith('race1');
+      expect(raceService.deleteRace).toHaveBeenCalledWith('race1', 'user1', 1);
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
     });

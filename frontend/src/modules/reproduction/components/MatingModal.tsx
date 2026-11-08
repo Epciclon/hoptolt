@@ -135,7 +135,15 @@ export function MatingModal({ male, onClose, onSuccess }: Readonly<MatingModalPr
               >
                 {/* Imagen / Avatar arriba */}
                 <div className="mb-2.5">
-                  <RabbitAvatar imageUrl={female.imageUrl} alt={female.code} size="lg" ring className="transition-transform group-hover:scale-105" />
+                  <RabbitAvatar
+                    imageUrl={female.imageUrl}
+                    alt={female.code}
+                    size="lg"
+                    ring
+                    rabbitId={female.id}
+                    rabbitCode={female.code}
+                    className="transition-transform group-hover:scale-105"
+                  />
                 </div>
 
                 {/* Datos del conejo: Nombre primero, luego Código y Jaula */}
@@ -183,7 +191,15 @@ export function MatingModal({ male, onClose, onSuccess }: Readonly<MatingModalPr
   return (
     <Dialog open={true} onClose={onClose} title="Seleccionar Hembra para Monta" size="3xl">
       <div className="mb-4 bg-theme-surface border border-strong rounded-xl p-3.5 sm:p-4 flex flex-col sm:flex-row gap-3 sm:gap-4 items-center sm:items-start text-center sm:text-left min-w-0">
-        <RabbitAvatar imageUrl={male.imageUrl} alt={male.code} size="lg" ring className="shrink-0" />
+        <RabbitAvatar
+          imageUrl={male.imageUrl}
+          alt={male.code}
+          size="lg"
+          ring
+          rabbitId={male.id}
+          rabbitCode={male.code}
+          className="shrink-0"
+        />
         <div className="min-w-0 flex-1 w-full">
           <h4 className="font-bold text-main text-base sm:text-lg break-words leading-snug">
             {male.name ? `${male.name} - ${male.code}` : male.code}

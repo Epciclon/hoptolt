@@ -9,7 +9,7 @@ import { reproductionService } from '../services/reproduction.service';
 import type { Reproduction, MatingRabbit } from '../types/reproduction.types';
 import { useReproduction } from '../hooks/useReproduction';
 import { Pagination } from '@/shared/ui/Pagination';
-import { Heart, Clock, X } from 'lucide-react';
+import { Heart, Clock } from 'lucide-react';
 import { MatingModal } from './MatingModal';
 import { matchesSmartSearch } from '@/shared/utils/rabbitUtils';
 import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
@@ -77,7 +77,7 @@ export function MontasView({ searchTerm, onSearchChange }: Readonly<MontasViewPr
     setProcessing(true);
     try {
       await reproductionService.finishMating(finishingReproduction.id);
-      showToast('Monta finalizada. La hembra ha regresado a gestación.', 'success');
+      showToast('Monta finalizada. La hembra ha ingresado a Fase 2: Gestación.', 'success');
       onSuccess();
     } catch (error: any) {
       showToast(error.message || 'Error al finalizar la monta', 'error');
@@ -193,7 +193,13 @@ export function MontasView({ searchTerm, onSearchChange }: Readonly<MontasViewPr
                 
                 <div className="flex flex-col items-center gap-2 mb-2 min-w-0">
                   <div className="shrink-0 mb-1">
-                    <RabbitAvatar imageUrl={macho.activeMonta.imageUrl} alt={macho.activeMonta.femaleCode} size="md" />
+                    <RabbitAvatar
+                      imageUrl={macho.activeMonta.imageUrl}
+                      alt={macho.activeMonta.femaleCode}
+                      size="md"
+                      rabbitId={macho.activeMonta.femaleId}
+                      rabbitCode={macho.activeMonta.femaleCode}
+                    />
                   </div>
                   <div className="min-w-0 flex-1 w-full">
                     <div className="flex items-start justify-between gap-1">
@@ -258,8 +264,7 @@ export function MontasView({ searchTerm, onSearchChange }: Readonly<MontasViewPr
                           {canDelete && (
                             <Button 
                               variant="danger" 
-                              className="w-full justify-center gap-2"
-                              icon={<X size={16} />}
+                              className="w-full justify-center"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setCancelingReproduction(macho.activeMonta!);
@@ -311,7 +316,7 @@ export function MontasView({ searchTerm, onSearchChange }: Readonly<MontasViewPr
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       <div className="flex flex-col gap-1 items-start">
-        <p className="text-base font-medium text-main">En esta fase se encuentran los machos iguales o mayores de 4 meses.</p>
+        <p className="text-sm sm:text-base font-medium text-main">En esta fase se encuentran los machos iguales o mayores de 4 meses.</p>
       </div>
       <FilterBar
         searchPlaceholder="Buscar macho por código o jaula..."

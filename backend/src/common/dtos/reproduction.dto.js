@@ -12,7 +12,8 @@ const toAvailableRabbitDTO = (rabbit) => ({
 });
 
 const toReproductionDTO = (reproduction) => {
-    const assignment = reproduction.female?.assignments?.[0] || null;
+    const assignments = reproduction.female?.assignments || [];
+    const assignment = assignments.find(a => a.status === 'asignado') || assignments[assignments.length - 1] || null;
     const cage = assignment?.cage || null;
     const male = reproduction.male || null;
 

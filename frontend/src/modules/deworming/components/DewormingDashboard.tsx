@@ -34,13 +34,13 @@ export function DewormingDashboard() {
       <div className="w-full">
         {activeTab === 'registro' || !isOwner ? (
           <>
-            <SectionMessage message="En esta fase se puede registrar las desparasitaciones aplicadas a los conejos." />
+            <SectionMessage message="Selecciona los conejos para registrar la aplicación de su tratamiento antiparasitario." />
             <DewormingCatalog />
           </>
         ) : null}
         {isOwner && activeTab === 'historial' && (
           <>
-            <SectionMessage message="En esta fase se puede revisar el historial diario de desparasitaciones registradas en la granja por trabajador. Selecciona un trabajador para revisar su registro de actividades diarias." />
+            <SectionMessage message="Consulta el historial de desparasitación registrado por cada integrante del galpón." />
             <AuditHistoryView 
               moduleName="deworming"
               renderTable={(profileId, date) => <DewormingTable profileId={profileId} date={date} />}

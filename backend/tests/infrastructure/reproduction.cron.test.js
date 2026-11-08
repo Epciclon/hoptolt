@@ -16,6 +16,14 @@ jest.mock('../../src/common/helpers/reproductionNotification.helper', () => ({
   notifyAutomatedPhaseChange: jest.fn().mockResolvedValue(undefined),
 }))
 
+jest.mock('../../src/common/helpers/audit.helper', () => ({
+  recordSystemChange: jest.fn().mockResolvedValue(null),
+}))
+
+jest.mock('../../src/modules/reproduction/reproduction.repository', () => ({
+  findByIdWithDetails: jest.fn().mockResolvedValue({ id: 1, female: { code: 'R1', name: 'Luna' } }),
+}))
+
 const cron = require('node-cron')
 const { Reproduction } = require('../../src/domain/models')
 const { notifyAutomatedPhaseChange } = require('../../src/common/helpers/reproductionNotification.helper')

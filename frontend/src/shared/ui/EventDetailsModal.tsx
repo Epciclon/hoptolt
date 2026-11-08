@@ -120,7 +120,13 @@ export function EventDetailsModal({
               {rabbits.length > 0 ? (
                 rabbits.map((rabbit) => (
                   <div key={rabbit.code || rabbit.id} className="flex items-center gap-3 bg-card border border-default rounded-lg p-2.5">
-                    <RabbitAvatar imageUrl={rabbit.imageUrl} alt="Conejo" size="md" />
+                    <RabbitAvatar
+                      imageUrl={rabbit.imageUrl}
+                      alt={rabbit.name || rabbit.code || 'Conejo'}
+                      size="md"
+                      rabbitId={rabbit.id}
+                      rabbitCode={rabbit.code}
+                    />
                     <div className="flex flex-col leading-tight min-w-0 flex-1 gap-0.5">
                       <span className="font-semibold text-main text-sm sm:text-base truncate">
                         {rabbit.name || 'Sin nombre'}

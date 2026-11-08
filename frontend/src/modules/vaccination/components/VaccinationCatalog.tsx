@@ -130,7 +130,7 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
   return (
     <div className="flex flex-col gap-4">
 
-      <div className="bg-card border border-default rounded-xl p-4 relative z-30">
+      <div className="bg-card border border-default rounded-xl p-4 relative z-20">
         <span className="block text-sm font-semibold text-main mb-2">Vacunas</span>
         <div className="relative" ref={vaccineDropdownRef}>
           <Input
@@ -143,7 +143,7 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
             onFocus={() => setShowVaccineDropdown(true)}
           />
           {showVaccineDropdown && (
-            <div className="absolute z-50 w-full border border-default dark:border-slate-700 rounded-lg max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto bg-card dark:bg-slate-900 mt-1.5 shadow-2xl">
+            <div className="absolute z-30 w-full border border-default dark:border-slate-700 rounded-lg max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto bg-card dark:bg-slate-900 mt-1.5 shadow-2xl">
               {filteredVaccines.length === 0 ? (
                 <p className="text-muted text-sm p-3">No hay vacunas disponibles</p>
               ) : (

@@ -147,7 +147,7 @@ const fetchPaginatedGalponRecords = async (repository, galponId, profileId, page
     });
     if (!membership) throw new AppError('No tienes acceso a este galpón.', 403);
 
-    if (membership.role === 'worker') {
+    if (membership.role === 'worker' && !filters.rabbitId && Number(limit) < 1000) {
         const workerCages = await WorkerCage.findAll({ where: { farmMemberId: membership.id } });
         filters.cageIds = workerCages.map(wc => Number(wc.cageId));
     }

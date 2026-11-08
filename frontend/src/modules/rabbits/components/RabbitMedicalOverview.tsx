@@ -11,9 +11,9 @@ interface RabbitMedicalOverviewProps {
 }
 
 export function RabbitMedicalOverview({ rabbit }: Readonly<RabbitMedicalOverviewProps>) {
-  // Consultamos sin filtros específicos de conejo
-  const { dewormings, dewormingPeriod, loading: loadingDeworm } = useDeworming({});
-  const { vaccinations, galponVaccines, loading: loadingVac } = useVaccination({});
+  // Consultamos sin cargar la lista de jaulas asignadas cuando solo mostramos el resumen médico
+  const { dewormings, dewormingPeriod, loading: loadingDeworm } = useDeworming({ includeAssignedRabbits: false });
+  const { vaccinations, galponVaccines, loading: loadingVac } = useVaccination({ includeAssignedRabbits: false });
 
   const { dewormingData, nextVaccinations } = useMemo(() => {
     let nextDewormDate: Date | null = null;
@@ -99,33 +99,33 @@ export function RabbitMedicalOverview({ rabbit }: Readonly<RabbitMedicalOverview
   return (
     <>
       <div className="bg-card p-3.5 sm:p-5 rounded-xl border border-strong shadow-sm">
-        <h4 className="text-sm font-semibold text-main mb-4 uppercase tracking-wider flex items-center gap-2">
-          <Activity size={16} className="text-primary-600" /> Desparasitación
+        <h4 className="text-xs sm:text-sm font-semibold text-main mb-3 sm:mb-4 uppercase tracking-wider flex items-center gap-2">
+          <Activity size={16} className="text-primary-600 shrink-0" /> Desparasitación
         </h4>
-        <div className="space-y-3 text-sm">
+        <div className="space-y-2.5 sm:space-y-3 text-xs sm:text-sm">
           {(() => {
-            if (!nextDewormDate) return <span className="text-xs text-muted block pb-2 border-b border-slate-50">Sin historial reciente o período configurado</span>;
+            if (!nextDewormDate) return <span className="text-xs sm:text-sm text-muted block pb-1">Sin historial reciente o período configurado</span>;
             return (
               <>
-                <div className="flex items-center justify-between gap-2 border-b border-default/50 pb-2">
+                <div className="flex items-center justify-between gap-2 sm:gap-3 border-b border-default/50 pb-2">
                   <span className="text-muted">Estado:</span>
                   {(() => {
                     if (dewormDiffDays! > 0) {
                       return (
-                        <span className="font-bold text-main shrink-0 whitespace-nowrap">
+                        <span className="font-bold text-main text-right shrink-0 whitespace-nowrap">
                           Faltan {dewormDiffDays} {dewormDiffDays === 1 ? 'día' : 'días'}
                         </span>
                       );
                     }
                     if (dewormDiffDays === 0) {
-                      return <span className="font-bold text-primary-600 shrink-0 whitespace-nowrap">¡Toca hoy!</span>;
+                      return <span className="font-bold text-primary-600 text-right shrink-0 whitespace-nowrap">¡Toca hoy!</span>;
                     }
-                    return <span className="font-bold text-emerald-600 shrink-0 whitespace-nowrap">Lista para dosis</span>;
+                    return <span className="font-bold text-emerald-600 text-right shrink-0 whitespace-nowrap">Lista para dosis</span>;
                   })()}
                 </div>
-                <div className="flex items-center justify-between gap-2 pb-1">
-                  <span className="text-muted">Próxima Fecha:</span>
-                  <span className="font-semibold text-main shrink-0 whitespace-nowrap">{nextDewormDate.toLocaleDateString('es-EC')}</span>
+                <div className="flex items-center justify-between gap-2 sm:gap-3 pb-1">
+                  <span className="text-muted min-w-0">Próxima Fecha:</span>
+                  <span className="font-semibold text-main text-right shrink-0 whitespace-nowrap">{nextDewormDate.toLocaleDateString('es-EC')}</span>
                 </div>
               </>
             );
@@ -134,24 +134,24 @@ export function RabbitMedicalOverview({ rabbit }: Readonly<RabbitMedicalOverview
       </div>
 
       <div className="bg-card p-3.5 sm:p-5 rounded-xl border border-strong shadow-sm">
-        <h4 className="text-sm font-semibold text-main mb-4 uppercase tracking-wider flex items-center gap-2">
-          <Shield size={16} className="text-primary-600" /> Vacunación
+        <h4 className="text-xs sm:text-sm font-semibold text-main mb-3 sm:mb-4 uppercase tracking-wider flex items-center gap-2">
+          <Shield size={16} className="text-primary-600 shrink-0" /> Vacunación
         </h4>
-        <div className="space-y-3 text-sm">
+        <div className="space-y-2.5 sm:space-y-3 text-xs sm:text-sm">
           {nextVaccinations.length > 0 ? (
             nextVaccinations.map(vac => (
-              <div key={vac.name} className="flex items-center justify-between gap-2 border-b border-default/50 pb-2 last:border-0 last:pb-0">
+              <div key={vac.name} className="flex items-center justify-between gap-2 sm:gap-3 border-b border-default/50 pb-2 last:border-0 last:pb-1">
                 <span className="text-muted min-w-0 truncate mr-1">{vac.originalName}:</span>
                 {(() => {
-                  if (!vac.nextDate) return <span className="font-semibold text-emerald-600 shrink-0 whitespace-nowrap">Aplicada</span>;
-                  if (vac.diffDays! > 0) return <span className="font-bold text-main shrink-0 whitespace-nowrap">En {vac.diffDays} {vac.diffDays === 1 ? 'día' : 'días'}</span>;
-                  if (vac.diffDays === 0) return <span className="font-bold text-primary-600 shrink-0 whitespace-nowrap">Hoy</span>;
-                  return <span className="font-bold text-emerald-600 shrink-0 whitespace-nowrap">Lista para dosis</span>;
+                  if (!vac.nextDate) return <span className="font-semibold text-emerald-600 text-right shrink-0 whitespace-nowrap">Aplicada</span>;
+                  if (vac.diffDays! > 0) return <span className="font-bold text-main text-right shrink-0 whitespace-nowrap">En {vac.diffDays} {vac.diffDays === 1 ? 'día' : 'días'}</span>;
+                  if (vac.diffDays === 0) return <span className="font-bold text-primary-600 text-right shrink-0 whitespace-nowrap">Hoy</span>;
+                  return <span className="font-bold text-emerald-600 text-right shrink-0 whitespace-nowrap">Lista para dosis</span>;
                 })()}
               </div>
             ))
           ) : (
-            <span className="text-xs text-muted block pb-2 border-b border-default/50">Sin vacunas aplicadas</span>
+            <span className="text-xs sm:text-sm text-muted block pb-1">Sin vacunas aplicadas</span>
           )}
         </div>
       </div>

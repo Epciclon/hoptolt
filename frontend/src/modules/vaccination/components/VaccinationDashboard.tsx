@@ -34,13 +34,13 @@ export function VaccinationDashboard() {
       <div className="w-full">
         {activeTab === 'registro' || !isOwner ? (
           <>
-            <SectionMessage message="En esta fase se puede registrar las vacunas aplicadas a los conejos." />
+            <SectionMessage message="Selecciona los conejos y registra las vacunas aplicadas durante la jornada." />
             <VaccinationCatalog />
           </>
         ) : null}
         {isOwner && activeTab === 'historial' && (
           <>
-            <SectionMessage message="En esta fase se puede revisar el historial diario de vacunaciones registradas en la granja por trabajador. Selecciona un trabajador para revisar su registro de actividades diarias." />
+            <SectionMessage message="Consulta el historial de vacunación registrado por cada integrante del galpón." />
             <AuditHistoryView 
               moduleName="vaccination"
               renderTable={(profileId, date) => <VaccinationTable profileId={profileId} date={date} />}

@@ -23,7 +23,8 @@ describe('AssignmentController', () => {
     it('should call assignRabbits and return 201', async () => {
       req = {
         body: { assignments: [{ rabbitId: 1, cageId: 1 }] },
-        galponId: 1
+        galponId: 1,
+        user: { id: 'user1' }
       };
       assignmentService.assignRabbits.mockResolvedValue({
         assignments: [{ id: 'a1' }],
@@ -32,7 +33,7 @@ describe('AssignmentController', () => {
 
       await assignmentController.assignRabbits(req, res, next);
 
-      expect(assignmentService.assignRabbits).toHaveBeenCalledWith(req.body, 1);
+      expect(assignmentService.assignRabbits).toHaveBeenCalledWith(req.body, 1, 'user1');
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
         success: true,
@@ -44,12 +45,12 @@ describe('AssignmentController', () => {
 
   describe('getAssignments', () => {
     it('should call getAssignments and return 200', async () => {
-      req = { galponId: 1 };
+      req = { galponId: 1, user: { id: 'user1' } };
       assignmentService.getAssignments.mockResolvedValue([{ id: 'a1' }]);
 
       await assignmentController.getAssignments(req, res, next);
 
-      expect(assignmentService.getAssignments).toHaveBeenCalledWith(1);
+      expect(assignmentService.getAssignments).toHaveBeenCalledWith(1, 'user1');
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
     });
@@ -57,12 +58,12 @@ describe('AssignmentController', () => {
 
   describe('getAssignedRabbits', () => {
     it('should call getAssignedRabbits and return 200', async () => {
-      req = { galponId: 1 };
+      req = { galponId: 1, user: { id: 'user1' } };
       assignmentService.getAssignedRabbits.mockResolvedValue([{ id: 1, code: 'R1' }]);
 
       await assignmentController.getAssignedRabbits(req, res, next);
 
-      expect(assignmentService.getAssignedRabbits).toHaveBeenCalledWith(1);
+      expect(assignmentService.getAssignedRabbits).toHaveBeenCalledWith(1, 'user1');
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({ success: true, rabbits: [{ id: 1, code: 'R1' }] });
     });
@@ -82,24 +83,24 @@ describe('AssignmentController', () => {
 
   describe('getOperativeCages', () => {
     it('should call getOperativeCages and return 200', async () => {
-      req = { galponId: 1 };
+      req = { galponId: 1, user: { id: 'user1' } };
       assignmentService.getOperativeCages.mockResolvedValue([{ id: 1, number: 'C1' }]);
 
       await assignmentController.getOperativeCages(req, res, next);
 
-      expect(assignmentService.getOperativeCages).toHaveBeenCalledWith(1);
+      expect(assignmentService.getOperativeCages).toHaveBeenCalledWith(1, 'user1');
       expect(res.status).toHaveBeenCalledWith(200);
     });
   });
 
   describe('unassignRabbit', () => {
     it('should call unassignRabbit and return 200', async () => {
-      req = { params: { id: '1' } };
+      req = { params: { id: '1' }, user: { id: 'user1' }, galponId: 1 };
       assignmentService.unassignRabbit.mockResolvedValue();
 
       await assignmentController.unassignRabbit(req, res, next);
 
-      expect(assignmentService.unassignRabbit).toHaveBeenCalledWith('1');
+      expect(assignmentService.unassignRabbit).toHaveBeenCalledWith('1', 'user1', 1);
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
     });

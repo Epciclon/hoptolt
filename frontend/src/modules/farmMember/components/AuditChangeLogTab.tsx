@@ -29,6 +29,7 @@ const ENTITY_LABELS: Record<string, string> = {
   races: 'Razas',
   rabbits: 'Conejos',
   assignments: 'Asignaciones',
+  reproduction: 'Reproducción',
   genealogy: 'Genealogía',
   reports: 'Reportes'
 };
@@ -94,6 +95,11 @@ const FIELD_LABELS: Record<string, string> = {
   rabbit: 'Conejo',
   conejo: 'Conejo',
   coneja: 'Coneja',
+  macho: 'Macho',
+  mountDate: 'Fecha de monta',
+  estimatedBirthDate: 'Fecha de parto',
+  bornKits: 'Gazapos vivos',
+  cancellationReason: 'Motivo de cancelación',
   rabbitId: 'Conejo',
   cageId: 'Número de jaula',
   occupantRabbit: 'Conejo ocupante'
@@ -122,6 +128,11 @@ const VALUE_TRANSLATIONS: Record<string, string> = {
   mascota: 'Mascota',
   activo: 'Activo',
   inactivo: 'Inactivo',
+  monta: 'Fase 1: Monta',
+  gestacion: 'Fase 2: Gestación',
+  lactancia: 'Fase 3: Lactancia',
+  completado: 'Completado',
+  fallido: 'Fallido',
   pdf: 'PDF',
   excel: 'Excel',
   csv: 'CSV',
@@ -426,6 +437,7 @@ export function AuditChangeLogTab({ galponId, workers }: Readonly<AuditChangeLog
               <option value="races" className="bg-card dark:bg-slate-900 text-main">Razas</option>
               <option value="rabbits" className="bg-card dark:bg-slate-900 text-main">Conejos</option>
               <option value="assignments" className="bg-card dark:bg-slate-900 text-main">Asignaciones</option>
+              <option value="reproduction" className="bg-card dark:bg-slate-900 text-main">Reproducción</option>
               <option value="genealogy" className="bg-card dark:bg-slate-900 text-main">Genealogía</option>
               <option value="reports" className="bg-card dark:bg-slate-900 text-main">Reportes</option>
             </select>

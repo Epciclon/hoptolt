@@ -16,7 +16,14 @@ export function ReproductionPairSection({ reproduction }: Readonly<ReproductionP
       </p>
       <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-around gap-3 sm:gap-4">
         <div className="flex flex-col items-center text-center w-full sm:w-auto sm:flex-1 sm:max-w-[140px]">
-          <RabbitAvatar imageUrl={reproduction.imageUrl} alt={reproduction.femaleCode} size="lg" ring />
+          <RabbitAvatar
+            imageUrl={reproduction.imageUrl}
+            alt={reproduction.femaleCode}
+            size="lg"
+            ring
+            rabbitId={reproduction.femaleId}
+            rabbitCode={reproduction.femaleCode}
+          />
           <span className="mt-2 px-2.5 py-0.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 text-xs font-semibold rounded-full">
             Madre
           </span>
@@ -35,7 +42,14 @@ export function ReproductionPairSection({ reproduction }: Readonly<ReproductionP
         </div>
 
         <div className="flex flex-col items-center text-center w-full sm:w-auto sm:flex-1 sm:max-w-[140px]">
-          <RabbitAvatar imageUrl={reproduction.maleImageUrl} alt={reproduction.maleCode ?? ''} size="lg" ring />
+          <RabbitAvatar
+            imageUrl={reproduction.maleImageUrl}
+            alt={reproduction.maleCode ?? ''}
+            size="lg"
+            ring
+            rabbitId={reproduction.maleId}
+            rabbitCode={reproduction.maleCode}
+          />
           <span className="mt-2 px-2.5 py-0.5 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 text-xs font-semibold rounded-full">
             Padre
           </span>

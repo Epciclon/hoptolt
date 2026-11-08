@@ -13,6 +13,7 @@ import { routeNotification } from '@/shared/utils/notificationRouting';
 import { useAuth } from '@/modules/auth/hooks/useAuth';
 import { playNotificationSound } from '@/shared/utils/soundUtils';
 import { formatTime } from '@/shared/utils/dateUtils';
+import { extractGrowthSummaryData } from '../utils/growthNotificationUtils';
 
 const isWarningNotification = (n: any) => {
   const t = n.data?.type;
@@ -28,21 +29,9 @@ const isWarningNotification = (n: any) => {
     t === 'weaning_alert';
 };
 
-const getInfoWeight = (n: any) => {
-  if (n.type === 'invitation') return 100;
-  const t = n.data?.type;
-  const isAssignment = t === 'task_assignment' || n.title?.toLowerCase().includes('asignaci');
-  if (isAssignment) return 95;
-  if (t === 'worker_action' || t === 'worker_sensitive_action') return 90;
-  if (t === 'reproduction') return 70;
-  if (t === 'maturity') return 60;
-  if (t === 'growth_summary' || t === 'growth') return 50;
-  return 30;
-};
-
 const getNotificationVersion = (n: any) => {
   const logId = n.data?.lastLogId || n.data?.logId || 0;
-  const count = n.data?.changeCount || n.data?.totalCount || 1;
+  const count = n.data?.changeCount || n.data?.totalCount || n.data?.updatesCount || 1;
   const time = new Date(n.updatedAt || n.createdAt).getTime();
   return `${n.id}_${logId}_${count}_${time}`;
 };
@@ -79,9 +68,6 @@ const markPreviewDismissed = (n: any, userId: string) => {
 
 function selectCandidateInfoNotification(unreadInfos: any[], userId: string, now: number): any {
   const sortedCandidates = [...unreadInfos].sort((a, b) => {
-    const wA = getInfoWeight(a);
-    const wB = getInfoWeight(b);
-    if (wA !== wB) return wB - wA;
     const timeA = new Date(a.updatedAt || a.createdAt).getTime();
     const timeB = new Date(b.updatedAt || b.createdAt).getTime();
     return timeB - timeA;
@@ -188,6 +174,8 @@ function InfoFloatingPreview({
 }: Readonly<InfoFloatingPreviewProps>) {
   const actionConfig = getInfoActionConfig(notification);
   const isInvitation = notification.type === 'invitation';
+  const growthSummary = extractGrowthSummaryData(notification);
+  const displayMessage = growthSummary ? growthSummary.summaryMessage : notification.message;
 
   return (
     <div
@@ -236,8 +224,38 @@ function InfoFloatingPreview({
                 <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" />
               </h4>
               <p className="text-sm text-muted mt-1 leading-relaxed">
-                {renderBoldMessageParts(notification.message)}
+                {renderBoldMessageParts(displayMessage)}
               </p>
+
+              {(growthSummary?.items.length ?? 0) > 0 && growthSummary && (
+                <div className="mt-2.5 p-2 bg-theme-surface rounded-lg border border-default text-xs pointer-events-auto">
+                  <p className="text-[11px] text-main font-medium mb-1">
+                    Conejos con actualización de edad y peso • {growthSummary.items.length}
+                  </p>
+                  <ul className="divide-y divide-default bg-card rounded border border-default max-h-28 overflow-y-auto">
+                    {growthSummary.items.map((item) => (
+                      <li key={item.key} className="flex flex-wrap items-center justify-between py-1 px-2.5 gap-1.5">
+                        <span className="font-medium text-main break-words">{item.name}</span>
+                        <div className="flex flex-wrap items-center gap-1 shrink-0">
+                          <span className="text-[10px] font-medium text-main bg-theme-surface px-2 py-0.5 rounded border border-default">
+                            {item.ageBadge}
+                          </span>
+                          {item.weightBadge && (
+                            <span className="text-[10px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
+                              {item.weightBadge}
+                            </span>
+                          )}
+                          {item.isMature && (
+                            <span className="text-[10px] font-medium text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                              Madurez
+                            </span>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {(notification.data?.workersList?.length ?? 0) > 1 && (
                 <div className="mt-2 p-1.5 bg-card/70 rounded border border-default text-xs flex flex-wrap gap-x-3 gap-y-1">
@@ -338,6 +356,9 @@ function NotificationPopoverItem({
   onAcceptInvitation,
   onRejectInvitation,
 }: Readonly<NotificationPopoverItemProps>) {
+  const growthSummary = extractGrowthSummaryData(notification);
+  const displayMessage = growthSummary ? growthSummary.summaryMessage : notification.message;
+
   return (
     <div
       className={cn(
@@ -378,7 +399,7 @@ function NotificationPopoverItem({
             )}
           </div>
           <p className="text-xs text-muted mt-1 leading-relaxed">
-            {renderBoldMessageParts(notification.message)}
+            {renderBoldMessageParts(displayMessage)}
           </p>
           <p className="text-xs text-theme-faint mt-2 font-medium">{formatTime(notification.updatedAt || notification.createdAt)}</p>
 
@@ -411,18 +432,34 @@ function NotificationPopoverItem({
             </div>
           )}
 
-          {notification.data?.type === 'growth_summary' && (
-            <div className="mt-2 bg-theme-surface border border-default rounded-md p-2">
-              <p className="text-xs text-main font-medium mb-1">
-                Actualizaciones • {notification.data.updatesCount || 0}
-              </p>
-              <ul className="text-xs text-muted list-disc list-inside">
-                {notification.data.details?.slice(0, 3).map((detail: string) => (
-                  <li key={detail} className="truncate">{detail}</li>
+          {(growthSummary?.items.length ?? 0) > 0 && growthSummary && (
+            <div className="pointer-events-auto mt-2 flex flex-col gap-1 p-2 rounded-md bg-theme-surface border border-default">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] text-main font-medium">
+                  Conejos con actualización de edad y peso • {growthSummary.items.length}
+                </span>
+              </div>
+              <ul className="text-[11px] text-main max-h-28 overflow-y-auto bg-card rounded p-1 border border-default divide-y divide-default">
+                {growthSummary.items.map((item) => (
+                  <li key={item.key} className="flex flex-wrap items-center justify-between py-1 px-1.5 gap-1.5">
+                    <span className="font-medium text-main break-words">{item.name}</span>
+                    <div className="flex flex-wrap items-center gap-1 shrink-0">
+                      <span className="text-[10px] font-medium text-main bg-theme-surface px-1.5 py-0.5 rounded border border-default">
+                        {item.ageBadge}
+                      </span>
+                      {item.weightBadge && (
+                        <span className="text-[10px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20">
+                          {item.weightBadge}
+                        </span>
+                      )}
+                      {item.isMature && (
+                        <span className="text-[10px] font-medium text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                          Madurez
+                        </span>
+                      )}
+                    </div>
+                  </li>
                 ))}
-                {notification.data.details?.length > 3 && (
-                  <li className="italic text-theme-faint">... y más registros</li>
-                )}
               </ul>
             </div>
           )}
@@ -680,9 +717,6 @@ export function NotificationIcon() {
   };
 
   const sortedNotifications = [...infoNotifications].sort((a, b) => {
-    const pA = getInfoWeight(a);
-    const pB = getInfoWeight(b);
-    if (pA !== pB) return pB - pA;
     const timeA = new Date(a.updatedAt || a.createdAt).getTime();
     const timeB = new Date(b.updatedAt || b.createdAt).getTime();
     return timeB - timeA;

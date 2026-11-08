@@ -56,7 +56,6 @@ class ReproductionRepository {
                 {
                     model: Assignment,
                     as: 'assignments',
-                    where: { status: 'asignado' },
                     required: false,
                     include: [
                         {
@@ -242,7 +241,6 @@ class ReproductionRepository {
                         {
                             model: Assignment,
                             as: 'assignments',
-                            where: { status: 'asignado' },
                             required: false,
                             include: [
                                 {

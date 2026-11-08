@@ -13,6 +13,7 @@ import { useNotifications } from '@/modules/notification/hooks/useNotification';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 import { routeNotification } from '@/shared/utils/notificationRouting';
 import { formatTime } from '@/shared/utils/dateUtils';
+import { extractGrowthSummaryData } from '@/modules/notification/utils/growthNotificationUtils';
 
 function getNotificationBadgeLabel(type: string): string {
   if (type === 'invitation') return 'Invitación';
@@ -283,42 +284,64 @@ export default function NotificationsPage() {
                       </div>
                     </div>
 
-                    {/* Fila de título completo a ancho total y mensaje interactivo */}
-                    <button
-                      type="button"
-                      onClick={() => { void handleNotificationClick(notification); }}
-                      className="w-full text-left focus:outline-none flex flex-col gap-1.5"
-                    >
-                      <h4 className="text-sm sm:text-base font-semibold text-main leading-snug break-words">
-                        {notification.title}
-                      </h4>
+                    {(() => {
+                      const growthSummary = extractGrowthSummaryData(notification);
+                      const displayMessage = growthSummary ? growthSummary.summaryMessage : notification.message;
 
-                      <p className="text-xs sm:text-sm text-muted leading-relaxed break-words whitespace-pre-wrap pl-0.5">
-                        {notification.message.split(/(\*\*.*?\*\*)/g).map((part: string, i: number) => {
-                          if (part.startsWith('**') && part.endsWith('**')) {
-                            return <strong key={`${notification.id}-part-${i}`} className="font-semibold text-main">{part.slice(2, -2)}</strong>;
-                          }
-                          return part;
-                        })}
-                      </p>
-                    </button>
+                      return (
+                        <>
+                          {/* Fila de título completo a ancho total y mensaje interactivo */}
+                          <button
+                            type="button"
+                            onClick={() => { void handleNotificationClick(notification); }}
+                            className="w-full text-left focus:outline-none flex flex-col gap-1.5"
+                          >
+                            <h4 className="text-sm sm:text-base font-semibold text-main leading-snug break-words">
+                              {notification.title}
+                            </h4>
 
-                    {notification.data?.type === 'growth_summary' && (
-                      <div className="mt-1 p-3.5 sm:p-4 rounded-xl bg-theme-surface border border-default">
-                        <div className="flex gap-6">
-                          {notification.data.updatesCount > 0 && (
-                            <div className="w-full">
-                              <p className="text-xs sm:text-sm font-semibold text-main mb-2">Conejos actualizados • {notification.data.updatesCount}</p>
-                              <ul className="text-xs text-muted list-disc list-inside space-y-1">
-                                {notification.data.details?.map((detail: string, i: number) => (
-                                  <li key={`${detail}-${i}`}>{detail}</li>
+                            <p className="text-xs sm:text-sm text-muted leading-relaxed break-words whitespace-pre-wrap pl-0.5">
+                              {displayMessage.split(/(\*\*.*?\*\*)/g).map((part: string, i: number) => {
+                                if (part.startsWith('**') && part.endsWith('**')) {
+                                  return <strong key={`${notification.id}-part-${i}`} className="font-semibold text-main">{part.slice(2, -2)}</strong>;
+                                }
+                                return part;
+                              })}
+                            </p>
+                          </button>
+
+                          {growthSummary && growthSummary.items.length > 0 && (
+                            <div className="mt-1 p-3.5 sm:p-4 rounded-xl bg-theme-surface border border-default">
+                              <p className="text-xs sm:text-sm font-semibold text-main mb-2.5">
+                                Conejos con actualización de edad y peso • {growthSummary.items.length}
+                              </p>
+                              <ul className="text-xs sm:text-sm text-main max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto bg-card border border-default rounded-md p-2 divide-y divide-default">
+                                {growthSummary.items.map((item) => (
+                                  <li key={item.key} className="flex flex-wrap items-center justify-between py-1.5 px-2 gap-2">
+                                    <span className="font-medium text-main break-words">{item.name}</span>
+                                    <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                                      <span className="text-xs font-medium text-main bg-theme-surface px-2.5 py-1 rounded-md border border-default">
+                                        {item.ageBadge}
+                                      </span>
+                                      {item.weightBadge && (
+                                        <span className="text-xs font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-md border border-primary/20">
+                                          {item.weightBadge}
+                                        </span>
+                                      )}
+                                      {item.isMature && (
+                                        <span className="text-xs font-medium text-amber-500 bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/20">
+                                          Madurez
+                                        </span>
+                                      )}
+                                    </div>
+                                  </li>
                                 ))}
                               </ul>
                             </div>
                           )}
-                        </div>
-                      </div>
-                    )}
+                        </>
+                      );
+                    })()}
 
                     {notification.type === 'invitation' && (
                       <div className="mt-1 p-3.5 sm:p-4 rounded-xl bg-theme-surface border border-default flex flex-col sm:flex-row sm:items-center justify-between gap-3">

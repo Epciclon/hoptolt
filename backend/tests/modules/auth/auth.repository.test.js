@@ -10,9 +10,12 @@ jest.mock('../../../src/domain/models', () => ({
   WorkerPermission: {
     findOne: jest.fn(),
   },
+  WorkerCage: {
+    findAll: jest.fn(),
+  },
 }))
 
-const { Profile, FarmMember, WorkerPermission } = require('../../../src/domain/models')
+const { Profile, FarmMember, WorkerPermission, WorkerCage } = require('../../../src/domain/models')
 const authRepository = require('../../../src/modules/auth/auth.repository')
 
 const createProfile = (overrides = {}) => ({
@@ -53,7 +56,10 @@ describe('AuthRepository', () => {
       expect(Profile.findByPk).toHaveBeenCalledWith('profile-1')
       expect(FarmMember.findOne).toHaveBeenCalledWith({
         where: { profileId: 'profile-1', galponId: 'galpon-1', status: 'active' },
-        include: [{ model: WorkerPermission, as: 'permissions' }],
+        include: [
+          { model: WorkerPermission, as: 'permissions' },
+          { model: WorkerCage, as: 'assignedCages', attributes: ['cageId'] },
+        ],
       })
       expect(result.role).toBe('admin')
       expect(result.permissions).toHaveLength(1)

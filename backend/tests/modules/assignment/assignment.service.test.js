@@ -49,7 +49,7 @@ describe('AssignmentService', () => {
     it('throws when engorde rabbits have >1 month age gap', () => {
       const cage = { type: 'engorde' };
       const rabbits = [
-        { purpose: 'Engorde', sex: 'macho', birthDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString() },
+        { purpose: 'Engorde', sex: 'macho', birthDate: new Date(Date.now() - 65 * 24 * 60 * 60 * 1000).toISOString() },
         { purpose: 'Engorde', sex: 'macho', birthDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString() },
       ];
       expect(() => assignmentService.validateCompatibility(cage, rabbits, [])).toThrow();

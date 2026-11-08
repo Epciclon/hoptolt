@@ -6,10 +6,11 @@ import { assignmentService } from '@/modules/assignments/services/assignment.ser
 import { useActiveGalpon } from '@/modules/galpones/hooks/useActiveGalpon';
 
 
-export function useDeworming(filters?: { profileId?: string; date?: string }) {
+export function useDeworming(filters?: { profileId?: string; date?: string; includeAssignedRabbits?: boolean }) {
   const queryClient = useQueryClient();
   const { activeGalpon } = useActiveGalpon();
   const galponId = activeGalpon?.id || 'none';
+  const includeAssignedRabbits = filters?.includeAssignedRabbits !== false;
 
 
   // Query: Fetch Dewormings
@@ -38,6 +39,7 @@ export function useDeworming(filters?: { profileId?: string; date?: string }) {
   } = useQuery({
     queryKey: ['assignedRabbits', galponId],
     queryFn: () => assignmentService.getAssignedRabbits(),
+    enabled: includeAssignedRabbits,
   });
 
   // Query: Fetch Deworming Period

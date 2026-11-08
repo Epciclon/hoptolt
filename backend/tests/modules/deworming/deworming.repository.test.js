@@ -1,7 +1,6 @@
 jest.mock('../../../src/common/helpers/repository.helper', () => ({
-  buildCommonFilters: jest.fn().mockReturnValue({ whereClause: {}, rabbitWhere: {}, cageWhere: {} }),
-  buildRabbitProfileIncludes: jest.fn().mockReturnValue([]),
-  buildRabbitCountInclude: jest.fn().mockReturnValue([]),
+  findRecordsByGalponId: jest.fn((model) => model.findAll()),
+  countRecordsByGalponId: jest.fn((model) => model.count({ include: [] })),
 }))
 
 jest.mock('../../../src/domain/models', () => ({

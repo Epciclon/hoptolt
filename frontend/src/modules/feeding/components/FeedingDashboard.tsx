@@ -34,13 +34,13 @@ export function FeedingDashboard() {
       <div className="w-full">
         {activeTab === 'registro' || !isOwner ? (
           <>
-            <SectionMessage message="En esta fase se puede registrar el alimento suministrado a las jaulas en el turno actual. Recuerda que debes seleccionar el tipo de alimento para registrar la alimentación." />
+            <SectionMessage message="Selecciona el tipo de alimento y marca las jaulas alimentadas en el turno actual." />
             <FeedingCatalog />
           </>
         ) : null}
         {isOwner && activeTab === 'historial' && (
           <>
-            <SectionMessage message="En esta fase se puede revisar el historial diario de alimentaciones registradas en la granja por trabajador. Selecciona un trabajador para revisar su registro de actividades diarias." />
+            <SectionMessage message="Consulta los registros diarios de alimentación por integrante del galpón." />
             <AuditHistoryView 
               moduleName="feeding"
               renderTable={(profileId, date) => <FeedingTable profileId={profileId} date={date} />} 

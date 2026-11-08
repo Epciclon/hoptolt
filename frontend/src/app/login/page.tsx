@@ -35,22 +35,20 @@ export default function LoginPage() {
     resolver: zodResolver(schema),
   });
 
+  const isBusy = isSubmitting || isLoggingIn;
+
   const onSubmit = async (values: FormValues) => {
+    if (isBusy) return;
     try {
       setIsLoggingIn(true);
       await authService.login(values);
-      await refetchUser();
+      const me = await refetchUser(true);
 
       const isNewUser = typeof window !== 'undefined' && window.location.search.includes('registered=true');
-      try {
-        const me = await authService.getMe();
-        if (isNewUser || !me?.activeGalponId) {
-          router.push('/dashboard/galpones');
-        } else {
-          router.push('/dashboard');
-        }
-      } catch {
-        router.push(isNewUser ? '/dashboard/galpones' : '/dashboard');
+      if (isNewUser || !me?.activeGalponId) {
+        router.push('/dashboard/galpones');
+      } else {
+        router.push('/dashboard');
       }
       router.refresh();
     } catch (err) {
@@ -76,7 +74,7 @@ export default function LoginPage() {
         <p className="text-muted">Acceda a su cuenta para continuar</p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 lg:space-y-5 animate-fade-in-right" style={{ animationDelay: '0.4s' }}>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 lg:space-y-5 animate-fade-in-right" style={{ animationDelay: '0.4s' }} aria-busy={isBusy}>
 
         {/* Usuario o Email */}
         <div>
@@ -87,7 +85,9 @@ export default function LoginPage() {
             {...register('identifier')}
             type="text"
             id="identifier"
-            className={`w-full px-4 py-3 lg:py-3.5 border-2 rounded-xl outline-none transition-all bg-theme-surface dark:bg-slate-900 text-main dark:text-slate-100 ${errors.identifier
+            disabled={isBusy}
+            readOnly={isBusy}
+            className={`w-full px-4 py-3 lg:py-3.5 border-2 rounded-xl outline-none transition-all bg-theme-surface dark:bg-slate-900 text-main dark:text-slate-100 disabled:opacity-60 disabled:cursor-not-allowed ${errors.identifier
                 ? 'border-red-500 bg-red-50 dark:bg-red-500/10'
                 : 'border-slate-300 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
               }`}
@@ -105,7 +105,9 @@ export default function LoginPage() {
             <label htmlFor="password" className="block text-sm font-semibold text-main">Contraseña</label>
             <Link
               href="/forgot-password"
-              className="text-xs text-teal-600 dark:text-teal-400 font-semibold hover:text-teal-700 dark:hover:text-teal-300 hover:underline transition-colors whitespace-nowrap ml-auto"
+              aria-disabled={isBusy}
+              tabIndex={isBusy ? -1 : undefined}
+              className={`text-xs text-teal-600 dark:text-teal-400 font-semibold hover:text-teal-700 dark:hover:text-teal-300 hover:underline transition-colors whitespace-nowrap ml-auto ${isBusy ? 'pointer-events-none opacity-60' : ''}`}
             >
               ¿Olvidaste tu contraseña?
             </Link>
@@ -115,7 +117,9 @@ export default function LoginPage() {
               {...register('password')}
               type={showPassword ? 'text' : 'password'}
               id="password"
-              className={`w-full px-4 py-3 lg:py-3.5 pr-12 border-2 rounded-xl outline-none transition-all bg-theme-surface dark:bg-slate-900 text-main dark:text-slate-100 ${errors.password
+              disabled={isBusy}
+              readOnly={isBusy}
+              className={`w-full px-4 py-3 lg:py-3.5 pr-12 border-2 rounded-xl outline-none transition-all bg-theme-surface dark:bg-slate-900 text-main dark:text-slate-100 disabled:opacity-60 disabled:cursor-not-allowed ${errors.password
                   ? 'border-red-500 bg-red-50 dark:bg-red-500/10'
                   : 'border-slate-300 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
                 }`}
@@ -124,8 +128,9 @@ export default function LoginPage() {
             />
             <button
               type="button"
+              disabled={isBusy}
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-theme-faint hover:text-teal-500 transition-colors"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-theme-faint hover:text-teal-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
             >
               {showPassword ? (
@@ -147,13 +152,13 @@ export default function LoginPage() {
         <button
           type="submit"
           id="btn-login"
-          disabled={isSubmitting}
+          disabled={isBusy}
           className="w-full py-3 lg:py-3.5 bg-gradient-to-r from-teal-500 to-teal-600 text-white font-semibold rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none mt-2 relative overflow-hidden"
         >
-          {isSubmitting ? (
+          {isBusy ? (
             <span className="flex items-center justify-center gap-2">
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Iniciando sesión...
+              Verificando e ingresando...
             </span>
           ) : (
             'Iniciar Sesión'
@@ -166,7 +171,9 @@ export default function LoginPage() {
           <span>¿No tienes una cuenta?</span>
           <Link
             href="/register"
-            className="text-teal-600 dark:text-teal-400 font-semibold hover:text-teal-700 dark:hover:text-teal-300 hover:underline transition-colors whitespace-nowrap"
+            aria-disabled={isBusy}
+            tabIndex={isBusy ? -1 : undefined}
+            className={`text-teal-600 dark:text-teal-400 font-semibold hover:text-teal-700 dark:hover:text-teal-300 hover:underline transition-colors whitespace-nowrap ${isBusy ? 'pointer-events-none opacity-60' : ''}`}
           >
             Regístrate aquí
           </Link>

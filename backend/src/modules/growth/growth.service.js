@@ -124,7 +124,8 @@ class GrowthService {
         const updates = { rabbitId: rabbit.id, age: endMonth, weight: newEstimatedWeight };
         
         const rabbitLabel = rabbit.name ? `${rabbit.name} - ${rabbit.code}` : rabbit.code;
-        let msg = `${rabbitLabel} ha alcanzado los ${endMonth} meses de edad. `;
+        const monthWord = endMonth === 1 ? 'mes' : 'meses';
+        let msg = `${rabbitLabel} ha alcanzado los ${endMonth} ${monthWord} de edad con un peso estimado de ${newEstimatedWeight} kg. `;
         if (endMonth === maxAge) {
             msg += `Ha alcanzado la madurez.`;
         }
@@ -132,7 +133,11 @@ class GrowthService {
         updatesResult.messages.push({
             rabbitId: rabbit.id,
             galponId: rabbit.galponId,
-            text: msg
+            text: msg,
+            rabbitLabel,
+            age: endMonth,
+            weight: newEstimatedWeight,
+            isMature: endMonth === maxAge
         });
         updatesResult.rabbitsToUpdate.push(updates);
     }
@@ -149,7 +154,11 @@ class GrowthService {
             const oldWeight = rabbit.weight;
             rabbit.age = update.age;
             if (update.weight !== undefined) rabbit.weight = update.weight;
-            await rabbit.save();
+            if (typeof rabbit.save === 'function') {
+                await rabbit.save();
+            } else if (typeof rabbit.update === 'function') {
+                await rabbit.update({ age: update.age, weight: update.weight });
+            }
             
             const rabbitLabel = rabbit.name ? `${rabbit.name} - ${rabbit.code}` : rabbit.code;
             const beforeData = { age: oldAge };
@@ -203,7 +212,121 @@ class GrowthService {
         );
         const allowedRabbitIds = new Set(results.flat());
 
-        return messages.filter(m => allowedRabbitIds.has(Number(m.rabbitId))).map(m => m.text);
+        return messages.filter(m => allowedRabbitIds.has(Number(m.rabbitId)));
+    }
+
+    _buildGrowthSummaryPayload(userUpdates) {
+        const count = userUpdates.length;
+        const summaryMessage = count === 1
+            ? 'Tienes **1 conejo** con actualización de edad y peso estimado en tu galpón.'
+            : `Tienes **${count} conejos** con actualización de edad y peso estimado en tu galpón.`;
+
+        const rabbitsList = userUpdates.map(u => {
+            const ageVal = Number(u.age || 0);
+            const ageText = ageVal === 1 ? '1 mes' : `${ageVal} meses`;
+            const weightVal = u.weight !== undefined && u.weight !== null ? Number(u.weight) : null;
+            const weightText = weightVal !== null && !Number.isNaN(weightVal) ? `${weightVal} kg` : '';
+            const baseBadge = weightText ? `${ageText} • ${weightText}` : `${ageText} de edad`;
+            return {
+                rabbitId: u.rabbitId,
+                name: u.rabbitLabel || '',
+                age: ageVal,
+                weight: u.weight,
+                isMature: Boolean(u.isMature),
+                badge: u.isMature ? `${baseBadge} • Madurez` : baseBadge
+            };
+        });
+
+        return {
+            message: summaryMessage,
+            data: {
+                type: 'growth_summary',
+                updatesCount: count,
+                rabbits: rabbitsList,
+                details: userUpdates.map(u => (u.text || '').trim()).filter(Boolean)
+            }
+        };
+    }
+
+    _parseLegacyGrowthLineForEnrichment(line) {
+        const trimmed = (line || '').trim();
+        if (!trimmed) return null;
+        const match = /^(.+?)\s+ha alcanzado los?\s+(\d+)\s+mes(?:es)?(?:\s+de edad)?(.*)$/i.exec(trimmed);
+        if (!match) return null;
+        const name = match[1].trim();
+        const age = Number.parseInt(match[2], 10);
+        const tail = match[3] || '';
+        const weightMatch = /(\d+(?:\.\d+)?)\s*kg/i.exec(tail);
+        const codeParts = name.split(' - ');
+        const code = codeParts[codeParts.length - 1].trim();
+        return {
+            name,
+            code,
+            age,
+            weight: weightMatch ? Number(weightMatch[1]) : null,
+            isMature: tail.toLowerCase().includes('madurez')
+        };
+    }
+
+    _collectLegacyGrowthItems(growthTargets) {
+        const parsedMap = new Map();
+        const codesSet = new Set();
+
+        for (const notif of growthTargets) {
+            if (Array.isArray(notif.data?.rabbits) && notif.data.rabbits.every(r => r.weight != null)) continue;
+            const lines = Array.isArray(notif.data?.details) && notif.data.details.length > 0
+                ? notif.data.details
+                : String(notif.message || '').split('\n');
+            const parsedItems = lines.map(l => this._parseLegacyGrowthLineForEnrichment(l)).filter(Boolean);
+            if (parsedItems.length === 0) continue;
+            parsedMap.set(notif.id, parsedItems);
+            for (const item of parsedItems) {
+                if (item.code) codesSet.add(item.code);
+            }
+        }
+        return { parsedMap, codesSet };
+    }
+
+    _buildEnrichedGrowthRabbitItem(item, rabbitByCode) {
+        const rb = rabbitByCode.get(item.code);
+        const weight = item.weight ?? this.calculateEstimatedWeight(rb?.purpose || 'Engorde', item.age);
+        const ageText = item.age === 1 ? '1 mes' : `${item.age} meses`;
+        const baseBadge = weight ? `${ageText} • ${weight} kg` : `${ageText} de edad`;
+        return {
+            rabbitId: rb?.id,
+            name: item.name,
+            age: item.age,
+            weight,
+            isMature: item.isMature,
+            badge: item.isMature ? `${baseBadge} • Madurez` : baseBadge
+        };
+    }
+
+    async enrichGrowthNotifications(dtos) {
+        if (!Array.isArray(dtos) || dtos.length === 0 || typeof Rabbit?.findAll !== 'function') return dtos;
+        const growthTargets = dtos.filter(n => n?.title === 'Resumen de Crecimiento' || n?.data?.type === 'growth_summary');
+        if (growthTargets.length === 0) return dtos;
+
+        const { parsedMap, codesSet } = this._collectLegacyGrowthItems(growthTargets);
+        if (parsedMap.size === 0) return dtos;
+
+        const rabbits = await Rabbit.findAll({
+            where: { code: { [Op.in]: Array.from(codesSet) } },
+            attributes: ['id', 'code', 'purpose', 'weight'],
+            paranoid: false
+        }).catch(() => []);
+        const rabbitByCode = new Map((rabbits || []).map(r => [r.code, r]));
+
+        for (const notif of growthTargets) {
+            const parsedItems = parsedMap.get(notif.id);
+            if (!parsedItems) continue;
+            notif.data = {
+                ...(notif.data || {}),
+                type: 'growth_summary',
+                rabbits: parsedItems.map(item => this._buildEnrichedGrowthRabbitItem(item, rabbitByCode))
+            };
+        }
+        return dtos;
     }
 
     async _applyGrowthUpdates({
@@ -234,27 +357,28 @@ class GrowthService {
         const ownedGalpones = preloadedOwnedGalpones || await Galpon.findAll({ where: { profileId } });
         const isOwner = ownedGalpones.length > 0 || memberships.some(m => m.role === 'owner');
 
-        let userMessages = [];
+        let userUpdates = [];
 
         if (isOwner) {
             const ownedGalponIds = new Set([
                 ...ownedGalpones.map(g => g.id),
                 ...memberships.filter(m => m.role === 'owner').map(m => m.galponId)
             ]);
-            userMessages = messages.filter(m => ownedGalponIds.has(m.galponId)).map(m => m.text);
+            userUpdates = messages.filter(m => ownedGalponIds.has(m.galponId));
         } else {
             // Usuario es trabajador: solo recibe notificaciones si tiene permisos en el módulo y jaulas asignadas
             const workerMemberships = memberships.filter(m => m.role === 'worker');
-            userMessages = await this._filterWorkerGrowthMessages(workerMemberships, messages);
+            userUpdates = await this._filterWorkerGrowthMessages(workerMemberships, messages);
         }
 
-        if (userMessages.length > 0) {
+        if (userUpdates.length > 0) {
+            const payload = this._buildGrowthSummaryPayload(userUpdates);
             await Notification.create({
                 profileId,
                 type: 'info',
                 title: 'Resumen de Crecimiento',
-                message: userMessages.join('\n'),
-                data: { type: 'growth_summary' }
+                message: payload.message,
+                data: payload.data
             });
         } else {
             // Limpiar notificaciones huérfanas si el usuario no tiene permisos o jaulas

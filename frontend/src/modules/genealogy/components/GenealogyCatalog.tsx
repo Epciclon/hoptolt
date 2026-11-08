@@ -10,6 +10,7 @@ import { Network, Edit2 } from 'lucide-react';
 import type { Rabbit } from '@/modules/rabbits/types/rabbit.types';
 import { formatRabbitAge, rabbitSexOptions } from '@/shared/utils/rabbitUtils';
 import { usePermissions } from '@/modules/farmMember/hooks/usePermissions';
+import { useRabbitQuickView } from '@/modules/rabbits/contexts/RabbitQuickViewContext';
 
 interface GenealogyCatalogProps {
   onViewTree: (rabbit: Rabbit) => void;
@@ -20,6 +21,7 @@ export function GenealogyCatalog({ onViewTree, onEditRelation }: Readonly<Geneal
   const { rabbits, pagination, loading, setPage, setSearch, setRace, setSex, filters } = useRabbits();
   const { races } = useRaces();
   const { can } = usePermissions();
+  const quickView = useRabbitQuickView();
   const canUpdate = can('genealogy', 'canUpdate') || can('genealogy', 'canCreate');
   
   const [selectedRabbitId, setSelectedRabbitId] = useState<number | null>(null);
@@ -48,6 +50,9 @@ export function GenealogyCatalog({ onViewTree, onEditRelation }: Readonly<Geneal
             subtitle={rabbit.race}
             isSelected={isSelected}
             onClick={() => toggleRabbitSelection(rabbit.id)}
+            onImageClick={() => {
+              void quickView?.openRabbitDetails({ rabbit });
+            }}
             topRightAction={
               <button
                 type="button"

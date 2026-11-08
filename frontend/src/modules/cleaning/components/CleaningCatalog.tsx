@@ -194,7 +194,7 @@ export function CleaningCatalog({ onSuccess }: Readonly<CleaningCatalogProps>) {
         </div>
       )}
 
-      <div className="w-full relative z-20">
+      <div className="w-full relative z-10">
         <FilterBar
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}

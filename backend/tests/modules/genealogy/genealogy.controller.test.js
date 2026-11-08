@@ -21,12 +21,12 @@ describe('GenealogyController', () => {
 
   describe('registerGenealogy', () => {
     it('should call registerGenealogy and return 201', async () => {
-      req = { body: { rabbitId: 1, fatherId: 2, motherId: 3 }, galponId: 1 };
+      req = { body: { rabbitId: 1, fatherId: 2, motherId: 3 }, galponId: 1, user: { id: 'user1' } };
       genealogyService.registerGenealogy.mockResolvedValue({ id: 'g1', rabbitId: 1 });
 
       await genealogyController.registerGenealogy(req, res, next);
 
-      expect(genealogyService.registerGenealogy).toHaveBeenCalledWith(req.body, 1);
+      expect(genealogyService.registerGenealogy).toHaveBeenCalledWith(req.body, 1, 'user1');
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
     });
@@ -73,12 +73,12 @@ describe('GenealogyController', () => {
 
   describe('editGenealogy', () => {
     it('should call editGenealogy and return 200', async () => {
-      req = { params: { rabbitId: '1' }, body: { fatherId: 5 } };
+      req = { params: { rabbitId: '1' }, body: { fatherId: 5 }, user: { id: 'user1' }, galponId: 1 };
       genealogyService.editGenealogy.mockResolvedValue({ id: 'g1', rabbitId: 1, fatherId: 5 });
 
       await genealogyController.editGenealogy(req, res, next);
 
-      expect(genealogyService.editGenealogy).toHaveBeenCalledWith('1', { fatherId: 5 });
+      expect(genealogyService.editGenealogy).toHaveBeenCalledWith('1', { fatherId: 5 }, 'user1', 1);
       expect(res.status).toHaveBeenCalledWith(200);
     });
   });

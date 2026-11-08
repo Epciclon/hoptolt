@@ -14,7 +14,7 @@ class MortalityService {
             FarmMember.findOne({
                 where: { profileId, galponId, status: 'active' }
             }),
-            Rabbit.findByPk(rabbitId)
+            Rabbit.findByPk(rabbitId, isKits ? { paranoid: false } : undefined)
         ]);
 
         if (!profile) throw new AppError('Usuario no encontrado.', 404);
@@ -28,16 +28,20 @@ class MortalityService {
                 WorkerCage.findAll({ where: { farmMemberId: membership.id } }),
                 Assignment.findOne({ where: { rabbitId, status: 'asignado' } })
             ]);
+            const resolvedAssignment = activeAssignment || (isKits
+                ? await Assignment.findOne({ where: { rabbitId }, order: [['id', 'DESC']] })
+                : null);
             const assignedCageIds = new Set(workerCages.map(wc => Number(wc.cageId)));
 
-            if (!activeAssignment || !assignedCageIds.has(Number(activeAssignment.cageId))) {
+            if (!resolvedAssignment || !assignedCageIds.has(Number(resolvedAssignment.cageId))) {
                 throw new AppError('No tienes permiso para registrar mortalidad de un conejo que no esté en tus jaulas asignadas.', 403);
             }
         }
 
         // Inyectar hora actual a la fecha de muerte
         const now = new Date();
-        const [y, m, d] = deathDate ? deathDate.split('-') : [now.getFullYear(), now.getMonth() + 1, now.getDate()];
+        const dateStr = deathDate ? String(deathDate).split('T')[0] : null;
+        const [y, m, d] = dateStr ? dateStr.split('-') : [now.getFullYear(), now.getMonth() + 1, now.getDate()];
         const dDate = new Date(Number(y), Number(m) - 1, Number(d), now.getHours(), now.getMinutes(), now.getSeconds());
 
         const bDate = new Date(rabbit.birthDate);
@@ -121,6 +125,32 @@ class MortalityService {
         return mortality;
     }
 
+    async _cleanupActiveFemaleReproduction(rabbit, rabbitId, profileId) {
+        if (rabbit.sex !== 'hembra') return;
+        const { Reproduction } = require('../../domain/models');
+        const { Op } = require('sequelize');
+        if (typeof Reproduction?.findOne !== 'function') return;
+
+        const activeRep = await Reproduction.findOne({
+            where: {
+                femaleId: rabbitId,
+                status: { [Op.in]: ['monta', 'gestacion'] }
+            }
+        });
+        if (!activeRep) return;
+
+        if (activeRep.status === 'monta' && typeof activeRep.destroy === 'function') {
+            await activeRep.destroy();
+        } else if (typeof activeRep.update === 'function') {
+            await activeRep.update({
+                status: 'fallido',
+                cancellationReason: 'Baja de la madre registrada en Mortalidad',
+                profileId,
+                updatedBySystem: false
+            });
+        }
+    }
+
     async _processAdultMortality(rabbit, rabbitId, cause, observations, dDate, galponId, profileId) {
         const { Assignment } = require('../../domain/models');
 
@@ -134,6 +164,7 @@ class MortalityService {
 
         await Promise.all([
             assignment ? assignment.update({ status: 'liberado' }) : Promise.resolve(),
+            this._cleanupActiveFemaleReproduction(rabbit, rabbitId, profileId),
             rabbit.destroy()
         ]);
 

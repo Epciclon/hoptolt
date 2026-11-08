@@ -43,39 +43,28 @@ describe('generateRandomName', () => {
 
     it('should generate different names on multiple calls', () => {
         crypto.randomInt
-            .mockReturnValueOnce(0).mockReturnValueOnce(0).mockReturnValueOnce(0)
-            .mockReturnValueOnce(1).mockReturnValueOnce(1).mockReturnValueOnce(1).mockReturnValueOnce(1);
+            .mockReturnValueOnce(0)
+            .mockReturnValueOnce(1);
         const name1 = generateRandomName('macho');
         const name2 = generateRandomName('macho');
         expect(name1).not.toBe(name2);
     });
 
-    it('should include a middle syllable when useMiddle is true (randomInt returns 1)', () => {
-        crypto.randomInt
-            .mockReturnValueOnce(1)
-            .mockReturnValueOnce(0)
-            .mockReturnValueOnce(0)
-            .mockReturnValueOnce(0);
+    it('should return the indexed female name for hembra', () => {
+        crypto.randomInt.mockReturnValueOnce(3);
         const name = generateRandomName('hembra');
-        expect(name).toBe('Lupita');
+        expect(name).toBe('Nala');
     });
 
-    it('should not include a middle syllable when useMiddle is false (randomInt returns 0)', () => {
-        crypto.randomInt
-            .mockReturnValueOnce(0)
-            .mockReturnValueOnce(3)
-            .mockReturnValueOnce(2);
+    it('should return the indexed male name for macho', () => {
+        crypto.randomInt.mockReturnValueOnce(0);
         const name = generateRandomName('macho');
-        expect(name).toBe('Mino');
+        expect(name).toBe('Pipo');
     });
 
-    it('should default to hembra suffix when sex is not "macho"', () => {
-        crypto.randomInt
-            .mockReturnValueOnce(0)
-            .mockReturnValueOnce(19)
-            .mockReturnValueOnce(0);
+    it('should default to female list when sex is not "macho"', () => {
+        crypto.randomInt.mockReturnValueOnce(0);
         const name = generateRandomName('unknown');
-        const lastTwo = name.slice(-2).toLowerCase();
-        expect(lastTwo).toBe('ta');
+        expect(name).toBe('Mila');
     });
 });

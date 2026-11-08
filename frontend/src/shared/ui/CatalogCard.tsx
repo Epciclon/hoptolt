@@ -14,6 +14,8 @@ export interface CatalogCardProps {
   actions?: ReactNode;
   isSelected?: boolean;
   onClick?: () => void;
+  onImageClick?: () => void;
+  imageActionTitle?: string;
 }
 
 export function CatalogCard({
@@ -27,7 +29,9 @@ export function CatalogCard({
   details,
   actions,
   isSelected = false,
-  onClick
+  onClick,
+  onImageClick,
+  imageActionTitle = 'Ver detalles del conejo',
 }: Readonly<CatalogCardProps>) {
   return (
     <div
@@ -49,6 +53,18 @@ export function CatalogCard({
 
       {/* 1. Imagen a full-width en la parte superior */}
       <div className="relative z-10 w-full h-56 bg-theme-surface border-b border-default flex-shrink-0 overflow-hidden pointer-events-none">
+        {onImageClick && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onImageClick();
+            }}
+            title={imageActionTitle}
+            aria-label={imageActionTitle}
+            className="absolute inset-0 z-10 w-full h-full cursor-pointer pointer-events-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-inset"
+          />
+        )}
         {imageUrl ? (
           <Image
             src={imageUrl}
@@ -63,12 +79,12 @@ export function CatalogCard({
           <ImagePlaceholder size="lg" className="h-full w-full border-0 rounded-none" />
         )}
         {badge && (
-          <div className="absolute top-2 left-2 bg-slate-900/80 backdrop-blur-sm text-white text-xs font-bold px-2 py-1 rounded shadow-sm pointer-events-none">
+          <div className="absolute top-2 left-2 z-20 bg-slate-900/80 backdrop-blur-sm text-white text-xs font-bold px-2 py-1 rounded shadow-sm pointer-events-none">
             {badge}
           </div>
         )}
         {topRightAction && (
-          <div className="absolute top-2 right-2 pointer-events-auto">
+          <div className="absolute top-2 right-2 z-20 pointer-events-auto">
             {topRightAction}
           </div>
         )}

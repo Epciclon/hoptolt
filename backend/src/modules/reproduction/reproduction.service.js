@@ -2,6 +2,18 @@ const reproductionRepository = require('./reproduction.repository');
 const { Rabbit, Assignment, Cage, FarmMember } = require('../../domain/models');
 const AppError = require('../../errors/AppError');
 const { getPaginationParams, createPaginatedResponse } = require('../../common/helpers/pagination.helper');
+const { recordWorkerChange } = require('../../common/helpers/audit.helper');
+
+function formatRabbitAuditLabel(rabbit, fallbackId) {
+    if (!rabbit) return fallbackId ? `ID #${fallbackId}` : 'Ninguno';
+    return rabbit.name ? `${rabbit.code} - ${rabbit.name}` : rabbit.code;
+}
+
+function formatDateAuditStr(dateVal) {
+    if (!dateVal) return '';
+    if (dateVal instanceof Date) return dateVal.toISOString().split('T')[0];
+    return String(dateVal).split('T')[0];
+}
 
 class ReproductionService {
     calculateEstimatedBirthDate(mountDate) {
@@ -50,7 +62,29 @@ class ReproductionService {
         if (femaleAge < 4) throw new AppError('La hembra debe tener al menos 4 meses de edad.', 400);
     }
 
-    async registerReproduction(data, galponId) {
+    async _auditReproductionChange({ galponId, profileId, action, entityId, femaleId, maleId, summary, before, after }) {
+        if (!profileId || !galponId) return;
+        const [female, male] = await Promise.all([
+            femaleId ? Rabbit.findByPk(femaleId, { paranoid: false }) : null,
+            maleId ? Rabbit.findByPk(maleId, { paranoid: false }) : null
+        ]);
+        const femaleLabel = formatRabbitAuditLabel(female, femaleId);
+        const maleLabel = maleId ? formatRabbitAuditLabel(male, maleId) : 'No especificado';
+
+        await recordWorkerChange({
+            galponId,
+            profileId,
+            action,
+            entity: 'reproduction',
+            entityId,
+            itemName: `Coneja ${femaleLabel}`,
+            summary,
+            before: before ? { coneja: femaleLabel, macho: maleLabel, ...before } : null,
+            after: after ? { coneja: femaleLabel, macho: maleLabel, ...after } : null
+        });
+    }
+
+    async registerReproduction(data, galponId, profileId = null) {
         const { femaleId, maleId, mountDate } = data;
 
         const female = await Rabbit.findByPk(femaleId);
@@ -71,7 +105,19 @@ class ReproductionService {
             maleId: maleId || null,
             mountDate: finalMountDate,
             estimatedBirthDate,
-            galponId
+            galponId,
+            profileId
+        });
+
+        await this._auditReproductionChange({
+            galponId,
+            profileId,
+            action: 'crear',
+            entityId: reproduction.id,
+            femaleId,
+            maleId,
+            summary: `Registró monta para la coneja ${formatRabbitAuditLabel(female, femaleId)}`,
+            after: { status: reproduction.status || 'monta', mountDate, estimatedBirthDate }
         });
 
         return reproduction;
@@ -158,6 +204,12 @@ class ReproductionService {
         const reproduction = await reproductionRepository.findById(id);
         if (!reproduction) throw new AppError('Registro de reproducción no encontrado.', 404);
 
+        const beforeState = {
+            status: reproduction.status,
+            mountDate: formatDateAuditStr(reproduction.mountDate),
+            estimatedBirthDate: formatDateAuditStr(reproduction.estimatedBirthDate)
+        };
+
         if (data.mountDate) {
             await this._processMountDateUpdate(data, reproduction);
         }
@@ -165,13 +217,45 @@ class ReproductionService {
         if (profileId) data.profileId = profileId;
         data.updatedBySystem = false;
 
-        return reproductionRepository.update(reproduction, data);
+        const updated = await reproductionRepository.update(reproduction, data);
+
+        await this._auditReproductionChange({
+            galponId: reproduction.galponId,
+            profileId,
+            action: 'modificar',
+            entityId: reproduction.id,
+            femaleId: reproduction.femaleId,
+            maleId: reproduction.maleId,
+            summary: 'Actualizó la fecha de monta',
+            before: beforeState,
+            after: {
+                status: data.status || reproduction.status,
+                mountDate: formatDateAuditStr(data.mountDate || reproduction.mountDate),
+                estimatedBirthDate: formatDateAuditStr(data.estimatedBirthDate || reproduction.estimatedBirthDate)
+            }
+        });
+
+        return updated;
     }
 
-    async deleteReproduction(id) {
+    async deleteReproduction(id, profileId = null) {
         const reproduction = await reproductionRepository.findById(id);
         if (!reproduction) throw new AppError('Registro de reproducción no encontrado.', 404);
         await reproductionRepository.delete(reproduction);
+
+        await this._auditReproductionChange({
+            galponId: reproduction.galponId,
+            profileId,
+            action: 'eliminar',
+            entityId: reproduction.id,
+            femaleId: reproduction.femaleId,
+            maleId: reproduction.maleId,
+            summary: 'Eliminó el registro de monta',
+            before: {
+                status: reproduction.status,
+                mountDate: formatDateAuditStr(reproduction.mountDate)
+            }
+        });
     }
 
     async _getWeaningCalendar(galponId, year, month) {
@@ -484,7 +568,7 @@ class ReproductionService {
         const now = new Date();
         const finalMountDate = new Date(Number(y), Number(m) - 1, Number(d), now.getHours(), now.getMinutes(), now.getSeconds());
 
-        return await reproductionRepository.create({
+        const created = await reproductionRepository.create({
             galponId,
             profileId,
             maleId,
@@ -493,6 +577,19 @@ class ReproductionService {
             estimatedBirthDate,
             status: 'monta'
         });
+
+        await this._auditReproductionChange({
+            galponId,
+            profileId,
+            action: 'crear',
+            entityId: created.id,
+            femaleId,
+            maleId,
+            summary: `Inició monta entre ${formatRabbitAuditLabel(female, femaleId)} y ${formatRabbitAuditLabel(male, maleId)}`,
+            after: { status: 'monta', mountDate: mountDateString, estimatedBirthDate }
+        });
+
+        return created;
     }
 
     async finishMating(reproductionId, galponId, profileId) {
@@ -502,6 +599,18 @@ class ReproductionService {
         if (rep.status !== 'monta') throw new AppError('Esta monta ya fue finalizada.', 400);
 
         const result = await reproductionRepository.update(rep, { status: 'gestacion', profileId, updatedBySystem: false });
+
+        await this._auditReproductionChange({
+            galponId,
+            profileId,
+            action: 'modificar',
+            entityId: rep.id,
+            femaleId: rep.femaleId,
+            maleId: rep.maleId,
+            summary: 'Finalizó monta y avanzó a la coneja a Fase 2: Gestación',
+            before: { status: 'monta' },
+            after: { status: 'gestacion', estimatedBirthDate: formatDateAuditStr(rep.estimatedBirthDate) }
+        });
 
         const { notifyOwnerOnManualPhaseChange } = require('../../common/helpers/reproductionNotification.helper');
         notifyOwnerOnManualPhaseChange(profileId, galponId, reproductionId, 2, 'Gestación')
@@ -520,6 +629,11 @@ class ReproductionService {
         if (bornKits !== undefined && bornKits !== null && bornKits < 0) throw new AppError('Cantidad de gazapos inválida.', 400);
 
         const wasInLactancia = rep.status === 'lactancia';
+        const beforeState = {
+            status: rep.status,
+            estimatedBirthDate: formatDateAuditStr(rep.estimatedBirthDate),
+            bornKits: rep.bornKits
+        };
 
         const ecuadorDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
         const y = ecuadorDate.getFullYear();
@@ -540,6 +654,24 @@ class ReproductionService {
 
         const result = await reproductionRepository.update(rep, updateData);
 
+        await this._auditReproductionChange({
+            galponId,
+            profileId,
+            action: 'modificar',
+            entityId: rep.id,
+            femaleId: rep.femaleId,
+            maleId: rep.maleId,
+            summary: wasInLactancia
+                ? `Registró o actualizó cantidad de gazapos vivos: ${updateData.bornKits ?? rep.bornKits}`
+                : 'Registró parto y avanzó a la coneja a Fase 3: Lactancia',
+            before: beforeState,
+            after: {
+                status: 'lactancia',
+                estimatedBirthDate: formatDateAuditStr(updateData.estimatedBirthDate),
+                bornKits: updateData.bornKits ?? rep.bornKits
+            }
+        });
+
         if (!wasInLactancia) {
             const { notifyOwnerOnManualPhaseChange } = require('../../common/helpers/reproductionNotification.helper');
             notifyOwnerOnManualPhaseChange(profileId, galponId, reproductionId, 3, 'Lactancia')
@@ -556,18 +688,45 @@ class ReproductionService {
         if (['completado', 'fallido'].includes(rep.status)) throw new AppError('Esta monta ya finalizó su ciclo.', 400);
 
         const { reason, action } = data; // action: 'delete' o 'fail'
+        const previousStatus = rep.status;
         
         if (action === 'delete') {
             await reproductionRepository.delete(rep);
+            await this._auditReproductionChange({
+                galponId,
+                profileId,
+                action: 'eliminar',
+                entityId: rep.id,
+                femaleId: rep.femaleId,
+                maleId: rep.maleId,
+                summary: reason ? `Descartó monta o gestación por: ${reason}` : 'Canceló y eliminó la monta activa',
+                before: {
+                    status: previousStatus,
+                    mountDate: formatDateAuditStr(rep.mountDate),
+                    cancellationReason: reason || 'Cancelación de monta'
+                }
+            });
             return { deleted: true };
         } else {
             if (!reason) throw new AppError('Debes proporcionar una razón para la cancelación.', 400);
-            return await reproductionRepository.update(rep, { 
+            const updated = await reproductionRepository.update(rep, { 
                 status: 'fallido',
                 cancellationReason: reason,
                 profileId,
                 updatedBySystem: false
             });
+            await this._auditReproductionChange({
+                galponId,
+                profileId,
+                action: 'modificar',
+                entityId: rep.id,
+                femaleId: rep.femaleId,
+                maleId: rep.maleId,
+                summary: `Canceló ciclo reproductivo como fallido: ${reason}`,
+                before: { status: previousStatus },
+                after: { status: 'fallido', cancellationReason: reason }
+            });
+            return updated;
         }
     }
 
@@ -577,7 +736,21 @@ class ReproductionService {
         if (rep.galponId !== galponId) throw new AppError('No tienes permisos.', 403);
         if (rep.status !== 'lactancia') throw new AppError('Estado inválido para destetar.', 400);
 
-        return await reproductionRepository.update(rep, { status: 'completado', profileId, updatedBySystem: false });
+        const updated = await reproductionRepository.update(rep, { status: 'completado', profileId, updatedBySystem: false });
+
+        await this._auditReproductionChange({
+            galponId,
+            profileId,
+            action: 'modificar',
+            entityId: rep.id,
+            femaleId: rep.femaleId,
+            maleId: rep.maleId,
+            summary: 'Finalizó la lactancia y completó el destete de la camada',
+            before: { status: 'lactancia', bornKits: rep.bornKits },
+            after: { status: 'completado', bornKits: rep.bornKits }
+        });
+
+        return updated;
     }
 
     async getReproductionById(id) {

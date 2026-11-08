@@ -34,13 +34,13 @@ export function CleaningDashboard() {
       <div className="w-full">
         {activeTab === 'registro' || !isOwner ? (
           <>
-            <SectionMessage message="En esta fase se puede registrar las limpiezas realizadas en las jaulas." />
+            <SectionMessage message="Selecciona las jaulas higienizadas para registrar la limpieza de la jornada." />
             <CleaningCatalog />
           </>
         ) : null}
         {isOwner && activeTab === 'historial' && (
           <>
-            <SectionMessage message="En esta fase se puede revisar el historial diario de limpiezas registradas en la granja por trabajador. Selecciona un trabajador para revisar su registro de actividades diarias." />
+            <SectionMessage message="Consulta el historial de limpiezas realizadas por cada integrante del galpón." />
             <AuditHistoryView 
               moduleName="cleaning"
               renderTable={(profileId, date) => <CleaningTable profileId={profileId} date={date} />}

@@ -67,7 +67,7 @@ describe('VaccinationController', () => {
       await vaccinationController.getVaccinations(req, res, next);
 
       expect(vaccinationService.getVaccinations).toHaveBeenCalledWith(
-        1, 'user1', 1, 10,
+        1, 'user1', 1, 12,
         { startDate: undefined, endDate: undefined, races: undefined, profileId: undefined, all: false }
       );
     });

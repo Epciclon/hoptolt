@@ -52,11 +52,12 @@ const FIELD_LABELS: Record<string, string> = {
   age: 'Edad en meses',
   weight: 'Peso estimado',
   shift: 'Turno',
+  date: 'Fecha del turno',
   status: 'Estado',
-  unfedCount: 'Jaulas sin alimentar',
+  unfedCount: 'Total sin alimentar',
   workerName: 'Trabajador encargado',
   workerId: 'ID del trabajador',
-  cages: 'Jaulas pendientes',
+  cages: 'Jaulas sin alimentar',
   itemName: 'Elemento afectado',
   rabbitCode: 'Código de conejo',
   rabbitName: 'Nombre de conejo'
@@ -64,6 +65,10 @@ const FIELD_LABELS: Record<string, string> = {
 
 function formatValue(key: string, val: any): string {
   if (val === null || val === undefined || val === '') return 'Ninguno';
+  if (key === 'shift') {
+    const str = String(val).trim();
+    return str ? str.charAt(0).toUpperCase() + str.slice(1) : 'Ninguno';
+  }
   if (key === 'weight') {
     const num = Number(val);
     if (!Number.isNaN(num)) return `${num} kg`;
@@ -165,7 +170,7 @@ function renderDetailsView(log: AuditLogItem) {
 
   if (details && typeof details === 'object') {
     const relevantKeys = Object.keys(details).filter(k => 
-      !['id', 'galponId', 'isSystem', 'systemActor', 'summary', 'before', 'after'].includes(k)
+      !['id', 'galponId', 'isSystem', 'systemActor', 'summary', 'before', 'after', 'itemName'].includes(k)
     );
 
     if (relevantKeys.length > 0) {
@@ -177,8 +182,25 @@ function renderDetailsView(log: AuditLogItem) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {relevantKeys.map((k) => (
               <div key={k} className="bg-theme-surface border border-default rounded-xl p-3 text-xs shadow-2xs">
-                <span className="font-semibold text-muted block mb-1">{FIELD_LABELS[k] || k}</span>
-                <span className="font-medium text-main text-xs">{formatValue(k, details[k])}</span>
+                <span className="font-semibold text-muted block mb-1.5">{FIELD_LABELS[k] || k}</span>
+                {k === 'cages' && Array.isArray(details[k]) && details[k].length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {details[k].map((cageVal: any) => {
+                      const num = typeof cageVal === 'object' && cageVal?.number !== undefined ? cageVal.number : cageVal;
+                      return (
+                        <span
+                          key={String(num)}
+                          className="min-w-[2.25rem] h-8 px-2.5 rounded-md text-xs font-semibold border bg-card text-main border-default shadow-sm inline-flex items-center justify-center"
+                          title={`Jaula ${num}`}
+                        >
+                          {num}
+                        </span>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <span className="font-medium text-main text-xs">{formatValue(k, details[k])}</span>
+                )}
               </div>
             ))}
           </div>

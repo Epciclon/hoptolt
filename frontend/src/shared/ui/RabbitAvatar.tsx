@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRabbitQuickView } from '@/modules/rabbits/contexts/RabbitQuickViewContext';
 
 type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 
@@ -10,6 +11,10 @@ interface RabbitAvatarProps {
   size?: AvatarSize;
   className?: string;
   ring?: boolean;
+  rabbitId?: number | null;
+  rabbitCode?: string | null;
+  disableQuickView?: boolean;
+  onClick?: (e: React.MouseEvent) => void;
 }
 
 const baseSizes: Record<AvatarSize, number> = {
@@ -26,9 +31,14 @@ export const RabbitAvatar: React.FC<RabbitAvatarProps> = ({
   alt = 'Conejo', 
   size = 'md', 
   className = '',
-  ring = false
+  ring = false,
+  rabbitId,
+  rabbitCode,
+  disableQuickView = false,
+  onClick,
 }) => {
   const [hasError, setHasError] = useState(false);
+  const quickView = useRabbitQuickView();
 
   useEffect(() => {
     setHasError(false);
@@ -49,7 +59,59 @@ export const RabbitAvatar: React.FC<RabbitAvatarProps> = ({
     ? 'border-2 border-primary-100 dark:border-primary-900/30 ring-2 ring-offset-1 ring-primary-500/50' 
     : 'border border-strong shadow-sm';
 
-  const baseClasses = `rounded-full flex-shrink-0 transition-transform duration-200 hover:scale-105 ${ringClasses} ${className}`;
+  const canTriggerQuickView = !disableQuickView && Boolean(onClick || (quickView && (rabbitId || rabbitCode)));
+  const interactiveClasses = canTriggerQuickView
+    ? 'group/avatar cursor-pointer pointer-events-auto relative z-20 hover:scale-110 hover:ring-2 hover:ring-primary-500 hover:shadow-md hover:brightness-105 focus:outline-none focus:ring-2 focus:ring-primary-500'
+    : 'hover:scale-105';
+
+  const baseClasses = `rounded-full flex-shrink-0 transition-all duration-200 ${ringClasses} ${interactiveClasses} ${className}`;
+
+  const handleAvatarClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onClick) {
+      onClick(e);
+      return;
+    }
+    if (quickView && (rabbitId || rabbitCode)) {
+      void quickView.openRabbitDetails({ rabbitId, rabbitCode });
+    }
+  };
+
+  // Placeholder text sizing relative to the container
+  const textSizeClasses = {
+    xs: 'text-[7px]',
+    sm: 'text-[8px]',
+    md: 'text-[10px]',
+    lg: 'text-xs',
+    xl: 'text-sm',
+    '2xl': 'text-base'
+  };
+
+  if (canTriggerQuickView) {
+    return (
+      <button
+        type="button"
+        onClick={handleAvatarClick}
+        style={dimensionStyle}
+        title="Ver detalles del conejo"
+        aria-label={`Ver detalles de ${alt}`}
+        className={`p-0 overflow-hidden bg-theme-surface flex items-center justify-center ${baseClasses}`}
+      >
+        {imageUrl && !hasError ? (
+          <img
+            src={imageUrl}
+            alt={alt}
+            className="w-full h-full object-cover rounded-full transition-transform duration-300 group-hover/avatar:scale-110"
+            onError={() => setHasError(true)}
+          />
+        ) : (
+          <span className={`text-center leading-tight px-0.5 text-theme-faint ${textSizeClasses[size]} font-medium uppercase`}>
+            Sin foto
+          </span>
+        )}
+      </button>
+    );
+  }
 
   if (imageUrl && !hasError) {
     return (
@@ -62,16 +124,6 @@ export const RabbitAvatar: React.FC<RabbitAvatarProps> = ({
       />
     );
   }
-
-  // Placeholder text sizing relative to the container
-  const textSizeClasses = {
-    xs: 'text-[7px]',
-    sm: 'text-[8px]',
-    md: 'text-[10px]',
-    lg: 'text-xs',
-    xl: 'text-sm',
-    '2xl': 'text-base'
-  };
 
   return (
     <div 

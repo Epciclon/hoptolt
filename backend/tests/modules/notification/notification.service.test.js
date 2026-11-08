@@ -54,8 +54,9 @@ describe('NotificationService', () => {
     });
 
     it('returns notifications with auto-checks', async () => {
+      notificationRepository.countByProfileId = jest.fn().mockResolvedValue(1);
       const result = await notificationService.getNotificationsByProfile('p1');
-      expect(result).toHaveLength(1);
+      expect(result.data).toHaveLength(1);
       expect(growthService.processDailyGrowth).toHaveBeenCalledWith('p1');
     });
   });

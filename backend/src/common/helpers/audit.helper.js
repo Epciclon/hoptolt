@@ -147,6 +147,7 @@ async function recordWorkerChange({
                 races: 'Razas',
                 rabbits: 'Conejos',
                 assignments: 'Asignaciones',
+                reproduction: 'Reproducción',
                 genealogy: 'Genealogía',
                 reports: 'Reportes'
             };
@@ -234,7 +235,8 @@ async function recordSystemChange({
     itemName = '',
     summary = '',
     before = null,
-    after = null
+    after = null,
+    ...extraDetails
 }) {
     try {
         if (!galponId) return null;
@@ -245,6 +247,7 @@ async function recordSystemChange({
             entityId: Number(entityId) || 0,
             profileId: null,
             details: {
+                ...extraDetails,
                 galponId: Number(galponId),
                 isSystem: true,
                 systemActor: 'HopTolt',

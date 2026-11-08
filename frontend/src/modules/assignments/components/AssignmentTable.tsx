@@ -16,7 +16,9 @@ export function AssignmentTable() {
   const { showToast } = useToast();
   const { can } = usePermissions();
   const canCreate = can('assignments', 'canCreate');
+  const canUpdate = can('assignments', 'canUpdate');
   const canDelete = can('assignments', 'canDelete');
+  const canMove = canCreate || canUpdate;
 
   const [toUnassign, setToUnassign] = useState<{ cageId: number; rabbitIds: number[] } | null>(null);
   const [transferRabbitData, setTransferRabbitData] = useState<{ 
@@ -144,7 +146,7 @@ export function AssignmentTable() {
               const selectedIds = selectedRabbitsByCage[group.cageId] || [];
               const renderCageFooter = () => {
                 if (selectedIds.length === 0) return undefined;
-                if (!canCreate && !canDelete) {
+                if (!canMove && !canDelete) {
                   return (
                     <div className="text-center w-full py-1 text-xs text-muted font-medium">
                       Solo consulta
@@ -153,7 +155,7 @@ export function AssignmentTable() {
                 }
                 return (
                   <div className="flex gap-2 w-full animate-in fade-in slide-in-from-top-1 duration-200">
-                    {canCreate && (
+                    {canMove && (
                       <Button
                         variant="outline"
                         size="sm"

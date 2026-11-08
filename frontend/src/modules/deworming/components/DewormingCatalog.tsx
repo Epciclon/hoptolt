@@ -80,7 +80,7 @@ export function DewormingCatalog({ onSuccess }: Readonly<DewormingCatalogProps>)
         </p>
       </div>
 
-      <div className="w-full relative z-20 mb-2">
+      <div className="w-full relative z-10 mb-2">
         <FilterBar
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}

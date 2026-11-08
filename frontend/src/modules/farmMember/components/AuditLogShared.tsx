@@ -176,6 +176,32 @@ interface AuditLogListCardProps {
   onSelectLog: (log: AuditLogItem) => void;
 }
 
+export function extractAuditSummaryAndCages(
+  log: AuditLogItem,
+  fallbackSummary: string
+): { cleanSummary: string; pendingCages: number[] } {
+  const rawSummary = String(log.details?.summary || fallbackSummary);
+  const cleanSummary = rawSummary.replace(/\s*\[jaulas:[^\]]*\]/gi, '');
+
+  const rawCages = Array.isArray(log.details?.cages) ? log.details.cages : [];
+  let parsedCages: number[] = rawCages
+    .map((c: any) => (typeof c === 'object' && c?.number !== undefined ? Number(c.number) : Number(c)))
+    .filter((n: number) => !Number.isNaN(n));
+
+  if (parsedCages.length === 0) {
+    const bracketMatch = /\[jaulas:\s*([^\]]+)\]/i.exec(rawSummary);
+    if (bracketMatch) {
+      parsedCages = bracketMatch[1]
+        .split(',')
+        .map((s) => Number.parseInt(s.trim(), 10))
+        .filter((n) => !Number.isNaN(n));
+    }
+  }
+
+  const uniqueSorted = Array.from(new Set(parsedCages)).sort((a, b) => a - b);
+  return { cleanSummary, pendingCages: uniqueSorted };
+}
+
 export function AuditLogListCard({
   loading,
   logs,
@@ -231,6 +257,10 @@ export function AuditLogListCard({
           };
           const entityLabel = entityLabels[log.entity] || log.entity;
           const showDetailBtn = hasDetailedDiff(log);
+          const { cleanSummary, pendingCages } = extractAuditSummaryAndCages(
+            log,
+            getFallbackSummary(entityLabel)
+          );
 
           return (
             <div
@@ -261,8 +291,25 @@ export function AuditLogListCard({
               </div>
 
               <p className="text-xs sm:text-sm text-main leading-relaxed break-words">
-                {log.details?.summary || getFallbackSummary(entityLabel)}
+                {cleanSummary}
               </p>
+
+              {pendingCages.length > 0 && (
+                <div className="flex flex-col gap-1.5 pt-0.5">
+                  <span className="text-xs font-semibold text-muted">Jaulas sin alimentar:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {pendingCages.map((cageNum) => (
+                      <span
+                        key={cageNum}
+                        className="min-w-[2.25rem] h-8 px-2.5 rounded-md text-xs font-semibold border bg-theme-surface dark:bg-card text-main border-default shadow-sm inline-flex items-center justify-center"
+                        title={`Jaula ${cageNum}`}
+                      >
+                        {cageNum}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center justify-between gap-2 pt-1 border-t border-default/50">
                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
@@ -354,7 +401,7 @@ export function AuditLogDetailDialog({
             </div>
 
             <div className="text-xs sm:text-sm text-main font-medium leading-relaxed bg-primary-50/50 dark:bg-primary-950/20 border border-primary-100 dark:border-primary-900/30 rounded-xl p-2.5 sm:p-3">
-              {selectedLog.details?.summary || getModalFallbackSummary(entityLabel)}
+              {extractAuditSummaryAndCages(selectedLog, getModalFallbackSummary(entityLabel)).cleanSummary}
             </div>
 
             <div className="text-xs text-muted flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 px-1">

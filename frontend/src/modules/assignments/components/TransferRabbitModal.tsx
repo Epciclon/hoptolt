@@ -101,7 +101,7 @@ export function TransferRabbitModal({ open, onClose, rabbits, currentCageId, sou
   if (isCompletelyBlocked) {
     return (
       <Dialog open={open} onClose={onClose} title="Movimiento No Permitido" size="md">
-        <div className="p-4 flex flex-col gap-4">
+        <div className="flex flex-col gap-4">
           <p className="text-sm text-muted">
             Has seleccionado al menos un conejo de Engorde mayor a 3 meses de edad. El sistema no permite transferir conejos mayores de 3 meses a otras jaulas de engorde grupales debido a que alcanzan la madurez sexual y muestran comportamientos territoriales. Además, por su propósito, no pueden ir a jaulas de reproducción.
           </p>

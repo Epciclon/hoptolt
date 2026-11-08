@@ -84,7 +84,13 @@ export function GenealogyTreeModal({ rabbit, onClose }: Readonly<GenealogyTreeMo
               <div key={uid} className="flex flex-col items-center w-[170px] shrink-0">
                 <div className={`p-2.5 border-2 rounded-xl text-xs ${bgColor} w-full text-center shadow-sm transition-all`}>
                   <div className="flex justify-center mb-1.5">
-                    <RabbitAvatar imageUrl={node.imageUrl} alt={node.name || node.code} size="md" />
+                    <RabbitAvatar
+                      imageUrl={node.imageUrl}
+                      alt={node.name || node.code}
+                      size="md"
+                      rabbitId={node.id}
+                      rabbitCode={node.code}
+                    />
                   </div>
                   {node.name ? (
                     <>

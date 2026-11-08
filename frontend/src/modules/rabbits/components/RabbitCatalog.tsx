@@ -6,8 +6,8 @@ import type { Rabbit } from '../types/rabbit.types';
 import { Button, ConfirmDialog, Dialog, Badge, LoadingMessage, CatalogCard } from '@/shared/ui';
 import { FilterBar } from '@/shared/ui/FilterBar';
 import { Pagination } from '@/shared/ui/Pagination';
-import { useState } from 'react';
-import { Pencil, Trash2, Info } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { RabbitForm } from './RabbitForm';
 import { RabbitDetailsModal } from './RabbitDetailsModal';
 import { useToast } from '@/shared/contexts/ToastContext';
@@ -35,6 +35,15 @@ export function RabbitCatalog({ onSuccess }: Readonly<RabbitCatalogProps>) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [detailsRabbit, setDetailsRabbit] = useState<Rabbit | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+
+  useEffect(() => {
+    if (detailsRabbit?.id) {
+      const updated = rabbits.find(r => r.id === detailsRabbit.id);
+      if (updated) {
+        setDetailsRabbit(updated);
+      }
+    }
+  }, [rabbits, detailsRabbit?.id]);
 
   const toggleRabbitSelection = (rabbitId: number) => {
     setSelectedRabbitId(prev => prev === rabbitId ? null : rabbitId);
@@ -101,20 +110,10 @@ export function RabbitCatalog({ onSuccess }: Readonly<RabbitCatalogProps>) {
                 subtitle={rabbit.race}
                 isSelected={isSelected}
                 onClick={() => toggleRabbitSelection(rabbit.id)}
-                topRightAction={
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDetailsRabbit(rabbit);
-                      setShowDetailsModal(true);
-                    }}
-                    className="bg-slate-900/70 hover:bg-slate-900 text-white p-1.5 rounded-md shadow-sm backdrop-blur-sm transition-colors"
-                    title="Ver Detalles e Historial Médico"
-                  >
-                    <Info size={16} />
-                  </button>
-                }
+                onImageClick={() => {
+                  setDetailsRabbit(rabbit);
+                  setShowDetailsModal(true);
+                }}
                 tags={
                   <>
                     <Badge variant={rabbit.sex === 'macho' ? 'primary' : 'success'}>

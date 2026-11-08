@@ -14,6 +14,6 @@ router.get('/assignments', requirePermission('assignments', 'canRead'), galponCo
 router.get('/assignments/assigned-rabbits', requirePermission('assignments', 'canRead'), galponContext, assignmentController.getAssignedRabbits);
 router.get('/assignments/available-rabbits', requirePermission('assignments', 'canRead'), galponContext, assignmentController.getAvailableRabbits);
 router.get('/assignments/operative-cages', requirePermission('assignments', 'canRead'), galponContext, assignmentController.getOperativeCages);
-router.delete('/assignments/:id', requirePermission('assignments', 'canDelete'), assignmentController.unassignRabbit);
+router.delete('/assignments/:id', requirePermission('assignments', 'canDelete'), galponContext, assignmentController.unassignRabbit);
 
 module.exports = router;

@@ -31,6 +31,7 @@ describe('FeedingService', () => {
 
   describe('registerFeeding', () => {
     beforeEach(() => {
+      FarmMember.findOne.mockResolvedValue({ id: 1, role: 'owner', status: 'active' });
       Cage.findAll = jest.fn().mockResolvedValue([{ id: 1, number: 5, galponId: 1 }]);
       Assignment.findAll = jest.fn().mockResolvedValue([{ cageId: 1, rabbit: { id: 1, code: 'R001', name: 'Bunny', race: 'X', imageUrl: null } }]);
       const { Feeding } = require('../../../src/domain/models');

@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -28,16 +28,47 @@ const sizeMap: Record<DialogSize, string> = {
   '3xl': 'max-w-3xl',
 };
 
+const openDialogStack: symbol[] = [];
+
 export function Dialog({ open, onClose, title, description, children, size = 'md', hideClose = false, centerHeader = false }: Readonly<DialogProps>) {
   const [mounted, setMounted] = useState(false);
+  const [stackIndex, setStackIndex] = useState(0);
+  const dialogIdRef = useRef<symbol | null>(null);
+
+  if (!dialogIdRef.current) {
+    dialogIdRef.current = Symbol('dialog');
+  }
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   useEffect(() => {
+    const id = dialogIdRef.current!;
+    if (open && mounted) {
+      if (!openDialogStack.includes(id)) {
+        openDialogStack.push(id);
+      }
+      setStackIndex(openDialogStack.indexOf(id));
+    }
+    return () => {
+      const idx = openDialogStack.indexOf(id);
+      if (idx !== -1) {
+        openDialogStack.splice(idx, 1);
+      }
+    };
+  }, [open, mounted]);
+
+  useEffect(() => {
+    const id = dialogIdRef.current!;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        const topDialogId = openDialogStack[openDialogStack.length - 1];
+        if (!topDialogId || topDialogId === id) {
+          e.stopPropagation();
+          onClose();
+        }
+      }
     };
     if (open) document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
@@ -48,6 +79,7 @@ export function Dialog({ open, onClose, title, description, children, size = 'md
   return createPortal(
     <dialog
       open
+      style={{ zIndex: 999 + stackIndex * 10 }}
       className="fixed inset-0 z-[999] flex items-center justify-center p-2.5 sm:p-4 bg-transparent border-none m-0 w-full h-full max-w-none max-h-none"
       aria-modal="true"
     >
@@ -55,7 +87,10 @@ export function Dialog({ open, onClose, title, description, children, size = 'md
         type="button"
         aria-label="Cerrar diálogo"
         className="absolute inset-0 bg-black/50 backdrop-blur-sm border-none cursor-default w-full h-full block"
-        onClick={onClose}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
       />
       <div
         className={cn(
@@ -72,7 +107,10 @@ export function Dialog({ open, onClose, title, description, children, size = 'md
           </div>
           {!hideClose && (
             <button type="button"
-              onClick={onClose}
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+              }}
               className="ml-4 mt-0.5 text-theme-faint hover:text-muted transition-colors cursor-pointer shrink-0"
             >
               <X size={20} />

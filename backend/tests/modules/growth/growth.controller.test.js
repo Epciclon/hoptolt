@@ -23,8 +23,8 @@ describe('GrowthController', () => {
     it('should call getHistory and return 200', async () => {
       req = { params: { rabbitId: 'r1' } };
       const mockHistory = [
-        { id: 1, weight: 2.5, date: '2024-01-15' },
-        { id: 2, weight: 3.0, date: '2024-02-15' }
+        { id: 1, rabbitId: 10, weight: 2.5, recordDate: '2024-01-15', isAutomatic: true },
+        { id: 2, rabbitId: 10, weight: 3.0, recordDate: '2024-02-15', isAutomatic: false }
       ];
       growthService.getHistory.mockResolvedValue(mockHistory);
 

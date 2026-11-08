@@ -59,12 +59,12 @@ describe('ReproductionController', () => {
 
   describe('registerReproduction', () => {
     it('should call registerReproduction and return 201', async () => {
-      req = { body: { maleId: 1, femaleId: 2 }, galponId: 1 };
+      req = { body: { maleId: 1, femaleId: 2 }, galponId: 1, user: { id: 'user1' } };
       reproductionService.registerReproduction.mockResolvedValue({ id: 'rep1' });
 
       await reproductionController.registerReproduction(req, res, next);
 
-      expect(reproductionService.registerReproduction).toHaveBeenCalledWith(req.body, 1);
+      expect(reproductionService.registerReproduction).toHaveBeenCalledWith(req.body, 1, 'user1');
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
     });
@@ -146,7 +146,7 @@ describe('ReproductionController', () => {
 
       expect(reproductionService.getAllReproductions).toHaveBeenCalledWith(
         1, 'user1', 1, 10,
-        { startDate: '2024-01-01', endDate: '2024-12-31', races: undefined, status: undefined, profileId: undefined, all: true }
+        { startDate: '2024-01-01', endDate: '2024-12-31', races: undefined, status: undefined, profileId: undefined, search: undefined, all: true }
       );
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
@@ -163,8 +163,8 @@ describe('ReproductionController', () => {
       await reproductionController.getAllReproductions(req, res, next);
 
       expect(reproductionService.getAllReproductions).toHaveBeenCalledWith(
-        1, 'user1', 1, 10,
-        { startDate: undefined, endDate: undefined, races: undefined, status: undefined, profileId: undefined, all: false }
+        1, 'user1', 1, 12,
+        { startDate: undefined, endDate: undefined, races: undefined, status: undefined, profileId: undefined, search: undefined, all: false }
       );
     });
   });
@@ -217,12 +217,12 @@ describe('ReproductionController', () => {
 
   describe('deleteReproduction', () => {
     it('should call deleteReproduction and return 200', async () => {
-      req = { params: { id: 'rep1' } };
+      req = { params: { id: 'rep1' }, user: { id: 'user1' } };
       reproductionService.deleteReproduction.mockResolvedValue();
 
       await reproductionController.deleteReproduction(req, res, next);
 
-      expect(reproductionService.deleteReproduction).toHaveBeenCalledWith('rep1');
+      expect(reproductionService.deleteReproduction).toHaveBeenCalledWith('rep1', 'user1');
       expect(res.status).toHaveBeenCalledWith(200);
     });
   });

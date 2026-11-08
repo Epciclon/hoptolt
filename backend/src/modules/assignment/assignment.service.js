@@ -402,73 +402,89 @@ class AssignmentService {
         throw new AppError('No se pudo mover a los conejos.', 400);
     }
 
-    async getAssignments(galponId, profileId = null) {
-        return assignmentRepository.findActiveByGalponId(galponId, profileId);
+    async getAssignments(galponId) {
+        return assignmentRepository.findByGalponId(galponId);
+    }
+
+    async _filterAssignmentsForWorker(assignments, galponId, profileId) {
+        if (!profileId) return assignments;
+        const { FarmMember, WorkerCage } = require('../../domain/models');
+        const member = await FarmMember.findOne({
+            where: { profileId, galponId, status: 'active' }
+        });
+        if (!member || member.role !== 'worker') return assignments;
+
+        const workerCages = await WorkerCage.findAll({
+            where: { farmMemberId: member.id }
+        });
+        const assignedCageIds = new Set(workerCages.map(wc => Number(wc.cageId)));
+        return assignments.filter(a => assignedCageIds.has(Number(a.cageId)));
     }
 
     async getAssignedRabbits(galponId, profileId = null) {
-        const assignments = await assignmentRepository.findActiveByGalponId(galponId, profileId);
-        const assignedRabbitIds = [...new Set(assignments.map(a => a.rabbitId))];
-        
-        if (assignedRabbitIds.length === 0) return [];
+        const reproductionRepo = require('../reproduction/reproduction.repository');
+        let [assignments, lactatingIds] = await Promise.all([
+            assignmentRepository.findByGalponId(galponId),
+            reproductionRepo.findLactatingFemaleIds(galponId)
+        ]);
 
-        const assignedRabbits = await rabbitRepository.findAll({
-            where: {
-                id: { [Op.in]: assignedRabbitIds },
-                galponId
-            }
-        });
+        assignments = await this._filterAssignmentsForWorker(assignments, galponId, profileId);
 
-        const rabbitMap = new Map(assignedRabbits.map(r => [r.id, r]));
+        return assignments.map(assignment => {
+            const rabbit = assignment.rabbit;
+            const cage = assignment.cage;
+            if (!rabbit) return null;
 
-        return assignments.map(a => {
-            const rabbit = rabbitMap.get(a.rabbitId);
             return {
-                id: a.id,
-                assignmentId: a.id,
-                rabbitId: a.rabbitId,
-                cageId: a.cageId,
-                cageNumber: a.cageNumber,
-                rabbitCode: a.rabbitCode,
-                status: a.status,
-                name: rabbit ? rabbit.name : null,
-                race: rabbit ? rabbit.race : null,
-                sex: rabbit ? rabbit.sex : null,
-                birthDate: rabbit ? rabbit.birthDate : null,
-                purpose: rabbit ? rabbit.purpose : null,
-                rabbitStatus: rabbit ? rabbit.status : null
+                id: rabbit.id,
+                code: rabbit.code,
+                name: rabbit.name,
+                age: rabbit.age,
+                weight: rabbit.weight,
+                race: rabbit.race,
+                imageUrl: rabbit.imageUrl,
+                isLactating: lactatingIds.has(rabbit.id),
+                cageNumber: cage?.number,
+                cageType: cage?.type,
+                cageId: cage?.id
             };
-        });
+        }).filter(Boolean);
     }
 
     async getAvailableRabbits(galponId) {
-        const activeAssignments = await assignmentRepository.findActiveByGalponId(galponId);
-        const assignedRabbitIds = activeAssignments.map(a => a.rabbitId);
-
-        return rabbitRepository.findAvailableForAssignment(galponId, assignedRabbitIds);
+        const [allRabbits, assignedRabbits] = await Promise.all([
+            rabbitRepository.findByGalpon(galponId),
+            assignmentRepository.findByGalponId(galponId)
+        ]);
+        const assignedIds = new Set(assignedRabbits.map(a => a.rabbitId));
+        return allRabbits.filter(r => !assignedIds.has(r.id));
     }
 
-    async getOperativeCages(galponId, profileId = null) {
-        const cages = await cageRepository.findOperativeWithCapacity(galponId, profileId);
-        
-        const counts = await assignmentRepository.countActiveGroupedByCage(galponId);
-        const countMap = new Map(counts.map(c => [c.cageId, Number.parseInt(c.count, 10)]));
+    async getOperativeCages(galponId) {
+        const [cages, activeAssignments] = await Promise.all([
+            cageRepository.findByStatus('operativa'),
+            assignmentRepository.findByGalponId(galponId)
+        ]);
+        const galponCages = cages.filter(c => c.galponId === galponId);
 
-        const cagesWithStats = cages.map(cage => {
-            const occupied = countMap.get(cage.id) || 0;
-            const available = Math.max(0, cage.capacity - occupied);
-            
-            return {
-                id: cage.id,
-                number: cage.number,
-                type: cage.type,
-                capacity: cage.capacity,
-                occupied,
-                available,
-                isFull: occupied >= cage.capacity
-            };
-        });
+        const countsByCage = {};
+        for (const a of activeAssignments) {
+            countsByCage[a.cageId] = (countsByCage[a.cageId] || 0) + 1;
+        }
 
+        const cagesWithStats = [];
+        for (const cage of galponCages) {
+            const count = countsByCage[cage.id] || 0;
+            let occupancyStatus = 'disponible';
+            if (count >= cage.capacity) occupancyStatus = 'llena';
+            else if (count > 0) occupancyStatus = 'parcial';
+
+            cagesWithStats.push({
+                ...cage.get({ plain: true }),
+                assignedCount: count,
+                occupancyStatus
+            });
+        }
         return cagesWithStats;
     }
 
@@ -526,6 +542,9 @@ class AssignmentService {
     async unassignRabbit(id, profileId = null, galponId = null) {
         const assignment = await assignmentRepository.findById(id);
         if (!assignment) throw new AppError('La asignación no existe.', 404);
+        if (galponId && assignment.galponId !== galponId) {
+            throw new AppError('La asignación no pertenece al galpón activo.', 403);
+        }
         await assignmentRepository.update(assignment, { status: 'liberado' });
         
         void this._handleUnassignSideEffects(assignment, profileId, galponId);
