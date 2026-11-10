@@ -269,7 +269,7 @@ function checkSingleFileIntegrity(fullPath, isFrontend) {
   if (/^(<{7}|={7}|>{7})/m.test(content)) {
     addError(`[Integridad] Marcadores de conflicto Git detectados en: ${fullPath}`);
   }
-  if (/BEGIN\s+[A-Z\s]*PRIVATE\s+KEY/.test(content)) {
+  if (/BEGIN (?:[A-Z]+ )?PRIVATE KEY/.test(content)) {
     addError(`[Seguridad] Clave privada detectada en codigo fuente: ${fullPath}`);
   }
   if (isFrontend && /from\s+['"][^'"]*backend\//.test(content)) {
