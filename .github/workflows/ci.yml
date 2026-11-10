@@ -24,7 +24,7 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Verificar arquitectura de carpetas, capas y cobertura modular
+      - name: Verificar arquitectura de carpetas, capas, seguridad y cobertura modular
         run: node scripts/validate-architecture.js
 
   backend-checks:
@@ -48,9 +48,6 @@ jobs:
 
       - name: Instalar dependencias
         run: npm ci
-
-      - name: Verificar sintaxis del punto de entrada
-        run: node --check src/app.js
 
       - name: Ejecutar Pruebas Unitarias e Integración con Cobertura
         run: npm run test:coverage
@@ -97,15 +94,29 @@ jobs:
       - name: Compilar App Next.js
         run: npm run build
         env:
-          NEXT_PUBLIC_SUPABASE_URL: "https://fake.supabase.co"
+          NEXT_PUBLIC_SUPABASE_URL: "http://localhost:54321"
           NEXT_PUBLIC_SUPABASE_ANON_KEY: "fake_anon_key"
-          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "fake_pub_key"
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "eyJmYWtlIjoiZmFrZSJ9.fake"
+
+      - name: Obtener versión de Playwright
+        id: playwright-version
+        run: echo "version=$(npx playwright --version | awk '{print $2}')" >> $GITHUB_OUTPUT
+
+      - name: Cache de binarios de Playwright
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
 
       - name: Instalar Navegadores de Playwright
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
 
       - name: Ejecutar Pruebas E2E Playwright
         run: npm run test:e2e
+        env:
+          CI: true
 
       - name: Guardar Reporte de Playwright
         if: always()

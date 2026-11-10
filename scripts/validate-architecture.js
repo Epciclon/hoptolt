@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const process = require('node:process');
+const { execFileSync } = require('node:child_process');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const BACKEND_SRC = path.join(ROOT_DIR, 'backend', 'src');
@@ -184,8 +185,18 @@ function scanSourceIntegrity(dirPath, isFrontend) {
     if (/^(<{7}|={7}|>{7})/m.test(content)) {
       addError(`[Integridad] Marcadores de conflicto Git detectados en: ${fullPath}`);
     }
+    if (/BEGIN\s+[A-Z\s]*PRIVATE\s+KEY/.test(content)) {
+      addError(`[Seguridad] Clave privada detectada en codigo fuente: ${fullPath}`);
+    }
     if (isFrontend && /from\s+['"][^'"]*backend\//.test(content)) {
       addError(`[Frontera de Capas] Importacion directa hacia backend detectada en: ${fullPath}`);
+    }
+    if (!isFrontend && entry.name.endsWith('.js')) {
+      try {
+        execFileSync(process.execPath, ['--check', fullPath], { stdio: 'ignore' });
+      } catch {
+        addError(`[Sintaxis Backend] Error de sintaxis en: ${fullPath}`);
+      }
     }
   }
 }

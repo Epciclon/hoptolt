@@ -1,10 +1,12 @@
 import { defineConfig } from '@playwright/test';
 
+const isCI = Boolean(process.env.CI);
+
 export default defineConfig({
   testDir: './tests/e2e',
   timeout: 60000,
-  retries: 1,
-  reporter: 'html',
+  retries: isCI ? 1 : 0,
+  reporter: isCI ? [['html', { open: 'never' }], ['github'], ['list']] : 'html',
   use: {
     baseURL: 'http://localhost:3000',
     headless: true,
@@ -14,12 +16,12 @@ export default defineConfig({
     {
       command: 'node tests/e2e/mock-supabase-server.js',
       port: 54321,
-      reuseExistingServer: true,
+      reuseExistingServer: !isCI,
     },
     {
-      command: 'npm run dev -- -p 3000',
+      command: isCI ? 'npm run start -- -p 3000' : 'npm run dev -- -p 3000',
       port: 3000,
-      reuseExistingServer: true,
+      reuseExistingServer: !isCI,
       timeout: 120000,
       env: {
         NEXT_PUBLIC_SUPABASE_URL: 'http://localhost:54321',
