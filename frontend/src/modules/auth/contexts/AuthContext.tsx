@@ -29,7 +29,8 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     if (!silent) setLoading(true);
     try {
       // E2E Bypass en cliente
-      if (process.env.NODE_ENV !== 'production' && typeof document !== 'undefined' && document.cookie.includes('e2e_bypass=true')) {
+      const isE2E = process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_E2E_BYPASS === 'true';
+      if (isE2E && typeof document !== 'undefined' && document.cookie.includes('e2e_bypass=true')) {
         const profile = await authService.getMe();
         setUser(profile);
         if (!silent) setLoading(false);

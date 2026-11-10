@@ -50,7 +50,8 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
 
     const checkAuth = async () => {
       // E2E Bypass en cliente
-      if (process.env.NODE_ENV !== 'production' && document.cookie.includes('e2e_bypass=true')) {
+      const isE2E = process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_E2E_BYPASS === 'true';
+      if (isE2E && document.cookie.includes('e2e_bypass=true')) {
         return;
       }
 
