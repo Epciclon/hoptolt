@@ -26,6 +26,8 @@ export default defineConfig({
       env: {
         NEXT_PUBLIC_SUPABASE_URL: 'http://localhost:54321',
         NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'eyJmYWtlIjoiZmFrZSJ9.fake',
+        E2E_BYPASS_ENABLED: 'true',
+        NEXT_PUBLIC_E2E_BYPASS: 'true',
       },
     },
   ],

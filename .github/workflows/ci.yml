@@ -97,6 +97,8 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: "http://localhost:54321"
           NEXT_PUBLIC_SUPABASE_ANON_KEY: "fake_anon_key"
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "eyJmYWtlIjoiZmFrZSJ9.fake"
+          NEXT_PUBLIC_E2E_BYPASS: "true"
+          E2E_BYPASS_ENABLED: "true"
 
       - name: Obtener versión de Playwright
         id: playwright-version
@@ -117,6 +119,8 @@ jobs:
         run: npm run test:e2e
         env:
           CI: true
+          E2E_BYPASS_ENABLED: "true"
+          NEXT_PUBLIC_E2E_BYPASS: "true"
 
       - name: Guardar Reporte de Playwright
         if: always()

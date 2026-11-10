@@ -96,8 +96,13 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // E2E test bypass for local development
-  if (process.env.NODE_ENV !== 'production' && request.cookies.get('e2e_bypass')?.value === 'true') {
+  // E2E test bypass para pruebas automatizadas
+  const isE2EAllowed =
+    process.env.NODE_ENV !== 'production' ||
+    process.env.E2E_BYPASS_ENABLED === 'true' ||
+    process.env.NEXT_PUBLIC_E2E_BYPASS === 'true';
+
+  if (isE2EAllowed && request.cookies.get('e2e_bypass')?.value === 'true') {
     return response;
   }
 

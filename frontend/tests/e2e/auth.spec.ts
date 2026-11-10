@@ -122,5 +122,6 @@ test.describe('404 Page', () => {
     await page.context().addCookies([{ name: 'e2e_bypass', value: 'true', url: 'http://localhost:3000' }]);
     const response = await page.goto('/nonexistent-route');
     expect(response?.status()).toBe(404);
+    await expect(page.locator('text=Página no encontrada')).toBeVisible();
   });
 });
