@@ -24,8 +24,13 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Verificar arquitectura de carpetas, capas, seguridad y cobertura modular
+      - name: Verificar arquitectura de carpetas, capas, fronteras y seguridad modular
         run: node scripts/validate-architecture.js
+
+      - name: Auditoría de Seguridad de Dependencias (npm audit)
+        run: |
+          npm --prefix backend audit --audit-level=critical || true
+          npm --prefix frontend audit --audit-level=critical || true
 
   backend-checks:
     name: Revisión del Backend

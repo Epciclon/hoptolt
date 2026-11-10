@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const process = require('node:process');
-const { execFileSync } = require('node:child_process');
+const vm = require('node:vm');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const BACKEND_SRC = path.join(ROOT_DIR, 'backend', 'src');
@@ -104,13 +104,123 @@ function validateBackendModuleFiles(modName, modDir) {
 }
 
 function validateBackendLayerBoundaries(modName, modDir) {
+  const routeFile = path.join(modDir, `${modName}.routes.js`);
+  const ctrlFile = path.join(modDir, `${modName}.controller.js`);
+  const svcFile = path.join(modDir, `${modName}.service.js`);
   const repoFile = path.join(modDir, `${modName}.repository.js`);
-  if (!fs.existsSync(repoFile)) return;
-  const content = fs.readFileSync(repoFile, 'utf8');
-  if (/\.controller|\.routes/.test(content)) {
-    addError(
-      `[Backend Module: ${modName}] Violacion de capa: repository no puede importar controller ni routes`
-    );
+  const valFile = path.join(modDir, `${modName}.validator.js`);
+
+  // Reglas para Routes:
+  if (fs.existsSync(routeFile)) {
+    const content = fs.readFileSync(routeFile, 'utf8');
+    if (/models|sequelize/i.test(content)) {
+      addError(`[Backend Module: ${modName}] Violacion de capa: routes no puede importar models ni sequelize directamente`);
+    }
+    if (/repository/i.test(content)) {
+      addError(`[Backend Module: ${modName}] Violacion de capa: routes no puede importar repositories`);
+    }
+    if (new RegExp(`${modName}\\.service`).test(content)) {
+      addError(`[Backend Module: ${modName}] Violacion de capa: routes debe delegar al controller y no importar el service directamente`);
+    }
+  }
+
+  // Reglas para Controller:
+  if (fs.existsSync(ctrlFile)) {
+    const content = fs.readFileSync(ctrlFile, 'utf8');
+    if (/models|sequelize/i.test(content)) {
+      addError(`[Backend Module: ${modName}] Violacion de capa: controller no puede importar models ni sequelize directamente`);
+    }
+    if (/repository/i.test(content)) {
+      addError(`[Backend Module: ${modName}] Violacion de capa: controller debe interactuar a traves del service y no importar repository directamente`);
+    }
+  }
+
+  // Reglas para Service:
+  if (fs.existsSync(svcFile)) {
+    const content = fs.readFileSync(svcFile, 'utf8');
+    if (/require\(['"]express['"]\)/i.test(content)) {
+      addError(`[Backend Module: ${modName}] Violacion de capa: service no debe acoplarse al framework Express`);
+    }
+    if (/res\.(status|json|send)\(/i.test(content)) {
+      addError(`[Backend Module: ${modName}] Violacion de capa: service no debe manipular objetos de respuesta HTTP (res)`);
+    }
+  }
+
+  // Reglas para Repository:
+  if (fs.existsSync(repoFile)) {
+    const content = fs.readFileSync(repoFile, 'utf8');
+    if (/\.controller|\.routes/i.test(content)) {
+      addError(`[Backend Module: ${modName}] Violacion de capa: repository no puede importar controller ni routes`);
+    }
+    if (new RegExp(`${modName}\\.service`).test(content)) {
+      addError(`[Backend Module: ${modName}] Violacion de capa: repository no puede importar service`);
+    }
+    if (/require\(['"]express['"]\)/i.test(content)) {
+      addError(`[Backend Module: ${modName}] Violacion de capa: repository no debe importar Express`);
+    }
+  }
+
+  // Reglas para Validator:
+  if (fs.existsSync(valFile)) {
+    const content = fs.readFileSync(valFile, 'utf8');
+    if (/models|sequelize/i.test(content)) {
+      addError(`[Backend Module: ${modName}] Violacion de capa: validator no puede importar models`);
+    }
+    if (/repository|\.service|\.controller/i.test(content)) {
+      addError(`[Backend Module: ${modName}] Violacion de capa: validator no debe depender de repository, service ni controller`);
+    }
+  }
+}
+
+function validateFrontendLayerBoundaries(modName, modDir) {
+  const serviceDir = path.join(modDir, 'services');
+  if (fs.existsSync(serviceDir)) {
+    const files = fs.readdirSync(serviceDir);
+    for (const file of files) {
+      if (file.endsWith('.tsx')) {
+        addError(`[Frontend Module: ${modName}] Servicio no debe ser archivo TSX: services/${file}`);
+      }
+      const fullPath = path.join(serviceDir, file);
+      const content = fs.readFileSync(fullPath, 'utf8');
+      if (/from\s+['"][^'"]*components/i.test(content) || /from\s+['"][^'"]*shared\/ui/i.test(content)) {
+        addError(`[Frontend Module: ${modName}] Violacion de capa: service no puede importar componentes de UI en services/${file}`);
+      }
+    }
+  }
+
+  const typesDir = path.join(modDir, 'types');
+  if (fs.existsSync(typesDir)) {
+    const files = fs.readdirSync(typesDir);
+    for (const file of files) {
+      if (file.endsWith('.tsx')) {
+        addError(`[Frontend Module: ${modName}] Archivo de tipos no debe ser TSX: types/${file}`);
+      }
+      const fullPath = path.join(typesDir, file);
+      const content = fs.readFileSync(fullPath, 'utf8');
+      if (/from\s+['"][^'"]*components/i.test(content) || /from\s+['"][^'"]*shared\/ui/i.test(content)) {
+        addError(`[Frontend Module: ${modName}] Violacion de capa: types no debe importar componentes de UI en types/${file}`);
+      }
+    }
+  }
+
+  const validatorsDir = path.join(modDir, 'validators');
+  if (fs.existsSync(validatorsDir)) {
+    const files = fs.readdirSync(validatorsDir);
+    for (const file of files) {
+      if (file.endsWith('.tsx')) {
+        addError(`[Frontend Module: ${modName}] Validador no debe ser TSX: validators/${file}`);
+      }
+    }
+  }
+
+  const constantsDir = path.join(modDir, 'constants');
+  if (fs.existsSync(constantsDir)) {
+    const files = fs.readdirSync(constantsDir);
+    for (const file of files) {
+      if (file.endsWith('.tsx')) {
+        addError(`[Frontend Module: ${modName}] Constantes no deben ser TSX: constants/${file}`);
+      }
+    }
   }
 }
 
@@ -162,6 +272,8 @@ function validateFrontendModules() {
       }
     }
 
+    validateFrontendLayerBoundaries(modName, modDir);
+
     const testModDir = path.join(FRONTEND_TESTS, 'modules', modName);
     if (!hasTestFiles(testModDir)) {
       addError(
@@ -193,9 +305,9 @@ function scanSourceIntegrity(dirPath, isFrontend) {
     }
     if (!isFrontend && entry.name.endsWith('.js')) {
       try {
-        execFileSync(process.execPath, ['--check', fullPath], { stdio: 'ignore' });
-      } catch {
-        addError(`[Sintaxis Backend] Error de sintaxis en: ${fullPath}`);
+        new vm.Script(content, { filename: fullPath });
+      } catch (err) {
+        addError(`[Sintaxis Backend] Error de sintaxis en ${fullPath}: ${err.message}`);
       }
     }
   }
@@ -217,8 +329,7 @@ function main() {
     process.exit(1);
   }
 
-  console.log('Validacion de arquitectura de carpetas, capas y cobertura modular exitosa.');
+  console.log('Validacion de arquitectura de carpetas, capas, fronteras y seguridad modular exitosa.');
 }
 
 main();
-
