@@ -4,6 +4,49 @@ const AppError = require('../../errors/AppError');
 const { getPaginationParams, createPaginatedResponse } = require('../../common/helpers/pagination.helper');
 
 class MortalityService {
+    async _validateWorkerMortalityPermission(membership, rabbitId, isKits) {
+        if (membership.role !== 'worker') return;
+        const { WorkerCage } = require('../../domain/models');
+        const [workerCages, activeAssignment] = await Promise.all([
+            WorkerCage.findAll({ where: { farmMemberId: membership.id } }),
+            Assignment.findOne({ where: { rabbitId, status: 'asignado' } })
+        ]);
+        const resolvedAssignment = activeAssignment || (isKits
+            ? await Assignment.findOne({ where: { rabbitId }, order: [['id', 'DESC']] })
+            : null);
+        const assignedCageIds = new Set(workerCages.map(wc => Number(wc.cageId)));
+
+        if (!resolvedAssignment || !assignedCageIds.has(Number(resolvedAssignment.cageId))) {
+            throw new AppError('No tienes permiso para registrar mortalidad de un conejo que no esté en tus jaulas asignadas.', 403);
+        }
+    }
+
+    _resolveAndValidateDeathDate(deathDate, birthDate) {
+        const now = new Date();
+        const dateStr = deathDate ? String(deathDate).split('T')[0] : null;
+        const [y, m, d] = dateStr ? dateStr.split('-') : [now.getFullYear(), now.getMonth() + 1, now.getDate()];
+        const dDate = new Date(Number(y), Number(m) - 1, Number(d), now.getHours(), now.getMinutes(), now.getSeconds());
+
+        const bDate = new Date(birthDate);
+        const today = new Date();
+        bDate.setHours(0, 0, 0, 0);
+        today.setHours(23, 59, 59, 999);
+
+        if (dDate > today) {
+            throw new AppError('La fecha de muerte no puede ser futura.', 400);
+        }
+        if (dDate < bDate) {
+            throw new AppError('La fecha de muerte no puede ser anterior al nacimiento del conejo.', 400);
+        }
+        return dDate;
+    }
+
+    _validateCauseAndObservations(cause, observations) {
+        if (cause === 'otra' && (!observations || observations.trim() === '')) {
+            throw new AppError('Las observaciones son obligatorias cuando la causa es "otra".', 400);
+        }
+    }
+
     async registerMortality(data, galponId, profileId) {
         const { rabbitId, cause, observations, deathDate, isKits, numberOfKits } = data;
 
@@ -22,51 +65,13 @@ class MortalityService {
         if (!rabbit) throw new AppError(`El conejo con ID ${rabbitId} no existe.`, 404);
         if (rabbit.galponId !== galponId) throw new AppError(`El conejo con ID ${rabbitId} no pertenece al galpón activo.`, 400);
 
-        if (membership.role === 'worker') {
-            const { WorkerCage } = require('../../domain/models');
-            const [workerCages, activeAssignment] = await Promise.all([
-                WorkerCage.findAll({ where: { farmMemberId: membership.id } }),
-                Assignment.findOne({ where: { rabbitId, status: 'asignado' } })
-            ]);
-            const resolvedAssignment = activeAssignment || (isKits
-                ? await Assignment.findOne({ where: { rabbitId }, order: [['id', 'DESC']] })
-                : null);
-            const assignedCageIds = new Set(workerCages.map(wc => Number(wc.cageId)));
+        await this._validateWorkerMortalityPermission(membership, rabbitId, isKits);
+        const dDate = this._resolveAndValidateDeathDate(deathDate, rabbit.birthDate);
+        this._validateCauseAndObservations(cause, observations);
 
-            if (!resolvedAssignment || !assignedCageIds.has(Number(resolvedAssignment.cageId))) {
-                throw new AppError('No tienes permiso para registrar mortalidad de un conejo que no esté en tus jaulas asignadas.', 403);
-            }
-        }
-
-        // Inyectar hora actual a la fecha de muerte
-        const now = new Date();
-        const dateStr = deathDate ? String(deathDate).split('T')[0] : null;
-        const [y, m, d] = dateStr ? dateStr.split('-') : [now.getFullYear(), now.getMonth() + 1, now.getDate()];
-        const dDate = new Date(Number(y), Number(m) - 1, Number(d), now.getHours(), now.getMinutes(), now.getSeconds());
-
-        const bDate = new Date(rabbit.birthDate);
-        const today = new Date();
-
-        bDate.setHours(0, 0, 0, 0);
-        today.setHours(23, 59, 59, 999);
-
-        if (dDate > today) {
-            throw new AppError('La fecha de muerte no puede ser futura.', 400);
-        }
-        if (dDate < bDate) {
-            throw new AppError('La fecha de muerte no puede ser anterior al nacimiento del conejo.', 400);
-        }
-
-        if (cause === 'otra' && (!observations || observations.trim() === '')) {
-            throw new AppError('Las observaciones son obligatorias cuando la causa es "otra".', 400);
-        }
-
-        let result;
-        if (isKits) {
-            result = await this._processKitsMortality(rabbitId, cause, observations, dDate, numberOfKits, galponId, profileId);
-        } else {
-            result = await this._processAdultMortality(rabbit, rabbitId, cause, observations, dDate, galponId, profileId);
-        }
+        const result = isKits
+            ? await this._processKitsMortality(rabbitId, cause, observations, dDate, numberOfKits, galponId, profileId)
+            : await this._processAdultMortality(rabbit, rabbitId, cause, observations, dDate, galponId, profileId);
 
         const deathCount = isKits ? (Number(numberOfKits) || 1) : 1;
         const { notifyOwnerOnWorkerAction } = require('../../common/helpers/notification.helper');

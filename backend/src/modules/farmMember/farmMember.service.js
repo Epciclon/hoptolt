@@ -420,6 +420,7 @@ class FarmMemberService {
 
             const groups = this._groupShiftAuditLogs(shiftLogs);
             const idsToDelete = [];
+            const winners = [];
 
             for (const items of groups.values()) {
                 items.sort((a, b) => b.meta.unfedCount - a.meta.unfedCount || b.log.id - a.log.id);
@@ -427,8 +428,10 @@ class FarmMemberService {
                 for (const dup of duplicates) {
                     idsToDelete.push(dup.log.id);
                 }
-                await this._normalizeWinnerShiftLog(winner);
+                winners.push(winner);
             }
+
+            await Promise.all(winners.map(winner => this._normalizeWinnerShiftLog(winner)));
 
             if (idsToDelete.length > 0) {
                 await AuditLog.destroy({ where: { id: { [Op.in]: idsToDelete } } });

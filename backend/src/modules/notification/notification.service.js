@@ -310,6 +310,22 @@ class NotificationService {
         return rawData;
     }
 
+    _isFeedingOrGeneralModule(mod) {
+        return !mod || mod === 'alimentacion' || mod === 'alimentación' || mod === 'feeding' || mod === 'general';
+    }
+
+    _isPureFeedingModule(mod) {
+        return mod === 'alimentacion' || mod === 'alimentación' || mod === 'feeding';
+    }
+
+    _collectCagesFromIncident(inc, cagesArr, coveredCageIds, coveredCageNumbers) {
+        if (inc.cageId) coveredCageIds.add(Number(inc.cageId));
+        for (const c of cagesArr) {
+            if (c?.id) coveredCageIds.add(Number(c.id));
+            if (c?.number !== undefined) coveredCageNumbers.add(Number(c.number));
+        }
+    }
+
     _extractIncidentCoveredCages(incidents) {
         let coversAllFeeding = false;
         const coveredCageIds = new Set();
@@ -317,19 +333,14 @@ class NotificationService {
 
         for (const inc of incidents) {
             const mod = String(inc.module || '').toLowerCase().trim();
-            const isFeedingOrGeneral = !mod || mod === 'alimentacion' || mod === 'alimentación' || mod === 'feeding' || mod === 'general';
-            if (!isFeedingOrGeneral) continue;
+            if (!this._isFeedingOrGeneralModule(mod)) continue;
 
             const cagesArr = Array.isArray(inc.cages) ? inc.cages : [];
-            if (cagesArr.length === 0 && !inc.cageId && (mod === 'alimentacion' || mod === 'alimentación' || mod === 'feeding')) {
+            if (cagesArr.length === 0 && !inc.cageId && this._isPureFeedingModule(mod)) {
                 coversAllFeeding = true;
                 break;
             }
-            if (inc.cageId) coveredCageIds.add(Number(inc.cageId));
-            for (const c of cagesArr) {
-                if (c?.id) coveredCageIds.add(Number(c.id));
-                if (c?.number !== undefined) coveredCageNumbers.add(Number(c.number));
-            }
+            this._collectCagesFromIncident(inc, cagesArr, coveredCageIds, coveredCageNumbers);
         }
 
         return { coversAllFeeding, coveredCageIds, coveredCageNumbers };
@@ -464,9 +475,9 @@ class NotificationService {
             }
         }
 
-        for (const d of uniqueShiftPayloads.values()) {
-            await this._recordPendingFeedingShiftAudit(d);
-        }
+        await Promise.all(
+            Array.from(uniqueShiftPayloads.values()).map(d => this._recordPendingFeedingShiftAudit(d))
+        );
 
         if (toDelete.length > 0) {
             await Notification.destroy({ where: { id: { [Op.in]: toDelete } } });

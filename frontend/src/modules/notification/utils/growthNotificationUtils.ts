@@ -41,6 +41,33 @@ function extractWeightFromTail(tail: string): number | undefined {
   return !Number.isNaN(parsed) && parsed > 0 ? parsed : undefined;
 }
 
+function buildMatchedGrowthItem(
+  name: string,
+  afterMarker: string,
+  mesIdx: number,
+  digitMatch: RegExpExecArray,
+  index: number
+): GrowthSummaryItem {
+  const months = Number.parseInt(digitMatch[0], 10);
+  const tail = afterMarker.slice(mesIdx);
+  const isMature = tail.toLowerCase().includes('madurez');
+  const extractedWeight = extractWeightFromTail(tail);
+  const fallbackWeight = months >= 8 ? 4.2 : DEFAULT_WEIGHT_BY_MONTH[months];
+  const resolvedWeight = extractedWeight ?? fallbackWeight;
+  const ageBadge = months === 1 ? '1 mes' : `${months} meses`;
+  const weightBadge = formatWeightBadge(resolvedWeight);
+  const baseBadge = weightBadge ? `${ageBadge} • ${weightBadge}` : `${ageBadge} de edad`;
+
+  return {
+    key: `${name}-${index}`,
+    name,
+    ageBadge,
+    weightBadge,
+    isMature,
+    badge: isMature ? `${baseBadge} • Madurez` : baseBadge,
+  };
+}
+
 function parseLegacyGrowthDetailLine(line: string, index: number): GrowthSummaryItem | null {
   const trimmed = line.trim();
   if (!trimmed) return null;
@@ -55,23 +82,7 @@ function parseLegacyGrowthDetailLine(line: string, index: number): GrowthSummary
     const digitMatch = mesIdx > 0 ? /\d+/.exec(afterMarker.slice(0, mesIdx)) : null;
 
     if (digitMatch) {
-      const months = Number.parseInt(digitMatch[0], 10);
-      const tail = afterMarker.slice(mesIdx);
-      const isMature = tail.toLowerCase().includes('madurez');
-      const extractedWeight = extractWeightFromTail(tail);
-      const fallbackWeight = months >= 8 ? 4.2 : DEFAULT_WEIGHT_BY_MONTH[months];
-      const resolvedWeight = extractedWeight ?? fallbackWeight;
-      const ageBadge = months === 1 ? '1 mes' : `${months} meses`;
-      const weightBadge = formatWeightBadge(resolvedWeight);
-      const baseBadge = weightBadge ? `${ageBadge} • ${weightBadge}` : `${ageBadge} de edad`;
-      return {
-        key: `${name}-${index}`,
-        name,
-        ageBadge,
-        weightBadge,
-        isMature,
-        badge: isMature ? `${baseBadge} • Madurez` : baseBadge,
-      };
+      return buildMatchedGrowthItem(name, afterMarker, mesIdx, digitMatch, index);
     }
   }
 

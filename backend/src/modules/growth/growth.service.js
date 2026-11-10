@@ -342,7 +342,7 @@ class GrowthService {
             const parsedItems = parsedMap.get(notif.id);
             if (!parsedItems) continue;
             notif.data = {
-                ...(notif.data || {}),
+                ...notif.data,
                 type: 'growth_summary',
                 rabbits: parsedItems.map(item => this._buildEnrichedGrowthRabbitItem(item, rabbitByCode))
             };

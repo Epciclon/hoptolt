@@ -63,7 +63,7 @@ export function Dialog({ open, onClose, title, description, children, size = 'md
     const id = dialogIdRef.current!;
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        const topDialogId = openDialogStack[openDialogStack.length - 1];
+        const topDialogId = openDialogStack.at(-1);
         if (!topDialogId || topDialogId === id) {
           e.stopPropagation();
           onClose();
