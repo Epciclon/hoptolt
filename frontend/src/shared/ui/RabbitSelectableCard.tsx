@@ -29,7 +29,7 @@ export function RabbitSelectableCard({
     <div
       className={cn(
         'border rounded-lg p-2.5 sm:p-3 transition-all duration-150 bg-card text-left w-full min-w-0 block relative',
-        isSelectable && 'focus-within:ring-2 focus-within:ring-primary-500 focus-within:ring-offset-1 pointer-events-auto',
+        isSelectable && 'pointer-events-auto',
         (() => {
           if (isSelected) return 'border-primary-500 ring-1 ring-primary-500 shadow-sm';
           if (isSelectable) return 'border-strong shadow-sm hover:border-primary-400';
@@ -41,20 +41,21 @@ export function RabbitSelectableCard({
         <button
           type="button"
           onClick={onClick}
-          className="absolute inset-0 z-0 w-full h-full cursor-pointer focus:outline-none pointer-events-auto"
+          className="absolute inset-0 z-0 w-full h-full cursor-pointer rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1 pointer-events-auto"
           aria-label="Seleccionar conejo"
         />
       )}
 
       {/* Disposición centrada vertical estándar de móvil aplicada a todas las pantallas */}
       <div className="flex flex-col items-center gap-2.5 mb-2 relative z-10 min-w-0 pointer-events-none">
-        <div className="shrink-0 mb-1 pointer-events-auto relative z-20">
+        <div className={cn('shrink-0 mb-1 relative z-20', isSelectable && !isSelected ? 'pointer-events-none' : 'pointer-events-auto')}>
           <RabbitAvatar
             imageUrl={rabbit.imageUrl}
             alt={rabbit.code}
             size="md"
             rabbitId={rabbit.id}
             rabbitCode={rabbit.code}
+            disableQuickView={isSelectable && !isSelected}
           />
         </div>
         <div className="min-w-0 flex-1 w-full">

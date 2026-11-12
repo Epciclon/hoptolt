@@ -13,6 +13,14 @@ class GenealogyRepository {
         });
     }
 
+    async findParentsByRabbitIds(rabbitIds) {
+        if (!rabbitIds || rabbitIds.length === 0) return [];
+        return Genealogy.findAll({
+            where: { rabbitId: { [Op.in]: rabbitIds } },
+            attributes: ['rabbitId', 'fatherId', 'motherId']
+        });
+    }
+
     async findByGalponId(galponId) {
         return Genealogy.findAll({
             where: { galponId },

@@ -58,10 +58,11 @@ export function CageForm({ defaultValues, cageId, mode, onSuccess, onCancel }: R
   });
 
   const selectedType = watch('type');
+  const selectedStatus = watch('status');
 
   useEffect(() => {
     if (selectedType === 'reproducción') {
-      setValue('capacity', 1);
+      setValue('capacity', 1, { shouldValidate: true });
     }
   }, [selectedType, setValue]);
 
@@ -119,8 +120,9 @@ export function CageForm({ defaultValues, cageId, mode, onSuccess, onCancel }: R
           { value: 'reproducción', label: 'Reproducción' },
           { value: 'engorde', label: 'Engorde' },
         ]}
+        value={selectedType}
+        onChange={(e) => setValue('type', e.target.value as 'engorde' | 'reproducción', { shouldValidate: true })}
         error={errors.type?.message}
-        {...register('type')}
       />
 
       <Input
@@ -140,8 +142,9 @@ export function CageForm({ defaultValues, cageId, mode, onSuccess, onCancel }: R
           { value: 'operativa', label: 'Operativa' },
           { value: 'mantenimiento', label: 'Mantenimiento' },
         ]}
+        value={selectedStatus}
+        onChange={(e) => setValue('status', e.target.value as 'operativa' | 'mantenimiento', { shouldValidate: true })}
         error={errors.status?.message}
-        {...register('status')}
       />
 
       <div className="flex justify-end gap-3 pt-2">

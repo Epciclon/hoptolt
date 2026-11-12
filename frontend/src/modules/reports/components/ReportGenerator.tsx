@@ -591,17 +591,15 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
                                     <Select
                                         label="Filtrar por Raza"
                                         value=""
+                                        placeholder={selectedRaces.length === 0 ? 'Todas las razas' : 'Seleccionar más...'}
                                         onChange={(e) => {
                                             if (e.target.value && !selectedRaces.includes(e.target.value)) {
                                                 setSelectedRaces([...selectedRaces, e.target.value]);
                                             }
                                         }}
-                                        options={[
-                                            { label: selectedRaces.length === 0 ? 'Todas las razas' : 'Seleccionar más...', value: '' },
-                                            ...allRaces
-                                                .filter(r => !selectedRaces.includes(r.name))
-                                                .map(r => ({ label: r.name, value: r.name }))
-                                        ]}
+                                        options={allRaces
+                                            .filter(r => !selectedRaces.includes(r.name))
+                                            .map(r => ({ label: r.name, value: r.name }))}
                                     />
                                     {selectedRaces.length > 0 && (
                                         <div className="flex flex-wrap gap-2 mt-2">
@@ -632,17 +630,15 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
                                     <Select
                                         label="Filtrar por Tipo de Jaula"
                                         value=""
+                                        placeholder={selectedCageTypes.length === 0 ? 'Todas las jaulas' : 'Seleccionar más...'}
                                         onChange={(e) => {
                                             if (e.target.value && !selectedCageTypes.includes(e.target.value)) {
                                                 setSelectedCageTypes([...selectedCageTypes, e.target.value]);
                                             }
                                         }}
-                                        options={[
-                                            { label: selectedCageTypes.length === 0 ? 'Todas las jaulas' : 'Seleccionar más...', value: '' },
-                                            ...['engorde', 'reproducción']
-                                                .filter(t => !selectedCageTypes.includes(t))
-                                                .map(t => ({ label: capitalizeString(t), value: t }))
-                                        ]}
+                                        options={['engorde', 'reproducción']
+                                            .filter(t => !selectedCageTypes.includes(t))
+                                            .map(t => ({ label: capitalizeString(t), value: t }))}
                                     />
                                     {selectedCageTypes.length > 0 && (
                                         <div className="flex flex-wrap gap-2 mt-2">
@@ -672,20 +668,18 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
                                 <Select
                                     label="Filtrar por Trabajador"
                                     value=""
+                                    placeholder={selectedProfileIds.length === 0 ? 'Todos los trabajadores' : 'Seleccionar más...'}
                                     onChange={(e) => {
                                         if (e.target.value && !selectedProfileIds.includes(e.target.value)) {
                                             setSelectedProfileIds([...selectedProfileIds, e.target.value]);
                                         }
                                     }}
-                                    options={[
-                                        { label: selectedProfileIds.length === 0 ? 'Todos los trabajadores' : 'Seleccionar más...', value: '' },
-                                        ...members
-                                            .filter(m => !selectedProfileIds.includes(m.profile?.id || ''))
-                                            .map(m => ({
-                                                label: `${m.profile?.fullName || m.profile?.username || 'Usuario'}${m.status === 'inactive' ? ' • Inactivo' : ''}`,
-                                                value: m.profile?.id || ''
-                                            }))
-                                    ]}
+                                    options={members
+                                        .filter(m => !selectedProfileIds.includes(m.profile?.id || ''))
+                                        .map(m => ({
+                                            label: `${m.profile?.fullName || m.profile?.username || 'Usuario'}${m.status === 'inactive' ? ' • Inactivo' : ''}`,
+                                            value: m.profile?.id || ''
+                                        }))}
                                 />
                                 {selectedProfileIds.length > 0 && (
                                     <div className="flex flex-wrap gap-2 mt-2">
@@ -718,22 +712,20 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
                                     <Select
                                         label="Filtrar por Estado"
                                         value=""
+                                        placeholder={selectedStatuses.length === 0 ? 'Todos los estados' : 'Seleccionar más...'}
                                         onChange={(e) => {
                                             if (e.target.value && !selectedStatuses.includes(e.target.value)) {
                                                 setSelectedStatuses([...selectedStatuses, e.target.value]);
                                             }
                                         }}
                                         options={[
-                                            { label: selectedStatuses.length === 0 ? 'Todos los estados' : 'Seleccionar más...', value: '' },
-                                            ...[
-                                                { label: 'Monta', value: 'monta' },
-                                                { label: 'Gestación', value: 'gestacion' },
-                                                { label: 'Lactancia', value: 'lactancia' },
-                                                { label: 'Completado', value: 'completado' },
-                                                { label: 'Fallido', value: 'fallido' },
-                                                { label: 'Baja Parcial', value: 'parcial' }
-                                            ].filter(s => !selectedStatuses.includes(s.value))
-                                        ]}
+                                            { label: 'Monta', value: 'monta' },
+                                            { label: 'Gestación', value: 'gestacion' },
+                                            { label: 'Lactancia', value: 'lactancia' },
+                                            { label: 'Completado', value: 'completado' },
+                                            { label: 'Fallido', value: 'fallido' },
+                                            { label: 'Baja Parcial', value: 'parcial' }
+                                        ].filter(s => !selectedStatuses.includes(s.value))}
                                     />
                                     {selectedStatuses.length > 0 && (
                                         <div className="flex flex-wrap gap-2 mt-2">

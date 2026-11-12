@@ -953,7 +953,7 @@ export function IncidentFloatingWidget() {
 
   const unreadCount = counts.unread || 0;
   const pendingCount = counts.pending || 0;
-  const hasAlert = unreadCount > 0 || (isOwner && pendingCount > 0);
+  const hasAlert = unreadCount > 0;
 
   const handleQuickSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

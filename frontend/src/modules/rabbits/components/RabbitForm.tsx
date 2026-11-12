@@ -34,15 +34,17 @@ interface RabbitFormProps {
   mode: 'create' | 'edit';
   defaultValues?: Partial<Rabbit>;
   rabbitId?: number;
-  onSuccess?: (rabbit?: Rabbit) => void;
+  onSuccess?: (rabbit?: Rabbit) => void | Promise<void>;
   onCancel?: () => void;
   hideCancel?: boolean;
   readOnlyRace?: boolean;
+  suppressSuccessToast?: boolean;
+  resetOnSuccess?: boolean;
 }
 
 
 
-export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel, hideCancel, readOnlyRace }: Readonly<RabbitFormProps>) {
+export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel, hideCancel, readOnlyRace, suppressSuccessToast = false, resetOnSuccess = true }: Readonly<RabbitFormProps>) {
 
   const [races, setRaces] = useState<Race[]>([]);
   const { showToast } = useToast();
@@ -137,15 +139,21 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
           imageUrl: imageUrl || undefined,
         };
         const createdRabbit = await rabbitService.create(payload);
-        showToast('Conejo registrado exitosamente.', 'success');
-        reset();
-        setImageUrl(undefined);
+        if (!suppressSuccessToast) {
+          showToast('Conejo registrado exitosamente.', 'success');
+        }
+
+
         queryClient.invalidateQueries({ queryKey: ['rabbits'] });
         queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
         queryClient.invalidateQueries({ queryKey: ['assignments'] });
         queryClient.invalidateQueries({ queryKey: ['assignedRabbits'] });
         queryClient.invalidateQueries({ queryKey: ['availableRabbits'] });
-        onSuccess?.(createdRabbit);
+        await onSuccess?.(createdRabbit);
+        if (resetOnSuccess) {
+          reset();
+          setImageUrl(undefined);
+        }
       } else {
         const updateData: any = {
           name: values.name,

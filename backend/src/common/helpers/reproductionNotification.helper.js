@@ -19,14 +19,14 @@ async function notifyOwnerOnManualPhaseChange(profileId, galponId, reproductionI
 
         if (workerMember?.role === 'worker' && ownerMember?.profileId) {
             const code = rep?.female?.code || 'N/A';
-            const name = rep?.female?.name ? ` ${rep.female.name}` : '';
+            const femaleLabel = rep?.female?.name ? `${rep.female.name} - ${code}` : code;
             const workerName = workerMember.profile?.fullName || workerMember.profile?.username || 'Un trabajador';
             
             await Notification.create({
                 profileId: ownerMember.profileId,
                 type: 'info',
                 title: 'Cambio de Fase Manual',
-                message: `${workerName} ha movido manualmente a la coneja ${code}${name} a Fase ${newPhase} ${newPhaseName}.`,
+                message: `${workerName} ha movido manualmente a la coneja ${femaleLabel} a Fase ${newPhase} ${newPhaseName}.`,
                 data: {
                     type: 'reproduction_manual',
                     reproductionId,
@@ -82,10 +82,10 @@ async function notifyAutomatedPhaseChange(rep, newPhase, newPhaseName) {
         if (!female) return;
 
         const code = female.code || 'N/A';
-        const name = female.name ? ` ${female.name}` : '';
+        const femaleLabel = female.name ? `${female.name} - ${code}` : code;
         const cageId = female.assignments?.[0]?.cageId;
 
-        const message = `El sistema Hoptolt ha movido automáticamente a la coneja ${code}${name} a Fase ${newPhase} ${newPhaseName}.`;
+        const message = `El sistema Hoptolt ha movido automáticamente a la coneja ${femaleLabel} a Fase ${newPhase} ${newPhaseName}.`;
         const dataPayload = { type: 'reproduction_automated', phase: newPhase };
 
         if (ownerMember?.profileId) {

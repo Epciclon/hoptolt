@@ -105,7 +105,7 @@ function getDayStyles(
   }
   if (!hasEvents) {
     return {
-      bgClass: 'opacity-50 cursor-default bg-theme-surface hover:bg-theme-surface border-transparent text-main',
+      bgClass: 'opacity-65 cursor-default bg-theme-surface/80 hover:bg-theme-surface/80 border-default/70 text-main',
       eventTextClass: 'text-muted',
       glowClass: '',
     };
@@ -271,7 +271,7 @@ export function DashboardCalendar() {
     <div className="space-y-4 relative px-1">
       {/* Selector de tipo de calendario */}
       {canViewReproduction && (
-        <div className="flex bg-theme-surface border border-default p-1 rounded-xl w-full max-w-2xl mx-auto mb-4 relative">
+        <div className="flex bg-theme-surface border border-default p-1 rounded-xl w-full max-w-xl mx-auto mb-4 relative">
           <button type="button"
             onClick={() => { setCalendarType('births'); setSelectedDate(null); }}
             className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2 px-2 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-all ${
@@ -311,7 +311,7 @@ export function DashboardCalendar() {
         </div>
       )}
 
-      <div className="bg-card rounded-xl border border-strong overflow-hidden w-full max-w-3xl mx-auto">
+      <div className="bg-card rounded-xl border border-strong overflow-hidden w-full max-w-xl mx-auto">
         {/* Header con navegación */}
         <div className="flex items-center justify-between px-3 sm:px-5 py-3 sm:py-4 border-b border-default bg-theme-surface">
           <button type="button"
@@ -382,14 +382,14 @@ export function DashboardCalendar() {
                     onClick={handleClick}
                     disabled={cell.isCurrentMonth && (!hasEvents || !canViewReproduction)}
                     className={`
-                      aspect-square sm:aspect-auto sm:h-20 rounded-xl flex flex-col items-center justify-center
-                      p-1 text-sm transition-all duration-150 relative border
+                      w-full h-12 sm:h-16 rounded-xl flex flex-col items-center justify-center
+                      p-1 text-sm transition-all duration-150 relative border overflow-hidden
                       ${isDayToday ? 'ring-2 ring-primary-500/80 ring-offset-1 border-primary-500 shadow-sm z-10' : ''}
                       ${isSelected ? 'ring-2 ring-slate-800 dark:ring-white ring-offset-1 scale-105 z-20' : ''}
                       ${bgClass} ${hasEvents && canViewReproduction ? `${glowClass} shadow-sm cursor-pointer` : ''}
                     `}
                   >
-                    <span className={`text-sm sm:text-base ${hasEvents && canViewReproduction ? 'font-bold' : 'font-medium'}`}>
+                    <span className={`text-sm sm:text-base leading-none ${hasEvents && canViewReproduction ? 'font-bold' : 'font-medium'}`}>
                       {cell.day}
                     </span>
 
@@ -542,11 +542,11 @@ export function DashboardCalendar() {
                           <p className="text-[10px] uppercase tracking-wider text-theme-faint font-bold leading-none mb-0.5">
                             Pareja Macho
                           </p>
-                          <p className="text-xs text-main font-medium truncate">
-                            {entry.maleName || 'Sin Nombre'}{' '}
-                            <span className="text-muted text-[11px] font-normal">
-                              [{entry.maleCode}]
-                            </span>
+                          <p className="text-xs text-main font-medium truncate leading-tight">
+                            {entry.maleName || 'Sin Nombre'}
+                          </p>
+                          <p className="text-[11px] text-muted font-normal leading-tight mt-0.5 truncate">
+                            {entry.maleCode}
                           </p>
                         </div>
                       </div>

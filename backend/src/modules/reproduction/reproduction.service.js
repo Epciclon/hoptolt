@@ -6,7 +6,7 @@ const { recordWorkerChange } = require('../../common/helpers/audit.helper');
 
 function formatRabbitAuditLabel(rabbit, fallbackId) {
     if (!rabbit) return fallbackId ? `ID #${fallbackId}` : 'Ninguno';
-    return rabbit.name ? `${rabbit.code} - ${rabbit.name}` : rabbit.code;
+    return rabbit.name ? `${rabbit.name} - ${rabbit.code}` : rabbit.code;
 }
 
 function formatDateAuditStr(dateVal) {
@@ -26,28 +26,29 @@ class ReproductionService {
         return `${y}-${m}-${d}`;
     }
 
-    _getFemaleNameStr(female) {
-        return female.name ? ' - ' + female.name : '';
+    _formatFemaleLabel(female) {
+        return female.name ? `${female.name} - ${female.code}` : female.code;
     }
 
     async _validateFemaleForMating(female, galponId, mountDateObj) {
-        if (female.galponId !== galponId) throw new AppError(`La coneja ${female.code}${this._getFemaleNameStr(female)} no pertenece al galpón activo.`, 400);
+        const femaleLabel = this._formatFemaleLabel(female);
+        if (female.galponId !== galponId) throw new AppError(`La coneja ${femaleLabel} no pertenece al galpón activo.`, 400);
         if (female.sex !== 'hembra') throw new AppError(`El ID ${female.id} no corresponde a una hembra.`, 400);
 
         const [assignment, activeMount] = await Promise.all([
             Assignment.findOne({ where: { rabbitId: female.id, status: 'asignado' } }),
             reproductionRepository.findActiveMountByFemaleId(female.id)
         ]);
-        if (!assignment) throw new AppError(`La coneja ${female.code}${this._getFemaleNameStr(female)} no tiene jaula asignada.`, 400);
+        if (!assignment) throw new AppError(`La coneja ${femaleLabel} no tiene jaula asignada.`, 400);
 
         const cage = await Cage.findByPk(assignment.cageId);
         if (!cage) throw new AppError('Jaula no encontrada.', 404);
-        if (cage.type !== 'reproducción') throw new AppError(`La coneja ${female.code}${this._getFemaleNameStr(female)} está en una jaula de ${cage.type}, no de reproducción.`, 400);
+        if (cage.type !== 'reproducción') throw new AppError(`La coneja ${femaleLabel} está en una jaula de ${cage.type}, no de reproducción.`, 400);
 
         if (activeMount) {
             const ed = activeMount.estimatedBirthDate;
             const formattedDate = typeof ed === 'string' && ed.includes('-') ? ed.split('-').reverse().join('/') : new Date(ed).toLocaleDateString('es-EC');
-            throw new AppError(`La coneja ${female.code}${this._getFemaleNameStr(female)} ya tiene una monta activa con fecha estimada de parto: ${formattedDate}.`, 400);
+            throw new AppError(`La coneja ${femaleLabel} ya tiene una monta activa con fecha estimada de parto: ${formattedDate}.`, 400);
         }
 
         const currentDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guayaquil' }));
@@ -62,11 +63,11 @@ class ReproductionService {
         if (femaleAge < 4) throw new AppError('La hembra debe tener al menos 4 meses de edad.', 400);
     }
 
-    async _auditReproductionChange({ galponId, profileId, action, entityId, femaleId, maleId, summary, before, after }) {
+    async _auditReproductionChange({ galponId, profileId, action, entityId, femaleId, maleId, female: preloadedFemale, male: preloadedMale, summary, before, after }) {
         if (!profileId || !galponId) return;
         const [female, male] = await Promise.all([
-            femaleId ? Rabbit.findByPk(femaleId, { paranoid: false }) : null,
-            maleId ? Rabbit.findByPk(maleId, { paranoid: false }) : null
+            preloadedFemale ? Promise.resolve(preloadedFemale) : (femaleId ? Rabbit.findByPk(femaleId, { paranoid: false }) : null),
+            preloadedMale ? Promise.resolve(preloadedMale) : (maleId ? Rabbit.findByPk(maleId, { paranoid: false }) : null)
         ]);
         const femaleLabel = formatRabbitAuditLabel(female, femaleId);
         const maleLabel = maleId ? formatRabbitAuditLabel(male, maleId) : 'No especificado';
@@ -578,16 +579,18 @@ class ReproductionService {
             status: 'monta'
         });
 
-        await this._auditReproductionChange({
+        this._auditReproductionChange({
             galponId,
             profileId,
             action: 'crear',
             entityId: created.id,
             femaleId,
             maleId,
+            female,
+            male,
             summary: `Inició monta entre ${formatRabbitAuditLabel(female, femaleId)} y ${formatRabbitAuditLabel(male, maleId)}`,
             after: { status: 'monta', mountDate: mountDateString, estimatedBirthDate }
-        });
+        }).catch(err => console.error('Error auditing startMating:', err));
 
         return created;
     }

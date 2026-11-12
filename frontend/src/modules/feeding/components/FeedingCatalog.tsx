@@ -374,6 +374,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
           <span className="block text-sm font-medium text-main mb-2">Tipos de Alimento</span>
           <Input
             placeholder="Busca y selecciona tipos de alimento"
+            autoComplete="off"
             value={foodSearch}
             onChange={(e) => {
               setFoodSearch(e.target.value);
@@ -382,7 +383,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
             onFocus={() => setShowFoodDropdown(true)}
           />
           {showFoodDropdown && (
-            <div className="absolute z-30 w-full border border-default dark:border-slate-700 rounded-lg max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto bg-card dark:bg-slate-900 mt-1.5 shadow-2xl">
+            <div className="absolute z-30 w-full bg-card border border-strong rounded-md mt-1 max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto shadow-lg">
               {filteredFoodTypes.length === 0 ? (
                 <p className="text-muted text-sm p-3">No hay tipos de alimento disponibles</p>
               ) : (
@@ -391,10 +392,9 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
                     key={food}
                     type="button"
                     onClick={() => handleFoodSelect(food)}
-                    className="w-full text-left px-3.5 py-2.5 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 hover:text-emerald-700 dark:hover:text-emerald-300 border-b border-default dark:border-slate-800 last:border-b-0 text-sm font-medium transition-colors flex items-center justify-between cursor-pointer"
+                    className="w-full text-left px-3 py-2 text-main hover:bg-theme-surface border-b border-default text-sm last:border-b-0 cursor-pointer block transition-colors"
                   >
-                    <span>{food}</span>
-                    <span className="text-xs text-muted font-normal">+ Agregar</span>
+                    {food}
                   </button>
                 ))
               )}

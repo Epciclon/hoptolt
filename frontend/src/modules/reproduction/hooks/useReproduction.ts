@@ -1,8 +1,47 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { reproductionService } from '../services/reproduction.service';
+import type { Reproduction } from '../types/reproduction.types';
+
+function removeReproductionFromCaches(
+  queryClient: QueryClient,
+  id: number,
+  statusesToUpdate: string[]
+) {
+  const queries = queryClient.getQueriesData<any>({ queryKey: ['reproductions'] });
+  for (const [key, data] of queries) {
+    if (!data?.reproductions || !Array.isArray(data.reproductions)) continue;
+    const keyStatus = Array.isArray(key) ? key[3] : null;
+    if (keyStatus && statusesToUpdate.includes(String(keyStatus))) {
+      queryClient.setQueryData(key, {
+        ...data,
+        reproductions: data.reproductions.filter((r: Reproduction) => r.id !== id),
+      });
+    }
+  }
+}
+
+function patchReproductionInCaches(
+  queryClient: QueryClient,
+  id: number,
+  patch: Partial<Reproduction>
+) {
+  const queries = queryClient.getQueriesData<any>({ queryKey: ['reproductions'] });
+  for (const [key, data] of queries) {
+    if (!data?.reproductions || !Array.isArray(data.reproductions)) continue;
+    const hasItem = data.reproductions.some((r: Reproduction) => r.id === id);
+    if (hasItem) {
+      queryClient.setQueryData(key, {
+        ...data,
+        reproductions: data.reproductions.map((r: Reproduction) =>
+          r.id === id ? { ...r, ...patch } : r
+        ),
+      });
+    }
+  }
+}
 
 
 export function useReproduction(filters?: { profileId?: string; date?: string; status?: string | null; search?: string; limit?: number; enabled?: boolean }) {
@@ -98,7 +137,15 @@ export function useReproduction(filters?: { profileId?: string; date?: string; s
 
   const registerBirthMutation = useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: { bornKits?: number; actualBirthDate?: string } }) => reproductionService.registerBirth(id, payload),
-    onSuccess: () => {
+    onSuccess: (updatedRep, variables) => {
+      if (variables.payload.actualBirthDate) {
+        removeReproductionFromCaches(queryClient, variables.id, ['gestacion']);
+      } else if (variables.payload.bornKits !== undefined) {
+        patchReproductionInCaches(queryClient, variables.id, {
+          bornKits: variables.payload.bornKits,
+          ...(updatedRep || {}),
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ['reproductions'] });
       queryClient.invalidateQueries({ queryKey: ['birthCalendar'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
@@ -109,7 +156,8 @@ export function useReproduction(filters?: { profileId?: string; date?: string; s
 
   const cancelReproductionMutation = useMutation({
     mutationFn: ({ id, action, reason }: { id: number; action: 'delete' | 'fail'; reason?: string }) => reproductionService.cancelReproduction(id, action, reason),
-    onSuccess: () => {
+    onSuccess: (_res, variables) => {
+      removeReproductionFromCaches(queryClient, variables.id, ['monta', 'gestacion', 'lactancia']);
       queryClient.invalidateQueries({ queryKey: ['reproductions'] });
       queryClient.invalidateQueries({ queryKey: ['birthCalendar'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
@@ -120,7 +168,8 @@ export function useReproduction(filters?: { profileId?: string; date?: string; s
 
   const finishLactationMutation = useMutation({
     mutationFn: (id: number) => reproductionService.finishLactation(id),
-    onSuccess: () => {
+    onSuccess: (_res, id) => {
+      removeReproductionFromCaches(queryClient, id, ['lactancia']);
       queryClient.invalidateQueries({ queryKey: ['reproductions'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
       queryClient.invalidateQueries({ queryKey: ['active-dates'] });

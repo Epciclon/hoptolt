@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState, useRef, useEffect } from 'react';
-import { Input, Button, Dialog } from '@/shared/ui';
+import { Input, Button, Dialog, DropdownPortal } from '@/shared/ui';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { galponService } from '../services/galpon.service';
 import type { Galpon } from '../types/galpon.types';
@@ -72,19 +72,22 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
   const [showCustomVaccineModal, setShowCustomVaccineModal] = useState(false);
 
   const provinceDropdownRef = useRef<HTMLDivElement>(null);
+  const provinceMenuRef = useRef<HTMLDivElement>(null);
   const foodDropdownRef = useRef<HTMLDivElement>(null);
+  const foodMenuRef = useRef<HTMLDivElement>(null);
   const vaccineDropdownRef = useRef<HTMLDivElement>(null);
+  const vaccineMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       const target = event.target as HTMLElement;
-      if (provinceDropdownRef.current && !provinceDropdownRef.current.contains(target)) {
+      if (!provinceDropdownRef.current?.contains(target) && !provinceMenuRef.current?.contains(target)) {
         setShowProvinceDropdown(false);
       }
-      if (foodDropdownRef.current && !foodDropdownRef.current.contains(target)) {
+      if (!foodDropdownRef.current?.contains(target) && !foodMenuRef.current?.contains(target)) {
         setShowFoodDropdown(false);
       }
-      if (vaccineDropdownRef.current && !vaccineDropdownRef.current.contains(target)) {
+      if (!vaccineDropdownRef.current?.contains(target) && !vaccineMenuRef.current?.contains(target)) {
         setShowVaccineDropdown(false);
       }
     };
@@ -228,24 +231,29 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
           <Input
             id="province-search"
             placeholder="Buscar provincia..."
+            autoComplete="off"
             value={provinceSearch}
             onChange={(e) => { setProvinceSearch(e.target.value); setShowProvinceDropdown(true); }}
             onFocus={() => setShowProvinceDropdown(true)}
           />
-          {showProvinceDropdown && filteredProvinces.length > 0 && (
-            <div className="absolute top-full left-0 right-0 bg-card border border-strong rounded-md mt-1 max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto z-20 shadow-lg">
-              {filteredProvinces.map(p => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => handleProvinceSelect(p)}
-                  className="w-full text-left px-3 py-2 hover:bg-theme-surface border-b border-default text-sm last:border-b-0 cursor-pointer"
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-          )}
+          <DropdownPortal
+            anchorRef={provinceDropdownRef}
+            open={showProvinceDropdown && filteredProvinces.length > 0}
+            menuRef={provinceMenuRef}
+            maxHeight={240}
+            className="bg-card border border-strong rounded-md shadow-lg"
+          >
+            {filteredProvinces.map(p => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => handleProvinceSelect(p)}
+                className="w-full text-left px-3 py-2 hover:bg-theme-surface border-b border-default text-sm last:border-b-0 cursor-pointer"
+              >
+                {p}
+              </button>
+            ))}
+          </DropdownPortal>
         </div>
         {errors.province && <p className="text-sm text-red-600">{errors.province.message}</p>}
       </div>
@@ -282,24 +290,29 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
           <Input
             id="food-search"
             placeholder="Buscar tipo de alimento..."
+            autoComplete="off"
             value={foodSearch}
             onChange={(e) => { setFoodSearch(e.target.value); setShowFoodDropdown(true); }}
             onFocus={() => setShowFoodDropdown(true)}
           />
-          {showFoodDropdown && filteredFoods.length > 0 && (
-            <div className="absolute top-full left-0 right-0 bg-card border border-strong rounded-md mt-1 max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto z-20 shadow-lg">
-              {filteredFoods.map(f => (
-                <button
-                  key={f}
-                  type="button"
-                  onClick={() => handleFoodSelect(f)}
-                  className="w-full text-left px-3 py-2 hover:bg-theme-surface border-b border-default text-sm last:border-b-0 cursor-pointer"
-                >
-                  {f}
-                </button>
-              ))}
-            </div>
-          )}
+          <DropdownPortal
+            anchorRef={foodDropdownRef}
+            open={showFoodDropdown && filteredFoods.length > 0}
+            menuRef={foodMenuRef}
+            maxHeight={240}
+            className="bg-card border border-strong rounded-md shadow-lg"
+          >
+            {filteredFoods.map(f => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => handleFoodSelect(f)}
+                className="w-full text-left px-3 py-2 hover:bg-theme-surface border-b border-default text-sm last:border-b-0 cursor-pointer"
+              >
+                {f}
+              </button>
+            ))}
+          </DropdownPortal>
         </div>
 
         {selectedFoods.length > 0 && (
@@ -330,24 +343,29 @@ export function GalponForm({ defaultValues, galponId, mode, onSuccess, onCancel 
           <Input
             id="vaccine-search"
             placeholder="Buscar vacuna..."
+            autoComplete="off"
             value={vaccineSearch}
             onChange={(e) => { setVaccineSearch(e.target.value); setShowVaccineDropdown(true); }}
             onFocus={() => setShowVaccineDropdown(true)}
           />
-          {showVaccineDropdown && filteredVaccines.length > 0 && (
-            <div className="absolute top-full left-0 right-0 bg-card border border-strong rounded-md mt-1 max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto z-20 shadow-lg">
-              {filteredVaccines.map(v => (
-                <button
-                  key={v.name}
-                  type="button"
-                  onClick={() => handleVaccineSelect(v)}
-                  className="w-full text-left px-3 py-2 hover:bg-theme-surface border-b border-default text-sm last:border-b-0 cursor-pointer"
-                >
-                  {v.name} - cada {v.period} días
-                </button>
-              ))}
-            </div>
-          )}
+          <DropdownPortal
+            anchorRef={vaccineDropdownRef}
+            open={showVaccineDropdown && filteredVaccines.length > 0}
+            menuRef={vaccineMenuRef}
+            maxHeight={240}
+            className="bg-card border border-strong rounded-md shadow-lg"
+          >
+            {filteredVaccines.map(v => (
+              <button
+                key={v.name}
+                type="button"
+                onClick={() => handleVaccineSelect(v)}
+                className="w-full text-left px-3 py-2 hover:bg-theme-surface border-b border-default text-sm last:border-b-0 cursor-pointer"
+              >
+                {v.name} - cada {v.period} días
+              </button>
+            ))}
+          </DropdownPortal>
         </div>
 
         {selectedVaccines.length > 0 && (

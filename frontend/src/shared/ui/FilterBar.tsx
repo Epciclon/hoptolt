@@ -51,13 +51,13 @@ export function FilterBar({
       </div>
       <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
         {filters.map(filter => (
-          <div key={filter.key} className="w-full sm:w-40 min-w-[150px] relative">
+          <div key={filter.key} className="w-full sm:w-auto sm:min-w-[165px] relative">
             <Select
               options={filter.options}
               value={filter.value}
               onChange={(e) => filter.onChange(e.target.value)}
               placeholder={filter.placeholder}
-              className={filter.value ? "pr-8" : ""}
+              className={filter.value ? "pr-12" : ""}
             />
             {filter.value && (
               <button

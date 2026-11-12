@@ -10,7 +10,8 @@ import {
   RotateCcw,
   ChevronRight,
   ShieldCheck,
-  Trash2
+  Trash2,
+  X
 } from 'lucide-react';
 import { useIncidents } from '@/modules/incident/hooks/useIncidents';
 import { IncidentFormModal } from '@/modules/incident/components/IncidentFormModal';
@@ -380,22 +381,27 @@ function IncidentsFiltersBar({
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full md:w-auto shrink-0">
-          <div className="w-full sm:w-44 min-w-0">
-            <Select
-              options={filterConfigs[0].options}
-              value={filterConfigs[0].value}
-              onChange={(e) => filterConfigs[0].onChange(e.target.value)}
-              placeholder={filterConfigs[0].placeholder}
-            />
-          </div>
-          <div className="w-full sm:w-44 min-w-0">
-            <Select
-              options={filterConfigs[1].options}
-              value={filterConfigs[1].value}
-              onChange={(e) => filterConfigs[1].onChange(e.target.value)}
-              placeholder={filterConfigs[1].placeholder}
-            />
-          </div>
+          {filterConfigs.map((filter) => (
+            <div key={filter.key} className="w-full sm:w-auto sm:min-w-[165px] relative">
+              <Select
+                options={filter.options}
+                value={filter.value}
+                onChange={(e) => filter.onChange(e.target.value)}
+                placeholder={filter.placeholder}
+                className={filter.value ? 'pr-12' : ''}
+              />
+              {filter.value && (
+                <button
+                  type="button"
+                  onClick={() => filter.onChange('')}
+                  className="absolute right-7 top-1/2 -translate-y-1/2 p-1 text-theme-faint hover:text-red-500 rounded-full transition-colors flex items-center justify-center bg-card"
+                  title="Limpiar"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -467,7 +473,6 @@ export default function IncidentsPage() {
         setPage(1);
       },
       options: [
-        { value: '', label: 'Todos los tipos' },
         { value: 'Dificultad en la Tarea', label: 'Dificultad en la Tarea' },
         { value: 'Problema en Jaula', label: 'Problema en Jaula' },
         { value: 'Salud del Conejo', label: 'Salud del Conejo' },
@@ -485,7 +490,6 @@ export default function IncidentsPage() {
         setPage(1);
       },
       options: [
-        { value: '', label: 'Todas las labores' },
         { value: 'alimentacion', label: 'Alimentación' },
         { value: 'limpieza', label: 'Limpieza' },
         { value: 'vacunacion', label: 'Vacunación' },

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button, Dialog, ConfirmDialog, RabbitAvatar, Alert } from '@/shared/ui';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { reproductionService } from '../services/reproduction.service';
@@ -16,29 +17,25 @@ interface MatingModalProps {
 }
 
 export function MatingModal({ male, onClose, onSuccess }: Readonly<MatingModalProps>) {
-  const [females, setFemales] = useState<MatingRabbit[]>([]);
   const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<number | null>(null);
   const [confirmFemale, setConfirmFemale] = useState<MatingRabbit | null>(null);
   const [showConsanguinityWarning, setShowConsanguinityWarning] = useState(false);
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: females = [], isLoading: loading, error: femalesError } = useQuery({
+    queryKey: ['availableFemalesForMating', male.id],
+    queryFn: () => reproductionService.getAvailableFemalesForMating(male.id),
+    staleTime: 30_000,
+  });
 
   useEffect(() => {
-    const fetchFemales = async () => {
-      try {
-        setLoading(true);
-        const data = await reproductionService.getAvailableFemalesForMating(male.id);
-        setFemales(data);
-      } catch (error) {
-        console.error(error);
-        showToast('Error al buscar hembras compatibles', 'error');
-      } finally {
-        setLoading(false);
-      }
-    };
-    void fetchFemales();
-  }, [male.id, showToast]);
+    if (femalesError) {
+      console.error(femalesError);
+      showToast('Error al buscar hembras compatibles', 'error');
+    }
+  }, [femalesError, showToast]);
 
   const handlePreConfirm = async () => {
     if (!confirmFemale) return;
@@ -62,7 +59,33 @@ export function MatingModal({ male, onClose, onSuccess }: Readonly<MatingModalPr
     if (!confirmFemale) return;
     setProcessingId(confirmFemale.id);
     try {
-      await reproductionService.startMating({ maleId: male.id, femaleId: confirmFemale.id });
+      const created = await reproductionService.startMating({ maleId: male.id, femaleId: confirmFemale.id });
+      const optimisticEntry = {
+        ...created,
+        femaleCode: confirmFemale.code,
+        femaleName: confirmFemale.name,
+        femaleRace: confirmFemale.race,
+        imageUrl: confirmFemale.imageUrl,
+        femaleAge: confirmFemale.age,
+        femaleWeight: confirmFemale.weight,
+        cageNumber: male.cageNumber,
+        cageType: male.cageType,
+      };
+      const queries = queryClient.getQueriesData<any>({ queryKey: ['reproductions'] });
+      for (const [key, data] of queries) {
+        if (!data?.reproductions || !Array.isArray(data.reproductions)) continue;
+        const keyStatus = Array.isArray(key) ? key[3] : null;
+        if (keyStatus === 'monta' && !data.reproductions.some((r: any) => r.id === created.id)) {
+          queryClient.setQueryData(key, {
+            ...data,
+            reproductions: [optimisticEntry, ...data.reproductions],
+          });
+        }
+      }
+      queryClient.invalidateQueries({ queryKey: ['reproductions'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
+      queryClient.invalidateQueries({ queryKey: ['availableMalesForMating'] });
+      queryClient.invalidateQueries({ queryKey: ['availableFemalesForMating'] });
       showToast('¡Monta iniciada exitosamente! La coneja ahora está con el macho.', 'success');
       onSuccess();
     } catch (error: any) {

@@ -126,6 +126,7 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
         <div className="relative" ref={vaccineDropdownRef}>
           <Input
             placeholder="Busca o selecciona vacunas..."
+            autoComplete="off"
             value={vaccineSearch}
             onChange={(e) => {
               setVaccineSearch(e.target.value);
@@ -134,7 +135,7 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
             onFocus={() => setShowVaccineDropdown(true)}
           />
           {showVaccineDropdown && (
-            <div className="absolute z-30 w-full border border-default dark:border-slate-700 rounded-lg max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto bg-card dark:bg-slate-900 mt-1.5 shadow-2xl">
+            <div className="absolute z-30 w-full bg-card border border-strong rounded-md mt-1 max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto shadow-lg">
               {filteredVaccines.length === 0 ? (
                 <p className="text-muted text-sm p-3">No hay vacunas disponibles</p>
               ) : (
@@ -143,10 +144,9 @@ export function VaccinationCatalog({ onSuccess }: Readonly<VaccinationCatalogPro
                     key={vaccine.name}
                     type="button"
                     onClick={() => handleVaccineSelect(vaccine.name)}
-                    className="w-full text-left px-3.5 py-2.5 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 hover:text-emerald-700 dark:hover:text-emerald-300 border-b border-default dark:border-slate-800 last:border-b-0 text-sm font-medium transition-colors flex items-center justify-between"
+                    className="w-full text-left px-3 py-2 text-main hover:bg-theme-surface border-b border-default text-sm last:border-b-0 cursor-pointer block transition-colors"
                   >
-                    <span>{vaccine.name} <span className="text-xs text-muted font-normal">- cada {vaccine.period} días</span></span>
-                    <span className="text-xs text-muted font-normal">+ Agregar</span>
+                    {vaccine.name} - cada {vaccine.period} días
                   </button>
                 ))
               )}

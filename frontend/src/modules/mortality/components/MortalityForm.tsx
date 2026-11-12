@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Button, Input, Dialog, RabbitAvatar } from '@/shared/ui';
+import { Button, Input, Dialog, RabbitAvatar, DropdownPortal } from '@/shared/ui';
 import { useMortality } from '../hooks/useMortality';
 import { useToast } from '@/shared/contexts/ToastContext';
 import type { AssignedRabbit } from '@/modules/assignments/types/assignment.types';
@@ -38,12 +38,15 @@ export function MortalityForm({ selectedRabbits, onSuccess, onCancel }: Readonly
   const [observations, setObservations] = useState('');
 
   const causeDropdownRef = useRef<HTMLDivElement>(null);
+  const causeMenuRef = useRef<HTMLDivElement>(null);
 
   // Click outside to close cause search dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (causeDropdownRef.current && !causeDropdownRef.current.contains(target)) {
+      const insideTrigger = causeDropdownRef.current?.contains(target);
+      const insideMenu = causeMenuRef.current?.contains(target);
+      if (!insideTrigger && !insideMenu) {
         setShowCauseDropdown(false);
       }
     };
@@ -183,6 +186,7 @@ export function MortalityForm({ selectedRabbits, onSuccess, onCancel }: Readonly
           <Input
             id="causeInput"
             placeholder="Buscar o elegir causa..."
+            autoComplete="off"
             value={causeSearch}
             onChange={(e) => {
               setCauseSearch(e.target.value);
@@ -191,34 +195,38 @@ export function MortalityForm({ selectedRabbits, onSuccess, onCancel }: Readonly
             onFocus={() => setShowCauseDropdown(true)}
             required
           />
-          {showCauseDropdown && (
-            <div className="absolute top-full left-0 right-0 z-20 bg-card border border-strong rounded-lg shadow-lg mt-1 max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto">
-              {filteredCauseOptions.length === 0 ? (
-                <p className="text-muted text-sm p-3">No hay opciones disponibles</p>
-              ) : (
-                filteredCauseOptions.map(opt => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => {
-                      if (opt.value === 'otra') {
-                        setPrevCause(cause);
-                        setCustomCauseInput('');
-                        setIsCustomCauseModalOpen(true);
-                      } else {
-                        setCause(opt.value);
-                        setCauseSearch(opt.label);
-                      }
-                      setShowCauseDropdown(false);
-                    }}
-                    className="w-full text-left px-3 py-2 hover:bg-theme-surface border border-default text-sm border-b border-slate-50 last:border-0"
-                  >
-                    {opt.label}
-                  </button>
-                ))
-              )}
-            </div>
-          )}
+          <DropdownPortal
+            anchorRef={causeDropdownRef}
+            open={showCauseDropdown}
+            menuRef={causeMenuRef}
+            maxHeight={240}
+            className="bg-card border border-strong rounded-md shadow-lg"
+          >
+            {filteredCauseOptions.length === 0 ? (
+              <p className="text-muted text-sm p-3">No hay opciones disponibles</p>
+            ) : (
+              filteredCauseOptions.map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => {
+                    if (opt.value === 'otra') {
+                      setPrevCause(cause);
+                      setCustomCauseInput('');
+                      setIsCustomCauseModalOpen(true);
+                    } else {
+                      setCause(opt.value);
+                      setCauseSearch(opt.label);
+                    }
+                    setShowCauseDropdown(false);
+                  }}
+                  className="w-full text-left px-3 py-2 text-main hover:bg-theme-surface border-b border-default text-sm last:border-b-0 cursor-pointer block transition-colors"
+                >
+                  {opt.label}
+                </button>
+              ))
+            )}
+          </DropdownPortal>
         </div>
       </div>
 

@@ -55,29 +55,38 @@ export function CageTable({ onEdit }: Readonly<CageTableProps>) {
           return <Badge variant="warning">Mantenimiento</Badge>;
         }
 
-        let label = 'Operativa';
+        let occupancyLabel = '';
         let variant: 'success' | 'info' | 'danger' | 'warning' | 'primary' | 'neutral';
 
         switch (row.occupancyStatus) {
           case 'disponible':
-            label = 'Operativa (Libre)';
+            occupancyLabel = 'Libre';
             variant = 'success';
             break;
           case 'parcial':
-            label = `Operativa (Parcial ${row.assignedCount}/${row.capacity})`;
+            occupancyLabel = `Parcial ${row.assignedCount}/${row.capacity}`;
             variant = 'info';
             break;
           case 'llena':
-            label = row.type === 'reproducción'
-              ? 'Operativa (Llena)'
-              : `Operativa (Llena ${row.assignedCount}/${row.capacity})`;
+            occupancyLabel = row.type === 'reproducción'
+              ? 'Llena'
+              : `Llena ${row.assignedCount}/${row.capacity}`;
             variant = 'danger';
             break;
           default:
             variant = 'success';
         }
 
-        return <Badge variant={variant}>{label}</Badge>;
+        return (
+          <div className="flex flex-col items-start leading-tight gap-0.5">
+            <Badge variant={variant}>Operativa</Badge>
+            {occupancyLabel && (
+              <span className="text-xs text-muted font-medium pl-1">
+                {occupancyLabel}
+              </span>
+            )}
+          </div>
+        );
       },
     },
     {

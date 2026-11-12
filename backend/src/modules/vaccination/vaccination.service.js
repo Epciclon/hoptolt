@@ -4,8 +4,8 @@ const AppError = require('../../errors/AppError');
 const { validateWorkerAssignedCages, fetchPaginatedGalponRecords } = require('../../common/helpers/repository.helper');
 
 class VaccinationService {
-    _getRabbitNameStr(rabbit) {
-        return rabbit.name ? ' - ' + rabbit.name : '';
+    _formatRabbitLabel(rabbit) {
+        return rabbit.name ? `${rabbit.name} - ${rabbit.code}` : rabbit.code;
     }
 
     _validateSingleVaccination(rabbitId, params, vaccinationErrors) {
@@ -16,16 +16,17 @@ class VaccinationService {
             vaccinationErrors.push(`El conejo con ID ${rabbitId} no existe.`);
             return;
         }
+        const rabbitLabel = this._formatRabbitLabel(rabbit);
         if (rabbit.galponId !== galponId) {
-            vaccinationErrors.push(`El conejo ${rabbit.code}${this._getRabbitNameStr(rabbit)} no pertenece al galpón activo.`);
+            vaccinationErrors.push(`El conejo ${rabbitLabel} no pertenece al galpón activo.`);
             return;
         }
         if (!assignmentSet.has(rabbitId)) {
-            vaccinationErrors.push(`El conejo ${rabbit.code}${this._getRabbitNameStr(rabbit)} no está asignado a una jaula.`);
+            vaccinationErrors.push(`El conejo ${rabbitLabel} no está asignado a una jaula.`);
             return;
         }
         if (lactatingSet.has(rabbitId)) {
-            vaccinationErrors.push(`El conejo ${rabbit.code}${this._getRabbitNameStr(rabbit)} está en período de lactancia. No se pueden administrar vacunas hasta que finalice esta etapa.`);
+            vaccinationErrors.push(`El conejo ${rabbitLabel} está en período de lactancia. No se pueden administrar vacunas hasta que finalice esta etapa.`);
             return;
         }
 
@@ -46,7 +47,7 @@ class VaccinationService {
                 if (daysSinceLast < period) {
                     const daysRemaining = period - daysSinceLast;
                     vaccinationErrors.push(
-                        `El conejo ${rabbit.code}${this._getRabbitNameStr(rabbit)} no puede recibir la vacuna "${vaccine}" aún. ` +
+                        `El conejo ${rabbitLabel} no puede recibir la vacuna "${vaccine}" aún. ` +
                         `Última aplicación: ${lastDate.toLocaleDateString('es-EC')}. ` +
                         `Faltan ${daysRemaining} días para cumplir el período de revacunación.`
                     );

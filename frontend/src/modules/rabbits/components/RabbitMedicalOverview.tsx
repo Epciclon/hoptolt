@@ -39,26 +39,26 @@ export function RabbitMedicalOverview({ rabbit }: Readonly<RabbitMedicalOverview
     const myVaccinations = vaccinations.filter(v => v.rabbitId === rabbit.id);
     
     // Diccionario para guardar la última fecha de aplicación de cada vacuna
-    const latestVaccinesMap = new Map<string, Date>();
+    const latestVaccinesMap = new Map<string, { lastDate: Date; rawName: string }>();
     
     for (const record of myVaccinations) {
       const recordDate = new Date(record.vaccinationDate);
       for (const vName of record.vaccines) {
-        // Normalizamos el nombre para evitar problemas de mayúsculas o espacios extra
-        const normalizedName = vName.trim().toLowerCase();
-        const existingDate = latestVaccinesMap.get(normalizedName);
-        if (!existingDate || recordDate > existingDate) {
-          latestVaccinesMap.set(normalizedName, recordDate);
+        const trimmedName = vName.trim();
+        const normalizedName = trimmedName.toLowerCase();
+        const existing = latestVaccinesMap.get(normalizedName);
+        if (!existing || recordDate > existing.lastDate) {
+          latestVaccinesMap.set(normalizedName, { lastDate: recordDate, rawName: trimmedName });
         }
       }
     }
 
     const nextVaccinationsList: { name: string, originalName: string, nextDate: Date | null, diffDays: number | null }[] = [];
 
-    for (const [normalizedName, lastDate] of latestVaccinesMap.entries()) {
+    for (const [normalizedName, { lastDate, rawName }] of latestVaccinesMap.entries()) {
       // Find case-insensitive match in galponVaccines
       const vConfig = galponVaccines.find(gv => gv.name.trim().toLowerCase() === normalizedName);
-      const originalName = vConfig ? vConfig.name : (normalizedName.charAt(0).toUpperCase() + normalizedName.slice(1));
+      const originalName = vConfig ? vConfig.name : rawName;
       
       if (!vConfig) {
         nextVaccinationsList.push({ name: normalizedName, originalName, nextDate: null, diffDays: null });

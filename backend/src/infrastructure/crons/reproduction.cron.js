@@ -15,8 +15,7 @@ const processMontaToGestacion = async (rep) => {
 
     const fullRep = await reproductionRepository.findByIdWithDetails(rep.id);
     const code = fullRep?.female?.code || 'Coneja';
-    const name = fullRep?.female?.name ? ` ${fullRep.female.name}` : '';
-    const femaleLabel = `${code}${name}`.trim();
+    const femaleLabel = fullRep?.female?.name ? `${fullRep.female.name} - ${code}` : code;
 
     await recordSystemChange({
         galponId: rep.galponId,
@@ -41,8 +40,7 @@ const processGestacionToLactancia = async (rep) => {
 
     const fullRep = await reproductionRepository.findByIdWithDetails(rep.id);
     const code = fullRep?.female?.code || 'Coneja';
-    const name = fullRep?.female?.name ? ` ${fullRep.female.name}` : '';
-    const femaleLabel = `${code}${name}`.trim();
+    const femaleLabel = fullRep?.female?.name ? `${fullRep.female.name} - ${code}` : code;
 
     await recordSystemChange({
         galponId: rep.galponId,

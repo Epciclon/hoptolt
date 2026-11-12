@@ -164,9 +164,13 @@ class GenealogyService {
     async _fetchAncestorsRecursive(currentLevelIds, remainingLevels, ancestors) {
         if (remainingLevels <= 0 || currentLevelIds.length === 0) return;
 
-        const genealogies = await Promise.all(
-            currentLevelIds.map(id => genealogyRepository.findByRabbitId(id))
-        );
+        const batch = typeof genealogyRepository.findParentsByRabbitIds === 'function'
+            ? await genealogyRepository.findParentsByRabbitIds(currentLevelIds)
+            : null;
+        const genealogies = Array.isArray(batch)
+            ? batch
+            : await Promise.all(currentLevelIds.map(id => genealogyRepository.findByRabbitId(id)));
+
         const nextLevelIds = this._collectParentsFromGenealogies(genealogies, ancestors);
         if (nextLevelIds.length > 0 && remainingLevels > 1) {
             await this._fetchAncestorsRecursive(nextLevelIds, remainingLevels - 1, ancestors);

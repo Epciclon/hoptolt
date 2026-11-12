@@ -68,7 +68,11 @@ export function MortalityTable({ profileId, date }: MortalityTableProps) {
         description="Información detallada sobre el deceso del conejo"
         primaryDateString={selectedMortality?.deathDate}
         primaryDateLabel="Fecha de Baja"
-        profile={selectedMortality?.profile || (selectedMortality?.responsible ? { username: selectedMortality.responsible } : null)}
+        profile={selectedMortality?.profile || (selectedMortality?.responsible ? {
+          fullName: selectedMortality.responsible,
+          username: selectedMortality.profileUsername,
+          email: selectedMortality.profileEmail
+        } : null)}
         rabbits={selectedMortality ? [
           {
             id: selectedMortality.rabbitId,
@@ -82,7 +86,7 @@ export function MortalityTable({ profileId, date }: MortalityTableProps) {
         customDetails={
           selectedMortality && (
             <>
-              <div className="bg-theme-surface border border-strong rounded-lg p-3 col-span-1">
+              <div className="bg-theme-surface border border-strong rounded-lg p-3 col-span-1 sm:col-span-2">
                 <p className="text-xs text-muted font-medium mb-1">Causa</p>
                 <div className="flex flex-col leading-tight mt-1">
                   <span className="text-sm font-semibold text-main capitalize">

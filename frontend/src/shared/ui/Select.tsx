@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, SelectHTMLAttributes, forwardRef } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { DropdownPortal } from './DropdownPortal';
 
 export interface SelectOption {
   value: string;
@@ -37,6 +38,7 @@ export const Select = forwardRef<HTMLSelectElement, Readonly<SelectProps>>(
   ({ label, error, hint, options, placeholder, className, id, required, value = '', onChange, name, disabled, ...props }, ref) => {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
 
     const selectId = id ?? label?.toLowerCase().replace(/\s+/g, '-');
 
@@ -45,7 +47,10 @@ export const Select = forwardRef<HTMLSelectElement, Readonly<SelectProps>>(
 
     useEffect(() => {
       const handleClickOutside = (e: MouseEvent) => {
-        if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        const target = e.target as Node;
+        const insideContainer = containerRef.current?.contains(target);
+        const insideMenu = menuRef.current?.contains(target);
+        if (!insideContainer && !insideMenu) {
           setIsOpen(false);
         }
       };
@@ -133,43 +138,41 @@ export const Select = forwardRef<HTMLSelectElement, Readonly<SelectProps>>(
             />
           </button>
 
-          {/* Menú desplegable personalizado con scroll limitado */}
-          {isOpen && (
-            <div className="absolute left-0 top-full mt-1 w-full min-w-full bg-card border border-strong rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-              <div className="max-h-44 sm:max-h-52 overflow-y-auto divide-y divide-default/40 py-1 overscroll-contain">
-                {placeholder && (
+          {/* Menú desplegable en portal para evitar recortes dentro de modales */}
+          <DropdownPortal
+            anchorRef={containerRef}
+            open={isOpen}
+            menuRef={menuRef}
+            maxHeight={208}
+            allowWider
+            className="bg-card border border-strong rounded-xl shadow-2xl divide-y divide-default/40 py-1 animate-in fade-in zoom-in-95 duration-150"
+          >
+            {options.length === 0 ? (
+              <p className="px-3 py-2 text-xs text-muted">No hay opciones disponibles</p>
+            ) : (
+              options.map((opt) => {
+                const isSelected = opt.value === value;
+                return (
                   <button
+                    key={opt.value}
                     type="button"
-                    disabled
-                    className="w-full text-left px-3 py-2 text-xs font-medium text-theme-faint cursor-not-allowed bg-theme-surface/50"
+                    onClick={() => handleSelectOption(opt.value)}
+                    className={cn(
+                      'w-full text-left px-3 py-2 text-xs sm:text-sm transition-colors flex items-center justify-between gap-2 cursor-pointer',
+                      isSelected
+                        ? 'bg-primary-50 dark:bg-primary-900/25 text-primary-600 dark:text-primary-400 font-semibold'
+                        : 'text-main hover:bg-theme-surface'
+                    )}
                   >
-                    {placeholder}
+                    <span className="leading-snug">{opt.label}</span>
+                    {isSelected && (
+                      <Check size={14} className="text-primary-500 shrink-0" />
+                    )}
                   </button>
-                )}
-                {options.map((opt) => {
-                  const isSelected = opt.value === value;
-                  return (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => handleSelectOption(opt.value)}
-                      className={cn(
-                        'w-full text-left px-3 py-2 text-xs sm:text-sm transition-colors flex items-center justify-between gap-2 cursor-pointer',
-                        isSelected
-                          ? 'bg-primary-50 dark:bg-primary-900/25 text-primary-600 dark:text-primary-400 font-semibold'
-                          : 'text-main hover:bg-theme-surface'
-                      )}
-                    >
-                      <span className="truncate">{opt.label}</span>
-                      {isSelected && (
-                        <Check size={14} className="text-primary-500 shrink-0" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+                );
+              })
+            )}
+          </DropdownPortal>
         </div>
 
         {error && <p className="text-xs text-red-500">{error}</p>}

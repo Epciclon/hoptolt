@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { ChevronRight, AlertTriangle } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Dialog, Button, Input } from '@/shared/ui';
 import { RabbitForm } from '@/modules/rabbits/components/RabbitForm';
 import { genealogyService } from '@/modules/genealogy/services/genealogy.service';
@@ -13,7 +14,7 @@ import type { Rabbit } from '@/modules/rabbits/types/rabbit.types';
 interface WeaningWizardProps {
   open: boolean;
   onClose: () => void;
-  onFinish: () => void;
+  onFinish: () => Promise<void> | void;
   reproduction: Reproduction;
   finishing?: boolean;
   onKitsRegistered?: () => void;
@@ -23,6 +24,7 @@ type WizardStep = 'unregistered' | 'ask' | 'count' | 'register';
 
 export function WeaningWizard({ open, onClose, onFinish, reproduction, finishing, onKitsRegistered }: Readonly<WeaningWizardProps>) {
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
   
   const hasInitialKits = reproduction.bornKits !== null && reproduction.bornKits !== undefined;
   const [currentBornKits, setCurrentBornKits] = useState<number | null>(reproduction.bornKits ?? null);
@@ -75,11 +77,15 @@ export function WeaningWizard({ open, onClose, onFinish, reproduction, finishing
     }
   };
 
-  const handleConfirmEarlyFinish = () => {
-    setShowEarlyFinishConfirm(false);
-    onFinish();
+  const finishAndClose = async () => {
+    await onFinish();
     reset();
     onClose();
+  };
+
+  const handleConfirmEarlyFinish = async () => {
+    setShowEarlyFinishConfirm(false);
+    await finishAndClose();
   };
 
   const handleCancelEarlyFinish = () => {
@@ -92,9 +98,8 @@ export function WeaningWizard({ open, onClose, onFinish, reproduction, finishing
     purpose: 'Reproducción',
   };
 
-  const handleNoKeep = () => {
-    onFinish();
-    handleCloseAttempt();
+  const handleNoKeep = async () => {
+    await finishAndClose();
   };
 
   const handleSaveBornKits = async () => {
@@ -107,11 +112,9 @@ export function WeaningWizard({ open, onClose, onFinish, reproduction, finishing
     try {
       await reproductionService.registerBirth(reproduction.id, { bornKits: num });
       setCurrentBornKits(num);
-      showToast('Gazapos registrados exitosamente.', 'success');
       onKitsRegistered?.();
       if (num === 0) {
-        onFinish();
-        handleCloseAttempt();
+        await finishAndClose();
       } else {
         setStep('ask');
       }
@@ -125,14 +128,19 @@ export function WeaningWizard({ open, onClose, onFinish, reproduction, finishing
   const handleRabbitRegistered = async (rabbit?: Rabbit) => {
     if (!rabbit) return;
 
-    showToast('Enlazando árbol genealógico de la cría...', 'info');
     try {
-      await genealogyService.register({
+      const result = await genealogyService.register({
         rabbitId: rabbit.id,
         motherId: reproduction.femaleId || undefined,
         fatherId: reproduction.maleId || undefined,
+        confirmConsanguinity: true,
       });
-      showToast('Árbol genealógico actualizado exitosamente', 'success');
+      if (result?.requiresConfirmation) {
+        showToast('No se pudo completar el enlace en el árbol genealógico.', 'warning');
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['genealogies'] });
+        queryClient.invalidateQueries({ queryKey: ['genealogyTree'] });
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'No se pudo enlazar el árbol genealógico automáticamente.';
       showToast(msg, 'warning');
@@ -142,8 +150,7 @@ export function WeaningWizard({ open, onClose, onFinish, reproduction, finishing
     if (nextIndex < keepCount) {
       setCurrentIndex(nextIndex);
     } else {
-      onFinish();
-      handleCloseAttempt();
+      await finishAndClose();
     }
   };
 
@@ -428,11 +435,14 @@ export function WeaningWizard({ open, onClose, onFinish, reproduction, finishing
               </div>
             )}
             <RabbitForm
+              key={currentIndex}
               mode="create"
               defaultValues={offspringInitialData}
               onSuccess={handleRabbitRegistered}
               onCancel={handleCloseAttempt}
               readOnlyRace={true}
+              suppressSuccessToast={keepCount === 1}
+              resetOnSuccess={false}
             />
           </div>
         )}

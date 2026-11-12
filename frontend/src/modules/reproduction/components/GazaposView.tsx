@@ -2,7 +2,7 @@
 
 import { useReproduction } from '../hooks/useReproduction';
 import type { Reproduction } from '../types/reproduction.types';
-import { Button, Dialog, Input, Select, RabbitSelectableCard, CageGroupCard, RabbitAvatar } from '@/shared/ui';
+import { Button, Dialog, Input, Select, RabbitSelectableCard, CageGroupCard, RabbitAvatar, DropdownPortal } from '@/shared/ui';
 import { FilterBar } from '@/shared/ui/FilterBar';
 import { Pagination } from '@/shared/ui/Pagination';
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -67,13 +67,16 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
   const [isMortalityCustomCauseModalOpen, setIsMortalityCustomCauseModalOpen] = useState(false);
   
   const mortalityCauseDropdownRef = useRef<HTMLDivElement>(null);
+  const mortalityCauseMenuRef = useRef<HTMLDivElement>(null);
   const [mortalityObs, setMortalityObs] = useState('');
   const [registeringMortality, setRegisteringMortality] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (mortalityCauseDropdownRef.current && !mortalityCauseDropdownRef.current.contains(target)) {
+      const insideTrigger = mortalityCauseDropdownRef.current?.contains(target);
+      const insideMenu = mortalityCauseMenuRef.current?.contains(target);
+      if (!insideTrigger && !insideMenu) {
         setShowMortalityCauseDropdown(false);
       }
     };
@@ -191,8 +194,8 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
     setFinishing(true);
     try {
       await finishLactation(toFinish.id);
+      setExpandedId(null);
       showToast('Lactancia completada exitosamente. Se ha guardado en el historial.', 'success');
-      onSuccess?.();
     } catch (error: any) {
       showToast(error.response?.data?.message || 'Error al finalizar la lactancia.', 'error');
     } finally {
@@ -474,6 +477,7 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
             <Select
               label="Razón de fallo"
               value={cancelReason}
+              placeholder="Seleccionar razón..."
               onChange={(e) => {
                 setCancelReason(e.target.value);
                 if (e.target.value !== 'Otra') {
@@ -481,7 +485,6 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
                 }
               }}
               options={[
-                { value: '', label: 'Seleccionar razón...' },
                 { value: 'Mortalidad total de la camada', label: 'Mortalidad total de la camada' },
                 { value: 'Madre mató o abandonó a las crías', label: 'Madre mató o abandonó a las crías' },
                 { value: 'Enfermedad grave o Agalactia', label: 'Enfermedad grave o Agalactia' },
@@ -575,6 +578,7 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
             <Input
               id="mortalityCauseInput"
               placeholder="Escribe para buscar o selecciona..."
+              autoComplete="off"
               value={mortalityCauseSearch}
               onChange={(e) => {
                 setMortalityCauseSearch(e.target.value);
@@ -583,34 +587,38 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
               onFocus={() => setShowMortalityCauseDropdown(true)}
               required
             />
-            {showMortalityCauseDropdown && (
-              <div className="absolute top-full left-0 right-0 z-20 bg-card border border-strong rounded-lg shadow-lg mt-1 max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto">
-                {filteredMortalityCauseOptions.length === 0 ? (
-                  <p className="text-muted text-sm p-3">No hay opciones disponibles</p>
-                ) : (
-                  filteredMortalityCauseOptions.map(opt => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => {
-                        if (opt.value === 'otra') {
-                          setMortalityPrevCause(mortalityCause);
-                          setMortalityCustomCauseInput('');
-                          setIsMortalityCustomCauseModalOpen(true);
-                        } else {
-                          setMortalityCause(opt.value);
-                          setMortalityCauseSearch(opt.label);
-                        }
-                        setShowMortalityCauseDropdown(false);
-                      }}
-                      className="w-full text-left px-3 py-2 hover:bg-theme-surface border border-default text-sm border-b border-slate-50 last:border-0"
-                    >
-                      {opt.label}
-                    </button>
-                  ))
-                )}
-              </div>
-            )}
+            <DropdownPortal
+              anchorRef={mortalityCauseDropdownRef}
+              open={showMortalityCauseDropdown}
+              menuRef={mortalityCauseMenuRef}
+              maxHeight={240}
+              className="bg-card border border-strong rounded-md shadow-lg"
+            >
+              {filteredMortalityCauseOptions.length === 0 ? (
+                <p className="text-muted text-sm p-3">No hay opciones disponibles</p>
+              ) : (
+                filteredMortalityCauseOptions.map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => {
+                      if (opt.value === 'otra') {
+                        setMortalityPrevCause(mortalityCause);
+                        setMortalityCustomCauseInput('');
+                        setIsMortalityCustomCauseModalOpen(true);
+                      } else {
+                        setMortalityCause(opt.value);
+                        setMortalityCauseSearch(opt.label);
+                      }
+                      setShowMortalityCauseDropdown(false);
+                    }}
+                    className="w-full text-left px-3 py-2 text-main hover:bg-theme-surface border-b border-default text-sm last:border-b-0 cursor-pointer block transition-colors"
+                  >
+                    {opt.label}
+                  </button>
+                ))
+              )}
+            </DropdownPortal>
           </div>
 
           <div className="flex flex-col gap-1.5">

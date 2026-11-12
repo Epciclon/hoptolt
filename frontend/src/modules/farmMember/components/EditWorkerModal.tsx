@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Dialog } from '@/shared/ui/Dialog';
-import { Button, Alert, Input } from '@/shared/ui';
+import { Button, Alert, Input, DropdownPortal } from '@/shared/ui';
 import { Sprout, Sparkles, ShieldCheck, Layers, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PermissionActionModal } from './PermissionActionModal';
@@ -290,7 +290,9 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
   const [editingPermissions, setEditingPermissions] = useState<{ canCreate: boolean; canRead: boolean; canUpdate: boolean; canDelete: boolean } | null>(null);
   
   const cageDropdownRef = useRef<HTMLDivElement>(null);
+  const cageMenuRef = useRef<HTMLDivElement>(null);
   const sensitiveDropdownRef = useRef<HTMLDivElement>(null);
+  const sensitiveMenuRef = useRef<HTMLDivElement>(null);
   const baselinePermissionsRef = useRef<ModulePermissions>({});
   const [selectedPresets, setSelectedPresets] = useState<PresetKey[]>([]);
 
@@ -481,10 +483,10 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (cageDropdownRef.current && !cageDropdownRef.current.contains(target)) {
+      if (!cageDropdownRef.current?.contains(target) && !cageMenuRef.current?.contains(target)) {
         setShowCageDropdown(false);
       }
-      if (sensitiveDropdownRef.current && !sensitiveDropdownRef.current.contains(target)) {
+      if (!sensitiveDropdownRef.current?.contains(target) && !sensitiveMenuRef.current?.contains(target)) {
         setShowSensitiveDropdown(false);
       }
     };
@@ -524,6 +526,7 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
           <div className="relative" ref={cageDropdownRef}>
             <Input
               placeholder="Busca por número o tipo de jaula"
+              autoComplete="off"
               value={cageSearch}
               onChange={(e) => {
                 setCageSearch(e.target.value);
@@ -532,24 +535,28 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
               onFocus={() => setShowCageDropdown(true)}
               disabled={loadingCages}
             />
-            {showCageDropdown && (
-              <div className="absolute z-20 w-full border border-default rounded-lg max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto bg-card shadow-lg mt-1 divide-y divide-default">
-                {(() => {
-                  if (loadingCages) return <p className="text-muted text-sm p-3">Cargando jaulas...</p>;
-                  if (filteredCages.length === 0) return <p className="text-muted text-sm p-3">No hay jaulas disponibles</p>;
-                  return filteredCages.map(cage => (
-                    <button
-                      key={cage.id}
-                      type="button"
-                      onClick={() => handleCageSelect(cage)}
-                      className="w-full text-left px-3.5 py-2.5 text-main hover:bg-theme-surface dark:hover:bg-slate-800/80 focus:bg-theme-surface dark:focus:bg-slate-800/80 outline-none text-sm transition-colors cursor-pointer block bg-transparent"
-                    >
-                      {cage.number} - {cage.type.charAt(0).toUpperCase() + cage.type.slice(1)}
-                    </button>
-                  ));
-                })()}
-              </div>
-            )}
+            <DropdownPortal
+              anchorRef={cageDropdownRef}
+              open={showCageDropdown}
+              menuRef={cageMenuRef}
+              maxHeight={240}
+              className="border border-default rounded-lg bg-card shadow-lg divide-y divide-default"
+            >
+              {(() => {
+                if (loadingCages) return <p className="text-muted text-sm p-3">Cargando jaulas...</p>;
+                if (filteredCages.length === 0) return <p className="text-muted text-sm p-3">No hay jaulas disponibles</p>;
+                return filteredCages.map(cage => (
+                  <button
+                    key={cage.id}
+                    type="button"
+                    onClick={() => handleCageSelect(cage)}
+                    className="w-full text-left px-3.5 py-2.5 text-main hover:bg-theme-surface dark:hover:bg-slate-800/80 focus:bg-theme-surface dark:focus:bg-slate-800/80 outline-none text-sm transition-colors cursor-pointer block bg-transparent"
+                  >
+                    {cage.number} - {cage.type.charAt(0).toUpperCase() + cage.type.slice(1)}
+                  </button>
+                ));
+              })()}
+            </DropdownPortal>
           </div>
           {selectedCages.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-2">
@@ -682,6 +689,7 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
           <div className="relative mb-4" ref={sensitiveDropdownRef}>
             <Input
               placeholder="Buscar permiso..."
+              autoComplete="off"
               value={sensitivePermissionSearch}
               onChange={(e) => {
                 setSensitivePermissionSearch(e.target.value);
@@ -689,24 +697,28 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
               }}
               onFocus={() => setShowSensitiveDropdown(true)}
             />
-            {showSensitiveDropdown && (
-              <div className="absolute z-20 w-full border border-default rounded-lg max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto bg-card shadow-lg mt-1 divide-y divide-default">
-                {filteredPermissions.length === 0 ? (
-                  <p className="text-muted text-sm p-3">No hay permisos disponibles</p>
-                ) : (
-                  filteredPermissions.map((permission: string) => (
-                    <button
-                      key={permission}
-                      type="button"
-                      onClick={() => handleSensitivePermissionSelect(permission)}
-                      className="w-full text-left px-3.5 py-2.5 text-main hover:bg-theme-surface dark:hover:bg-slate-800/80 focus:bg-theme-surface dark:focus:bg-slate-800/80 outline-none text-sm transition-colors cursor-pointer block bg-transparent"
-                    >
-                      {permission}
-                    </button>
-                  ))
-                )}
-              </div>
-            )}
+            <DropdownPortal
+              anchorRef={sensitiveDropdownRef}
+              open={showSensitiveDropdown}
+              menuRef={sensitiveMenuRef}
+              maxHeight={240}
+              className="border border-default rounded-lg bg-card shadow-lg divide-y divide-default"
+            >
+              {filteredPermissions.length === 0 ? (
+                <p className="text-muted text-sm p-3">No hay permisos disponibles</p>
+              ) : (
+                filteredPermissions.map((permission: string) => (
+                  <button
+                    key={permission}
+                    type="button"
+                    onClick={() => handleSensitivePermissionSelect(permission)}
+                    className="w-full text-left px-3.5 py-2.5 text-main hover:bg-theme-surface dark:hover:bg-slate-800/80 focus:bg-theme-surface dark:focus:bg-slate-800/80 outline-none text-sm transition-colors cursor-pointer block bg-transparent"
+                  >
+                    {permission}
+                  </button>
+                ))
+              )}
+            </DropdownPortal>
           </div>
 
           {/* Permisos agregados con sus acciones */}

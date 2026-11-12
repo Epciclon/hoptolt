@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Button, Input, Dialog, LoadingMessage, RabbitSelectableCard } from '@/shared/ui';
+import { Button, Input, Dialog, LoadingMessage, RabbitSelectableCard, DropdownPortal } from '@/shared/ui';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { genealogyService } from '../services/genealogy.service';
 import { rabbitService } from '@/modules/rabbits/services/rabbit.service';
@@ -74,18 +74,22 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
   const [selectedMother, setSelectedMother] = useState<Rabbit | null>(null);
 
   const rabbitDropdownRef = useRef<HTMLDivElement>(null);
+  const rabbitMenuRef = useRef<HTMLDivElement>(null);
   const fatherDropdownRef = useRef<HTMLDivElement>(null);
+  const fatherMenuRef = useRef<HTMLDivElement>(null);
   const motherDropdownRef = useRef<HTMLDivElement>(null);
+  const motherMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (rabbitDropdownRef.current && !rabbitDropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (!rabbitDropdownRef.current?.contains(target) && !rabbitMenuRef.current?.contains(target)) {
         setShowRabbitDropdown(false);
       }
-      if (fatherDropdownRef.current && !fatherDropdownRef.current.contains(event.target as Node)) {
+      if (!fatherDropdownRef.current?.contains(target) && !fatherMenuRef.current?.contains(target)) {
         setShowFatherDropdown(false);
       }
-      if (motherDropdownRef.current && !motherDropdownRef.current.contains(event.target as Node)) {
+      if (!motherDropdownRef.current?.contains(target) && !motherMenuRef.current?.contains(target)) {
         setShowMotherDropdown(false);
       }
     };
@@ -309,22 +313,27 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
             <div className="relative" ref={rabbitDropdownRef}>
               <Input
                 placeholder="Buscar por código o nombre..."
+                autoComplete="off"
                 value={rabbitSearch}
                 onChange={(e) => { setRabbitSearch(e.target.value); setShowRabbitDropdown(true); }}
                 onFocus={() => setShowRabbitDropdown(true)}
                 disabled={!!rabbitId || !!editData}
               />
-              {showRabbitDropdown && filteredRabbits.length > 0 && !rabbitId && !editData && (
-                <div className="absolute top-full left-0 right-0 bg-card border border-strong rounded-md mt-1 max-h-48 sm:max-h-60 xl:max-h-80 overflow-y-auto z-50 shadow-lg p-2 flex flex-col gap-2">
-                  {filteredRabbits.map(r => (
-                    <RabbitSelectableCard
-                      key={r.id}
-                      rabbit={r}
-                      onClick={() => handleRabbitSelect(r)}
-                    />
-                  ))}
-                </div>
-              )}
+              <DropdownPortal
+                anchorRef={rabbitDropdownRef}
+                open={showRabbitDropdown && filteredRabbits.length > 0 && !rabbitId && !editData}
+                menuRef={rabbitMenuRef}
+                maxHeight={300}
+                className="bg-card border border-strong rounded-md shadow-lg p-2 flex flex-col gap-2"
+              >
+                {filteredRabbits.map(r => (
+                  <RabbitSelectableCard
+                    key={r.id}
+                    rabbit={r}
+                    onClick={() => handleRabbitSelect(r)}
+                  />
+                ))}
+              </DropdownPortal>
             </div>
           )}
           {errors.rabbitId && <p className="text-sm text-red-600 mt-1">{errors.rabbitId.message}</p>}
@@ -341,21 +350,26 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
             <div className="relative" ref={fatherDropdownRef}>
               <Input
                 placeholder="Buscar por código o nombre..."
+                autoComplete="off"
                 value={fatherSearch}
                 onChange={(e) => { setFatherSearch(e.target.value); setShowFatherDropdown(true); }}
                 onFocus={() => setShowFatherDropdown(true)}
               />
-              {showFatherDropdown && filteredFathers.length > 0 && (
-                <div className="absolute top-full left-0 right-0 bg-card border border-strong rounded-md mt-1 max-h-48 sm:max-h-60 xl:max-h-80 overflow-y-auto z-50 shadow-lg p-2 flex flex-col gap-2">
-                  {filteredFathers.map(r => (
-                    <RabbitSelectableCard
-                      key={r.id}
-                      rabbit={r}
-                      onClick={() => handleFatherSelect(r)}
-                    />
-                  ))}
-                </div>
-              )}
+              <DropdownPortal
+                anchorRef={fatherDropdownRef}
+                open={showFatherDropdown && filteredFathers.length > 0}
+                menuRef={fatherMenuRef}
+                maxHeight={300}
+                className="bg-card border border-strong rounded-md shadow-lg p-2 flex flex-col gap-2"
+              >
+                {filteredFathers.map(r => (
+                  <RabbitSelectableCard
+                    key={r.id}
+                    rabbit={r}
+                    onClick={() => handleFatherSelect(r)}
+                  />
+                ))}
+              </DropdownPortal>
             </div>
           )}
           {errors.fatherId && <p className="text-sm text-red-600 mt-1">{errors.fatherId.message}</p>}
@@ -372,21 +386,26 @@ export function GenealogyForm({ onSuccess, onCancel, rabbitId }: Readonly<Geneal
             <div className="relative" ref={motherDropdownRef}>
               <Input
                 placeholder="Buscar por código o nombre..."
+                autoComplete="off"
                 value={motherSearch}
                 onChange={(e) => { setMotherSearch(e.target.value); setShowMotherDropdown(true); }}
                 onFocus={() => setShowMotherDropdown(true)}
               />
-              {showMotherDropdown && filteredMothers.length > 0 && (
-                <div className="absolute top-full left-0 right-0 bg-card border border-strong rounded-md mt-1 max-h-48 sm:max-h-60 xl:max-h-80 overflow-y-auto z-50 shadow-lg p-2 flex flex-col gap-2">
-                  {filteredMothers.map(r => (
-                    <RabbitSelectableCard
-                      key={r.id}
-                      rabbit={r}
-                      onClick={() => handleMotherSelect(r)}
-                    />
-                  ))}
-                </div>
-              )}
+              <DropdownPortal
+                anchorRef={motherDropdownRef}
+                open={showMotherDropdown && filteredMothers.length > 0}
+                menuRef={motherMenuRef}
+                maxHeight={300}
+                className="bg-card border border-strong rounded-md shadow-lg p-2 flex flex-col gap-2"
+              >
+                {filteredMothers.map(r => (
+                  <RabbitSelectableCard
+                    key={r.id}
+                    rabbit={r}
+                    onClick={() => handleMotherSelect(r)}
+                  />
+                ))}
+              </DropdownPortal>
             </div>
           )}
           {errors.motherId && <p className="text-sm text-red-600 mt-1">{errors.motherId.message}</p>}

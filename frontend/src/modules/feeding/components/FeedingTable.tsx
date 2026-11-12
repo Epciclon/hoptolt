@@ -72,7 +72,7 @@ export function FeedingTable({ profileId, date }: FeedingTableProps) {
         customDetails={
           selectedFeeding && (
             <>
-              <div className="bg-theme-surface border border-strong rounded-lg p-3 col-span-1 sm:col-span-1">
+              <div className="bg-theme-surface border border-strong rounded-lg p-3 col-span-1 sm:col-span-2">
                 <p className="text-xs text-muted font-medium mb-1">Alimentos suministrados</p>
                 <div className="flex flex-col leading-tight mt-1">
                   <span className="text-sm font-semibold text-main">

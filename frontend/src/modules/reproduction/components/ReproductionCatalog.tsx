@@ -98,8 +98,8 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
       await registerBirth(toRegisterBirth.id, { actualBirthDate });
       setToRegisterBirth(null);
       setActualBirthDate('');
+      setExpandedId(null);
       showToast('Parto registrado exitosamente. La coneja pasó a Fase 3.', 'success');
-      onSuccess?.();
     } catch (error: any) {
       showToast(error.response?.data?.message || 'Error al registrar el parto.', 'error');
     } finally {

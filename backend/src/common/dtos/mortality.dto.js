@@ -21,6 +21,11 @@ const toMortalityDTO = (m) => {
         responsible: name,
         profileUsername: m.profile ? m.profile.username : null,
         profileEmail: m.profile ? m.profile.email : null,
+        profile: m.profile ? {
+            username: m.profile.username,
+            fullName: m.profile.fullName,
+            email: m.profile.email
+        } : null,
         deathDate: m.deathDate,
         isKits: m.isKits,
         numberOfKits: m.numberOfKits,

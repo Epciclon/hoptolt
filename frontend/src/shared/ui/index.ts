@@ -4,6 +4,7 @@ export type { ButtonVariant, ButtonSize } from './Button';
 export { CatalogCard } from './CatalogCard';
 export { Input } from './Input';
 export { Select } from './Select';
+export { DropdownPortal } from './DropdownPortal';
 export { Table } from './Table';
 export * from './DashboardTabs';
 export * from './SectionMessage';

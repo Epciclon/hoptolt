@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button, CageGroupCard, RabbitSelectableCard, RabbitAvatar, ConfirmDialog } from '@/shared/ui';
 import { FilterBar } from '@/shared/ui/FilterBar';
 import { useToast } from '@/shared/contexts/ToastContext';
@@ -36,6 +36,7 @@ interface MontasViewProps {
 
 export function MontasView({ searchTerm, onSearchChange }: Readonly<MontasViewProps>) {
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
   const { can } = usePermissions();
   const canCreate = can('reproduction', 'canCreate');
   const canUpdate = can('reproduction', 'canUpdate');
@@ -72,13 +73,33 @@ export function MontasView({ searchTerm, onSearchChange }: Readonly<MontasViewPr
 
   const activeMontas = reproductions.filter(r => r.status === 'monta' && !r.isFemaleDeleted);
 
+  const removeMontaFromCache = (id: number) => {
+    const queries = queryClient.getQueriesData<any>({ queryKey: ['reproductions'] });
+    for (const [key, data] of queries) {
+      if (!data?.reproductions || !Array.isArray(data.reproductions)) continue;
+      const keyStatus = Array.isArray(key) ? key[3] : null;
+      if (keyStatus === 'monta') {
+        queryClient.setQueryData(key, {
+          ...data,
+          reproductions: data.reproductions.filter((r: Reproduction) => r.id !== id),
+        });
+      }
+    }
+    queryClient.invalidateQueries({ queryKey: ['reproductions'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboardCalendar'] });
+    queryClient.invalidateQueries({ queryKey: ['birthCalendar'] });
+    queryClient.invalidateQueries({ queryKey: ['active-dates'] });
+    queryClient.invalidateQueries({ queryKey: ['notifications'] });
+  };
+
   const handleFinishMating = async () => {
     if (!finishingReproduction) return;
     setProcessing(true);
     try {
       await reproductionService.finishMating(finishingReproduction.id);
+      removeMontaFromCache(finishingReproduction.id);
+      setExpandedMaleId(null);
       showToast('Monta finalizada. La hembra ha ingresado a Fase 2: Gestación.', 'success');
-      onSuccess();
     } catch (error: any) {
       showToast(error.message || 'Error al finalizar la monta', 'error');
     } finally {
@@ -92,8 +113,9 @@ export function MontasView({ searchTerm, onSearchChange }: Readonly<MontasViewPr
     setProcessing(true);
     try {
       await reproductionService.cancelReproduction(cancelingReproduction.id, 'delete');
+      removeMontaFromCache(cancelingReproduction.id);
+      setExpandedMaleId(null);
       showToast('Monta cancelada y eliminada exitosamente.', 'success');
-      onSuccess();
     } catch (error: any) {
       showToast(error.message || 'Error al cancelar la monta', 'error');
     } finally {
@@ -331,7 +353,7 @@ export function MontasView({ searchTerm, onSearchChange }: Readonly<MontasViewPr
             placeholder: 'Todos los estados',
             options: [
               { label: 'Disponibles', value: 'disponible' },
-              { label: 'En Monta - Ocupados', value: 'en_monta' }
+              { label: 'Ocupados', value: 'en_monta' }
             ],
             value: statusFilter,
             onChange: setStatusFilter

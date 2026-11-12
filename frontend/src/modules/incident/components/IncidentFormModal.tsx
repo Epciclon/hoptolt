@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { X, AlertTriangle, Info, ChevronDown, Check } from 'lucide-react';
-import { Button, Dialog } from '@/shared/ui';
+import { Button, Dialog, DropdownPortal } from '@/shared/ui';
 import { cn } from '@/lib/utils';
 import { useIncidents } from '../hooks/useIncidents';
 import { cageService } from '@/modules/cages/services/cage.service';
@@ -74,6 +74,7 @@ interface IncidentCategorySelectorProps {
   setShowCategoryDropdown: React.Dispatch<React.SetStateAction<boolean>>;
   onOpen: () => void;
   dropdownRef: React.RefObject<HTMLDivElement>;
+  menuRef: React.RefObject<HTMLDivElement | null>;
   filteredCategories: Array<{ value: string; label: string }>;
 }
 
@@ -86,6 +87,7 @@ function IncidentCategorySelector({
   setShowCategoryDropdown,
   onOpen,
   dropdownRef,
+  menuRef,
   filteredCategories,
 }: Readonly<IncidentCategorySelectorProps>) {
   return (
@@ -97,6 +99,7 @@ function IncidentCategorySelector({
         <input
           id="incident-category-input"
           type="text"
+          autoComplete="off"
           value={categorySearch}
           onChange={(e) => {
             setCategorySearch(e.target.value);
@@ -129,37 +132,41 @@ function IncidentCategorySelector({
         </button>
       </div>
 
-      {showCategoryDropdown && (
-        <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-card border border-strong rounded-xl shadow-2xl max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto py-1 animate-fadeIn divide-y divide-default">
-          {filteredCategories.length === 0 ? (
-            <p className="px-3.5 py-2.5 text-xs text-muted">No se encontraron resultados</p>
-          ) : (
-            filteredCategories.map((cat) => {
-              const isSelected = category === cat.value;
-              return (
-                <button
-                  key={cat.value}
-                  type="button"
-                  onClick={() => {
-                    setCategory(cat.value);
-                    setCategorySearch(cat.label);
-                    setShowCategoryDropdown(false);
-                  }}
-                  className={cn(
-                    'w-full text-left px-3.5 py-2.5 text-xs flex items-center justify-between transition-colors bg-card',
-                    isSelected
-                      ? 'bg-primary-500/10 text-primary-600 font-semibold dark:bg-primary-500/20'
-                      : 'text-main hover:bg-theme-surface'
-                  )}
-                >
-                  <span className="truncate pr-2">{cat.label}</span>
-                  {isSelected && <Check size={14} className="text-primary-600 shrink-0" />}
-                </button>
-              );
-            })
-          )}
-        </div>
-      )}
+      <DropdownPortal
+        anchorRef={dropdownRef}
+        open={showCategoryDropdown}
+        menuRef={menuRef}
+        maxHeight={240}
+        className="bg-card border border-strong rounded-xl shadow-2xl py-1 animate-fadeIn divide-y divide-default"
+      >
+        {filteredCategories.length === 0 ? (
+          <p className="px-3.5 py-2.5 text-xs text-muted">No se encontraron resultados</p>
+        ) : (
+          filteredCategories.map((cat) => {
+            const isSelected = category === cat.value;
+            return (
+              <button
+                key={cat.value}
+                type="button"
+                onClick={() => {
+                  setCategory(cat.value);
+                  setCategorySearch(cat.label);
+                  setShowCategoryDropdown(false);
+                }}
+                className={cn(
+                  'w-full text-left px-3.5 py-2.5 text-xs flex items-center justify-between transition-colors bg-card',
+                  isSelected
+                    ? 'bg-primary-500/10 text-primary-600 font-semibold dark:bg-primary-500/20'
+                    : 'text-main hover:bg-theme-surface'
+                )}
+              >
+                <span className="pr-2">{cat.label}</span>
+                {isSelected && <Check size={14} className="text-primary-600 shrink-0" />}
+              </button>
+            );
+          })
+        )}
+      </DropdownPortal>
     </div>
   );
 }
@@ -173,6 +180,7 @@ interface IncidentModuleSelectorProps {
   setShowModuleDropdown: React.Dispatch<React.SetStateAction<boolean>>;
   onOpen: () => void;
   dropdownRef: React.RefObject<HTMLDivElement>;
+  menuRef: React.RefObject<HTMLDivElement | null>;
   filteredModules: Array<{ value: string; label: string }>;
 }
 
@@ -185,6 +193,7 @@ function IncidentModuleSelector({
   setShowModuleDropdown,
   onOpen,
   dropdownRef,
+  menuRef,
   filteredModules,
 }: Readonly<IncidentModuleSelectorProps>) {
   return (
@@ -196,6 +205,7 @@ function IncidentModuleSelector({
         <input
           id="incident-module-input"
           type="text"
+          autoComplete="off"
           value={moduleSearch}
           onChange={(e) => {
             setModuleSearch(e.target.value);
@@ -228,37 +238,41 @@ function IncidentModuleSelector({
         </button>
       </div>
 
-      {showModuleDropdown && (
-        <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-card border border-strong rounded-xl shadow-2xl max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto py-1 animate-fadeIn divide-y divide-default">
-          {filteredModules.length === 0 ? (
-            <p className="px-3.5 py-2.5 text-xs text-muted">No se encontraron resultados</p>
-          ) : (
-            filteredModules.map((m) => {
-              const isSelected = moduleName === m.value;
-              return (
-                <button
-                  key={m.value}
-                  type="button"
-                  onClick={() => {
-                    setModuleName(m.value);
-                    setModuleSearch(m.label);
-                    setShowModuleDropdown(false);
-                  }}
-                  className={cn(
-                    'w-full text-left px-3.5 py-2.5 text-xs flex items-center justify-between transition-colors bg-card',
-                    isSelected
-                      ? 'bg-primary-500/10 text-primary-600 font-semibold dark:bg-primary-500/20'
-                      : 'text-main hover:bg-theme-surface'
-                  )}
-                >
-                  <span className="truncate pr-2">{m.label}</span>
-                  {isSelected && <Check size={14} className="text-primary-600 shrink-0" />}
-                </button>
-              );
-            })
-          )}
-        </div>
-      )}
+      <DropdownPortal
+        anchorRef={dropdownRef}
+        open={showModuleDropdown}
+        menuRef={menuRef}
+        maxHeight={240}
+        className="bg-card border border-strong rounded-xl shadow-2xl py-1 animate-fadeIn divide-y divide-default"
+      >
+        {filteredModules.length === 0 ? (
+          <p className="px-3.5 py-2.5 text-xs text-muted">No se encontraron resultados</p>
+        ) : (
+          filteredModules.map((m) => {
+            const isSelected = moduleName === m.value;
+            return (
+              <button
+                key={m.value}
+                type="button"
+                onClick={() => {
+                  setModuleName(m.value);
+                  setModuleSearch(m.label);
+                  setShowModuleDropdown(false);
+                }}
+                className={cn(
+                  'w-full text-left px-3.5 py-2.5 text-xs flex items-center justify-between transition-colors bg-card',
+                  isSelected
+                    ? 'bg-primary-500/10 text-primary-600 font-semibold dark:bg-primary-500/20'
+                    : 'text-main hover:bg-theme-surface'
+                )}
+              >
+                <span className="pr-2">{m.label}</span>
+                {isSelected && <Check size={14} className="text-primary-600 shrink-0" />}
+              </button>
+            );
+          })
+        )}
+      </DropdownPortal>
     </div>
   );
 }
@@ -275,6 +289,7 @@ interface IncidentCageSelectorProps {
   setShowCageDropdown: React.Dispatch<React.SetStateAction<boolean>>;
   onOpen: () => void;
   dropdownRef: React.RefObject<HTMLDivElement>;
+  menuRef: React.RefObject<HTMLDivElement | null>;
   onSelectCage: (id: number) => void;
   onRemoveCage: (id: number) => void;
   onClearAllCages: () => void;
@@ -292,6 +307,7 @@ function IncidentCageSelector({
   setShowCageDropdown,
   onOpen,
   dropdownRef,
+  menuRef,
   onSelectCage,
   onRemoveCage,
   onClearAllCages,
@@ -317,6 +333,7 @@ function IncidentCageSelector({
         <input
           id="incident-cage-input"
           type="text"
+          autoComplete="off"
           value={cageSearch}
           onChange={(e) => {
             setCageSearch(e.target.value);
@@ -353,35 +370,38 @@ function IncidentCageSelector({
         </button>
       </div>
 
-      {showCageDropdown && (
-        <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-card border border-strong rounded-xl shadow-2xl max-h-36 sm:max-h-48 xl:max-h-60 overflow-y-auto py-1 animate-fadeIn divide-y divide-default">
-          {loadingCages && (
-            <p className="px-3.5 py-2.5 text-xs text-muted">Cargando jaulas...</p>
-          )}
-          {!loadingCages && cages.length === 0 && (
-            <p className="px-3.5 py-2.5 text-xs text-muted">Sin jaulas disponibles</p>
-          )}
-          {!loadingCages && cages.length > 0 && availableCages.length === 0 && (
-            <p className="px-3.5 py-2.5 text-xs text-muted font-medium">No quedan más jaulas disponibles</p>
-          )}
-          {!loadingCages && availableCages.length > 0 && filteredCages.length === 0 && (
-            <p className="px-3.5 py-2.5 text-xs text-muted">No se encontraron jaulas</p>
-          )}
-          {!loadingCages && availableCages.length > 0 && filteredCages.length > 0 && (
-            filteredCages.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => onSelectCage(c.id)}
-                className="w-full text-left px-3.5 py-2.5 text-xs flex items-center justify-between transition-colors bg-card text-main hover:bg-theme-surface"
-              >
-                <span className="truncate pr-2 font-medium">Jaula {c.number}</span>
-                <span className="text-[11px] text-primary-600 font-semibold shrink-0">+ Agregar</span>
-              </button>
-            ))
-          )}
-        </div>
-      )}
+      <DropdownPortal
+        anchorRef={dropdownRef}
+        open={showCageDropdown}
+        menuRef={menuRef}
+        maxHeight={240}
+        className="bg-card border border-strong rounded-xl shadow-2xl py-1 animate-fadeIn divide-y divide-default"
+      >
+        {loadingCages && (
+          <p className="px-3.5 py-2.5 text-xs text-muted">Cargando jaulas...</p>
+        )}
+        {!loadingCages && cages.length === 0 && (
+          <p className="px-3.5 py-2.5 text-xs text-muted">Sin jaulas disponibles</p>
+        )}
+        {!loadingCages && cages.length > 0 && availableCages.length === 0 && (
+          <p className="px-3.5 py-2.5 text-xs text-muted font-medium">No quedan más jaulas disponibles</p>
+        )}
+        {!loadingCages && availableCages.length > 0 && filteredCages.length === 0 && (
+          <p className="px-3.5 py-2.5 text-xs text-muted">No se encontraron jaulas</p>
+        )}
+        {!loadingCages && availableCages.length > 0 && filteredCages.length > 0 && (
+          filteredCages.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => onSelectCage(c.id)}
+              className="w-full text-left px-3.5 py-2.5 text-xs transition-colors bg-card text-main hover:bg-theme-surface block font-medium cursor-pointer"
+            >
+              Jaula {c.number}
+            </button>
+          ))
+        )}
+      </DropdownPortal>
 
       {selectedCageIds.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 mt-2">
@@ -432,16 +452,19 @@ export function IncidentFormModal({ isOpen, onClose, onSuccess }: Readonly<Incid
   const [categorySearch, setCategorySearch] = useState('Dificultad en la Tarea');
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
+  const categoryMenuRef = useRef<HTMLDivElement>(null);
 
   const [moduleName, setModuleName] = useState('general');
   const [moduleSearch, setModuleSearch] = useState('En General');
   const [showModuleDropdown, setShowModuleDropdown] = useState(false);
   const moduleDropdownRef = useRef<HTMLDivElement>(null);
+  const moduleMenuRef = useRef<HTMLDivElement>(null);
 
   const [selectedCageIds, setSelectedCageIds] = useState<number[]>([]);
   const [cageSearch, setCageSearch] = useState('');
   const [showCageDropdown, setShowCageDropdown] = useState(false);
   const cageDropdownRef = useRef<HTMLDivElement>(null);
+  const cageMenuRef = useRef<HTMLDivElement>(null);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -481,17 +504,17 @@ export function IncidentFormModal({ isOpen, onClose, onSuccess }: Readonly<Incid
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(target)) {
+      if (!categoryDropdownRef.current?.contains(target) && !categoryMenuRef.current?.contains(target)) {
         setShowCategoryDropdown(false);
         const current = CATEGORIES.find((c) => c.value === category);
         if (current) setCategorySearch(current.label);
       }
-      if (moduleDropdownRef.current && !moduleDropdownRef.current.contains(target)) {
+      if (!moduleDropdownRef.current?.contains(target) && !moduleMenuRef.current?.contains(target)) {
         setShowModuleDropdown(false);
         const current = availableModules.find((m) => m.value === moduleName);
         if (current) setModuleSearch(current.label);
       }
-      if (cageDropdownRef.current && !cageDropdownRef.current.contains(target)) {
+      if (!cageDropdownRef.current?.contains(target) && !cageMenuRef.current?.contains(target)) {
         setShowCageDropdown(false);
         setCageSearch('');
       }
@@ -610,6 +633,7 @@ export function IncidentFormModal({ isOpen, onClose, onSuccess }: Readonly<Incid
             setShowCageDropdown(false);
           }}
           dropdownRef={categoryDropdownRef}
+          menuRef={categoryMenuRef}
           filteredCategories={filteredCategories}
         />
 
@@ -626,6 +650,7 @@ export function IncidentFormModal({ isOpen, onClose, onSuccess }: Readonly<Incid
               setShowCageDropdown(false);
             }}
             dropdownRef={moduleDropdownRef}
+            menuRef={moduleMenuRef}
             filteredModules={filteredModules}
           />
 
@@ -644,6 +669,7 @@ export function IncidentFormModal({ isOpen, onClose, onSuccess }: Readonly<Incid
               setShowModuleDropdown(false);
             }}
             dropdownRef={cageDropdownRef}
+            menuRef={cageMenuRef}
             onSelectCage={handleSelectCage}
             onRemoveCage={handleRemoveCage}
             onClearAllCages={handleClearAllCages}
