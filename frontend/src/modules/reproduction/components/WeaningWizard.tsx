@@ -353,7 +353,7 @@ export function WeaningWizard({ open, onClose, onFinish, reproduction, finishing
                       if (willKeepKits) {
                         setStep('count');
                       } else {
-                        handleNoKeep();
+                        void handleNoKeep();
                       }
                     }} 
                     disabled={willKeepKits === null || finishing}

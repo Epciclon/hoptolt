@@ -180,7 +180,7 @@ export function RabbitForm({ mode, defaultValues, rabbitId, onSuccess, onCancel,
         queryClient.invalidateQueries({ queryKey: ['assignments'] });
         queryClient.invalidateQueries({ queryKey: ['assignedRabbits'] });
         queryClient.invalidateQueries({ queryKey: ['availableRabbits'] });
-        onSuccess?.();
+        await onSuccess?.();
       }
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Error al guardar el conejo.', 'error');
