@@ -134,9 +134,9 @@ export const config = {
     /*
      * Aplica el middleware a todas las rutas excepto:
      * - Archivos estáticos de Next.js
-     * - favicon.ico
+     * - favicon.ico, icon.svg y metadatos públicos
      * - Rutas de API del backend (proxiadas por rewrites)
      */
-    '/((?!_next/static|_next/image|favicon.ico|api/).*)',
+    '/((?!_next/static|_next/image|favicon.ico|icon.svg|apple-icon|manifest.webmanifest|robots.txt|sitemap.xml|api/).*)',
   ],
 }
