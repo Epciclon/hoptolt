@@ -17,7 +17,7 @@ interface GalponTableProps {
 export function GalponTable({ onEdit }: Readonly<GalponTableProps>) {
   const { galpones, loading, deleteGalpon } = useGalpones();
   const { activeGalpon, setActive } = useActiveGalpon();
-  const { user } = useAuthContext();
+  const { user, refetchUser } = useAuthContext();
   const { showToast } = useToast();
   const [toDelete, setToDelete] = useState<Galpon | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -32,11 +32,34 @@ export function GalponTable({ onEdit }: Readonly<GalponTableProps>) {
 
   const handleConfirmDelete = async () => {
     if (!toDelete) return;
+    const target = toDelete;
+    const wasActiveOnClient = activeGalpon?.id === target.id;
     setDeleting(true);
     try {
-      await deleteGalpon(toDelete.id);
+      const result = await deleteGalpon(target.id);
       setToDelete(null);
-      showToast(`Galpón "${toDelete.name}" eliminado correctamente.`, 'success');
+
+      const switchedTo = result?.nextActiveGalpon ?? null;
+      const wasActive = Boolean(result?.wasActiveGalpon || wasActiveOnClient);
+
+      if (wasActive) {
+        await refetchUser(true);
+        if (switchedTo) {
+          sessionStorage.setItem(
+            'flash_toast',
+            `Galpón "${target.name}" eliminado. Como era tu galpón activo, se cambió automáticamente a "${switchedTo.name}".`
+          );
+        } else {
+          sessionStorage.setItem(
+            'flash_toast',
+            `Galpón "${target.name}" eliminado. Como era tu único galpón activo, ya no tienes ningún galpón seleccionado.`
+          );
+        }
+        window.location.reload();
+        return;
+      }
+
+      showToast(`Galpón "${target.name}" eliminado correctamente.`, 'success');
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Error al eliminar el galpón.', 'error');
     } finally {

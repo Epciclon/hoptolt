@@ -32,6 +32,7 @@ export function useGalpones() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['galpones'] });
       queryClient.invalidateQueries({ queryKey: ['activeGalpon'] });
+      queryClient.invalidateQueries({ queryKey: ['galponStats'] });
     },
   });
 

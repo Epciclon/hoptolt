@@ -122,16 +122,49 @@ class GalponService {
         const galpon = await galponRepository.findById(id);
         if (!galpon) throw new AppError('Galpón no encontrado.', 404);
 
-        const [, cageCount] = await Promise.all([
+        const { Profile } = require('../../domain/models');
+        const { Op } = require('sequelize');
+
+        const [, cageCount, affectedProfiles] = await Promise.all([
             this._assertOwner(id, profileId),
-            Cage.count({ where: { galponId: id } })
+            Cage.count({ where: { galponId: id } }),
+            Profile.findAll
+                ? Profile.findAll({ where: { activeGalponId: galpon.id } })
+                : Promise.resolve([])
         ]);
 
         if (cageCount > 0) {
             throw new AppError('No se puede eliminar un galpón que tiene jaulas asociadas.', 400);
         }
 
+        const wasActiveGalpon = affectedProfiles.some((p) => p.id === profileId);
+
         await galponRepository.delete(galpon);
+
+        let nextActiveGalpon = null;
+        for (const affected of affectedProfiles) {
+            const nextMembership = await FarmMember.findOne({
+                where: {
+                    profileId: affected.id,
+                    status: 'active',
+                    galponId: { [Op.ne]: galpon.id }
+                },
+                order: [['id', 'ASC']]
+            });
+            const nextGalponId = nextMembership ? nextMembership.galponId : null;
+            await Profile.update(
+                { activeGalponId: nextGalponId },
+                { where: { id: affected.id } }
+            );
+            clearCache(affected.id);
+
+            if (affected.id === profileId && nextGalponId) {
+                nextActiveGalpon = await galponRepository.findById(nextGalponId);
+            }
+        }
+
+        clearCache(profileId);
+        return { wasActiveGalpon, nextActiveGalpon };
     }
 
     /**

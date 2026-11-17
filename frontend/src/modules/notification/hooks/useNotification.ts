@@ -22,8 +22,9 @@ export function useNotifications(options?: GetNotificationsParams) {
     queryKey: ['notifications', options],
     queryFn: () => notificationService.getAll(options),
     enabled: !!user,
-    refetchInterval: 5000, // Actualización asíncrona automática cada 5 segundos sin requerir recargar la página
-    refetchIntervalInBackground: true,
+    staleTime: 10000,
+    refetchInterval: 30000, // Respaldo cada 30s; Supabase Realtime actualiza al instante en primer plano
+    refetchIntervalInBackground: false,
   });
 
   const rawNotifications = data?.notifications || [];
@@ -42,8 +43,9 @@ export function useNotifications(options?: GetNotificationsParams) {
     queryKey: ['notifications', 'unreadCount', options?.filter],
     queryFn: () => notificationService.getUnreadCount(options?.filter),
     enabled: !!user,
-    refetchInterval: 5000,
-    refetchIntervalInBackground: true,
+    staleTime: 10000,
+    refetchInterval: 30000,
+    refetchIntervalInBackground: false,
   });
   
   const unreadCount = unreadCountData?.count || 0;

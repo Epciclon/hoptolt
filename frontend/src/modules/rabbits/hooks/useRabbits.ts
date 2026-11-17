@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { rabbitService, type GetRabbitsParams } from '../services/rabbit.service';
+import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
 
 
 export function useRabbits(initialParams?: GetRabbitsParams) {
@@ -14,6 +15,7 @@ export function useRabbits(initialParams?: GetRabbitsParams) {
   const [race, setRace] = useState(initialParams?.race || '');
   const [sex, setSex] = useState(initialParams?.sex || '');
   const [purpose, setPurpose] = useState(initialParams?.purpose || '');
+  const debouncedSearch = useDebouncedValue(search, 300);
 
   // Query: Fetch Rabbits
   const {
@@ -22,8 +24,9 @@ export function useRabbits(initialParams?: GetRabbitsParams) {
     error: queryError,
     refetch: fetchRabbits,
   } = useQuery({
-    queryKey: ['rabbits', { page, limit, search, race, sex, purpose }],
-    queryFn: () => rabbitService.getAll({ page, limit, search, race, sex, purpose }),
+    queryKey: ['rabbits', { page, limit, search: debouncedSearch, race, sex, purpose }],
+    queryFn: () => rabbitService.getAll({ page, limit, search: debouncedSearch, race, sex, purpose }),
+    placeholderData: (previousData) => previousData,
   });
 
   // Mutation: Delete Rabbit

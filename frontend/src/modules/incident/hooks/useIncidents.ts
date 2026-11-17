@@ -7,6 +7,7 @@ import type { CreateIncidentDTO, RespondIncidentDTO, GetIncidentsParams } from '
 import { createClient } from '@/utils/supabase/client';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 import { useToast } from '@/shared/contexts/ToastContext';
+import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
 
 export function useIncidents(params?: GetIncidentsParams) {
   const queryClient = useQueryClient();
@@ -20,6 +21,7 @@ export function useIncidents(params?: GetIncidentsParams) {
   const category = params?.category ?? '';
   const moduleName = params?.module ?? '';
   const search = params?.search ?? '';
+  const debouncedSearch = useDebouncedValue(search, 300);
   const isQueryEnabled = params?.enabled !== false && Boolean(user?.activeGalponId);
 
   // Query: Incidents list
@@ -29,14 +31,14 @@ export function useIncidents(params?: GetIncidentsParams) {
     error,
     refetch
   } = useQuery({
-    queryKey: ['incidents', 'list', user?.id, user?.activeGalponId, page, limit, status, category, moduleName, search],
-    queryFn: () => incidentService.getAll(params),
+    queryKey: ['incidents', 'list', user?.id, user?.activeGalponId, page, limit, status, category, moduleName, debouncedSearch],
+    queryFn: () => incidentService.getAll(params ? { ...params, search: debouncedSearch } : undefined),
     enabled: isQueryEnabled,
     placeholderData: (previousData) => previousData,
-    staleTime: 2000,
+    staleTime: 10000,
     gcTime: 1000 * 60 * 30,
-    refetchInterval: 4000,
-    refetchIntervalInBackground: true,
+    refetchInterval: 30000,
+    refetchIntervalInBackground: false,
     refetchOnWindowFocus: true
   });
 
@@ -52,10 +54,10 @@ export function useIncidents(params?: GetIncidentsParams) {
     queryFn: () => incidentService.getCounts(),
     enabled: isQueryEnabled,
     placeholderData: (previousData) => previousData,
-    staleTime: 2000,
+    staleTime: 10000,
     gcTime: 1000 * 60 * 30,
-    refetchInterval: 4000,
-    refetchIntervalInBackground: true,
+    refetchInterval: 30000,
+    refetchIntervalInBackground: false,
     refetchOnWindowFocus: true
   });
 
