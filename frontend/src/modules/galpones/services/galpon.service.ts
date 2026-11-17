@@ -22,8 +22,12 @@ export const galponService = {
     return data.galpon;
   },
 
-  async delete(id: number): Promise<void> {
-    await api.delete(`/galpones/${id}`);
+  async delete(id: number): Promise<{ wasActiveGalpon?: boolean; nextActiveGalpon?: Galpon | null }> {
+    const { data } = await api.delete<{ success: boolean; wasActiveGalpon?: boolean; nextActiveGalpon?: Galpon | null }>(`/galpones/${id}`);
+    return {
+      wasActiveGalpon: data?.wasActiveGalpon,
+      nextActiveGalpon: data?.nextActiveGalpon ?? null,
+    };
   },
 
   async getActive(): Promise<Galpon> {

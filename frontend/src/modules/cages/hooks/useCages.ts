@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cageService, GetCagesParams } from '../services/cage.service';
 
@@ -13,16 +13,36 @@ export function useCages(initialParams?: GetCagesParams) {
   const [type, setType] = useState(initialParams?.type || '');
   const [status, setStatus] = useState(initialParams?.status || '');
 
-  // Query: Fetch Cages
+  // Carga las jaulas del galpón y filtra/pagina al instante en frontend
   const {
     data,
     isLoading: loading,
     error: queryError,
     refetch: fetchCages,
   } = useQuery({
-    queryKey: ['cages', { page, limit, search, type, status }],
-    queryFn: () => cageService.getAll({ page, limit, search, type, status }),
+    queryKey: ['cages', 'all'],
+    queryFn: () => cageService.getAll({ page: 1, limit: 1000 }),
+    staleTime: 60 * 1000,
   });
+
+  const filteredCages = useMemo(() => {
+    const allCages = data?.cages || [];
+    const term = search.trim().toLowerCase().replace(/^jaula\s*/i, '');
+    return allCages.filter((c) => {
+      if (type && c.type !== type) return false;
+      if (status && c.status !== status) return false;
+      if (!term) return true;
+      return String(c.number).toLowerCase().includes(term);
+    });
+  }, [data?.cages, search, type, status]);
+
+  const total = filteredCages.length;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const safePage = Math.min(page, totalPages);
+  const paginatedCages = useMemo(() => {
+    const start = (safePage - 1) * limit;
+    return filteredCages.slice(start, start + limit);
+  }, [filteredCages, safePage, limit]);
 
   // Mutation: Delete Cage
   const deleteCageMutation = useMutation({
@@ -45,8 +65,8 @@ export function useCages(initialParams?: GetCagesParams) {
   };
 
   return {
-    cages: data?.cages || [],
-    pagination: data?.pagination || { total: 0, page: 1, limit: 12, totalPages: 1 },
+    cages: paginatedCages,
+    pagination: { total, page: safePage, limit, totalPages },
     loading,
     error: queryError ? (queryError as Error).message : null,
     fetchCages,
@@ -56,6 +76,6 @@ export function useCages(initialParams?: GetCagesParams) {
     setSearch,
     setType,
     setStatus,
-    filters: { page, limit, search, type, status }
+    filters: { page: safePage, limit, search, type, status }
   };
 }

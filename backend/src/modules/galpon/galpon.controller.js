@@ -35,8 +35,13 @@ exports.editGalpon = catchAsync(async (req, res) => {
 });
 
 exports.deleteGalpon = catchAsync(async (req, res) => {
-    await galponService.deleteGalpon(req.params.id, req.user.id);
-    res.status(200).json({ success: true, message: 'Galpón eliminado exitosamente.' });
+    const result = await galponService.deleteGalpon(req.params.id, req.user.id);
+    res.status(200).json({
+        success: true,
+        message: 'Galpón eliminado exitosamente.',
+        wasActiveGalpon: result?.wasActiveGalpon ?? false,
+        nextActiveGalpon: result?.nextActiveGalpon ? toGalponDTO(result.nextActiveGalpon) : null
+    });
 });
 
 exports.getActiveGalpon = catchAsync(async (req, res) => {

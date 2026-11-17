@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { raceService, GetRacesParams } from '../services/race.service';
 
@@ -10,16 +10,36 @@ export function useRaces(initialParams?: GetRacesParams) {
   const [limit, setLimit] = useState(initialParams?.limit || 12);
   const [search, setSearch] = useState(initialParams?.search || '');
 
-  // Query: Fetch Races
+  // Carga el catálogo completo en memoria y filtra/pagina al instante en frontend
   const {
     data,
     isLoading: loading,
     error: queryError,
     refetch: fetchRaces,
   } = useQuery({
-    queryKey: ['races', { page, limit, search }],
-    queryFn: () => raceService.getAll({ page, limit, search }),
+    queryKey: ['races', 'all'],
+    queryFn: () => raceService.getAll({ page: 1, limit: 1000 }),
+    staleTime: 60 * 1000,
   });
+
+  const filteredRaces = useMemo(() => {
+    const allRaces = data?.races || [];
+    const term = search.trim().toLowerCase();
+    if (!term) return allRaces;
+    return allRaces.filter(
+      (r) =>
+        r.name.toLowerCase().includes(term) ||
+        r.description?.toLowerCase().includes(term)
+    );
+  }, [data?.races, search]);
+
+  const total = filteredRaces.length;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const safePage = Math.min(page, totalPages);
+  const paginatedRaces = useMemo(() => {
+    const start = (safePage - 1) * limit;
+    return filteredRaces.slice(start, start + limit);
+  }, [filteredRaces, safePage, limit]);
 
   // Mutation: Delete Race
   const deleteRaceMutation = useMutation({
@@ -40,8 +60,8 @@ export function useRaces(initialParams?: GetRacesParams) {
   };
 
   return {
-    races: data?.races || [],
-    pagination: data?.pagination || { total: 0, page: 1, limit: 12, totalPages: 1 },
+    races: paginatedRaces,
+    pagination: { total, page: safePage, limit, totalPages },
     loading,
     error: queryError ? (queryError as Error).message : null,
     fetchRaces,
@@ -49,6 +69,6 @@ export function useRaces(initialParams?: GetRacesParams) {
     setPage,
     setLimit,
     setSearch,
-    filters: { page, limit, search }
+    filters: { page: safePage, limit, search }
   };
 }

@@ -61,13 +61,17 @@ describe('galponService', () => {
     expect(result.name).toBe('Updated Galpón');
   });
 
-  it('delete removes a galpon', async () => {
-    vi.mocked(api.delete).mockResolvedValue({ data: { success: true } });
+  it('delete removes a galpon and returns switch metadata', async () => {
+    const nextGalpon = { id: 2, name: 'Galpón B' };
+    vi.mocked(api.delete).mockResolvedValue({
+      data: { success: true, wasActiveGalpon: true, nextActiveGalpon: nextGalpon },
+    });
 
     const { galponService } = await import('@/modules/galpones/services/galpon.service');
-    await galponService.delete(1);
+    const result = await galponService.delete(1);
 
     expect(api.delete).toHaveBeenCalledWith('/galpones/1');
+    expect(result).toEqual({ wasActiveGalpon: true, nextActiveGalpon: nextGalpon });
   });
 
   it('getActive returns the active galpon', async () => {

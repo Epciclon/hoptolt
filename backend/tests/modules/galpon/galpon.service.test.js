@@ -117,10 +117,46 @@ describe('GalponService', () => {
       galponRepository.findById.mockResolvedValue({ id: 1, profileId: 'p1' });
       FarmMember.findOne.mockResolvedValue({ id: 1, role: 'owner', status: 'active' });
       Cage.count = jest.fn().mockResolvedValue(0);
+      Profile.findAll = jest.fn().mockResolvedValue([]);
       galponRepository.delete = jest.fn().mockResolvedValue(true);
 
-      await galponService.deleteGalpon(1, 'p1');
+      const result = await galponService.deleteGalpon(1, 'p1');
       expect(galponRepository.delete).toHaveBeenCalled();
+      expect(result.wasActiveGalpon).toBe(false);
+    });
+
+    it('switches to next remaining galpon when deleting active galpon', async () => {
+      galponRepository.findById
+        .mockResolvedValueOnce({ id: 1, profileId: 'p1' })
+        .mockResolvedValueOnce({ id: 2, name: 'Galpon 2', profileId: 'p1' });
+      FarmMember.findOne
+        .mockResolvedValueOnce({ id: 1, role: 'owner', status: 'active' })
+        .mockResolvedValueOnce({ id: 2, galponId: 2, role: 'owner', status: 'active' });
+      Cage.count = jest.fn().mockResolvedValue(0);
+      Profile.findAll = jest.fn().mockResolvedValue([{ id: 'p1', activeGalponId: 1 }]);
+      Profile.update = jest.fn().mockResolvedValue([1]);
+      galponRepository.delete = jest.fn().mockResolvedValue(true);
+
+      const result = await galponService.deleteGalpon(1, 'p1');
+      expect(Profile.update).toHaveBeenCalledWith({ activeGalponId: 2 }, { where: { id: 'p1' } });
+      expect(result.wasActiveGalpon).toBe(true);
+      expect(result.nextActiveGalpon).toEqual({ id: 2, name: 'Galpon 2', profileId: 'p1' });
+    });
+
+    it('clears activeGalponId when deleting the last active galpon', async () => {
+      galponRepository.findById.mockResolvedValue({ id: 1, profileId: 'p1' });
+      FarmMember.findOne
+        .mockResolvedValueOnce({ id: 1, role: 'owner', status: 'active' })
+        .mockResolvedValueOnce(null);
+      Cage.count = jest.fn().mockResolvedValue(0);
+      Profile.findAll = jest.fn().mockResolvedValue([{ id: 'p1', activeGalponId: 1 }]);
+      Profile.update = jest.fn().mockResolvedValue([1]);
+      galponRepository.delete = jest.fn().mockResolvedValue(true);
+
+      const result = await galponService.deleteGalpon(1, 'p1');
+      expect(Profile.update).toHaveBeenCalledWith({ activeGalponId: null }, { where: { id: 'p1' } });
+      expect(result.wasActiveGalpon).toBe(true);
+      expect(result.nextActiveGalpon).toBeNull();
     });
 
     it('prevents deletion with existing cages', async () => {
