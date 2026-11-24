@@ -407,8 +407,12 @@ function IncidentFloatingPanel({
   isCreating,
   onQuickSubmit,
 }: Readonly<IncidentFloatingPanelProps>) {
+  const FLOATING_INCIDENTS_LIMIT = 2;
+  const visibleIncidents = displayedIncidents.slice(0, FLOATING_INCIDENTS_LIMIT);
+  const hasMoreIncidents = displayedIncidents.length > FLOATING_INCIDENTS_LIMIT;
+
   return (
-    <div className="fixed bottom-20 sm:bottom-24 inset-x-3 sm:inset-x-auto sm:right-6 sm:w-[420px] sm:max-w-lg bg-card border border-strong rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[calc(100dvh-6.5rem)] sm:max-h-[80vh] animate-fadeIn z-50">
+    <div className="fixed bottom-20 sm:bottom-24 inset-x-3 sm:inset-x-auto sm:right-6 sm:w-[420px] sm:max-w-lg bg-card border border-strong rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[calc(100dvh-9.5rem)] sm:max-h-[460px] animate-fadeIn z-50">
       <div className="p-3 sm:p-3.5 border-b border-default bg-theme-surface/80 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-primary-500/10 text-primary-600 flex items-center justify-center border border-primary-500/20">
@@ -596,15 +600,22 @@ function IncidentFloatingPanel({
                 </p>
               </div>
             ) : (
-              displayedIncidents.map((incident) => (
-                <IncidentListItemCard
-                  key={incident.id}
-                  incident={incident}
-                  isOwner={isOwner}
-                  onSelect={onSelectIncident}
-                  onDelete={onDeleteIncident}
-                />
-              ))
+              <>
+                {visibleIncidents.map((incident) => (
+                  <IncidentListItemCard
+                    key={incident.id}
+                    incident={incident}
+                    isOwner={isOwner}
+                    onSelect={onSelectIncident}
+                    onDelete={onDeleteIncident}
+                  />
+                ))}
+                {hasMoreIncidents && (
+                  <p className="text-[11px] text-center text-muted pt-1 pb-0.5">
+                    Mostrando las {FLOATING_INCIDENTS_LIMIT} más recientes de {displayedIncidents.length}. Usa &quot;Ver historial completo&quot; para ver todas.
+                  </p>
+                )}
+              </>
             )}
           </>
         )}
@@ -786,8 +797,21 @@ export function IncidentFloatingWidget() {
     setActiveIncidentPreview(null);
   };
 
+  const closeHeaderMenus = () => {
+    window.dispatchEvent(new CustomEvent('close-alerts'));
+    window.dispatchEvent(new CustomEvent('close-notifications'));
+    window.dispatchEvent(new CustomEvent('close-profile-menu'));
+  };
+
+  useEffect(() => {
+    const handleCloseWidget = () => setIsOpen(false);
+    window.addEventListener('close-incident-widget', handleCloseWidget);
+    return () => window.removeEventListener('close-incident-widget', handleCloseWidget);
+  }, []);
+
   const handleSelectPreviewIncident = (inc: Incident) => {
     handleDismissPreview();
+    closeHeaderMenus();
     setIsOpen(true);
     setActiveTab(isOwner ? 'pending' : 'my-reports');
     handleOpenDetail(inc);
@@ -813,6 +837,7 @@ export function IncidentFloatingWidget() {
 
     const handleOpenIncident = (event: any) => {
       const incidentId = event.detail?.incidentId;
+      closeHeaderMenus();
       setIsOpen(true);
       if (isOwner) {
         setActiveTab('pending');
@@ -1003,7 +1028,13 @@ export function IncidentFloatingWidget() {
 
         <button
           type="button"
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => {
+            const nextState = !isOpen;
+            if (nextState) {
+              closeHeaderMenus();
+            }
+            setIsOpen(nextState);
+          }}
           aria-label="Abrir panel de novedades"
           className={`relative group w-12 h-12 sm:w-14 sm:h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 transform active:scale-95 ${
             isOpen

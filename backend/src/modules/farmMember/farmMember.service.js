@@ -217,25 +217,45 @@ class FarmMemberService {
         if (!member) throw new AppError('Miembro no encontrado.', 404);
         if (member.role === 'owner') throw new AppError('No se puede eliminar al propietario del galpón.', 400);
 
-        const [, galpon, ownerProfile, workerProfile] = await Promise.all([
+        const [, galpon, ownerProfile, workerProfile, memberships] = await Promise.all([
             this._assertOwner(member.galponId, requestingProfileId),
             galponRepository.findById(member.galponId),
             Profile.findByPk(requestingProfileId),
-            Profile.findByPk(member.profileId)
+            Profile.findByPk(member.profileId),
+            farmMemberRepository.findByProfileId(member.profileId)
         ]);
         const ownerName = ownerProfile?.fullName?.trim() || ownerProfile?.username || 'el propietario';
+        const hasOtherActiveGalpones = (memberships || []).some(
+            (m) => m.status === 'active' && Number(m.galponId) !== Number(member.galponId)
+        );
+        const safeGalponId = String(member.galponId).replace(/'/g, '');
+        const safeGalponName = String(galpon?.name || '').replace(/'/g, "''");
+
+        const notificationCleanupWhere = hasOtherActiveGalpones
+            ? {
+                profileId: member.profileId,
+                [Op.or]: [
+                    Sequelize.literal(`("data"->>'galponId') = '${safeGalponId}'`),
+                    ...(safeGalponName ? [Sequelize.literal(`("data"->>'galponName') = '${safeGalponName}'`)] : []),
+                    {
+                        [Op.and]: [
+                            Sequelize.literal(`("data"->>'galponId') IS NULL`),
+                            Sequelize.literal(`("data"->>'type') IN ('feeding_reminder', 'cleaning_warning', 'birth_warning', 'weaning_alert', 'maturity_info')`)
+                        ]
+                    }
+                ]
+            }
+            : {
+                profileId: member.profileId,
+                [Op.or]: [
+                    { type: { [Op.ne]: 'invitation' } },
+                    Sequelize.literal(`("data"->>'galponId') = '${safeGalponId}'`)
+                ]
+            };
 
         await Promise.all([
             farmMemberRepository.deactivate(member),
-            Notification.destroy({
-                where: {
-                    profileId: member.profileId,
-                    [Op.and]: [
-                        Sequelize.literal(`("data"->>'isContract')::boolean = true`),
-                        Sequelize.literal(`("data"->>'galponId') = '${String(member.galponId).replace(/'/g, '')}'`)
-                    ]
-                }
-            })
+            Notification.destroy({ where: notificationCleanupWhere })
         ]);
 
         if (workerProfile && workerProfile.activeGalponId === member.galponId) {

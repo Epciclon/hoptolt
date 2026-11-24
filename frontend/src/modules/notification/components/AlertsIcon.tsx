@@ -456,6 +456,8 @@ export function AlertsIcon() {
         onClick={() => {
           handleCloseWarningPreview();
           window.dispatchEvent(new CustomEvent('close-notifications'));
+          window.dispatchEvent(new CustomEvent('close-profile-menu'));
+          window.dispatchEvent(new CustomEvent('close-incident-widget'));
           setIsOpen((prev) => !prev);
           if (window.innerWidth < 1024) {
             window.dispatchEvent(new CustomEvent('close-sidebar'));

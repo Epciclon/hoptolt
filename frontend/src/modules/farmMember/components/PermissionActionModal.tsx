@@ -174,10 +174,21 @@ export function PermissionActionModal({ open, onClose, onConfirm, moduleName, is
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t border-strong">
-          <Button variant="outline" onClick={handleClose}>
+          <Button
+            variant="outline"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleClose();
+            }}
+          >
             Cancelar
           </Button>
-          <Button onClick={handleConfirm}>
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleConfirm();
+            }}
+          >
             Confirmar
           </Button>
         </div>

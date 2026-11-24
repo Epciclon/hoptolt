@@ -22,7 +22,7 @@ export function AssignmentTable() {
 
   const [toUnassign, setToUnassign] = useState<{ cageId: number; rabbitIds: number[] } | null>(null);
   const [transferRabbitData, setTransferRabbitData] = useState<{ 
-    rabbits: { id: number; name: string; code: string; age?: number; purpose?: string }[];
+    rabbits: { id: number; name: string; code: string; sex?: string; age?: number; birthDate?: string; purpose?: string }[];
     currentCageId: number;
     cageType: string;
   } | null>(null);
@@ -166,8 +166,10 @@ export function AssignmentTable() {
                               id: a.rabbitId,
                               name: a.rabbitName || '',
                               code: a.rabbitCode || '',
+                              sex: a.rabbitSex,
                               age: a.rabbitAge,
-                              purpose: (a as any).rabbitPurpose
+                              birthDate: a.rabbitBirthDate,
+                              purpose: a.rabbitPurpose,
                             })),
                             currentCageId: group.cageId,
                             cageType: group.cageType

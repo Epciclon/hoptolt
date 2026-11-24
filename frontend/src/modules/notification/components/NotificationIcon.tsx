@@ -699,6 +699,8 @@ export function NotificationIcon() {
         onClick={() => {
           handleCloseInfoPreview();
           window.dispatchEvent(new CustomEvent('close-alerts'));
+          window.dispatchEvent(new CustomEvent('close-profile-menu'));
+          window.dispatchEvent(new CustomEvent('close-incident-widget'));
           const newState = !isOpen;
           setIsOpen(newState);
           if (newState && window.innerWidth < 1024) {

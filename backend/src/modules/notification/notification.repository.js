@@ -115,7 +115,7 @@ class NotificationRepository {
         );
         if (isTaskReminder) return notification;
 
-        await notification.update({ read: true });
+        await notification.update({ read: true }, { silent: true });
         return notification;
     }
 
@@ -142,7 +142,7 @@ class NotificationRepository {
         if (idsToMark.length > 0) {
             await this.Notification.update(
                 { read: true },
-                { where: { id: { [Op.in]: idsToMark } } }
+                { where: { id: { [Op.in]: idsToMark } }, silent: true }
             );
         }
         return true;

@@ -49,7 +49,7 @@ export function CageCatalog({
             footer={renderCageContent ? renderCageContent(group) : undefined}
           >
               {group.rabbits.map(rabbit => (
-                <RabbitSelectableCard key={rabbit.id} rabbit={rabbit} />
+                <RabbitSelectableCard key={rabbit.id} rabbit={rabbit} disableQuickView={!isSelected} />
               ))}
           </CageGroupCard>
         );

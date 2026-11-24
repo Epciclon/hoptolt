@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useEffect, useRef, useState } from 'react';
+import { ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -29,21 +29,31 @@ const sizeMap: Record<DialogSize, string> = {
 };
 
 const openDialogStack: symbol[] = [];
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 export function Dialog({ open, onClose, title, description, children, size = 'md', hideClose = false, centerHeader = false }: Readonly<DialogProps>) {
   const [mounted, setMounted] = useState(false);
   const [stackIndex, setStackIndex] = useState(0);
   const dialogIdRef = useRef<symbol | null>(null);
+  const onCloseRef = useRef(onClose);
+  const pointerDownOnBackdropRef = useRef(false);
+
+  onCloseRef.current = onClose;
 
   if (!dialogIdRef.current) {
     dialogIdRef.current = Symbol('dialog');
   }
 
+  const isTopDialog = () => {
+    const topDialogId = openDialogStack.at(-1);
+    return !topDialogId || topDialogId === dialogIdRef.current;
+  };
+
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const id = dialogIdRef.current!;
     if (open && mounted) {
       if (!openDialogStack.includes(id)) {
@@ -60,19 +70,17 @@ export function Dialog({ open, onClose, title, description, children, size = 'md
   }, [open, mounted]);
 
   useEffect(() => {
-    const id = dialogIdRef.current!;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        const topDialogId = openDialogStack.at(-1);
-        if (!topDialogId || topDialogId === id) {
-          e.stopPropagation();
-          onClose();
-        }
+      if (e.key === 'Escape' && isTopDialog()) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        onCloseRef.current();
       }
     };
     if (open) document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open || !mounted) return null;
 
@@ -87,9 +95,17 @@ export function Dialog({ open, onClose, title, description, children, size = 'md
         type="button"
         aria-label="Cerrar diálogo"
         className="absolute inset-0 bg-black/50 backdrop-blur-sm border-none cursor-default w-full h-full block"
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          pointerDownOnBackdropRef.current = true;
+        }}
         onClick={(e) => {
           e.stopPropagation();
-          onClose();
+          const shouldClose = pointerDownOnBackdropRef.current;
+          pointerDownOnBackdropRef.current = false;
+          if (shouldClose && isTopDialog()) {
+            onCloseRef.current();
+          }
         }}
       />
       <div
@@ -109,7 +125,9 @@ export function Dialog({ open, onClose, title, description, children, size = 'md
             <button type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                onClose();
+                if (isTopDialog()) {
+                  onCloseRef.current();
+                }
               }}
               className="ml-4 mt-0.5 text-theme-faint hover:text-muted transition-colors cursor-pointer shrink-0"
             >

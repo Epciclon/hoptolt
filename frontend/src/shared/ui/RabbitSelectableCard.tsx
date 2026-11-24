@@ -11,6 +11,7 @@ interface RabbitSelectableCardProps {
   isSelected?: boolean;
   onClick?: () => void;
   onRemove?: () => void;
+  disableQuickView?: boolean;
   extras?: ReactNode; // Extra content when selected, e.g. "Última vacunación"
   children?: ReactNode; // Content that ALWAYS renders below the rabbit info
 }
@@ -20,10 +21,12 @@ export function RabbitSelectableCard({
   isSelected = false,
   onClick,
   onRemove,
+  disableQuickView,
   extras,
   children
 }: Readonly<RabbitSelectableCardProps>) {
   const isSelectable = !!onClick;
+  const quickViewDisabled = disableQuickView ?? (isSelectable && !isSelected);
 
   return (
     <div
@@ -48,14 +51,14 @@ export function RabbitSelectableCard({
 
       {/* Disposición centrada vertical estándar de móvil aplicada a todas las pantallas */}
       <div className="flex flex-col items-center gap-2.5 mb-2 relative z-10 min-w-0 pointer-events-none">
-        <div className={cn('shrink-0 mb-1 relative z-20', isSelectable && !isSelected ? 'pointer-events-none' : 'pointer-events-auto')}>
+        <div className={cn('shrink-0 mb-1 relative z-20', quickViewDisabled ? 'pointer-events-none' : 'pointer-events-auto')}>
           <RabbitAvatar
             imageUrl={rabbit.imageUrl}
             alt={rabbit.code}
             size="md"
             rabbitId={rabbit.id}
             rabbitCode={rabbit.code}
-            disableQuickView={isSelectable && !isSelected}
+            disableQuickView={quickViewDisabled}
           />
         </div>
         <div className="min-w-0 flex-1 w-full">
