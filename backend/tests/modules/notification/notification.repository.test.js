@@ -58,7 +58,7 @@ describe('NotificationRepository', () => {
       const notification = { update: jest.fn().mockResolvedValue({}) }
       Notification.findByPk.mockResolvedValue(notification)
       const result = await notificationRepository.markAsRead(1)
-      expect(notification.update).toHaveBeenCalledWith({ read: true })
+      expect(notification.update).toHaveBeenCalledWith({ read: true }, { silent: true })
       expect(result).toBe(notification)
     })
 
@@ -75,7 +75,7 @@ describe('NotificationRepository', () => {
       await notificationRepository.markAllAsRead('p1')
       expect(Notification.update).toHaveBeenCalledWith(
         { read: true },
-        expect.objectContaining({ where: expect.any(Object) }),
+        expect.objectContaining({ where: expect.any(Object), silent: true }),
       )
     })
   })

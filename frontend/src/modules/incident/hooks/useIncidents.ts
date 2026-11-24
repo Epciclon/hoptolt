@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { incidentService } from '../services/incident.service';
 import type { CreateIncidentDTO, RespondIncidentDTO, GetIncidentsParams } from '../types/incident.types';
@@ -61,9 +61,18 @@ export function useIncidents(params?: GetIncidentsParams) {
     refetchOnWindowFocus: true
   });
 
+  const realtimeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Realtime subscription via Supabase
   useEffect(() => {
     if (!isQueryEnabled || !user) return;
+
+    const scheduleIncidentInvalidate = () => {
+      if (realtimeTimerRef.current) clearTimeout(realtimeTimerRef.current);
+      realtimeTimerRef.current = setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['incidents'] });
+      }, 400);
+    };
 
     const channelId = `realtime_incidents_${user.id}_${crypto.randomUUID()}`;
     const channel = supabase.channel(channelId)
@@ -78,7 +87,7 @@ export function useIncidents(params?: GetIncidentsParams) {
           if (payload.eventType === 'DELETE' && payload.old?.id) {
             window.dispatchEvent(new CustomEvent('incident-deleted', { detail: { incidentId: payload.old.id } }));
           }
-          queryClient.invalidateQueries({ queryKey: ['incidents'] });
+          scheduleIncidentInvalidate();
         }
       )
       .on(
@@ -89,8 +98,9 @@ export function useIncidents(params?: GetIncidentsParams) {
           table: 'notifications',
           filter: `profileId=eq.${user.id}`
         },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['incidents'] });
+        (payload: any) => {
+          if (payload?.eventType === 'UPDATE') return;
+          scheduleIncidentInvalidate();
         }
       )
       .subscribe();
@@ -101,6 +111,7 @@ export function useIncidents(params?: GetIncidentsParams) {
     window.addEventListener('incidents-updated', handleCustomUpdate);
 
     return () => {
+      if (realtimeTimerRef.current) clearTimeout(realtimeTimerRef.current);
       supabase.removeChannel(channel);
       window.removeEventListener('incidents-updated', handleCustomUpdate);
     };

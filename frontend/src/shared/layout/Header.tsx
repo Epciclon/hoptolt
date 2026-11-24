@@ -18,6 +18,12 @@ export function Header() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   useEffect(() => {
+    const handleCloseProfileMenu = () => setDropdownOpen(false);
+    window.addEventListener('close-profile-menu', handleCloseProfileMenu);
+    return () => window.removeEventListener('close-profile-menu', handleCloseProfileMenu);
+  }, []);
+
+  useEffect(() => {
     const savedSize = localStorage.getItem('fontSize') ?? '16px';
     const savedFont = localStorage.getItem('fontFamily') ?? '';
     document.documentElement.style.fontSize = savedSize;
@@ -46,7 +52,15 @@ export function Header() {
         <NotificationIcon />
         <div className="relative">
           <button type="button"
-            onClick={() => setDropdownOpen((v) => !v)}
+            onClick={() => {
+              const nextState = !dropdownOpen;
+              if (nextState) {
+                window.dispatchEvent(new CustomEvent('close-alerts'));
+                window.dispatchEvent(new CustomEvent('close-notifications'));
+                window.dispatchEvent(new CustomEvent('close-incident-widget'));
+              }
+              setDropdownOpen(nextState);
+            }}
             className={cn(
               'flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition-colors',
               dropdownOpen ? 'bg-theme-surface border border-default' : 'hover:bg-theme-surface',

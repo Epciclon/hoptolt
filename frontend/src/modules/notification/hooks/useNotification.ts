@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notificationService, type GetNotificationsParams } from '../services/notification.service';
 import type { CreateNotificationDTO } from '../types/notification.types';
@@ -50,9 +50,20 @@ export function useNotifications(options?: GetNotificationsParams) {
   
   const unreadCount = unreadCountData?.count || 0;
 
+  const notifTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const globalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const userRefetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Realtime Subscription
   useEffect(() => {
     if (!user) return;
+
+    const scheduleGlobalInvalidate = () => {
+      if (globalTimerRef.current) clearTimeout(globalTimerRef.current);
+      globalTimerRef.current = setTimeout(() => {
+        queryClient.invalidateQueries();
+      }, 300);
+    };
 
     const channelId = `realtime_notifications_${user.id}_${crypto.randomUUID()}`;
     const channel = supabase.channel(channelId)
@@ -64,14 +75,39 @@ export function useNotifications(options?: GetNotificationsParams) {
           table: 'notifications',
           filter: `profileId=eq.${user.id}`,
         },
-        () => {
-          // Invalidate all queries globally so modules (Vaccination, Reproduction, etc.)
-          // fetch newly assigned cages or updated data automatically without page reload.
-          queryClient.invalidateQueries();
-          
-          // Also refetch the user profile silently to update permissions in realtime
-          if (refetchUser) {
-            refetchUser(true);
+        (payload: any) => {
+          if (notifTimerRef.current) clearTimeout(notifTimerRef.current);
+          notifTimerRef.current = setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: ['notifications'] });
+          }, 400);
+
+          const isInsert = payload?.eventType === 'INSERT';
+          const row = payload?.new;
+          const rowType = row?.type;
+          const dataType = row?.data?.type;
+          const titleLower = String(row?.title || '').toLowerCase();
+          const affectsAccessOrGalpon =
+            isInsert &&
+            (rowType === 'invitation' ||
+              rowType === 'error' ||
+              dataType === 'task_assignment' ||
+              Boolean(row?.data?.isContract) ||
+              titleLower.includes('galpón') ||
+              titleLower.includes('eliminado') ||
+              titleLower.includes('invitación'));
+
+          if (affectsAccessOrGalpon) {
+            if (globalTimerRef.current) clearTimeout(globalTimerRef.current);
+            globalTimerRef.current = setTimeout(() => {
+              queryClient.invalidateQueries();
+            }, 500);
+
+            if (refetchUser) {
+              if (userRefetchTimerRef.current) clearTimeout(userRefetchTimerRef.current);
+              userRefetchTimerRef.current = setTimeout(() => {
+                void refetchUser(true);
+              }, 500);
+            }
           }
         }
       )
@@ -83,9 +119,7 @@ export function useNotifications(options?: GetNotificationsParams) {
           table: 'assign_rabbits',
         },
         () => {
-          // When a rabbit is assigned or unassigned from a cage by ANY user, 
-          // we invalidate the cache so everyone sees the rabbit appear/disappear instantly.
-          queryClient.invalidateQueries();
+          scheduleGlobalInvalidate();
         }
       )
       .on(
@@ -96,13 +130,15 @@ export function useNotifications(options?: GetNotificationsParams) {
           table: 'reproductions',
         },
         () => {
-          // Invalidamos queries cuando una reproducción avanza de fase (así se borran notificaciones estancadas)
-          queryClient.invalidateQueries();
+          scheduleGlobalInvalidate();
         }
       )
       .subscribe();
 
     return () => {
+      if (notifTimerRef.current) clearTimeout(notifTimerRef.current);
+      if (globalTimerRef.current) clearTimeout(globalTimerRef.current);
+      if (userRefetchTimerRef.current) clearTimeout(userRefetchTimerRef.current);
       supabase.removeChannel(channel);
     };
   }, [user, queryClient, supabase, refetchUser]);

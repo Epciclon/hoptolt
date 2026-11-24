@@ -10,7 +10,7 @@ const farmMemberRepository = require('../../../src/modules/farmMember/farmMember
 const galponRepository = require('../../../src/modules/galpon/galpon.repository');
 const farmMemberService = require('../../../src/modules/farmMember/farmMember.service');
 const notificationService = require('../../../src/modules/notification/notification.service');
-const { Profile, Cage, Assignment } = require('../../../src/domain/models');
+const { Profile, Cage, Assignment, Notification } = require('../../../src/domain/models');
 
 describe('FarmMemberService', () => {
   beforeEach(() => {
@@ -94,15 +94,35 @@ describe('FarmMemberService', () => {
     beforeEach(() => {
       farmMemberRepository.findById.mockResolvedValue({ id: 1, role: 'worker', galponId: 1, profileId: 'w1' });
       farmMemberRepository.findMembership.mockResolvedValue({ id: 2, role: 'owner', status: 'active' });
+      farmMemberRepository.findByProfileId.mockResolvedValue([]);
       galponRepository.findById.mockResolvedValue({ id: 1, name: 'Galpon 1' });
       Profile.findByPk.mockResolvedValue({ id: 'p1', username: 'owner' });
+      Notification.destroy = jest.fn().mockResolvedValue(1);
     });
 
-    it('deactivates worker', async () => {
+    it('deactivates worker and clears previous notifications when no other galpones exist', async () => {
       farmMemberRepository.deactivate = jest.fn().mockResolvedValue(true);
       await farmMemberService.removeWorker(1, 'p1');
       expect(farmMemberRepository.deactivate).toHaveBeenCalled();
-      expect(notificationService.createNotification).toHaveBeenCalled();
+      expect(Notification.destroy).toHaveBeenCalled();
+      expect(notificationService.createNotification).toHaveBeenCalledWith(
+        'w1',
+        expect.objectContaining({
+          type: 'error',
+          title: 'Has sido eliminado del galpón',
+        })
+      );
+    });
+
+    it('clears only removed galpon notifications when worker has another active galpon', async () => {
+      farmMemberRepository.deactivate = jest.fn().mockResolvedValue(true);
+      farmMemberRepository.findByProfileId.mockResolvedValue([
+        { id: 1, galponId: 1, status: 'active' },
+        { id: 3, galponId: 2, status: 'active' },
+      ]);
+      await farmMemberService.removeWorker(1, 'p1');
+      expect(Notification.destroy).toHaveBeenCalled();
+      expect(notificationService.createNotification).toHaveBeenCalledTimes(1);
     });
 
     it('throws when trying to remove owner', async () => {

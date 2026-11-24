@@ -452,6 +452,7 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
     }
     setShowPermissionActionModal(false);
     setSelectedAdvancedPermission(null);
+    setEditingPermissions(null);
   };
 
   const handleEditPermission = (moduleName: string, permissionName: string) => {
@@ -510,7 +511,17 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
   });
 
   return (
-    <Dialog open={open} onClose={onClose} title={`Editar Trabajador: ${worker?.profile?.fullName}`} size="xl">
+    <>
+      <Dialog
+        open={open}
+        onClose={() => {
+          if (!showPermissionActionModal) {
+            onClose();
+          }
+        }}
+        title={`Editar Trabajador: ${worker?.profile?.fullName}`}
+        size="xl"
+      >
       <div className="space-y-6">
         <Alert
           variant="neutral"
@@ -600,7 +611,7 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {(Object.keys(PRESET_TEMPLATES) as PresetKey[]).map((key) => {
                 const preset = PRESET_TEMPLATES[key];
                 const Icon = preset.icon;
@@ -792,6 +803,7 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
           </Button>
         </div>
       </div>
+      </Dialog>
 
       {/* Modal para seleccionar acciones de permisos avanzados */}
       <PermissionActionModal
@@ -806,6 +818,6 @@ export function EditWorkerModal({ open, onClose, worker, onSave }: Readonly<Edit
         isSensitive={SENSITIVE_PERMISSIONS.has(selectedAdvancedPermission || '')}
         existingPermissions={editingPermissions || undefined}
       />
-    </Dialog>
+    </>
   );
 }

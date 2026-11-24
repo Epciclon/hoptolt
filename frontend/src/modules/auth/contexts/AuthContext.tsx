@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useMemo } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, ReactNode, useCallback, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { authService } from '../services/auth.service';
 import type { Profile } from '../types/auth.types';
@@ -24,38 +24,51 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const supabase = createClient();
 
   const queryClient = useQueryClient();
+  const inFlightFetchRef = useRef<Promise<Profile | null> | null>(null);
 
   const fetchUser = useCallback(async (silent = false): Promise<Profile | null> => {
+    if (silent && inFlightFetchRef.current) {
+      return inFlightFetchRef.current;
+    }
     if (!silent) setLoading(true);
-    try {
-      // E2E Bypass en cliente
-      const isE2E = process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_E2E_BYPASS === 'true';
-      if (isE2E && typeof document !== 'undefined' && document.cookie.includes('e2e_bypass=true')) {
+    const promise = (async () => {
+      try {
+        // E2E Bypass en cliente
+        const isE2E = process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_E2E_BYPASS === 'true';
+        if (isE2E && typeof document !== 'undefined' && document.cookie.includes('e2e_bypass=true')) {
+          const profile = await authService.getMe();
+          setUser(profile);
+          if (!silent) setLoading(false);
+          return profile;
+        }
+
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session) {
+          setUser(null);
+          if (!silent) setLoading(false);
+          return null;
+        }
+
+        // Si hay sesión en Supabase, traemos el perfil enriquecido del backend
         const profile = await authService.getMe();
         setUser(profile);
-        if (!silent) setLoading(false);
         return profile;
-      }
-
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session) {
-        setUser(null);
-        if (!silent) setLoading(false);
+      } catch (error) {
+        console.error(error);
+        const status = (error as any)?.response?.status;
+        if (status === 401 || (!silent && status === 404)) {
+          setUser(null);
+        }
         return null;
+      } finally {
+        inFlightFetchRef.current = null;
+        if (!silent) setLoading(false);
       }
+    })();
 
-      // Si hay sesión en Supabase, traemos el perfil enriquecido del backend
-      const profile = await authService.getMe();
-      setUser(profile);
-      return profile;
-    } catch (error) {
-      console.error(error);
-      setUser(null);
-      return null;
-    } finally {
-      if (!silent) setLoading(false);
-    }
+    inFlightFetchRef.current = promise;
+    return promise;
   }, [supabase]);
 
   const logout = useCallback(async () => {

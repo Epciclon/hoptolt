@@ -1,4 +1,4 @@
-﻿export interface AssignedRabbit {
+export interface AssignedRabbit {
   id: number;
   code: string;
   name?: string;
@@ -21,6 +21,9 @@ export interface Assignment {
   assignedAt: string;
   rabbitCode?: string;
   rabbitName?: string;
+  rabbitSex?: 'macho' | 'hembra' | string;
+  rabbitPurpose?: string;
+  rabbitBirthDate?: string;
   rabbitAge?: number;
   rabbitWeight?: number;
   rabbitRace?: string;
