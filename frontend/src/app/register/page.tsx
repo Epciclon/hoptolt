@@ -41,6 +41,86 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+function getInputClassName(hasError: boolean, extraPadding = ''): string {
+  const stateClasses = hasError
+    ? 'border-red-500 bg-red-50 dark:bg-red-500/10'
+    : 'border-slate-300 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20';
+  return `w-full px-4 py-3 ${extraPadding} border-2 rounded-xl outline-none transition-all text-base bg-theme-surface dark:bg-slate-900 text-main dark:text-slate-100 ${stateClasses}`;
+}
+
+interface RegisterTextFieldProps {
+  id: 'fullName' | 'username' | 'email';
+  label: string;
+  placeholder: string;
+  type?: 'text' | 'email';
+  registration: ReturnType<ReturnType<typeof useForm<FormValues>>['register']>;
+  errorMessage?: string;
+}
+
+function RegisterTextField({
+  id,
+  label,
+  placeholder,
+  type = 'text',
+  registration,
+  errorMessage,
+}: Readonly<RegisterTextFieldProps>) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-semibold text-main mb-2">{label}</label>
+      <input
+        {...registration}
+        id={id}
+        type={type}
+        className={getInputClassName(Boolean(errorMessage))}
+        placeholder={placeholder}
+      />
+      {errorMessage && <p className="text-red-500 text-sm mt-1">{errorMessage}</p>}
+    </div>
+  );
+}
+
+interface RegisterPasswordFieldProps {
+  id: 'password' | 'confirmPassword';
+  label: string;
+  visible: boolean;
+  onToggleVisibility: () => void;
+  registration: ReturnType<ReturnType<typeof useForm<FormValues>>['register']>;
+  errorMessage?: string;
+}
+
+function RegisterPasswordField({
+  id,
+  label,
+  visible,
+  onToggleVisibility,
+  registration,
+  errorMessage,
+}: Readonly<RegisterPasswordFieldProps>) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-semibold text-main mb-2">{label}</label>
+      <div className="relative">
+        <input
+          {...registration}
+          id={id}
+          type={visible ? 'text' : 'password'}
+          className={getInputClassName(Boolean(errorMessage), 'pr-12')}
+          placeholder="••••••"
+        />
+        <button
+          type="button"
+          onClick={onToggleVisibility}
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-theme-faint hover:text-teal-500 transition-colors focus:outline-none"
+        >
+          {visible ? <EyeOff size={20} /> : <Eye size={20} />}
+        </button>
+      </div>
+      {errorMessage && <p className="text-red-500 text-sm mt-1">{errorMessage}</p>}
+    </div>
+  );
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   const { user, loading } = useAuthContext();
@@ -61,6 +141,10 @@ export default function RegisterPage() {
 
   const termsAccepted = watch('terms');
   const isBusy = isSubmitting || isRedirecting;
+  const busyText = isRedirecting ? 'Redirigiendo...' : 'Creando cuenta...';
+  const submitButtonStyle = termsAccepted
+    ? 'bg-gradient-to-r from-teal-500 to-teal-600 text-white hover:shadow-lg hover:-translate-y-0.5'
+    : 'bg-slate-300 text-slate-500 dark:bg-slate-700 dark:text-slate-400';
 
   const onSubmit = async (values: FormValues) => {
     if (isBusy) return;
@@ -99,88 +183,50 @@ export default function RegisterPage() {
 
         {/* Nombre completo + Username */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="fullName" className="block text-sm font-semibold text-main mb-2">Nombre Completo</label>
-            <input
-              {...register('fullName')}
-              id="fullName"
-              className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-all text-base bg-theme-surface dark:bg-slate-900 text-main dark:text-slate-100 ${errors.fullName ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : 'border-slate-300 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
-                }`}
-              placeholder="Darwin P"
-            />
-            {errors.fullName && <p className="text-red-500 text-sm mt-1">{errors.fullName.message}</p>}
-          </div>
-          <div>
-            <label htmlFor="username" className="block text-sm font-semibold text-main mb-2">Nombre de Usuario</label>
-            <input
-              {...register('username')}
-              id="username"
-              className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-all text-base bg-theme-surface dark:bg-slate-900 text-main dark:text-slate-100 ${errors.username ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : 'border-slate-300 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
-                }`}
-              placeholder="DarwinP"
-            />
-            {errors.username && <p className="text-red-500 text-sm mt-1">{errors.username.message}</p>}
-          </div>
+          <RegisterTextField
+            id="fullName"
+            label="Nombre Completo"
+            placeholder="Darwin P"
+            registration={register('fullName')}
+            errorMessage={errors.fullName?.message}
+          />
+          <RegisterTextField
+            id="username"
+            label="Nombre de Usuario"
+            placeholder="DarwinP"
+            registration={register('username')}
+            errorMessage={errors.username?.message}
+          />
         </div>
 
         {/* Email */}
-        <div>
-          <label htmlFor="email" className="block text-sm font-semibold text-main mb-2">Correo Electrónico</label>
-          <input
-            {...register('email')}
-            id="email"
-            type="email"
-            className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-all text-base bg-theme-surface dark:bg-slate-900 text-main dark:text-slate-100 ${errors.email ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : 'border-slate-300 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
-              }`}
-            placeholder="javierjacome0w0@gmail.com"
-          />
-          {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
-        </div>
+        <RegisterTextField
+          id="email"
+          label="Correo Electrónico"
+          type="email"
+          placeholder="javierjacome0w0@gmail.com"
+          registration={register('email')}
+          errorMessage={errors.email?.message}
+        />
 
         {/* Contraseña + Confirmación */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="password" className="block text-sm font-semibold text-main mb-2">Contraseña</label>
-            <div className="relative">
-              <input
-                {...register('password')}
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                className={`w-full px-4 py-3 pr-12 border-2 rounded-xl outline-none transition-all text-base bg-theme-surface dark:bg-slate-900 text-main dark:text-slate-100 ${errors.password ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : 'border-slate-300 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
-                  }`}
-                placeholder="••••••"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-theme-faint hover:text-teal-500 transition-colors focus:outline-none"
-              >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
-            </div>
-            {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>}
-          </div>
-          <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-semibold text-main mb-2">Confirmar Contraseña</label>
-            <div className="relative">
-              <input
-                {...register('confirmPassword')}
-                id="confirmPassword"
-                type={showConfirmPassword ? 'text' : 'password'}
-                className={`w-full px-4 py-3 pr-12 border-2 rounded-xl outline-none transition-all text-base bg-theme-surface dark:bg-slate-900 text-main dark:text-slate-100 ${errors.confirmPassword ? 'border-red-500 bg-red-50 dark:bg-red-500/10' : 'border-slate-300 dark:border-slate-700 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20'
-                  }`}
-                placeholder="••••••"
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-theme-faint hover:text-teal-500 transition-colors focus:outline-none"
-              >
-                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
-            </div>
-            {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword.message}</p>}
-          </div>
+          <RegisterPasswordField
+            id="password"
+            label="Contraseña"
+            visible={showPassword}
+            onToggleVisibility={() => setShowPassword(!showPassword)}
+            registration={register('password')}
+            errorMessage={errors.password?.message}
+          />
+          <RegisterPasswordField
+            id="confirmPassword"
+            label="Confirmar Contraseña"
+            visible={showConfirmPassword}
+            onToggleVisibility={() => setShowConfirmPassword(!showConfirmPassword)}
+            registration={register('confirmPassword')}
+            errorMessage={errors.confirmPassword?.message}
+          />
         </div>
 
         {/* Términos y condiciones */}
@@ -205,16 +251,12 @@ export default function RegisterPage() {
           type="submit"
           id="btn-register"
           disabled={isBusy || !termsAccepted}
-          className={`w-full py-3 font-semibold rounded-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed mt-4 ${
-            !termsAccepted 
-              ? 'bg-slate-300 text-slate-500 dark:bg-slate-700 dark:text-slate-400' 
-              : 'bg-gradient-to-r from-teal-500 to-teal-600 text-white hover:shadow-lg hover:-translate-y-0.5'
-          }`}
+          className={`w-full py-3 font-semibold rounded-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed mt-4 ${submitButtonStyle}`}
         >
           {isBusy ? (
             <span className="flex items-center justify-center gap-2">
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              {isRedirecting ? 'Redirigiendo...' : 'Creando cuenta...'}
+              {busyText}
             </span>
           ) : (
             'Crear Cuenta'

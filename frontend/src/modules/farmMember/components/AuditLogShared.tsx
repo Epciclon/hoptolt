@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { AuditLogItem } from '../types/farmMember.types';
 import { Button, Dialog, Select } from '@/shared/ui';
-import { RotateCcw, ShieldCheck, X } from 'lucide-react';
+import { RotateCcw, ShieldCheck, X, Filter } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { formatFriendlyDate, formatDateTime } from '@/shared/utils/dateUtils';
 
@@ -165,6 +165,69 @@ export function AuditClearFiltersButton({
         <RotateCcw size={13} />
         <span>Limpiar filtros</span>
       </button>
+    </div>
+  );
+}
+
+export interface AuditFilterSelectConfig {
+  id: string;
+  label: string;
+  placeholder: string;
+  value: string;
+  options: AuditSelectFilterOption[];
+  onChange: (val: string) => void;
+}
+
+interface AuditFiltersCardProps {
+  columnsClassName: string;
+  selects: AuditFilterSelectConfig[];
+  startDate: string;
+  endDate: string;
+  onStartDateChange: (val: string) => void;
+  onEndDateChange: (val: string) => void;
+  hasActiveFilters: boolean;
+  onResetFilters: () => void;
+}
+
+export function AuditFiltersCard({
+  columnsClassName,
+  selects,
+  startDate,
+  endDate,
+  onStartDateChange,
+  onEndDateChange,
+  hasActiveFilters,
+  onResetFilters,
+}: Readonly<AuditFiltersCardProps>) {
+  return (
+    <div className="bg-card rounded-xl p-4 border border-strong shadow-sm space-y-3">
+      <div className="flex items-center gap-2 text-sm font-semibold text-main mb-1">
+        <Filter size={16} className="text-primary-500" />
+        <span>Filtros de búsqueda</span>
+      </div>
+
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${columnsClassName} gap-3`}>
+        {selects.map((select) => (
+          <AuditSelectFilter
+            key={select.id}
+            id={select.id}
+            label={select.label}
+            placeholder={select.placeholder}
+            value={select.value}
+            options={select.options}
+            onChange={select.onChange}
+          />
+        ))}
+
+        <AuditDateFilters
+          startDate={startDate}
+          endDate={endDate}
+          onStartDateChange={onStartDateChange}
+          onEndDateChange={onEndDateChange}
+        />
+      </div>
+
+      <AuditClearFiltersButton hasActiveFilters={hasActiveFilters} onResetFilters={onResetFilters} />
     </div>
   );
 }
