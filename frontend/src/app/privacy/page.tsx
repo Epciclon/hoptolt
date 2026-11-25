@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { APP_VERSION } from '@/lib/constants';
 
 export const metadata: Metadata = {
   title: 'Política de Privacidad | Hoptolt',
@@ -10,7 +11,7 @@ export default function PrivacyPage() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-8 sm:p-12">
         <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">Política de Privacidad y Tratamiento de Datos Personales</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mb-8">Última actualización: Agosto de 2026 | Versión 3.0.0</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-8">Última actualización: Noviembre de 2026 | Versión {APP_VERSION}</p>
         
         <div className="prose prose-slate dark:prose-invert prose-teal max-w-none space-y-8 text-slate-600 dark:text-slate-300 text-justify">
           

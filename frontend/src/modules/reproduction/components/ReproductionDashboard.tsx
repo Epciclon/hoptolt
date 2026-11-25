@@ -29,7 +29,11 @@ export function ReproductionDashboard() {
 
   return (
     <Card className="min-h-[calc(100vh-7rem)]">
-      <CardHeader title="Reproducción y Cría" subtitle="Sigue de cerca las montas, nacimientos y destetes de tus conejas" />
+      <CardHeader
+        title="Reproducción y Cría"
+        subtitle="Sigue de cerca las montas, nacimientos y destetes de tus conejas"
+        tutorialUrl="https://youtu.be/Tku45DBuB14"
+      />
       <DashboardTabs
         tabs={[
           { id: 'montas', label: 'Fase 1: Montas', icon: <Heart size={18} /> },

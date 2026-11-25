@@ -268,6 +268,7 @@ function UsersPageContent() {
         <CardHeader 
           title="Tu Equipo" 
           subtitle={`Invita a tus trabajadores y decide qué cosas pueden ver o hacer en ${activeGalpon?.name || 'la granja'}`}
+          tutorialUrl="https://youtu.be/5l2mwRhnJ_8"
           actions={<Button onClick={() => setIsModalOpen(true)}>+ Invitar Trabajador</Button>}
         />
 
@@ -286,7 +287,7 @@ function UsersPageContent() {
 
         <Dialog 
           open={isModalOpen} 
-          onClose={() => setIsModalOpen(false)} 
+          onClose={() => { if (!submitting) setIsModalOpen(false); }} 
           title="Invitar Nuevo Trabajador"
           description="Ingresa el correo electrónico del usuario que deseas invitar a colaborar en este galpón. Se le enviará una notificación para unirse."
         >
@@ -300,7 +301,7 @@ function UsersPageContent() {
             />
             
             <div className="pt-2 flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsModalOpen(false)} type="button">Cancelar</Button>
+              <Button variant="outline" disabled={submitting} onClick={() => setIsModalOpen(false)} type="button">Cancelar</Button>
               <Button type="submit" disabled={submitting}>
                 {submitting ? 'Enviando...' : 'Enviar Invitación'}
               </Button>

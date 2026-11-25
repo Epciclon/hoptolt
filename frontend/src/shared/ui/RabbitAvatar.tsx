@@ -18,18 +18,27 @@ interface RabbitAvatarProps {
 }
 
 const baseSizes: Record<AvatarSize, number> = {
-  xs: 1.5,   // w-6
-  sm: 2.0,   // w-8
-  md: 2.5,   // w-10
-  lg: 3.0,   // w-12
-  xl: 4.0,   // w-16
-  '2xl': 5.0 // w-20
+  xs: 1.5,
+  sm: 2.0,
+  md: 2.75,
+  lg: 3.5,
+  xl: 4.25,
+  '2xl': 5.0,
 };
 
-export const RabbitAvatar: React.FC<RabbitAvatarProps> = ({ 
-  imageUrl, 
-  alt = 'Conejo', 
-  size = 'md', 
+const maxSizes: Record<AvatarSize, number> = {
+  xs: 2.5,
+  sm: 3.25,
+  md: 5.0,
+  lg: 7.5,
+  xl: 8.0,
+  '2xl': 9.0,
+};
+
+export const RabbitAvatar: React.FC<RabbitAvatarProps> = ({
+  imageUrl,
+  alt = 'Conejo',
+  size = 'md',
   className = '',
   ring = false,
   rabbitId,
@@ -45,26 +54,33 @@ export const RabbitAvatar: React.FC<RabbitAvatarProps> = ({
   }, [imageUrl]);
 
   const remSize = baseSizes[size];
-  
-  // Usamos var(--avatar-scale, 1) que será controlado por Apariencia.
-  // min-width y min-height aseguran que el flex no encoja el avatar.
-  const dimensionStyle = {
-    width: `calc(${remSize}rem * var(--avatar-scale, 1))`,
-    height: `calc(${remSize}rem * var(--avatar-scale, 1))`,
-    minWidth: `calc(${remSize}rem * var(--avatar-scale, 1))`,
-    minHeight: `calc(${remSize}rem * var(--avatar-scale, 1))`
+  const maxRemSize = maxSizes[size];
+  const isSmallSize = size === 'xs' || size === 'sm';
+  const sizeExpr = `min(calc(${remSize}rem * var(--avatar-scale, 1.25)), ${maxRemSize}rem)`;
+  const radiusValue = isSmallSize
+    ? 'var(--avatar-radius-sm, 9999px)'
+    : 'var(--avatar-radius, 9999px)';
+
+  const dimensionStyle: React.CSSProperties = {
+    width: sizeExpr,
+    height: sizeExpr,
+    minWidth: sizeExpr,
+    minHeight: sizeExpr,
+    maxWidth: '100%',
+    aspectRatio: '1 / 1',
+    borderRadius: radiusValue,
   };
 
-  const ringClasses = ring 
-    ? 'border-2 border-primary-100 dark:border-primary-900/30 ring-2 ring-offset-1 ring-primary-500/50' 
+  const ringClasses = ring
+    ? 'border-2 border-primary-100 dark:border-primary-900/30 ring-2 ring-offset-1 ring-primary-500/50'
     : 'border border-strong shadow-sm';
 
   const canTriggerQuickView = !disableQuickView && Boolean(onClick || (quickView && (rabbitId || rabbitCode)));
   const interactiveClasses = canTriggerQuickView
-    ? 'group/avatar cursor-pointer pointer-events-auto relative z-20 hover:scale-110 hover:ring-2 hover:ring-primary-500 hover:shadow-md hover:brightness-105 focus:outline-none focus:ring-2 focus:ring-primary-500'
+    ? 'group/avatar cursor-pointer pointer-events-auto relative z-20 hover:scale-105 hover:ring-2 hover:ring-primary-500 hover:shadow-md hover:brightness-105 focus:outline-none focus:ring-2 focus:ring-primary-500'
     : 'hover:scale-105';
 
-  const baseClasses = `rounded-full flex-shrink-0 transition-all duration-200 ${ringClasses} ${interactiveClasses} ${className}`;
+  const baseClasses = `flex-shrink-0 transition-all duration-200 ${ringClasses} ${interactiveClasses} ${className}`;
 
   const handleAvatarClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -77,14 +93,13 @@ export const RabbitAvatar: React.FC<RabbitAvatarProps> = ({
     }
   };
 
-  // Placeholder text sizing relative to the container
-  const textSizeClasses = {
+  const textSizeClasses: Record<AvatarSize, string> = {
     xs: 'text-[7px]',
     sm: 'text-[8px]',
     md: 'text-[10px]',
     lg: 'text-xs',
     xl: 'text-sm',
-    '2xl': 'text-base'
+    '2xl': 'text-base',
   };
 
   if (canTriggerQuickView) {
@@ -101,7 +116,7 @@ export const RabbitAvatar: React.FC<RabbitAvatarProps> = ({
           <img
             src={imageUrl}
             alt={alt}
-            className="w-full h-full object-cover rounded-full transition-transform duration-300 group-hover/avatar:scale-110"
+            className="w-full h-full object-cover rounded-[inherit] transition-transform duration-300 group-hover/avatar:scale-110"
             onError={() => setHasError(true)}
           />
         ) : (
@@ -115,19 +130,19 @@ export const RabbitAvatar: React.FC<RabbitAvatarProps> = ({
 
   if (imageUrl && !hasError) {
     return (
-      <img 
-        src={imageUrl} 
-        alt={alt} 
-        style={dimensionStyle} 
-        className={`object-cover ${baseClasses}`} 
+      <img
+        src={imageUrl}
+        alt={alt}
+        style={dimensionStyle}
+        className={`object-cover ${baseClasses}`}
         onError={() => setHasError(true)}
       />
     );
   }
 
   return (
-    <div 
-      style={dimensionStyle} 
+    <div
+      style={dimensionStyle}
       className={`bg-theme-surface flex items-center justify-center text-center leading-tight px-0.5 text-theme-faint ${textSizeClasses[size]} font-medium uppercase ${baseClasses}`}
     >
       Sin foto

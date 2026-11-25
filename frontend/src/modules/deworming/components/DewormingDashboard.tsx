@@ -20,7 +20,7 @@ export function DewormingDashboard() {
       <CardHeader 
         title="Desparasitación" 
         subtitle="Anota y lleva el control de los días en que desparasitas a tus conejos" 
-        tutorialUrl="https://youtu.be/-fD8vl-BIMQ"
+        tutorialUrl="https://youtu.be/4e3xt7wXRZ8"
       />
       <DashboardTabs
         tabs={[

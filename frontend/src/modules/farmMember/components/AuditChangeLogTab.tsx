@@ -6,13 +6,30 @@ import { farmMemberService } from '../services/farmMember.service';
 import type { AuditLogItem, AuditLogFilters, FarmMember } from '../types/farmMember.types';
 import { SectionMessage } from '@/shared/ui';
 import { Pagination } from '@/shared/ui/Pagination';
-import { Filter, User } from 'lucide-react';
-import { type AuditDiffItem, AUDIT_IGNORED_DIFF_KEYS, useAuditLogsRealtime, AuditDateFilters, AuditClearFiltersButton, AuditFallbackBeforeAfter, AuditStandardDiffValue, AuditLogListCard, AuditLogDetailDialog } from './AuditLogShared';
+import { User } from 'lucide-react';
+import { type AuditDiffItem, AUDIT_IGNORED_DIFF_KEYS, useAuditLogsRealtime, AuditFiltersCard, type AuditFilterSelectConfig, AuditFallbackBeforeAfter, AuditStandardDiffValue, AuditLogListCard, AuditLogDetailDialog } from './AuditLogShared';
 
 interface AuditChangeLogTabProps {
   galponId: number;
   workers: FarmMember[];
 }
+
+const PROCESS_FILTER_OPTIONS = [
+  { value: 'cages', label: 'Jaulas' },
+  { value: 'races', label: 'Razas' },
+  { value: 'rabbits', label: 'Conejos' },
+  { value: 'assignments', label: 'Asignaciones' },
+  { value: 'reproduction', label: 'Reproducción' },
+  { value: 'genealogy', label: 'Genealogía' },
+  { value: 'reports', label: 'Reportes' },
+];
+
+const ACTION_FILTER_OPTIONS = [
+  { value: 'crear', label: 'Agregó' },
+  { value: 'modificar', label: 'Modificó' },
+  { value: 'eliminar', label: 'Eliminó' },
+  { value: 'consultar', label: 'Consultó' },
+];
 
 const ENTITY_LABELS: Record<string, string> = {
   cages: 'Jaulas',
@@ -386,79 +403,52 @@ export function AuditChangeLogTab({ galponId, workers }: Readonly<AuditChangeLog
   const renderWorkerActorIcon = (log: AuditLogItem, size: number) =>
     log.profile?.fullName ? log.profile.fullName.charAt(0).toUpperCase() : <User size={size} />;
 
+  const filterSelects: AuditFilterSelectConfig[] = [
+    {
+      id: 'filter-worker-select',
+      label: 'Trabajador',
+      placeholder: 'Filtrar por trabajador',
+      value: selectedWorkerId,
+      onChange: (val) => { setSelectedWorkerId(val); setPage(1); },
+      options: workers
+        .filter((w) => Boolean(w.profile?.id))
+        .map((w) => ({
+          value: String(w.profile!.id),
+          label: w.profile?.fullName || w.profile?.username || 'Trabajador',
+        })),
+    },
+    {
+      id: 'filter-process-select',
+      label: 'Proceso',
+      placeholder: 'Filtrar por proceso',
+      value: selectedEntity,
+      onChange: (val) => { setSelectedEntity(val); setPage(1); },
+      options: PROCESS_FILTER_OPTIONS,
+    },
+    {
+      id: 'filter-action-select',
+      label: 'Acción',
+      placeholder: 'Filtrar por acción',
+      value: selectedAction,
+      onChange: (val) => { setSelectedAction(val); setPage(1); },
+      options: ACTION_FILTER_OPTIONS,
+    },
+  ];
+
   return (
     <div className="space-y-4">
       <SectionMessage message="Registro de cambios realizados por tus trabajadores en los procesos sensibles del galpón." />
 
-      <div className="bg-card rounded-xl p-4 border border-strong shadow-sm space-y-3">
-        <div className="flex items-center gap-2 text-sm font-semibold text-main mb-1">
-          <Filter size={16} className="text-primary-500" />
-          <span>Filtros de búsqueda</span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          <div>
-            <label htmlFor="filter-worker-select" className="block text-xs font-medium text-muted mb-1">Trabajador</label>
-            <select
-              id="filter-worker-select"
-              value={selectedWorkerId}
-              onChange={(e) => { setSelectedWorkerId(e.target.value); setPage(1); }}
-              className="w-full text-sm bg-theme-surface dark:bg-slate-900 border border-default rounded-lg px-3 py-2 text-main dark:text-slate-100 focus:ring-2 focus:ring-primary-500 outline-none"
-            >
-              <option value="" className="bg-card dark:bg-slate-900 text-main">Todos los trabajadores</option>
-              {workers.map((w) => (
-                <option key={w.id} value={w.profile?.id} className="bg-card dark:bg-slate-900 text-main">
-                  {w.profile?.fullName || w.profile?.username}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="filter-process-select" className="block text-xs font-medium text-muted mb-1">Proceso</label>
-            <select
-              id="filter-process-select"
-              value={selectedEntity}
-              onChange={(e) => { setSelectedEntity(e.target.value); setPage(1); }}
-              className="w-full text-sm bg-theme-surface dark:bg-slate-900 border border-default rounded-lg px-3 py-2 text-main dark:text-slate-100 focus:ring-2 focus:ring-primary-500 outline-none"
-            >
-              <option value="" className="bg-card dark:bg-slate-900 text-main">Todos los procesos</option>
-              <option value="cages" className="bg-card dark:bg-slate-900 text-main">Jaulas</option>
-              <option value="races" className="bg-card dark:bg-slate-900 text-main">Razas</option>
-              <option value="rabbits" className="bg-card dark:bg-slate-900 text-main">Conejos</option>
-              <option value="assignments" className="bg-card dark:bg-slate-900 text-main">Asignaciones</option>
-              <option value="reproduction" className="bg-card dark:bg-slate-900 text-main">Reproducción</option>
-              <option value="genealogy" className="bg-card dark:bg-slate-900 text-main">Genealogía</option>
-              <option value="reports" className="bg-card dark:bg-slate-900 text-main">Reportes</option>
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="filter-action-select" className="block text-xs font-medium text-muted mb-1">Acción</label>
-            <select
-              id="filter-action-select"
-              value={selectedAction}
-              onChange={(e) => { setSelectedAction(e.target.value); setPage(1); }}
-              className="w-full text-sm bg-theme-surface dark:bg-slate-900 border border-default rounded-lg px-3 py-2 text-main dark:text-slate-100 focus:ring-2 focus:ring-primary-500 outline-none"
-            >
-              <option value="" className="bg-card dark:bg-slate-900 text-main">Todas las acciones</option>
-              <option value="crear" className="bg-card dark:bg-slate-900 text-main">Agregó</option>
-              <option value="modificar" className="bg-card dark:bg-slate-900 text-main">Modificó</option>
-              <option value="eliminar" className="bg-card dark:bg-slate-900 text-main">Eliminó</option>
-              <option value="consultar" className="bg-card dark:bg-slate-900 text-main">Consultó</option>
-            </select>
-          </div>
-
-          <AuditDateFilters
-            startDate={startDate}
-            endDate={endDate}
-            onStartDateChange={(val) => { setStartDate(val); setPage(1); }}
-            onEndDateChange={(val) => { setEndDate(val); setPage(1); }}
-          />
-        </div>
-
-        <AuditClearFiltersButton hasActiveFilters={hasActiveFilters} onResetFilters={handleResetFilters} />
-      </div>
+      <AuditFiltersCard
+        columnsClassName="lg:grid-cols-5"
+        selects={filterSelects}
+        startDate={startDate}
+        endDate={endDate}
+        onStartDateChange={(val) => { setStartDate(val); setPage(1); }}
+        onEndDateChange={(val) => { setEndDate(val); setPage(1); }}
+        hasActiveFilters={hasActiveFilters}
+        onResetFilters={handleResetFilters}
+      />
 
       <AuditLogListCard
         loading={loading}

@@ -4,18 +4,38 @@ import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 import { authService } from '@/modules/auth/services/auth.service';
 import { AuthLayout } from '@/modules/auth/components/AuthLayout';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function ActiveSessionPage() {
   const router = useRouter();
   const { user, refetchUser, loading } = useAuthContext();
+  const [activeAction, setActiveAction] = useState<'dashboard' | 'logout' | null>(null);
+  const isBusy = activeAction !== null;
 
   useEffect(() => {
     // If we loaded the auth state and there's no user, fallback to login
-    if (!loading && !user) {
+    if (!loading && !user && !isBusy) {
       router.replace('/login');
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, isBusy]);
+
+  const handleGoToDashboard = () => {
+    if (isBusy) return;
+    setActiveAction('dashboard');
+    router.push('/dashboard');
+  };
+
+  const handleLogout = async () => {
+    if (isBusy) return;
+    setActiveAction('logout');
+    try {
+      await authService.logout();
+      await refetchUser();
+      router.push('/login');
+    } catch {
+      setActiveAction(null);
+    }
+  };
 
   if (loading || !user) {
     return (
@@ -34,24 +54,25 @@ export default function ActiveSessionPage() {
         <p className="text-muted mb-8 text-lg leading-relaxed">
           Actualmente ha iniciado sesión como <span className="font-semibold text-main uppercase">{user.fullName || user.email}</span>, necesita salir antes de volver a entrar con un usuario diferente.
         </p>
-        <div className="flex gap-4 justify-center">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
           <button
             type="button"
-            onClick={() => router.push('/dashboard')}
-            className="px-6 py-3 border-2 border-teal-500 text-teal-600 font-semibold rounded-xl hover:bg-teal-50 transition-colors"
+            disabled={isBusy}
+            onClick={handleGoToDashboard}
+            className="px-6 py-3 border-2 border-teal-500 text-teal-600 dark:text-teal-400 font-semibold rounded-xl hover:bg-teal-50 dark:hover:bg-teal-950/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Ir al Dashboard
+            {activeAction === 'dashboard' ? 'Ingresando...' : 'Ir al Dashboard'}
           </button>
           <button
             type="button"
-            onClick={async () => {
-              await authService.logout();
-              await refetchUser();
-              router.push('/login');
-            }}
-            className="px-6 py-3 bg-red-500 text-white font-semibold rounded-xl hover:bg-red-600 transition-colors shadow-md hover:-translate-y-0.5"
+            disabled={isBusy}
+            onClick={handleLogout}
+            className="px-6 py-3 bg-red-500 text-white font-semibold rounded-xl hover:bg-red-600 transition-colors shadow-md hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
           >
-            Cerrar sesión
+            {activeAction === 'logout' && (
+              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            )}
+            {activeAction === 'logout' ? 'Cerrando sesión...' : 'Cerrar sesión'}
           </button>
         </div>
       </div>

@@ -167,12 +167,19 @@ export function ConfirmDialog({
   variant = 'danger',
   centerHeader = true,
 }: Readonly<ConfirmDialogProps>) {
+  const handleSafeClose = () => {
+    if (!loading) {
+      onClose();
+    }
+  };
+
   return (
-    <Dialog open={open} onClose={onClose} title={title} description={description} size="sm" hideClose centerHeader={centerHeader}>
+    <Dialog open={open} onClose={handleSafeClose} title={title} description={description} size="sm" hideClose centerHeader={centerHeader}>
       <div className="flex gap-3 pt-2">
         <Button
           variant="outline"
-          onClick={onClose}
+          onClick={handleSafeClose}
+          disabled={loading}
           className="flex-1"
         >
           {cancelLabel}
@@ -181,6 +188,7 @@ export function ConfirmDialog({
           variant={variant}
           onClick={onConfirm}
           loading={loading}
+          disabled={loading}
           className="flex-1"
         >
           {confirmLabel}

@@ -543,7 +543,12 @@ export function ReportGenerator({ galponId, galpon, onToast }: Readonly<ReportGe
     return (
         <Card padding="none" className="min-h-[calc(100vh-7rem)] flex flex-col">
             <div className="p-3.5 sm:p-5 md:p-6 pb-2 sm:pb-3 border-b border-default">
-                <CardHeader title="Tus Estadísticas y Reportes" subtitle="Genera documentos y mira cómo va el rendimiento de tu granja" className="mb-0" />
+                <CardHeader
+                    title="Tus Estadísticas y Reportes"
+                    subtitle="Genera documentos y mira cómo va el rendimiento de tu granja"
+                    tutorialUrl="https://youtu.be/cvQbPRScbFQ"
+                    className="mb-0"
+                />
             </div>
 
             <div className="flex flex-col xl:flex-row gap-4 sm:gap-6 p-3.5 sm:p-5 md:p-6 flex-1">

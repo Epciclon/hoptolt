@@ -6,12 +6,25 @@ import { farmMemberService } from '../services/farmMember.service';
 import type { AuditLogItem, AuditLogFilters } from '../types/farmMember.types';
 import { SectionMessage } from '@/shared/ui';
 import { Pagination } from '@/shared/ui/Pagination';
-import { Filter, Sparkles } from 'lucide-react';
-import { type AuditDiffItem, AUDIT_IGNORED_DIFF_KEYS, useAuditLogsRealtime, AuditDateFilters, AuditClearFiltersButton, AuditFallbackBeforeAfter, AuditStandardDiffValue, AuditLogListCard, AuditLogDetailDialog } from './AuditLogShared';
+import { Sparkles } from 'lucide-react';
+import { type AuditDiffItem, AUDIT_IGNORED_DIFF_KEYS, useAuditLogsRealtime, AuditFiltersCard, type AuditFilterSelectConfig, AuditFallbackBeforeAfter, AuditStandardDiffValue, AuditLogListCard, AuditLogDetailDialog } from './AuditLogShared';
 
 interface SystemAuditLogTabProps {
   galponId: number;
 }
+
+const SYSTEM_PROCESS_OPTIONS = [
+  { value: 'reproduction', label: 'Reproducción' },
+  { value: 'growth', label: 'Crecimiento' },
+  { value: 'feeding', label: 'Alimentación' },
+];
+
+const SYSTEM_ACTION_OPTIONS = [
+  { value: 'Paso a gestación', label: 'Paso a gestación' },
+  { value: 'Paso a lactancia', label: 'Paso a lactancia' },
+  { value: 'Cálculo de crecimiento', label: 'Cálculo de crecimiento' },
+  { value: 'Turno cerrado con pendientes', label: 'Turno con pendientes' },
+];
 
 const ENTITY_LABELS: Record<string, string> = {
   reproduction: 'Reproducción',
@@ -247,58 +260,39 @@ export function SystemAuditLogTab({ galponId }: Readonly<SystemAuditLogTabProps>
 
   const hasActiveFilters = Boolean(selectedEntity || selectedAction || startDate || endDate);
 
+  const filterSelects: AuditFilterSelectConfig[] = [
+    {
+      id: 'filter-process-select',
+      label: 'Proceso',
+      placeholder: 'Filtrar por proceso',
+      value: selectedEntity,
+      onChange: (val) => { setSelectedEntity(val); setPage(1); },
+      options: SYSTEM_PROCESS_OPTIONS,
+    },
+    {
+      id: 'filter-action-select',
+      label: 'Acción',
+      placeholder: 'Filtrar por acción',
+      value: selectedAction,
+      onChange: (val) => { setSelectedAction(val); setPage(1); },
+      options: SYSTEM_ACTION_OPTIONS,
+    },
+  ];
+
   return (
     <div className="space-y-4">
       <SectionMessage message="Registro automático de acciones ejecutadas por el sistema HopTolt en este galpón." />
 
-      <div className="bg-card rounded-xl p-4 border border-strong shadow-sm space-y-3">
-        <div className="flex items-center gap-2 text-sm font-semibold text-main mb-1">
-          <Filter size={16} className="text-primary-500" />
-          <span>Filtros de búsqueda</span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div>
-            <label htmlFor="filter-process-select" className="block text-xs font-medium text-muted mb-1">Proceso</label>
-            <select
-              id="filter-process-select"
-              value={selectedEntity}
-              onChange={(e) => { setSelectedEntity(e.target.value); setPage(1); }}
-              className="w-full text-sm bg-theme-surface dark:bg-slate-900 border border-default rounded-lg px-3 py-2 text-main dark:text-slate-100 focus:ring-2 focus:ring-primary-500 outline-none"
-            >
-              <option value="" className="bg-card dark:bg-slate-900 text-main">Todos los procesos</option>
-              <option value="reproduction" className="bg-card dark:bg-slate-900 text-main">Reproducción</option>
-              <option value="growth" className="bg-card dark:bg-slate-900 text-main">Crecimiento</option>
-              <option value="feeding" className="bg-card dark:bg-slate-900 text-main">Alimentación</option>
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="filter-action-select" className="block text-xs font-medium text-muted mb-1">Acción</label>
-            <select
-              id="filter-action-select"
-              value={selectedAction}
-              onChange={(e) => { setSelectedAction(e.target.value); setPage(1); }}
-              className="w-full text-sm bg-theme-surface dark:bg-slate-900 border border-default rounded-lg px-3 py-2 text-main dark:text-slate-100 focus:ring-2 focus:ring-primary-500 outline-none"
-            >
-              <option value="" className="bg-card dark:bg-slate-900 text-main">Todas las acciones</option>
-              <option value="Paso a gestación" className="bg-card dark:bg-slate-900 text-main">Paso a gestación</option>
-              <option value="Paso a lactancia" className="bg-card dark:bg-slate-900 text-main">Paso a lactancia</option>
-              <option value="Cálculo de crecimiento" className="bg-card dark:bg-slate-900 text-main">Cálculo de crecimiento</option>
-              <option value="Turno cerrado con pendientes" className="bg-card dark:bg-slate-900 text-main">Turno con pendientes</option>
-            </select>
-          </div>
-
-          <AuditDateFilters
-            startDate={startDate}
-            endDate={endDate}
-            onStartDateChange={(val) => { setStartDate(val); setPage(1); }}
-            onEndDateChange={(val) => { setEndDate(val); setPage(1); }}
-          />
-        </div>
-
-        <AuditClearFiltersButton hasActiveFilters={hasActiveFilters} onResetFilters={handleResetFilters} />
-      </div>
+      <AuditFiltersCard
+        columnsClassName="lg:grid-cols-4"
+        selects={filterSelects}
+        startDate={startDate}
+        endDate={endDate}
+        onStartDateChange={(val) => { setStartDate(val); setPage(1); }}
+        onEndDateChange={(val) => { setEndDate(val); setPage(1); }}
+        hasActiveFilters={hasActiveFilters}
+        onResetFilters={handleResetFilters}
+      />
 
       <AuditLogListCard
         loading={loading}

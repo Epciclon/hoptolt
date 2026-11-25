@@ -10,6 +10,7 @@ import { authService } from '@/modules/auth/services/auth.service';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 import { AuthLayout } from '@/modules/auth/components/AuthLayout';
 import { useToast } from '@/shared/contexts/ToastContext';
+import { APP_VERSION, APP_COPYRIGHT } from '@/lib/constants';
 
 const schema = z.object({
   identifier: z.string().min(1, 'El usuario o correo es obligatorio.'),
@@ -179,9 +180,9 @@ export default function LoginPage() {
           </Link>
         </p>
         <div className="flex items-center justify-center gap-3 text-theme-faint text-xs">
-          <span>v3.0.0</span>
+          <span>v{APP_VERSION}</span>
           <span>•</span>
-          <span>© 2025 Hoptolt Ecuador</span>
+          <span>{APP_COPYRIGHT}</span>
         </div>
       </div>
     </AuthLayout>

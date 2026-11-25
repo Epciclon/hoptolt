@@ -10,6 +10,7 @@ import { AuthLayout } from '@/modules/auth/components/AuthLayout';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { createClient } from '@/utils/supabase/client';
 import { translateAuthError } from '@/modules/auth/utils/auth-errors';
+import { APP_VERSION, APP_COPYRIGHT } from '@/lib/constants';
 
 const schema = z
   .object({
@@ -180,11 +181,12 @@ function PasswordToggleIcon({ visible }: Readonly<PasswordToggleIconProps>) {
 
 interface RecoveryErrorPanelProps {
   errorMessage: string | null;
+  disabled?: boolean;
   onExitToForgot: () => void;
   onExitToLogin: () => void;
 }
 
-function RecoveryErrorPanel({ errorMessage, onExitToForgot, onExitToLogin }: Readonly<RecoveryErrorPanelProps>) {
+function RecoveryErrorPanel({ errorMessage, disabled = false, onExitToForgot, onExitToLogin }: Readonly<RecoveryErrorPanelProps>) {
   return (
     <div className="space-y-6 animate-fade-in-right">
       <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/60 rounded-2xl p-6 text-center">
@@ -201,8 +203,9 @@ function RecoveryErrorPanel({ errorMessage, onExitToForgot, onExitToLogin }: Rea
 
       <button
         type="button"
+        disabled={disabled}
         onClick={onExitToForgot}
-        className="w-full py-4 bg-gradient-to-r from-teal-500 to-teal-600 text-white font-semibold rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+        className="w-full py-4 bg-gradient-to-r from-teal-500 to-teal-600 text-white font-semibold rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
       >
         Solicitar un nuevo enlace
       </button>
@@ -210,8 +213,9 @@ function RecoveryErrorPanel({ errorMessage, onExitToForgot, onExitToLogin }: Rea
       <div className="text-center pt-2">
         <button
           type="button"
+          disabled={disabled}
           onClick={onExitToLogin}
-          className="text-sm text-teal-600 dark:text-teal-400 font-semibold hover:underline inline-flex items-center gap-1"
+          className="text-sm text-teal-600 dark:text-teal-400 font-semibold hover:underline inline-flex items-center gap-1 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           ← Volver al inicio de sesión
         </button>
@@ -225,6 +229,7 @@ export default function ResetPasswordPage() {
   const { showToast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
 
   const {
     isVerifying,
@@ -243,7 +248,10 @@ export default function ResetPasswordPage() {
     resolver: zodResolver(schema),
   });
 
+  const isBusy = isSubmitting || isExiting;
+
   const onSubmit = async (values: FormValues) => {
+    if (isBusy) return;
     try {
       await authService.resetPassword(values.password);
       await clearPhantomSession();
@@ -262,13 +270,25 @@ export default function ResetPasswordPage() {
   };
 
   const handleExitToLogin = async () => {
-    await clearPhantomSession();
-    router.push('/login');
+    if (isBusy) return;
+    setIsExiting(true);
+    try {
+      await clearPhantomSession();
+      router.push('/login');
+    } catch {
+      setIsExiting(false);
+    }
   };
 
   const handleExitToForgot = async () => {
-    await clearPhantomSession();
-    router.push('/forgot-password');
+    if (isBusy) return;
+    setIsExiting(true);
+    try {
+      await clearPhantomSession();
+      router.push('/forgot-password');
+    } catch {
+      setIsExiting(false);
+    }
   };
 
   const renderMainContent = () => {
@@ -285,6 +305,7 @@ export default function ResetPasswordPage() {
       return (
         <RecoveryErrorPanel
           errorMessage={errorMessage}
+          disabled={isBusy}
           onExitToForgot={handleExitToForgot}
           onExitToLogin={handleExitToLogin}
         />
@@ -360,7 +381,7 @@ export default function ResetPasswordPage() {
         <button
           type="submit"
           id="btn-update-password"
-          disabled={isSubmitting}
+          disabled={isBusy}
           className="w-full py-3 lg:py-3.5 bg-gradient-to-r from-teal-500 to-teal-600 text-white font-semibold rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none relative overflow-hidden"
         >
           {isSubmitting ? (
@@ -376,8 +397,9 @@ export default function ResetPasswordPage() {
         <div className="text-center pt-2">
           <button
             type="button"
+            disabled={isBusy}
             onClick={handleExitToLogin}
-            className="text-sm text-teal-600 dark:text-teal-400 font-semibold hover:underline inline-flex items-center gap-1"
+            className="text-sm text-teal-600 dark:text-teal-400 font-semibold hover:underline inline-flex items-center gap-1 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             ← Cancelar y volver al login
           </button>
@@ -397,9 +419,9 @@ export default function ResetPasswordPage() {
 
       <div className="mt-5 lg:mt-6 text-center animate-fade-in-right" style={{ animationDelay: '0.8s' }}>
         <div className="flex items-center justify-center gap-3 text-theme-faint text-xs">
-          <span>v3.0.0</span>
+          <span>v{APP_VERSION}</span>
           <span>•</span>
-          <span>© 2025 Hoptolt Ecuador</span>
+          <span>{APP_COPYRIGHT}</span>
         </div>
       </div>
     </AuthLayout>

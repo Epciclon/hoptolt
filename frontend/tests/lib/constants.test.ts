@@ -9,6 +9,8 @@ import {
   VACCINE_TYPES,
   MORTALITY_CAUSES,
   USER_ROLES,
+  APP_VERSION,
+  APP_COPYRIGHT,
 } from '@/lib/constants';
 
 describe('Constants', () => {
@@ -80,6 +82,13 @@ describe('Constants', () => {
   describe('USER_ROLES', () => {
     it('has correct roles', () => {
       expect(USER_ROLES).toEqual(['Propietario', 'Administrador', 'Trabajador']);
+    });
+  });
+
+  describe('APP_VERSION & APP_COPYRIGHT', () => {
+    it('exports expected application version and copyright', () => {
+      expect(APP_VERSION).toBe('3.8.0');
+      expect(APP_COPYRIGHT).toContain('2026');
     });
   });
 });

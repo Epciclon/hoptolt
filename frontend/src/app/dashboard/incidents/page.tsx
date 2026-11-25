@@ -18,7 +18,7 @@ import { IncidentFormModal } from '@/modules/incident/components/IncidentFormMod
 import { IncidentDetailModal } from '@/modules/incident/components/IncidentDetailModal';
 import type { Incident } from '@/modules/incident/types/incident.types';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
-import { Card, Button, Pagination, ConfirmDialog, Select } from '@/shared/ui';
+import { Card, Button, Pagination, ConfirmDialog, Select, TutorialButton } from '@/shared/ui';
 import type { FilterConfig } from '@/shared/ui/FilterBar';
 import { cn } from '@/lib/utils';
 import { formatFriendlyDate } from '@/shared/utils/dateUtils';
@@ -466,7 +466,7 @@ export default function IncidentsPage() {
   const filterConfigs: FilterConfig[] = useMemo(() => [
     {
       key: 'category',
-      placeholder: 'Todos los tipos',
+      placeholder: 'Filtrar por tipo',
       value: category === 'all' ? '' : category,
       onChange: (val) => {
         setCategory(val || 'all');
@@ -483,7 +483,7 @@ export default function IncidentsPage() {
     },
     {
       key: 'module',
-      placeholder: 'Todas las labores',
+      placeholder: 'Filtrar por labor',
       value: moduleFilter === 'all' ? '' : moduleFilter,
       onChange: (val) => {
         setModuleFilter(val || 'all');
@@ -536,7 +536,10 @@ export default function IncidentsPage() {
         {/* Encabezado limpio con título y descripción */}
         <div className="p-4 sm:p-6 md:p-8 border-b border-default bg-card flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-main">Novedades del Galpón</h1>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <h1 className="text-2xl font-bold text-main">Novedades del Galpón</h1>
+              <TutorialButton videoUrl="https://youtu.be/O0qjldCgdNQ" />
+            </div>
             <p className="text-muted mt-1 text-sm">
               {userRole === 'owner'
                 ? 'Supervisa, atiende y responde a las novedades e incidencias reportadas por el personal'

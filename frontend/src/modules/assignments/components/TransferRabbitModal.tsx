@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { Dialog, Button, Input } from '@/shared/ui';
+import { X } from 'lucide-react';
+import { Dialog, Button, Input, Select } from '@/shared/ui';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { useAssignments } from '../hooks/useAssignments';
 import {
@@ -26,7 +27,7 @@ interface TransferRabbitModalProps {
   sourceCageType: string;
 }
 
-type CageTypeFilter = 'all' | 'engorde' | 'reproducción';
+type CageTypeFilter = '' | 'engorde' | 'reproducción';
 
 function getSexBadgeInfo(sex?: string) {
   const normalized = sex?.trim().toLowerCase();
@@ -57,7 +58,7 @@ export function TransferRabbitModal({
 
   const [targetCageId, setTargetCageId] = useState<number | null>(null);
   const [search, setSearch] = useState('');
-  const [cageTypeFilter, setCageTypeFilter] = useState<CageTypeFilter>('all');
+  const [cageTypeFilter, setCageTypeFilter] = useState<CageTypeFilter>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const hasRabbitOver3Months = rabbits.some((r) => {
@@ -84,7 +85,7 @@ export function TransferRabbitModal({
       .filter((c) => {
         if (c.id === currentCageId) return false;
         const matchesType =
-          cageTypeFilter === 'all' || c.type.toLowerCase() === cageTypeFilter;
+          !cageTypeFilter || c.type.toLowerCase() === cageTypeFilter;
         if (!matchesType) return false;
 
         const matchesSearch =
@@ -290,31 +291,36 @@ export function TransferRabbitModal({
             )}
           </div>
 
-          <Input
-            placeholder="Buscar jaula destino por número o tipo..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-
-          <div className="flex flex-wrap gap-1.5">
-            {([
-              { key: 'all', label: 'Todas' },
-              { key: 'engorde', label: 'Engorde' },
-              { key: 'reproducción', label: 'Reproducción' },
-            ] as const).map((tab) => (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => setCageTypeFilter(tab.key)}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-                  cageTypeFilter === tab.key
-                    ? 'bg-primary-600 text-white border-primary-600'
-                    : 'bg-theme-surface text-muted border-default hover:text-main'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+          <div className="flex flex-col sm:flex-row gap-2.5">
+            <div className="flex-1">
+              <Input
+                placeholder="Buscar jaula destino por número o tipo..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <div className="w-full sm:w-44 relative">
+              <Select
+                placeholder="Filtrar por tipo"
+                value={cageTypeFilter}
+                onChange={(e) => setCageTypeFilter(e.target.value as CageTypeFilter)}
+                className={cageTypeFilter ? 'pr-12' : ''}
+                options={[
+                  { value: 'engorde', label: 'Engorde' },
+                  { value: 'reproducción', label: 'Reproducción' },
+                ]}
+              />
+              {cageTypeFilter && (
+                <button
+                  type="button"
+                  onClick={() => setCageTypeFilter('')}
+                  className="absolute right-7 top-1/2 -translate-y-1/2 p-1 text-theme-faint hover:text-red-500 rounded-full transition-colors flex items-center justify-center bg-card"
+                  title="Limpiar"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
           </div>
 
           <p className="text-xs text-muted">

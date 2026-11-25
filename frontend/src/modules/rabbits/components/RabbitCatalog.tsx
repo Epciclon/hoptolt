@@ -84,9 +84,9 @@ export function RabbitCatalog({ onSuccess }: Readonly<RabbitCatalogProps>) {
         onSearchChange={(val) => { setSearch(val); setPage(1); }}
         searchPlaceholder="Buscar por código o nombre..."
         filters={[
-          { key: 'race', placeholder: 'Todas las Razas', options: raceOptions, value: filters.race || '', onChange: (val) => { setRace(val); setPage(1); } },
-          { key: 'sex', placeholder: 'Cualquier Sexo', options: rabbitSexOptions, value: filters.sex || '', onChange: (val) => { setSex(val); setPage(1); } },
-          { key: 'purpose', placeholder: 'Todo Propósito', options: purposeOptions, value: filters.purpose || '', onChange: (val) => { setPurpose(val); setPage(1); } }
+          { key: 'race', placeholder: 'Filtrar por raza', options: raceOptions, value: filters.race || '', onChange: (val) => { setRace(val); setPage(1); } },
+          { key: 'sex', placeholder: 'Filtrar por sexo', options: rabbitSexOptions, value: filters.sex || '', onChange: (val) => { setSex(val); setPage(1); } },
+          { key: 'purpose', placeholder: 'Filtrar por propósito', options: purposeOptions, value: filters.purpose || '', onChange: (val) => { setPurpose(val); setPage(1); } }
         ]}
       />
 

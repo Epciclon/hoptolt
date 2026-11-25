@@ -5,7 +5,13 @@ import { Card, Button } from '@/shared/ui';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { Type, Bold, Moon, Contrast, ALargeSmall, Image as ImageIcon, Bell, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { applyThemeToDOM as applyToDOM } from '@/hooks/useThemeSync';
+import {
+  applyThemeToDOM as applyToDOM,
+  DEFAULT_AVATAR_SCALE,
+  DEFAULT_AVATAR_SHAPE,
+  parseAvatarShape,
+  type AvatarShape,
+} from '@/hooks/useThemeSync';
 
 const FONT_SIZES = [
   { key: '14px', label: 'Pequeña'      },
@@ -17,11 +23,17 @@ const FONT_SIZES = [
 ];
 
 const AVATAR_SIZES = [
-  { key: '1',    label: 'Pequeño' },
-  { key: '1.25', label: 'Mediano' },
-  { key: '1.5',  label: 'Grande' },
-  { key: '1.75', label: 'Extra Grande' },
-  { key: '2',    label: 'Gigante' },
+  { key: '1',    label: 'Pequeño',      previewPx: 44, isDefault: false },
+  { key: '1.25', label: 'Mediano',      previewPx: 56, isDefault: true  },
+  { key: '1.5',  label: 'Grande',       previewPx: 68, isDefault: false },
+  { key: '1.75', label: 'Extra Grande', previewPx: 80, isDefault: false },
+  { key: '2',    label: 'Gigante',      previewPx: 92, isDefault: false },
+];
+
+const AVATAR_SHAPES: { key: AvatarShape; label: string; description: string; radiusClass: string }[] = [
+  { key: 'circle',  label: 'Circular',            description: 'Forma redonda clásica',   radiusClass: 'rounded-full' },
+  { key: 'rounded', label: 'Cuadrado redondeado', description: 'Esquinas suaves',         radiusClass: 'rounded-xl'   },
+  { key: 'square',  label: 'Cuadrado recto',      description: 'Esquinas rectas y limpias', radiusClass: 'rounded-none' },
 ];
 
 const FONT_FAMILIES = [
@@ -45,7 +57,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { id: 'size',     label: 'Tamaño de Letra',       icon: ALargeSmall, ready: true  },
-  { id: 'avatar',   label: 'Tamaño de Avatares',    icon: ImageIcon,   ready: true  },
+  { id: 'avatar',   label: 'Avatares y Fotos',      icon: ImageIcon,   ready: true  },
   { id: 'family',   label: 'Tipo de Letra',          icon: Type,        ready: true  },
   { id: 'bold',     label: 'Texto en Negrilla',      icon: Bold,        ready: true  },
   { id: 'dark',     label: 'Modo Oscuro',            icon: Moon,        ready: true },
@@ -183,7 +195,8 @@ export default function SettingsPage() {
 
   const [activeSection, setActiveSection] = useState<Section>('size');
   const [fontSize,   setFontSize]   = useState('16px');
-  const [avatarScale, setAvatarScale] = useState('1');
+  const [avatarScale, setAvatarScale] = useState(DEFAULT_AVATAR_SCALE);
+  const [avatarShape, setAvatarShape] = useState<AvatarShape>(DEFAULT_AVATAR_SHAPE);
   const [fontFamily, setFontFamily] = useState('');
   const [bold,       setBold]       = useState(false);
   const [theme,      setTheme]      = useState<'light' | 'dark' | 'contrast'>('light');
@@ -193,7 +206,8 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const size   = localStorage.getItem('fontSize')   ?? '16px';
-    const avScale = localStorage.getItem('avatarScale') ?? '1';
+    const avScale = localStorage.getItem('avatarScale') ?? DEFAULT_AVATAR_SCALE;
+    const avShape = parseAvatarShape(localStorage.getItem('avatarShape'));
     const family = localStorage.getItem('fontFamily') ?? '';
     const bld    = localStorage.getItem('fontBold')   === 'true';
     const thm    = (localStorage.getItem('theme') as any) ?? 'light';
@@ -202,54 +216,62 @@ export default function SettingsPage() {
     const prevInc = localStorage.getItem('hoptolt_preview_incidents') !== 'false';
     setFontSize(size);
     setAvatarScale(avScale);
+    setAvatarShape(avShape);
     setFontFamily(family);
     setBold(bld);
     setTheme(thm);
     setPreviewNotifications(prevNotif);
     setPreviewAlerts(prevAlert);
     setPreviewIncidents(prevInc);
-    applyToDOM(size, family, bld, thm, avScale);
+    applyToDOM(size, family, bld, thm, avScale, avShape);
   }, []);
 
   const selectSize = useCallback((key: string) => {
     setFontSize(key);
-    applyToDOM(key, fontFamily, bold, theme, avatarScale);
+    applyToDOM(key, fontFamily, bold, theme, avatarScale, avatarShape);
     localStorage.setItem('fontSize', key);
     showToast('Tamaño de letra actualizado', 'success');
-  }, [fontFamily, bold, theme, avatarScale, showToast]);
+  }, [fontFamily, bold, theme, avatarScale, avatarShape, showToast]);
 
   const selectAvatarScale = useCallback((key: string) => {
     setAvatarScale(key);
-    applyToDOM(fontSize, fontFamily, bold, theme, key);
+    applyToDOM(fontSize, fontFamily, bold, theme, key, avatarShape);
     localStorage.setItem('avatarScale', key);
     showToast('Tamaño de avatares actualizado', 'success');
-  }, [fontSize, fontFamily, bold, theme, showToast]);
+  }, [fontSize, fontFamily, bold, theme, avatarShape, showToast]);
+
+  const selectAvatarShape = useCallback((shape: AvatarShape) => {
+    setAvatarShape(shape);
+    applyToDOM(fontSize, fontFamily, bold, theme, avatarScale, shape);
+    localStorage.setItem('avatarShape', shape);
+    showToast('Forma de avatares actualizada', 'success');
+  }, [fontSize, fontFamily, bold, theme, avatarScale, showToast]);
 
   const selectFamily = useCallback((key: string) => {
     setFontFamily(key);
-    applyToDOM(fontSize, key, bold, theme, avatarScale);
+    applyToDOM(fontSize, key, bold, theme, avatarScale, avatarShape);
     if (key) localStorage.setItem('fontFamily', key);
     else localStorage.removeItem('fontFamily');
     showToast('Tipo de letra actualizado', 'success');
-  }, [fontSize, bold, theme, avatarScale, showToast]);
+  }, [fontSize, bold, theme, avatarScale, avatarShape, showToast]);
 
   const toggleBold = useCallback((opt: boolean) => {
     setBold(opt);
-    applyToDOM(fontSize, fontFamily, opt, theme, avatarScale);
+    applyToDOM(fontSize, fontFamily, opt, theme, avatarScale, avatarShape);
     localStorage.setItem('fontBold', String(opt));
     showToast(opt ? 'Negrilla activada' : 'Negrilla desactivada', 'success');
-  }, [fontSize, fontFamily, theme, avatarScale, showToast]);
+  }, [fontSize, fontFamily, theme, avatarScale, avatarShape, showToast]);
 
   const selectTheme = useCallback((thm: 'light' | 'dark' | 'contrast') => {
     setTheme(thm);
-    applyToDOM(fontSize, fontFamily, bold, thm, avatarScale);
+    applyToDOM(fontSize, fontFamily, bold, thm, avatarScale, avatarShape);
     localStorage.setItem('theme', thm);
     
     let msg = 'Modo normal activado';
     if (thm === 'dark') msg = 'Modo oscuro activado';
     else if (thm === 'contrast') msg = 'Alto contraste activado';
     showToast(msg, 'success');
-  }, [fontSize, fontFamily, bold, avatarScale, showToast]);
+  }, [fontSize, fontFamily, bold, avatarScale, avatarShape, showToast]);
 
   const updatePreviewSetting = useCallback((
     setter: React.Dispatch<React.SetStateAction<boolean>>,
@@ -266,16 +288,18 @@ export default function SettingsPage() {
 
   const resetDefaults = () => {
     setFontSize('16px');
-    setAvatarScale('1');
+    setAvatarScale(DEFAULT_AVATAR_SCALE);
+    setAvatarShape(DEFAULT_AVATAR_SHAPE);
     setFontFamily('');
     setBold(false);
     setTheme('light');
     setPreviewNotifications(true);
     setPreviewAlerts(true);
     setPreviewIncidents(true);
-    applyToDOM('16px', '', false, 'light', '1');
+    applyToDOM('16px', '', false, 'light', DEFAULT_AVATAR_SCALE, DEFAULT_AVATAR_SHAPE);
     localStorage.setItem('fontSize', '16px');
-    localStorage.setItem('avatarScale', '1');
+    localStorage.setItem('avatarScale', DEFAULT_AVATAR_SCALE);
+    localStorage.removeItem('avatarShape');
     localStorage.removeItem('fontFamily');
     localStorage.removeItem('fontBold');
     localStorage.removeItem('theme');
@@ -373,35 +397,103 @@ export default function SettingsPage() {
               <Card>
                 <h3 className="text-lg font-bold text-main mb-1 flex items-center gap-2">
                   <ImageIcon className="text-primary-500" size={20} />
-                  Tamaño de Avatares - Mini fotos
+                  Avatares y Mini fotos
                 </h3>
-                <p className="text-sm text-muted mb-6">Ajusta el tamaño global de las fotos de los conejos en todo el sistema.</p>
+                <p className="text-sm text-muted mb-6">
+                  Elige la forma y el tamaño de las fotos de los conejos en las tarjetas y listas del sistema.
+                </p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                  {AVATAR_SIZES.map((f) => (
-                    <button type="button"
-                      key={f.key}
-                      onClick={() => selectAvatarScale(f.key)}
-                      className={cn(
-                        'relative flex flex-col items-center gap-2 p-6 rounded-xl border-2 transition-all text-center',
-                        avatarScale === f.key
-                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 shadow-sm'
-                          : 'border-strong bg-card hover:border-primary-300 dark:hover:border-primary-700/50 hover:bg-theme-surface dark:hover:bg-slate-800/50',
-                      )}
-                    >
-                      {avatarScale === f.key && (
-                        <span className="absolute top-2 right-2 w-4 h-4 bg-primary-500 rounded-full flex items-center justify-center">
-                          <CheckIcon />
-                        </span>
-                      )}
-                      <div style={{ transform: `scale(${f.key})` }} className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 border border-strong flex items-center justify-center text-[10px] text-theme-faint mb-2 transition-transform">
-                        Sin foto
-                      </div>
-                      <span className="font-semibold text-main leading-none mt-2">
-                        {f.label}
-                      </span>
-                    </button>
-                  ))}
+                <div className="mb-7">
+                  <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">
+                    Forma de los Avatares
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                    {AVATAR_SHAPES.map((shape) => (
+                      <button
+                        type="button"
+                        key={shape.key}
+                        onClick={() => selectAvatarShape(shape.key)}
+                        className={cn(
+                          'relative flex flex-col items-center gap-2.5 p-4 rounded-xl border-2 transition-all text-center cursor-pointer',
+                          avatarShape === shape.key
+                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 shadow-sm'
+                            : 'border-strong bg-card hover:border-primary-300 dark:hover:border-primary-700/50 hover:bg-theme-surface dark:hover:bg-slate-800/50',
+                        )}
+                      >
+                        {avatarShape === shape.key && (
+                          <span className="absolute top-2 right-2 w-4 h-4 bg-primary-500 rounded-full flex items-center justify-center">
+                            <CheckIcon />
+                          </span>
+                        )}
+                        <div
+                          className={cn(
+                            'w-12 h-12 bg-slate-200 dark:bg-slate-800 border border-strong flex items-center justify-center text-[10px] text-theme-faint font-medium uppercase',
+                            shape.radiusClass,
+                          )}
+                        >
+                          Sin foto
+                        </div>
+                        <div>
+                          <span className="font-semibold text-sm text-main block leading-tight">
+                            {shape.label}
+                          </span>
+                          <span className="text-xs text-muted block mt-0.5">
+                            {shape.description}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">
+                    Tamaño de Avatares
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                    {AVATAR_SIZES.map((f) => {
+                      const activeShapeRadius =
+                        AVATAR_SHAPES.find((s) => s.key === avatarShape)?.radiusClass ?? 'rounded-full';
+                      return (
+                        <button
+                          type="button"
+                          key={f.key}
+                          onClick={() => selectAvatarScale(f.key)}
+                          className={cn(
+                            'relative flex flex-col items-center justify-between gap-3 p-4 rounded-xl border-2 transition-all text-center cursor-pointer',
+                            avatarScale === f.key
+                              ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 shadow-sm'
+                              : 'border-strong bg-card hover:border-primary-300 dark:hover:border-primary-700/50 hover:bg-theme-surface dark:hover:bg-slate-800/50',
+                          )}
+                        >
+                          {avatarScale === f.key && (
+                            <span className="absolute top-2 right-2 w-4 h-4 bg-primary-500 rounded-full flex items-center justify-center">
+                              <CheckIcon />
+                            </span>
+                          )}
+                          <div className="h-24 flex items-center justify-center w-full">
+                            <div
+                              style={{ width: f.previewPx, height: f.previewPx }}
+                              className={cn(
+                                'bg-slate-200 dark:bg-slate-800 border border-strong flex items-center justify-center text-[10px] text-theme-faint font-medium uppercase transition-all',
+                                activeShapeRadius,
+                              )}
+                            >
+                              Sin foto
+                            </div>
+                          </div>
+                          <div>
+                            <span className="font-semibold text-main leading-none block">
+                              {f.label}
+                            </span>
+                            {f.isDefault && (
+                              <span className="text-[11px] text-muted block mt-1">Predeterminado</span>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <SaveBar onReset={resetDefaults} />

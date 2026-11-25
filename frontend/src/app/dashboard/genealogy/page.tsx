@@ -23,7 +23,7 @@ export default function GenealogyPage() {
       <CardHeader
         title="Árbol Genealógico"
         subtitle="Explora el linaje, busca ancestros y analiza la descendencia de tus conejos"
-        tutorialUrl="https://youtu.be/Pz1LT4eDTJ8"
+        tutorialUrl="https://youtu.be/m2Cr5THmCrM"
       />
       <GenealogyCatalog 
         onViewTree={(rabbit) => {

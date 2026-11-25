@@ -11,6 +11,7 @@ import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
 import { AuthLayout } from '@/modules/auth/components/AuthLayout';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { translateAuthError } from '@/modules/auth/utils/auth-errors';
+import { APP_VERSION, APP_COPYRIGHT } from '@/lib/constants';
 
 const schema = z.object({
   identifier: z.string().min(1, 'El usuario o correo electrónico es obligatorio.'),
@@ -148,7 +149,9 @@ export default function ForgotPasswordPage() {
           <div className="text-center pt-2">
             <Link
               href="/login"
-              className="text-sm text-teal-600 dark:text-teal-400 font-semibold hover:underline inline-flex items-center gap-1"
+              aria-disabled={isSubmitting}
+              tabIndex={isSubmitting ? -1 : undefined}
+              className={`text-sm text-teal-600 dark:text-teal-400 font-semibold hover:underline inline-flex items-center gap-1 ${isSubmitting ? 'pointer-events-none opacity-60' : ''}`}
             >
               ← Volver al inicio de sesión
             </Link>
@@ -158,9 +161,9 @@ export default function ForgotPasswordPage() {
 
       <div className="mt-5 lg:mt-6 text-center animate-fade-in-right" style={{ animationDelay: '0.8s' }}>
         <div className="flex items-center justify-center gap-3 text-theme-faint text-xs">
-          <span>v3.0.0</span>
+          <span>v{APP_VERSION}</span>
           <span>•</span>
-          <span>© 2025 Hoptolt Ecuador</span>
+          <span>{APP_COPYRIGHT}</span>
         </div>
       </div>
     </AuthLayout>

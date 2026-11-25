@@ -253,7 +253,14 @@ export function MatingModal({ male, onClose, onSuccess }: Readonly<MatingModalPr
       )}
 
       {showConsanguinityWarning && (
-        <Dialog open={true} onClose={() => setShowConsanguinityWarning(false)} title="ADVERTENCIA: Parentesco Detectado" size="md">
+        <Dialog
+          open={true}
+          onClose={() => {
+            if (processingId === null) setShowConsanguinityWarning(false);
+          }}
+          title="ADVERTENCIA: Parentesco Detectado"
+          size="md"
+        >
           <div className="flex flex-col gap-4 text-main">
             <div className="bg-theme-surface border border-strong text-main p-4 rounded-lg flex gap-3">
               <div className="text-sm">
@@ -263,10 +270,14 @@ export function MatingModal({ male, onClose, onSuccess }: Readonly<MatingModalPr
             </div>
             <p className="text-sm">¿Deseas proceder de todos modos con esta monta y asumir los riesgos?</p>
             <div className="flex justify-end gap-3 mt-4">
-              <Button variant="outline" onClick={() => setShowConsanguinityWarning(false)}>
+              <Button
+                variant="outline"
+                disabled={processingId !== null}
+                onClick={() => setShowConsanguinityWarning(false)}
+              >
                 Cancelar Monta
               </Button>
-              <Button variant="danger" onClick={executeMating} loading={processingId !== null}>
+              <Button variant="danger" onClick={executeMating} loading={processingId !== null} disabled={processingId !== null}>
                 Proceder de todos modos
               </Button>
             </div>

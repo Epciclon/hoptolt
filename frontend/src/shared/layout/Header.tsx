@@ -16,6 +16,7 @@ export function Header() {
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     const handleCloseProfileMenu = () => setDropdownOpen(false);
@@ -31,8 +32,14 @@ export function Header() {
   }, []);
 
   const handleLogout = async () => {
-    Cookies.remove('auth_token');
-    await logout();
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      Cookies.remove('auth_token');
+      await logout();
+    } catch {
+      setIsLoggingOut(false);
+    }
   };
 
   return (
@@ -81,7 +88,7 @@ export function Header() {
 
           {dropdownOpen && (
             <>
-              <button type="button" aria-label="Cerrar menú" className="fixed inset-0 z-40 w-full h-full cursor-default bg-transparent border-none p-0" onClick={() => setDropdownOpen(false)} />
+              <button type="button" aria-label="Cerrar menú" className="fixed inset-0 z-40 w-full h-full cursor-default bg-transparent border-none p-0" onClick={() => { if (!isLoggingOut) setDropdownOpen(false); }} />
               <div className="absolute right-0 top-full mt-1 w-60 bg-card rounded-xl shadow-lg border border-strong overflow-hidden z-50">
                 <div className="px-4 py-3 bg-theme-surface border-b border-default">
                   <p className="text-sm font-semibold text-main">{user?.fullName || 'Usuario'}</p>
@@ -99,9 +106,14 @@ export function Header() {
                       <Link
                         key={href}
                         href={href}
-                        onClick={() => setDropdownOpen(false)}
+                        aria-disabled={isLoggingOut}
+                        tabIndex={isLoggingOut ? -1 : undefined}
+                        onClick={() => {
+                          if (!isLoggingOut) setDropdownOpen(false);
+                        }}
                         className={cn(
                           'w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors',
+                          isLoggingOut && 'pointer-events-none opacity-60',
                           isActive
                             ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 font-semibold border-l-2 border-primary-500'
                             : 'text-muted hover:bg-theme-surface hover:text-primary-600',
@@ -117,10 +129,11 @@ export function Header() {
                   })}
                   <div className="border-t border-default mt-1 pt-1">
                     <button type="button"
+                      disabled={isLoggingOut}
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      <LogOut size={16} /> Cerrar Sesión
+                      <LogOut size={16} /> {isLoggingOut ? 'Cerrando sesión...' : 'Cerrar Sesión'}
                     </button>
                   </div>
                 </div>

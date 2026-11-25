@@ -20,7 +20,7 @@ export function CleaningDashboard() {
       <CardHeader 
         title="Limpieza de Jaulas" 
         subtitle="Marca las jaulas que ya limpiaste para llevar un buen control de higiene" 
-        tutorialUrl="https://youtu.be/LXKorxIwyHo"
+        tutorialUrl="https://youtu.be/vtUIEoJe9Qg"
       />
       <DashboardTabs
         tabs={[

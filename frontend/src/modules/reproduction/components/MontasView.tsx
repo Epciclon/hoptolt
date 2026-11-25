@@ -350,7 +350,7 @@ export function MontasView({ searchTerm, onSearchChange }: Readonly<MontasViewPr
         filters={[
           {
             key: 'status',
-            placeholder: 'Todos los estados',
+            placeholder: 'Filtrar por estado',
             options: [
               { label: 'Disponibles', value: 'disponible' },
               { label: 'Ocupados', value: 'en_monta' }

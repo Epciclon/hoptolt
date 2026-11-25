@@ -3,8 +3,8 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { AuditLogItem } from '../types/farmMember.types';
-import { Button, Dialog } from '@/shared/ui';
-import { RotateCcw, ShieldCheck } from 'lucide-react';
+import { Button, Dialog, Select } from '@/shared/ui';
+import { RotateCcw, ShieldCheck, X, Filter } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { formatFriendlyDate, formatDateTime } from '@/shared/utils/dateUtils';
 
@@ -48,6 +48,57 @@ export function useAuditLogsRealtime(galponId: number, channelPrefix: string, qu
       supabase.removeChannel(channel);
     };
   }, [galponId, channelPrefix, queryKeyName, queryClient]);
+}
+
+interface AuditSelectFilterOption {
+  value: string;
+  label: string;
+}
+
+interface AuditSelectFilterProps {
+  id: string;
+  label: string;
+  placeholder: string;
+  value: string;
+  options: AuditSelectFilterOption[];
+  onChange: (val: string) => void;
+}
+
+export function AuditSelectFilter({
+  id,
+  label,
+  placeholder,
+  value,
+  options,
+  onChange,
+}: Readonly<AuditSelectFilterProps>) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-xs font-medium text-muted mb-1">
+        {label}
+      </label>
+      <div className="relative">
+        <Select
+          id={id}
+          placeholder={placeholder}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={value ? 'pr-12' : ''}
+          options={options}
+        />
+        {value && (
+          <button
+            type="button"
+            onClick={() => onChange('')}
+            className="absolute right-7 top-1/2 -translate-y-1/2 p-1 text-theme-faint hover:text-red-500 rounded-full transition-colors flex items-center justify-center bg-card"
+            title="Limpiar"
+          >
+            <X size={14} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }
 
 interface AuditDateFiltersProps {
@@ -114,6 +165,69 @@ export function AuditClearFiltersButton({
         <RotateCcw size={13} />
         <span>Limpiar filtros</span>
       </button>
+    </div>
+  );
+}
+
+export interface AuditFilterSelectConfig {
+  id: string;
+  label: string;
+  placeholder: string;
+  value: string;
+  options: AuditSelectFilterOption[];
+  onChange: (val: string) => void;
+}
+
+interface AuditFiltersCardProps {
+  columnsClassName: string;
+  selects: AuditFilterSelectConfig[];
+  startDate: string;
+  endDate: string;
+  onStartDateChange: (val: string) => void;
+  onEndDateChange: (val: string) => void;
+  hasActiveFilters: boolean;
+  onResetFilters: () => void;
+}
+
+export function AuditFiltersCard({
+  columnsClassName,
+  selects,
+  startDate,
+  endDate,
+  onStartDateChange,
+  onEndDateChange,
+  hasActiveFilters,
+  onResetFilters,
+}: Readonly<AuditFiltersCardProps>) {
+  return (
+    <div className="bg-card rounded-xl p-4 border border-strong shadow-sm space-y-3">
+      <div className="flex items-center gap-2 text-sm font-semibold text-main mb-1">
+        <Filter size={16} className="text-primary-500" />
+        <span>Filtros de búsqueda</span>
+      </div>
+
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${columnsClassName} gap-3`}>
+        {selects.map((select) => (
+          <AuditSelectFilter
+            key={select.id}
+            id={select.id}
+            label={select.label}
+            placeholder={select.placeholder}
+            value={select.value}
+            options={select.options}
+            onChange={select.onChange}
+          />
+        ))}
+
+        <AuditDateFilters
+          startDate={startDate}
+          endDate={endDate}
+          onStartDateChange={onStartDateChange}
+          onEndDateChange={onEndDateChange}
+        />
+      </div>
+
+      <AuditClearFiltersButton hasActiveFilters={hasActiveFilters} onResetFilters={onResetFilters} />
     </div>
   );
 }

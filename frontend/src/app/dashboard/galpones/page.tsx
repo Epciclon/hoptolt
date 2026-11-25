@@ -22,6 +22,7 @@ export default function GalponesPage() {
         <CardHeader
           title="Tus Galpones"
           subtitle="Configura los galpones de tu granja y elige en cuál vas a trabajar hoy"
+          tutorialUrl="https://youtu.be/YXuk7Rmr188"
           actions={
             <Button icon={<Plus size={16} />} onClick={openCreate}>Nuevo Galpón</Button>
           }
