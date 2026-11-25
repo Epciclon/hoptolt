@@ -11,6 +11,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { AuthLayout } from '@/modules/auth/components/AuthLayout';
 import { useToast } from '@/shared/contexts/ToastContext';
 import { useAuthContext } from '@/modules/auth/contexts/AuthContext';
+import { APP_VERSION, APP_COPYRIGHT } from '@/lib/constants';
 
 const schema = z.object({
   username: z
@@ -46,33 +47,38 @@ export default function RegisterPage() {
   const { showToast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && user && !isRedirecting) {
       router.replace('/active-session');
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, isRedirecting]);
 
   const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
   });
 
   const termsAccepted = watch('terms');
+  const isBusy = isSubmitting || isRedirecting;
 
   const onSubmit = async (values: FormValues) => {
+    if (isBusy) return;
     try {
       await authService.register(values);
+      setIsRedirecting(true);
       // En vez de redirigir al login directamente, les informamos que verifiquen su correo
       showToast('Registro exitoso. Por favor revisa la bandeja de entrada de tu correo electrónico (o spam) para verificar tu cuenta antes de iniciar sesión.', 'success');
       setTimeout(() => {
         router.push('/login?registered=true');
       }, 5000);
     } catch (err: any) {
+      setIsRedirecting(false);
       showToast(err instanceof Error ? err.message : 'Error al registrar la cuenta.', 'error');
     }
   };
 
-  if (loading || user) {
+  if ((loading || user) && !isRedirecting) {
     return (
       <AuthLayout>
         <div className="flex items-center justify-center p-6 h-full min-h-[50vh]">
@@ -183,8 +189,9 @@ export default function RegisterPage() {
             <div className="flex-shrink-0 mt-1">
               <input
                 type="checkbox"
+                disabled={isBusy}
                 {...register('terms')}
-                className="w-5 h-5 rounded border-2 border-slate-300 text-teal-600 focus:ring-teal-500/30 transition-all cursor-pointer"
+                className="w-5 h-5 rounded border-2 border-slate-300 text-teal-600 focus:ring-teal-500/30 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
               />
             </div>
             <span className="text-sm text-theme-faint leading-relaxed">
@@ -197,17 +204,17 @@ export default function RegisterPage() {
         <button
           type="submit"
           id="btn-register"
-          disabled={isSubmitting || !termsAccepted}
+          disabled={isBusy || !termsAccepted}
           className={`w-full py-3 font-semibold rounded-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed mt-4 ${
             !termsAccepted 
               ? 'bg-slate-300 text-slate-500 dark:bg-slate-700 dark:text-slate-400' 
               : 'bg-gradient-to-r from-teal-500 to-teal-600 text-white hover:shadow-lg hover:-translate-y-0.5'
           }`}
         >
-          {isSubmitting ? (
+          {isBusy ? (
             <span className="flex items-center justify-center gap-2">
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Creando cuenta...
+              {isRedirecting ? 'Redirigiendo...' : 'Creando cuenta...'}
             </span>
           ) : (
             'Crear Cuenta'
@@ -218,14 +225,19 @@ export default function RegisterPage() {
       <div className="mt-6 text-center animate-fade-in-right" style={{ animationDelay: '0.8s' }}>
         <p className="text-muted text-sm mb-4 flex flex-wrap items-center justify-center gap-1">
           <span>¿Ya tienes una cuenta?</span>
-          <Link href="/login" className="text-teal-600 font-semibold hover:underline whitespace-nowrap">
+          <Link
+            href="/login"
+            aria-disabled={isBusy}
+            tabIndex={isBusy ? -1 : undefined}
+            className={`text-teal-600 font-semibold hover:underline whitespace-nowrap ${isBusy ? 'pointer-events-none opacity-60' : ''}`}
+          >
             Inicia Sesión
           </Link>
         </p>
         <div className="flex items-center justify-center gap-3 text-theme-faint text-xs">
-          <span>v3.0.0</span>
+          <span>v{APP_VERSION}</span>
           <span>•</span>
-          <span>© 2025 Hoptolt Ecuador</span>
+          <span>{APP_COPYRIGHT}</span>
         </div>
       </div>
     </AuthLayout>

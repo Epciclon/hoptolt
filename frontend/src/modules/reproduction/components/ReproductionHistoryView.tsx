@@ -425,7 +425,7 @@ export function ReproductionHistoryView({ profileId, date }: Readonly<Reproducti
         filters={[
           {
             key: 'status',
-            placeholder: 'Todos los estados',
+            placeholder: 'Filtrar por estado',
             options: [
               { value: 'completado', label: 'Completado' },
               { value: 'fallido', label: 'Fallido' },

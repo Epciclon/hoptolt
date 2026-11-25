@@ -258,6 +258,7 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
   };
 
   const submitFeeding = async (justificationText?: string) => {
+    if (isSubmitting) return;
     const cageIds: number[] = [];
     for (const cageNumber of selectedCageNumbers) {
       const cage = allCageGroups.find(g => g.cageNumber === cageNumber);
@@ -507,7 +508,9 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
 
       <Dialog
         open={showJustificationModal}
-        onClose={handleCancelJustification}
+        onClose={() => {
+          if (!isSubmitting) handleCancelJustification();
+        }}
         title="Justificación Requerida"
         description=""
         size="sm"
@@ -548,12 +551,14 @@ export function FeedingCatalog({ onSuccess }: Readonly<FeedingCatalogProps>) {
           <Button 
             variant="secondary" 
             onClick={handleCancelJustification}
+            disabled={isSubmitting}
           >
             Cancelar
           </Button>
           <Button 
             onClick={() => submitFeeding(justification || 'Alimentación normal')}
-            disabled={!justification.trim()}
+            loading={isSubmitting}
+            disabled={!justification.trim() || isSubmitting}
           >
             Registrar
           </Button>

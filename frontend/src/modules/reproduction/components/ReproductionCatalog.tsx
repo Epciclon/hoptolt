@@ -176,7 +176,7 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
         filters={[
           {
             key: 'race',
-            placeholder: 'Todas las razas',
+            placeholder: 'Filtrar por raza',
             options: uniqueRaces.map((race) => ({
               value: race as string,
               label: String(race).charAt(0).toUpperCase() + String(race).slice(1)
@@ -383,6 +383,7 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
       <Dialog
         open={!!toRegisterBirth}
         onClose={() => {
+          if (registeringBirth) return;
           setToRegisterBirth(null);
           setActualBirthDate('');
         }}
@@ -408,7 +409,7 @@ export function ReproductionCatalog({ searchTerm, onSearchChange }: Readonly<Rep
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => { setToRegisterBirth(null); setActualBirthDate(''); }}>
+            <Button type="button" variant="outline" disabled={registeringBirth} onClick={() => { setToRegisterBirth(null); setActualBirthDate(''); }}>
               Cancelar
             </Button>
             <Button 

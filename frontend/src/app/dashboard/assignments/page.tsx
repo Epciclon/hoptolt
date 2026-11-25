@@ -29,7 +29,7 @@ export default function AssignmentsPage() {
           <CardHeader
             title="Control de Asignaciones"
             subtitle="Supervisa las asignaciones actuales y revisa la capacidad de tus jaulas"
-            tutorialUrl="https://youtu.be/0MqbR3yMm_8"
+            tutorialUrl="https://youtu.be/Ddfuayx6dhk"
             actions={
               can('assignments', 'canCreate') ? (
                 <Button icon={<Plus size={16} />} onClick={openModal}>Asignar Conejo</Button>

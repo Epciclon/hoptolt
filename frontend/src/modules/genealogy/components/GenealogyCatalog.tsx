@@ -126,8 +126,8 @@ export function GenealogyCatalog({ onViewTree, onEditRelation }: Readonly<Geneal
         onSearchChange={(val) => { setSearch(val); setPage(1); }}
         searchPlaceholder="Buscar conejo por código o nombre..."
         filters={[
-          { key: 'race', placeholder: 'Todas las Razas', options: raceOptions, value: filters.race || '', onChange: (val) => { setRace(val); setPage(1); } },
-          { key: 'sex', placeholder: 'Cualquier Sexo', options: rabbitSexOptions, value: filters.sex || '', onChange: (val) => { setSex(val); setPage(1); } }
+          { key: 'race', placeholder: 'Filtrar por raza', options: raceOptions, value: filters.race || '', onChange: (val) => { setRace(val); setPage(1); } },
+          { key: 'sex', placeholder: 'Filtrar por sexo', options: rabbitSexOptions, value: filters.sex || '', onChange: (val) => { setSex(val); setPage(1); } }
         ]}
       />
 

@@ -55,7 +55,7 @@ export function RabbitSelectableCard({
           <RabbitAvatar
             imageUrl={rabbit.imageUrl}
             alt={rabbit.code}
-            size="md"
+            size="lg"
             rabbitId={rabbit.id}
             rabbitCode={rabbit.code}
             disableQuickView={quickViewDisabled}

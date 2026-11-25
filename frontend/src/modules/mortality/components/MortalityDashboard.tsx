@@ -20,6 +20,7 @@ export function MortalityDashboard() {
       <CardHeader 
         title="Bajas y Mortalidad" 
         subtitle="Registra si algún conejo fallece para llevar tus estadísticas al día" 
+        tutorialUrl="https://youtu.be/Yzbpb2D9YmI"
       />
       <DashboardTabs
         tabs={[

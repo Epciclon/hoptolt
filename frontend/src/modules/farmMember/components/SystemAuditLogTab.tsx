@@ -4,9 +4,9 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { farmMemberService } from '../services/farmMember.service';
 import type { AuditLogItem, AuditLogFilters } from '../types/farmMember.types';
-import { SectionMessage } from '@/shared/ui';
+import { SectionMessage, Select } from '@/shared/ui';
 import { Pagination } from '@/shared/ui/Pagination';
-import { Filter, Sparkles } from 'lucide-react';
+import { Filter, Sparkles, X } from 'lucide-react';
 import { type AuditDiffItem, AUDIT_IGNORED_DIFF_KEYS, useAuditLogsRealtime, AuditDateFilters, AuditClearFiltersButton, AuditFallbackBeforeAfter, AuditStandardDiffValue, AuditLogListCard, AuditLogDetailDialog } from './AuditLogShared';
 
 interface SystemAuditLogTabProps {
@@ -260,33 +260,59 @@ export function SystemAuditLogTab({ galponId }: Readonly<SystemAuditLogTabProps>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div>
             <label htmlFor="filter-process-select" className="block text-xs font-medium text-muted mb-1">Proceso</label>
-            <select
-              id="filter-process-select"
-              value={selectedEntity}
-              onChange={(e) => { setSelectedEntity(e.target.value); setPage(1); }}
-              className="w-full text-sm bg-theme-surface dark:bg-slate-900 border border-default rounded-lg px-3 py-2 text-main dark:text-slate-100 focus:ring-2 focus:ring-primary-500 outline-none"
-            >
-              <option value="" className="bg-card dark:bg-slate-900 text-main">Todos los procesos</option>
-              <option value="reproduction" className="bg-card dark:bg-slate-900 text-main">Reproducción</option>
-              <option value="growth" className="bg-card dark:bg-slate-900 text-main">Crecimiento</option>
-              <option value="feeding" className="bg-card dark:bg-slate-900 text-main">Alimentación</option>
-            </select>
+            <div className="relative">
+              <Select
+                id="filter-process-select"
+                placeholder="Filtrar por proceso"
+                value={selectedEntity}
+                onChange={(e) => { setSelectedEntity(e.target.value); setPage(1); }}
+                className={selectedEntity ? 'pr-12' : ''}
+                options={[
+                  { value: 'reproduction', label: 'Reproducción' },
+                  { value: 'growth', label: 'Crecimiento' },
+                  { value: 'feeding', label: 'Alimentación' },
+                ]}
+              />
+              {selectedEntity && (
+                <button
+                  type="button"
+                  onClick={() => { setSelectedEntity(''); setPage(1); }}
+                  className="absolute right-7 top-1/2 -translate-y-1/2 p-1 text-theme-faint hover:text-red-500 rounded-full transition-colors flex items-center justify-center bg-card"
+                  title="Limpiar"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
           </div>
 
           <div>
             <label htmlFor="filter-action-select" className="block text-xs font-medium text-muted mb-1">Acción</label>
-            <select
-              id="filter-action-select"
-              value={selectedAction}
-              onChange={(e) => { setSelectedAction(e.target.value); setPage(1); }}
-              className="w-full text-sm bg-theme-surface dark:bg-slate-900 border border-default rounded-lg px-3 py-2 text-main dark:text-slate-100 focus:ring-2 focus:ring-primary-500 outline-none"
-            >
-              <option value="" className="bg-card dark:bg-slate-900 text-main">Todas las acciones</option>
-              <option value="Paso a gestación" className="bg-card dark:bg-slate-900 text-main">Paso a gestación</option>
-              <option value="Paso a lactancia" className="bg-card dark:bg-slate-900 text-main">Paso a lactancia</option>
-              <option value="Cálculo de crecimiento" className="bg-card dark:bg-slate-900 text-main">Cálculo de crecimiento</option>
-              <option value="Turno cerrado con pendientes" className="bg-card dark:bg-slate-900 text-main">Turno con pendientes</option>
-            </select>
+            <div className="relative">
+              <Select
+                id="filter-action-select"
+                placeholder="Filtrar por acción"
+                value={selectedAction}
+                onChange={(e) => { setSelectedAction(e.target.value); setPage(1); }}
+                className={selectedAction ? 'pr-12' : ''}
+                options={[
+                  { value: 'Paso a gestación', label: 'Paso a gestación' },
+                  { value: 'Paso a lactancia', label: 'Paso a lactancia' },
+                  { value: 'Cálculo de crecimiento', label: 'Cálculo de crecimiento' },
+                  { value: 'Turno cerrado con pendientes', label: 'Turno con pendientes' },
+                ]}
+              />
+              {selectedAction && (
+                <button
+                  type="button"
+                  onClick={() => { setSelectedAction(''); setPage(1); }}
+                  className="absolute right-7 top-1/2 -translate-y-1/2 p-1 text-theme-faint hover:text-red-500 rounded-full transition-colors flex items-center justify-center bg-card"
+                  title="Limpiar"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
           </div>
 
           <AuditDateFilters

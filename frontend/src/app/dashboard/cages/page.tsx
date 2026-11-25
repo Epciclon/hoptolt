@@ -26,7 +26,7 @@ export default function CagesPage() {
           <CardHeader
             title="Tus Jaulas"
             subtitle="Aquí puedes organizar, ubicar y revisar el estado de todas las jaulas"
-            tutorialUrl="https://youtu.be/mpzohtBFU_0"
+            tutorialUrl="https://youtu.be/npKbFFMICJM"
             actions={
               can('cages', 'canCreate') ? (
                 <Button icon={<Plus size={16} />} onClick={openCreate}>Nuevas Jaulas</Button>

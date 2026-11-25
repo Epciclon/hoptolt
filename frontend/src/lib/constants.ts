@@ -1,4 +1,4 @@
-﻿export const CAGE_TYPES = ['engorde', 'reproducción'] as const;
+export const CAGE_TYPES = ['engorde', 'reproducción'] as const;
 export type CageType = (typeof CAGE_TYPES)[number];
 
 export const CAGE_CAPACITY = {
@@ -30,3 +30,6 @@ export type MortalityCause = (typeof MORTALITY_CAUSES)[number];
 
 export const USER_ROLES = ['Propietario', 'Administrador', 'Trabajador'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
+
+export const APP_VERSION = '3.8.0';
+export const APP_COPYRIGHT = '© 2026 Hoptolt Ecuador';

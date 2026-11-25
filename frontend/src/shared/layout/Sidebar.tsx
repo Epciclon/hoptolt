@@ -171,7 +171,7 @@ export function Sidebar({ collapsed, onToggle }: Readonly<SidebarProps>) {
         </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto py-3 px-2 sm:px-3">
+      <nav className="flex-1 overflow-y-auto sidebar-scrollbar py-3 px-2 sm:px-3">
         {filteredNavigation.map((item) => {
           const Icon = item.icon;
 

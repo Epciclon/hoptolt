@@ -20,7 +20,7 @@ export function VaccinationDashboard() {
       <CardHeader 
         title="Vacunas" 
         subtitle="Lleva el control de qué vacunas ha recibido cada conejo" 
-        tutorialUrl="https://youtu.be/kJx7zt_rDPA"
+        tutorialUrl="https://youtu.be/RL56VU-idKQ"
       />
       <DashboardTabs
         tabs={[

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, Button } from '@/shared/ui';
+import { Card, Button, TutorialButton } from '@/shared/ui';
 import { Pagination } from '@/shared/ui/Pagination';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useInvitation } from '@/modules/invitation/hooks/useInvitation';
@@ -164,7 +164,10 @@ export default function NotificationsPage() {
       <Card className="border-0 shadow-sm ring-1 ring-slate-200/50 overflow-hidden" padding="none">
         <div className="p-4 sm:p-6 md:p-8 border-b border-default bg-card flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-main">Centro de Notificaciones</h1>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <h1 className="text-2xl font-bold text-main">Centro de Notificaciones</h1>
+              <TutorialButton videoUrl="https://youtu.be/9etsgfaLhdI" />
+            </div>
             <p className="text-muted mt-1">Revisa los últimos avisos, recordatorios y actividades de tu granja</p>
           </div>
           <div className="flex items-center gap-3">

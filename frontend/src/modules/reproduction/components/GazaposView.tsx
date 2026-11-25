@@ -331,7 +331,7 @@ export function GazaposView({ searchTerm, onSearchChange }: Readonly<GazaposView
         filters={[
           {
             key: 'race',
-            placeholder: 'Todas las razas',
+            placeholder: 'Filtrar por raza',
             options: uniqueRaces.map((race) => ({
               value: race as string,
               label: String(race).charAt(0).toUpperCase() + String(race).slice(1)

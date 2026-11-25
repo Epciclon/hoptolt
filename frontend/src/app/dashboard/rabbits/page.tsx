@@ -20,7 +20,7 @@ export default function RabbitsPage() {
           <CardHeader
             title="Catálogo de Conejos"
             subtitle="Visualiza, filtra y administra todos tus conejos"
-            tutorialUrl="https://youtu.be/c073zLfxMyA"
+            tutorialUrl="https://youtu.be/ZMeTU663xj4"
             actions={
               can('rabbits', 'canCreate') ? (
                 <Button icon={<Plus size={16} />} onClick={() => setIsCreateOpen(true)}>Nuevo Conejo</Button>

@@ -46,7 +46,7 @@ function DashboardHomeContent() {
         <CardHeader 
           title={canViewReproduction ? "Calendario de Eventos" : "Calendario General"} 
           subtitle={canViewReproduction ? "Alterna entre las vistas para ver los partos, destetes o conejas en celo." : undefined}
-          tutorialUrl="https://youtu.be/rccFO5ih5o8" 
+          tutorialUrl="https://youtu.be/x7AUSHSb-3A" 
         />
         <div className="px-1 pb-1">
           <Suspense fallback={

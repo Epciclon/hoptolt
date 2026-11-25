@@ -4,9 +4,9 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { farmMemberService } from '../services/farmMember.service';
 import type { AuditLogItem, AuditLogFilters, FarmMember } from '../types/farmMember.types';
-import { SectionMessage } from '@/shared/ui';
+import { SectionMessage, Select } from '@/shared/ui';
 import { Pagination } from '@/shared/ui/Pagination';
-import { Filter, User } from 'lucide-react';
+import { Filter, User, X } from 'lucide-react';
 import { type AuditDiffItem, AUDIT_IGNORED_DIFF_KEYS, useAuditLogsRealtime, AuditDateFilters, AuditClearFiltersButton, AuditFallbackBeforeAfter, AuditStandardDiffValue, AuditLogListCard, AuditLogDetailDialog } from './AuditLogShared';
 
 interface AuditChangeLogTabProps {
@@ -399,54 +399,92 @@ export function AuditChangeLogTab({ galponId, workers }: Readonly<AuditChangeLog
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           <div>
             <label htmlFor="filter-worker-select" className="block text-xs font-medium text-muted mb-1">Trabajador</label>
-            <select
-              id="filter-worker-select"
-              value={selectedWorkerId}
-              onChange={(e) => { setSelectedWorkerId(e.target.value); setPage(1); }}
-              className="w-full text-sm bg-theme-surface dark:bg-slate-900 border border-default rounded-lg px-3 py-2 text-main dark:text-slate-100 focus:ring-2 focus:ring-primary-500 outline-none"
-            >
-              <option value="" className="bg-card dark:bg-slate-900 text-main">Todos los trabajadores</option>
-              {workers.map((w) => (
-                <option key={w.id} value={w.profile?.id} className="bg-card dark:bg-slate-900 text-main">
-                  {w.profile?.fullName || w.profile?.username}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <Select
+                id="filter-worker-select"
+                placeholder="Filtrar por trabajador"
+                value={selectedWorkerId}
+                onChange={(e) => { setSelectedWorkerId(e.target.value); setPage(1); }}
+                className={selectedWorkerId ? 'pr-12' : ''}
+                options={workers
+                  .filter((w) => Boolean(w.profile?.id))
+                  .map((w) => ({
+                    value: String(w.profile!.id),
+                    label: w.profile?.fullName || w.profile?.username || 'Trabajador',
+                  }))}
+              />
+              {selectedWorkerId && (
+                <button
+                  type="button"
+                  onClick={() => { setSelectedWorkerId(''); setPage(1); }}
+                  className="absolute right-7 top-1/2 -translate-y-1/2 p-1 text-theme-faint hover:text-red-500 rounded-full transition-colors flex items-center justify-center bg-card"
+                  title="Limpiar"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
           </div>
 
           <div>
             <label htmlFor="filter-process-select" className="block text-xs font-medium text-muted mb-1">Proceso</label>
-            <select
-              id="filter-process-select"
-              value={selectedEntity}
-              onChange={(e) => { setSelectedEntity(e.target.value); setPage(1); }}
-              className="w-full text-sm bg-theme-surface dark:bg-slate-900 border border-default rounded-lg px-3 py-2 text-main dark:text-slate-100 focus:ring-2 focus:ring-primary-500 outline-none"
-            >
-              <option value="" className="bg-card dark:bg-slate-900 text-main">Todos los procesos</option>
-              <option value="cages" className="bg-card dark:bg-slate-900 text-main">Jaulas</option>
-              <option value="races" className="bg-card dark:bg-slate-900 text-main">Razas</option>
-              <option value="rabbits" className="bg-card dark:bg-slate-900 text-main">Conejos</option>
-              <option value="assignments" className="bg-card dark:bg-slate-900 text-main">Asignaciones</option>
-              <option value="reproduction" className="bg-card dark:bg-slate-900 text-main">Reproducción</option>
-              <option value="genealogy" className="bg-card dark:bg-slate-900 text-main">Genealogía</option>
-              <option value="reports" className="bg-card dark:bg-slate-900 text-main">Reportes</option>
-            </select>
+            <div className="relative">
+              <Select
+                id="filter-process-select"
+                placeholder="Filtrar por proceso"
+                value={selectedEntity}
+                onChange={(e) => { setSelectedEntity(e.target.value); setPage(1); }}
+                className={selectedEntity ? 'pr-12' : ''}
+                options={[
+                  { value: 'cages', label: 'Jaulas' },
+                  { value: 'races', label: 'Razas' },
+                  { value: 'rabbits', label: 'Conejos' },
+                  { value: 'assignments', label: 'Asignaciones' },
+                  { value: 'reproduction', label: 'Reproducción' },
+                  { value: 'genealogy', label: 'Genealogía' },
+                  { value: 'reports', label: 'Reportes' },
+                ]}
+              />
+              {selectedEntity && (
+                <button
+                  type="button"
+                  onClick={() => { setSelectedEntity(''); setPage(1); }}
+                  className="absolute right-7 top-1/2 -translate-y-1/2 p-1 text-theme-faint hover:text-red-500 rounded-full transition-colors flex items-center justify-center bg-card"
+                  title="Limpiar"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
           </div>
 
           <div>
             <label htmlFor="filter-action-select" className="block text-xs font-medium text-muted mb-1">Acción</label>
-            <select
-              id="filter-action-select"
-              value={selectedAction}
-              onChange={(e) => { setSelectedAction(e.target.value); setPage(1); }}
-              className="w-full text-sm bg-theme-surface dark:bg-slate-900 border border-default rounded-lg px-3 py-2 text-main dark:text-slate-100 focus:ring-2 focus:ring-primary-500 outline-none"
-            >
-              <option value="" className="bg-card dark:bg-slate-900 text-main">Todas las acciones</option>
-              <option value="crear" className="bg-card dark:bg-slate-900 text-main">Agregó</option>
-              <option value="modificar" className="bg-card dark:bg-slate-900 text-main">Modificó</option>
-              <option value="eliminar" className="bg-card dark:bg-slate-900 text-main">Eliminó</option>
-              <option value="consultar" className="bg-card dark:bg-slate-900 text-main">Consultó</option>
-            </select>
+            <div className="relative">
+              <Select
+                id="filter-action-select"
+                placeholder="Filtrar por acción"
+                value={selectedAction}
+                onChange={(e) => { setSelectedAction(e.target.value); setPage(1); }}
+                className={selectedAction ? 'pr-12' : ''}
+                options={[
+                  { value: 'crear', label: 'Agregó' },
+                  { value: 'modificar', label: 'Modificó' },
+                  { value: 'eliminar', label: 'Eliminó' },
+                  { value: 'consultar', label: 'Consultó' },
+                ]}
+              />
+              {selectedAction && (
+                <button
+                  type="button"
+                  onClick={() => { setSelectedAction(''); setPage(1); }}
+                  className="absolute right-7 top-1/2 -translate-y-1/2 p-1 text-theme-faint hover:text-red-500 rounded-full transition-colors flex items-center justify-center bg-card"
+                  title="Limpiar"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
           </div>
 
           <AuditDateFilters

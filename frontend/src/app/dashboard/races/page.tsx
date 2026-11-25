@@ -23,7 +23,7 @@ export default function RacesPage() {
         <CardHeader
           title="Razas"
           subtitle="Gestiona el catálogo de razas de tu galpón"
-          tutorialUrl="https://youtu.be/Ib1lTVUYFrs"
+          tutorialUrl="https://youtu.be/1IJQSrDg6lo"
           actions={
             can('races', 'canCreate') ? (
               <Button icon={<Plus size={16} />} onClick={openModal}>Nueva Raza</Button>
