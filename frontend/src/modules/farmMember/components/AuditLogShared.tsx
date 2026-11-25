@@ -3,8 +3,8 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { AuditLogItem } from '../types/farmMember.types';
-import { Button, Dialog } from '@/shared/ui';
-import { RotateCcw, ShieldCheck } from 'lucide-react';
+import { Button, Dialog, Select } from '@/shared/ui';
+import { RotateCcw, ShieldCheck, X } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { formatFriendlyDate, formatDateTime } from '@/shared/utils/dateUtils';
 
@@ -48,6 +48,57 @@ export function useAuditLogsRealtime(galponId: number, channelPrefix: string, qu
       supabase.removeChannel(channel);
     };
   }, [galponId, channelPrefix, queryKeyName, queryClient]);
+}
+
+interface AuditSelectFilterOption {
+  value: string;
+  label: string;
+}
+
+interface AuditSelectFilterProps {
+  id: string;
+  label: string;
+  placeholder: string;
+  value: string;
+  options: AuditSelectFilterOption[];
+  onChange: (val: string) => void;
+}
+
+export function AuditSelectFilter({
+  id,
+  label,
+  placeholder,
+  value,
+  options,
+  onChange,
+}: Readonly<AuditSelectFilterProps>) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-xs font-medium text-muted mb-1">
+        {label}
+      </label>
+      <div className="relative">
+        <Select
+          id={id}
+          placeholder={placeholder}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={value ? 'pr-12' : ''}
+          options={options}
+        />
+        {value && (
+          <button
+            type="button"
+            onClick={() => onChange('')}
+            className="absolute right-7 top-1/2 -translate-y-1/2 p-1 text-theme-faint hover:text-red-500 rounded-full transition-colors flex items-center justify-center bg-card"
+            title="Limpiar"
+          >
+            <X size={14} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }
 
 interface AuditDateFiltersProps {

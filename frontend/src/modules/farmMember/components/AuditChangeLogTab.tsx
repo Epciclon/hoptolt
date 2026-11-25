@@ -4,10 +4,10 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { farmMemberService } from '../services/farmMember.service';
 import type { AuditLogItem, AuditLogFilters, FarmMember } from '../types/farmMember.types';
-import { SectionMessage, Select } from '@/shared/ui';
+import { SectionMessage } from '@/shared/ui';
 import { Pagination } from '@/shared/ui/Pagination';
-import { Filter, User, X } from 'lucide-react';
-import { type AuditDiffItem, AUDIT_IGNORED_DIFF_KEYS, useAuditLogsRealtime, AuditDateFilters, AuditClearFiltersButton, AuditFallbackBeforeAfter, AuditStandardDiffValue, AuditLogListCard, AuditLogDetailDialog } from './AuditLogShared';
+import { Filter, User } from 'lucide-react';
+import { type AuditDiffItem, AUDIT_IGNORED_DIFF_KEYS, useAuditLogsRealtime, AuditSelectFilter, AuditDateFilters, AuditClearFiltersButton, AuditFallbackBeforeAfter, AuditStandardDiffValue, AuditLogListCard, AuditLogDetailDialog } from './AuditLogShared';
 
 interface AuditChangeLogTabProps {
   galponId: number;
@@ -397,95 +397,50 @@ export function AuditChangeLogTab({ galponId, workers }: Readonly<AuditChangeLog
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          <div>
-            <label htmlFor="filter-worker-select" className="block text-xs font-medium text-muted mb-1">Trabajador</label>
-            <div className="relative">
-              <Select
-                id="filter-worker-select"
-                placeholder="Filtrar por trabajador"
-                value={selectedWorkerId}
-                onChange={(e) => { setSelectedWorkerId(e.target.value); setPage(1); }}
-                className={selectedWorkerId ? 'pr-12' : ''}
-                options={workers
-                  .filter((w) => Boolean(w.profile?.id))
-                  .map((w) => ({
-                    value: String(w.profile!.id),
-                    label: w.profile?.fullName || w.profile?.username || 'Trabajador',
-                  }))}
-              />
-              {selectedWorkerId && (
-                <button
-                  type="button"
-                  onClick={() => { setSelectedWorkerId(''); setPage(1); }}
-                  className="absolute right-7 top-1/2 -translate-y-1/2 p-1 text-theme-faint hover:text-red-500 rounded-full transition-colors flex items-center justify-center bg-card"
-                  title="Limpiar"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-          </div>
+          <AuditSelectFilter
+            id="filter-worker-select"
+            label="Trabajador"
+            placeholder="Filtrar por trabajador"
+            value={selectedWorkerId}
+            onChange={(val) => { setSelectedWorkerId(val); setPage(1); }}
+            options={workers
+              .filter((w) => Boolean(w.profile?.id))
+              .map((w) => ({
+                value: String(w.profile!.id),
+                label: w.profile?.fullName || w.profile?.username || 'Trabajador',
+              }))}
+          />
 
-          <div>
-            <label htmlFor="filter-process-select" className="block text-xs font-medium text-muted mb-1">Proceso</label>
-            <div className="relative">
-              <Select
-                id="filter-process-select"
-                placeholder="Filtrar por proceso"
-                value={selectedEntity}
-                onChange={(e) => { setSelectedEntity(e.target.value); setPage(1); }}
-                className={selectedEntity ? 'pr-12' : ''}
-                options={[
-                  { value: 'cages', label: 'Jaulas' },
-                  { value: 'races', label: 'Razas' },
-                  { value: 'rabbits', label: 'Conejos' },
-                  { value: 'assignments', label: 'Asignaciones' },
-                  { value: 'reproduction', label: 'Reproducción' },
-                  { value: 'genealogy', label: 'Genealogía' },
-                  { value: 'reports', label: 'Reportes' },
-                ]}
-              />
-              {selectedEntity && (
-                <button
-                  type="button"
-                  onClick={() => { setSelectedEntity(''); setPage(1); }}
-                  className="absolute right-7 top-1/2 -translate-y-1/2 p-1 text-theme-faint hover:text-red-500 rounded-full transition-colors flex items-center justify-center bg-card"
-                  title="Limpiar"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-          </div>
+          <AuditSelectFilter
+            id="filter-process-select"
+            label="Proceso"
+            placeholder="Filtrar por proceso"
+            value={selectedEntity}
+            onChange={(val) => { setSelectedEntity(val); setPage(1); }}
+            options={[
+              { value: 'cages', label: 'Jaulas' },
+              { value: 'races', label: 'Razas' },
+              { value: 'rabbits', label: 'Conejos' },
+              { value: 'assignments', label: 'Asignaciones' },
+              { value: 'reproduction', label: 'Reproducción' },
+              { value: 'genealogy', label: 'Genealogía' },
+              { value: 'reports', label: 'Reportes' },
+            ]}
+          />
 
-          <div>
-            <label htmlFor="filter-action-select" className="block text-xs font-medium text-muted mb-1">Acción</label>
-            <div className="relative">
-              <Select
-                id="filter-action-select"
-                placeholder="Filtrar por acción"
-                value={selectedAction}
-                onChange={(e) => { setSelectedAction(e.target.value); setPage(1); }}
-                className={selectedAction ? 'pr-12' : ''}
-                options={[
-                  { value: 'crear', label: 'Agregó' },
-                  { value: 'modificar', label: 'Modificó' },
-                  { value: 'eliminar', label: 'Eliminó' },
-                  { value: 'consultar', label: 'Consultó' },
-                ]}
-              />
-              {selectedAction && (
-                <button
-                  type="button"
-                  onClick={() => { setSelectedAction(''); setPage(1); }}
-                  className="absolute right-7 top-1/2 -translate-y-1/2 p-1 text-theme-faint hover:text-red-500 rounded-full transition-colors flex items-center justify-center bg-card"
-                  title="Limpiar"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-          </div>
+          <AuditSelectFilter
+            id="filter-action-select"
+            label="Acción"
+            placeholder="Filtrar por acción"
+            value={selectedAction}
+            onChange={(val) => { setSelectedAction(val); setPage(1); }}
+            options={[
+              { value: 'crear', label: 'Agregó' },
+              { value: 'modificar', label: 'Modificó' },
+              { value: 'eliminar', label: 'Eliminó' },
+              { value: 'consultar', label: 'Consultó' },
+            ]}
+          />
 
           <AuditDateFilters
             startDate={startDate}
